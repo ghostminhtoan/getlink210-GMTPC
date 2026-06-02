@@ -888,10 +888,13 @@ namespace get_link_manga
                                 lock (lockObj)
                                 {
                                     completedPages++;
-                                    Dispatcher.Invoke(() =>
+                                    if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
                                     {
-                                        lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
-                                    });
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
+                                        });
+                                    }
                                 }
                                 return;
                             }
@@ -902,10 +905,13 @@ namespace get_link_manga
                             lock (lockObj)
                             {
                                 completedPages++;
-                                Dispatcher.Invoke(() =>
+                                if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
                                 {
-                                    lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
-                                });
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
+                                    });
+                                }
                             }
                         }
                         finally

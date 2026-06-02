@@ -365,11 +365,14 @@ namespace get_link_manga
                                 lock (lockObj)
                                 {
                                     completedPages++;
-                                    string modeText = isFastPath ? "Fast Path" : "Slow Path";
-                                    Dispatcher.Invoke(() =>
+                                    if (completedPages % 5 == 0 || completedPages == totalPages)
                                     {
-                                        lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} ({modeText})";
-                                    });
+                                        string modeText = isFastPath ? "Fast Path" : "Slow Path";
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} ({modeText})";
+                                        });
+                                    }
                                 }
                                 return;
                             }
@@ -396,11 +399,14 @@ namespace get_link_manga
                             lock (lockObj)
                             {
                                 completedPages++;
-                                string modeText = isFastPath ? "Fast Path" : "Slow Path";
-                                Dispatcher.Invoke(() =>
+                                if (completedPages % 5 == 0 || completedPages == totalPages)
                                 {
-                                    lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} ({modeText})";
-                                });
+                                    string modeText = isFastPath ? "Fast Path" : "Slow Path";
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} ({modeText})";
+                                    });
+                                }
                             }
                         }
                         finally
@@ -663,8 +669,6 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                             if (isFastPath)
                             {
-                                // Direct CDN download: i*.nhentai.net/galleries/{id}/{N}.{ext}
-                                // Works for both normal galleries (prefix from thumbnail) and direct CDN links
                                 string imgUrl = $"{prefix}{pageNum}.{ext}";
                                 try
                                 {
@@ -705,11 +709,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                             lock (lockObj)
                             {
                                 completedPages++;
-                                string modeText = isFastPath ? "Fast Path" : "Slow Path";
-                                Dispatcher.Invoke(() =>
+                                if (completedPages % 5 == 0 || completedPages == totalPages)
                                 {
-                                    lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} ({modeText})";
-                                });
+                                    string modeText = isFastPath ? "Fast Path" : "Slow Path";
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} ({modeText})";
+                                    });
+                                }
                             }
                         }
                         finally
