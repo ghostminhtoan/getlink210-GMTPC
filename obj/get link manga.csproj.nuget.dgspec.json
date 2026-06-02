@@ -1,0 +1,65 @@
+{
+  "format": 1,
+  "restore": {
+    "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj": {}
+  },
+  "projects": {
+    "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+        "projectName": "get link manga",
+        "projectPath": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+        "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
+        "outputPath": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\obj\\",
+        "projectStyle": "PackageReference",
+        "skipContentFileWrite": true,
+        "UsingMicrosoftNETSdk": false,
+        "configFilePaths": [
+          "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\NuGet.Config",
+          "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net48"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net48": {
+            "framework": "net48",
+            "projectReferences": {}
+          }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net48": {
+          "framework": "net48",
+          "dependencies": {
+            "Costura.Fody": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[6.2.0, )"
+            },
+            "Fody": {
+              "target": "Package",
+              "version": "[6.9.3, )"
+            }
+          }
+        }
+      },
+      "runtimes": {
+        "win": {
+          "#import": []
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETFramework,Version=v4.8": {
+      "Costura.Fody/6.2.0": {
+        "type": "package",
+        "dependencies": {
+          "Fody": "6.9.3"
+        },
+        "compile": {
+          "lib/netstandard2.0/Costura.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Costura.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "build": {
+          "build/Costura.Fody.props": {},
+          "build/Costura.Fody.targets": {}
+        }
+      },
+      "Fody/6.9.3": {
+        "type": "package",
+        "build": {
+          "build/Fody.targets": {}
+        }
+      }
+    },
+    ".NETFramework,Version=v4.8/win": {
+      "Costura.Fody/6.2.0": {
+        "type": "package",
+        "dependencies": {
+          "Fody": "6.9.3"
+        },
+        "compile": {
+          "lib/netstandard2.0/Costura.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Costura.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "build": {
+          "build/Costura.Fody.props": {},
+          "build/Costura.Fody.targets": {}
+        }
+      },
+      "Fody/6.9.3": {
+        "type": "package",
+        "build": {
+          "build/Fody.targets": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Costura.Fody/6.2.0": {
+      "sha512": "jaX+A6sw6pI7lkLDTvxN7zU8Ja/a50N2xPKF6RYy0J6QF62wVg+hJMXJph2K8XarDaAlxQ82EaKv3fAvUNyRpg==",
+      "type": "package",
+      "path": "costura.fody/6.2.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "build/Costura.Fody.props",
+        "build/Costura.Fody.targets",
+        "costura.fody.6.2.0.nupkg.sha512",
+        "costura.fody.nuspec",
+        "icon.png",
+        "lib/netstandard2.0/Costura.dll",
+        "lib/netstandard2.0/Costura.pdb",
+        "lib/netstandard2.0/Costura.xml",
+        "netclassicweaver/Costura.Fody.dll",
+        "netclassicweaver/Costura.Fody.xcf",
+        "netstandardweaver/Costura.Fody.dll",
+        "netstandardweaver/Costura.Fody.xcf"
+      ]
+    },
+    "Fody/6.9.3": {
+      "sha512": "1CUGgFdyECDKgi5HaUBhdv6k+VG9Iy4OCforGfHyar3xQXAJypZkzymgKtWj/4SPd6nSG0Qi7NH71qHrDSZLaA==",
+      "type": "package",
+      "path": "fody/6.9.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "build/Fody.targets",
+        "fody.6.9.3.nupkg.sha512",
+        "fody.nuspec",
+        "package_icon.png",
+        "package_readme.md",
+        "tasks/net472/FodyCommon.dll",
+        "tasks/net472/FodyHelpers.dll",
+        "tasks/net472/FodyHelpers.xml",
+        "tasks/net472/FodyIsolated.dll",
+        "tasks/net472/FodyTasks.dll",
+        "tasks/net472/Mono.Cecil.Pdb.dll",
+        "tasks/net472/Mono.Cecil.Pdb.pdb",
+        "tasks/net472/Mono.Cecil.Rocks.dll",
+        "tasks/net472/Mono.Cecil.Rocks.pdb",
+        "tasks/net472/Mono.Cecil.dll",
+        "tasks/net472/Mono.Cecil.pdb",
+        "tasks/netstandard2.0/FodyCommon.dll",
+        "tasks/netstandard2.0/FodyHelpers.dll",
+        "tasks/netstandard2.0/FodyHelpers.xml",
+        "tasks/netstandard2.0/FodyIsolated.dll",
+        "tasks/netstandard2.0/FodyTasks.dll",
+        "tasks/netstandard2.0/Mono.Cecil.Pdb.dll",
+        "tasks/netstandard2.0/Mono.Cecil.Pdb.pdb",
+        "tasks/netstandard2.0/Mono.Cecil.Rocks.dll",
+        "tasks/netstandard2.0/Mono.Cecil.Rocks.pdb",
+        "tasks/netstandard2.0/Mono.Cecil.dll",
+        "tasks/netstandard2.0/Mono.Cecil.pdb"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETFramework,Version=v4.8": [
+      "Costura.Fody >= 6.2.0",
+      "Fody >= 6.9.3"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\Admin\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+      "projectName": "get link manga",
+      "projectPath": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
+      "outputPath": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\obj\\",
+      "projectStyle": "PackageReference",
+      "skipContentFileWrite": true,
+      "UsingMicrosoftNETSdk": false,
+      "configFilePaths": [
+        "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\NuGet.Config",
+        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net48"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net48": {
+          "framework": "net48",
+          "projectReferences": {}
+        }
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      }
+    },
+    "frameworks": {
+      "net48": {
+        "framework": "net48",
+        "dependencies": {
+          "Costura.Fody": {
+            "suppressParent": "All",
+            "target": "Package",
+            "version": "[6.2.0, )"
+          },
+          "Fody": {
+            "target": "Package",
+            "version": "[6.9.3, )"
+          }
+        }
+      }
+    },
+    "runtimes": {
+      "win": {
+        "#import": []
+      }
+    }
+  }
+}

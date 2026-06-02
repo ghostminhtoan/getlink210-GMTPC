@@ -1,0 +1,22 @@
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get link manga.csproj.AssemblyReference.cache
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\CaptchaWindow.baml
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\CaptchaWindow.g.cs
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\App.g.cs
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get link manga_MarkupCompile.cache
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get link manga_MarkupCompile.lref
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\MainWindow.g.cs
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\DuplicateWindow.g.cs
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\DirectDownloadWindow.g.cs
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\bin\Debug\get link manga.exe.config
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\bin\Debug\get link manga.exe
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\bin\Debug\get link manga.pdb
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\App.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\MainWindow.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\DuplicateWindow.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\DirectDownloadWindow.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get link manga.g.resources
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get_link_manga.Properties.Resources.resources
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get link manga.csproj.GenerateResource.cache
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get link manga.csproj.CoreCompileInputs.cache
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get link manga.exe
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\get link manga.pdb

@@ -671,6 +671,11 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
+                                            <!-- Chapter Count -->
+                                            <TextBlock Text="{Binding LinkCount, StringFormat=Chapters: {0}}" 
+                                                       Foreground="{StaticResource CyberpunkMutedTextBrush}" 
+                                                       FontSize="10"
+                                                       Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>

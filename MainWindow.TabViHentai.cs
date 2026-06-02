@@ -890,7 +890,7 @@ namespace get_link_manga
                                     completedPages++;
                                     Dispatcher.Invoke(() =>
                                     {
-                                        lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {safeChapter}";
+                                        lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
                                     });
                                 }
                                 return;
@@ -904,7 +904,7 @@ namespace get_link_manga
                                 completedPages++;
                                 Dispatcher.Invoke(() =>
                                 {
-                                    lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {safeChapter}";
+                                    lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
                                 });
                             }
                         }
@@ -913,9 +913,9 @@ namespace get_link_manga
                             semaphore.Release();
                         }
                     }, token));
-                }
 
-                await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks);
+                }
             }
         }
     }

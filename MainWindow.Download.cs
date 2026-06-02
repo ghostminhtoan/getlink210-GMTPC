@@ -188,19 +188,21 @@ namespace get_link_manga
                     Log($"[Download {i + 1}/{totalGalleries}] Đang tải: {item.Name} ({item.Link})");
                     
                     try
-                    {
-                        await DownloadGalleryAsync(item, downloadRoot, token);
-                        completedGalleries++;
-                        Log($"[Download {i + 1}/{totalGalleries}] Hoàn thành truyện: {item.Name}");
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
-                    }
+                {
+                    await DownloadGalleryAsync(item, downloadRoot, token);
+                    completedGalleries++;
+                    Log($"[Download {i + 1}/{totalGalleries}] Hoàn thành truyện: {item.Name}");
+                    // Auto-untick checkbox after successful download
+                    item.IsChecked = false;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
+                }
 
                     double overallProgress = ((double)completedGalleries / totalGalleries) * 100;
                     progressBar.Value = overallProgress;

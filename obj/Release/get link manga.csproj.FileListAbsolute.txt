@@ -1,0 +1,44 @@
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.AssemblyReference.cache
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\CaptchaWindow.baml
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\CaptchaWindow.g.cs
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\App.g.cs
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga_MarkupCompile.cache
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga_MarkupCompile.lref
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\bin\Release\get link manga.exe.config
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\bin\Release\get link manga.exe
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\MainWindow.g.cs
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\DuplicateWindow.g.cs
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\DirectDownloadWindow.g.cs
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\App.baml
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\MainWindow.baml
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\DuplicateWindow.baml
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\DirectDownloadWindow.baml
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.g.resources
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get_link_manga.Properties.Resources.resources
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.GenerateResource.cache
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.exe
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\bin\Release\get link manga.exe.config
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\bin\Release\get link manga.exe
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.AssemblyReference.cache
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\CaptchaWindow.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\MainWindow.g.cs
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\DuplicateWindow.g.cs
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\DirectDownloadWindow.g.cs
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\CaptchaWindow.g.cs
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\App.g.cs
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga_MarkupCompile.cache
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga_MarkupCompile.lref
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\App.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\MainWindow.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\DuplicateWindow.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\DirectDownloadWindow.baml
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.g.resources
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get_link_manga.Properties.Resources.resources
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.GenerateResource.cache
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.CoreCompileInputs.cache
+r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.exe
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.Fody.CopyLocal.cache
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.Fody.RuntimeCopyLocal.cache
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.Fody.CopyLocal.cache
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga.csproj.Fody.RuntimeCopyLocal.cache

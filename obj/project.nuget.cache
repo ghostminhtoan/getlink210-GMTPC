@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "8HPMnQ++KZ4=",
+  "success": true,
+  "projectFilePath": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Admin\\.nuget\\packages\\costura.fody\\6.2.0\\costura.fody.6.2.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\fody\\6.9.3\\fody.6.9.3.nupkg.sha512"
+  ],
+  "logs": []
+}
