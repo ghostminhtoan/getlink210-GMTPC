@@ -89,6 +89,23 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- ComboBox Item Style -->
+        <Style x:Key="CyberpunkComboBoxItem" TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="#121622"/>
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1c1122"/>
+                    <Setter Property="Foreground" Value="{StaticResource CyberpunkPinkBrush}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#1e2d4a"/>
+                    <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     
     <Grid Margin="15">
@@ -296,21 +313,24 @@
 
                                 <!-- Sort Option -->
                                 <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                                    <TextBlock Text="SORT OPTION" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
-                                    <ComboBox Name="cmbNhentaiSort" 
-                                              Background="#0e121a" 
-                                              BorderBrush="{StaticResource CyberpunkBorderBrush}" 
-                                              Foreground="{StaticResource CyberpunkTextBrush}" 
-                                              Height="32"
-                                              VerticalContentAlignment="Center"
-                                              SelectedIndex="0"
-                                              SelectionChanged="CmbNhentaiSort_SelectionChanged">
-                                        <ComboBoxItem Content="Recent" Tag="date" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                        <ComboBoxItem Content="Popular Today" Tag="popular-today" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                        <ComboBoxItem Content="Popular Week" Tag="popular-week" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                        <ComboBoxItem Content="Popular All Time" Tag="popular" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                    </ComboBox>
-                                </StackPanel>
+                    <TextBlock Text="SORT OPTION" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                    <ComboBox Name="cmbNhentaiSort" 
+                              Background="#0e121a" 
+                              BorderBrush="{StaticResource CyberpunkBorderBrush}" 
+                              Foreground="{StaticResource CyberpunkTextBrush}" 
+                              Height="32"
+                              VerticalContentAlignment="Center"
+                              SelectedIndex="0"
+                              SelectionChanged="CmbNhentaiSort_SelectionChanged">
+                        <ComboBox.ItemContainerStyle>
+                            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItem}"/>
+                        </ComboBox.ItemContainerStyle>
+                        <ComboBoxItem Content="Recent" Tag="date"/>
+                        <ComboBoxItem Content="Popular Today" Tag="popular-today"/>
+                        <ComboBoxItem Content="Popular Week" Tag="popular-week"/>
+                        <ComboBoxItem Content="Popular All Time" Tag="popular"/>
+                    </ComboBox>
+                </StackPanel>
 
                                 <!-- Fetch Info Action -->
                                 <Button Grid.Row="3" Name="btnNhentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnNhentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,20"/>
@@ -736,21 +756,24 @@
 
                                 <TextBlock Grid.Column="0" Text="CONNECTION" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
 
-                                <ComboBox Grid.Column="2" Name="cmbConnections" 
-                                          Background="#0e121a" 
-                                          BorderBrush="{StaticResource CyberpunkBorderBrush}" 
-                                          Foreground="{StaticResource CyberpunkTextBrush}" 
-                                          Height="30"
-                                          VerticalContentAlignment="Center"
-                                          HorizontalContentAlignment="Center"
-                                          SelectedIndex="2">
-                                    <ComboBoxItem Content="1" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                    <ComboBoxItem Content="2" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                    <ComboBoxItem Content="4" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                    <ComboBoxItem Content="8" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                    <ComboBoxItem Content="16" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                    <ComboBoxItem Content="32" Background="#121622" Foreground="{StaticResource CyberpunkTextBrush}"/>
-                                </ComboBox>
+<ComboBox Grid.Column="2" Name="cmbConnections" 
+                              Background="#0e121a" 
+                              BorderBrush="{StaticResource CyberpunkBorderBrush}" 
+                              Foreground="{StaticResource CyberpunkTextBrush}" 
+                              Height="30"
+                              VerticalContentAlignment="Center"
+                              HorizontalContentAlignment="Center"
+                              SelectedIndex="2">
+                            <ComboBox.ItemContainerStyle>
+                                <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItem}"/>
+                            </ComboBox.ItemContainerStyle>
+                            <ComboBoxItem Content="1"/>
+                            <ComboBoxItem Content="2"/>
+                            <ComboBoxItem Content="4"/>
+                            <ComboBoxItem Content="8"/>
+                            <ComboBoxItem Content="16"/>
+                            <ComboBoxItem Content="32"/>
+                        </ComboBox>
 
                                 <Button Grid.Column="4" Name="btnStartDownload" Content="START DOWNLOAD" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
                                 <Button Grid.Column="6" Name="btnPauseDownload" Content="PAUSE" Click="BtnPauseDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="80" FontSize="11" IsEnabled="False"/>
