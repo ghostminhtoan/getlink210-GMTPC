@@ -327,25 +327,25 @@
 <!-- Sort Option -->
                                 <StackPanel Grid.Row="2" Margin="0,0,0,12">
                                     <TextBlock Text="SORT OPTION" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
-<ComboBox Name="cmbNhentaiSort" 
-                      Style="{StaticResource CyberpunkComboBox}"
-                      Height="32"
-                      VerticalContentAlignment="Center"
-                      SelectedIndex="0"
-                      SelectionChanged="CmbNhentaiSort_SelectionChanged">
-                    <ComboBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel Background="#121622"/>
-                        </ItemsPanelTemplate>
-                    </ComboBox.ItemsPanel>
-                    <ComboBox.ItemContainerStyle>
-                        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItem}"/>
-                    </ComboBox.ItemContainerStyle>
-                    <ComboBoxItem Content="Recent" Tag="date"/>
-                    <ComboBoxItem Content="Popular Today" Tag="popular-today"/>
-                    <ComboBoxItem Content="Popular Week" Tag="popular-week"/>
-                    <ComboBoxItem Content="Popular All Time" Tag="popular"/>
-                </ComboBox>
+                                    <ComboBox Name="cmbNhentaiSort" 
+                                              Style="{StaticResource CyberpunkComboBox}"
+                                              Height="32"
+                                              VerticalContentAlignment="Center"
+                                              SelectedIndex="0"
+                                              SelectionChanged="CmbNhentaiSort_SelectionChanged">
+                                        <ComboBox.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <VirtualizingStackPanel Background="#121622"/>
+                                            </ItemsPanelTemplate>
+                                        </ComboBox.ItemsPanel>
+                                        <ComboBox.ItemContainerStyle>
+                                            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItem}"/>
+                                        </ComboBox.ItemContainerStyle>
+                                        <ComboBoxItem Content="Recent" Tag="date"/>
+                                        <ComboBoxItem Content="Popular Today" Tag="popular-today"/>
+                                        <ComboBoxItem Content="Popular Week" Tag="popular-week"/>
+                                        <ComboBoxItem Content="Popular All Time" Tag="popular"/>
+                                    </ComboBox>
                                 </StackPanel>
 
                                 <!-- Fetch Info Action -->
