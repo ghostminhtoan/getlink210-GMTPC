@@ -70,11 +70,22 @@ namespace get_link_manga
             private void BtnReverseOrder_Click(object sender, RoutedEventArgs e)
         {
             var reversed = _scrapedItems.Reverse().ToList();
+            for (int i = 0; i < reversed.Count; i++)
+            {
+                reversed[i].OriginalIndex = i;
+            }
             _scrapedItems.Clear();
             foreach (var item in reversed)
             {
                 _scrapedItems.Add(item);
             }
+            Log("Order reversed.");
+        }
+
+        private void BtnViHentaiReverseOrder_Click(object sender, RoutedEventArgs e)
+        {
+            BtnReverseOrder_Click(sender, e);
+            ViHentaiLog($"[Reverse] Đã đảo ngược thứ tự {_scrapedItems.Count} mục.");
         }
     }
 }

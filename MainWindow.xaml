@@ -470,9 +470,12 @@
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="3*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="2*"/>
                                     </Grid.ColumnDefinitions>
                                     <Button Grid.Column="0" Name="btnViHentaiScrape" Content="START CRAWLING" Click="BtnViHentaiScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
                                     <Button Grid.Column="2" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="4" Name="btnViHentaiReverseOrder" Content="REVERSE ORDER" Click="BtnViHentaiReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
