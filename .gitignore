@@ -8,14 +8,5 @@
  *.g.cs
  *.baml
  *.resources
- *.xml
- *.xsd
  *.config
  *.binlog
- *.html
- *.json
- *.txt
- *.js
- *.py
- *.ps1
- *.md
