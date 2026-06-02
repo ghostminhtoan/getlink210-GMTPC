@@ -102,7 +102,7 @@
         <!-- ComboBoxItem Style for dropdown items -->
         <Style x:Key="CyberpunkComboBoxItemStyle" TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{StaticResource CyberpunkCardBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
+            <Setter Property="Foreground" Value="#0a1a3f"/>
             <Setter Property="Padding" Value="10,4"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
@@ -337,10 +337,10 @@
                                         <ComboBox.ItemContainerStyle>
                                             <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItemStyle}"/>
                                         </ComboBox.ItemContainerStyle>
-                                        <ComboBoxItem Content="Recent" Tag="date"/>
-                                        <ComboBoxItem Content="Popular Today" Tag="popular-today"/>
-                                        <ComboBoxItem Content="Popular Week" Tag="popular-week"/>
-                                        <ComboBoxItem Content="Popular All Time" Tag="popular"/>
+                                        <ComboBoxItem Content="Recent" Tag="date" Background="#121622" Foreground="#0a1a3f"/>
+                                        <ComboBoxItem Content="Popular Today" Tag="popular-today" Background="#121622" Foreground="#0a1a3f"/>
+                                        <ComboBoxItem Content="Popular Week" Tag="popular-week" Background="#121622" Foreground="#0a1a3f"/>
+                                        <ComboBoxItem Content="Popular All Time" Tag="popular" Background="#121622" Foreground="#0a1a3f"/>
                                     </ComboBox>
                                 </StackPanel>
 
@@ -782,12 +782,12 @@
                     <ComboBox.ItemContainerStyle>
                         <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItemStyle}"/>
                     </ComboBox.ItemContainerStyle>
-                    <ComboBoxItem Content="1"/>
-                    <ComboBoxItem Content="2"/>
-                    <ComboBoxItem Content="4"/>
-                    <ComboBoxItem Content="8"/>
-                    <ComboBoxItem Content="16"/>
-                    <ComboBoxItem Content="32"/>
+<ComboBoxItem Content="1" Background="#121622" Foreground="#0a1a3f"/>
+                                    <ComboBoxItem Content="2" Background="#121622" Foreground="#0a1a3f"/>
+                                    <ComboBoxItem Content="4" Background="#121622" Foreground="#0a1a3f"/>
+                                    <ComboBoxItem Content="8" Background="#121622" Foreground="#0a1a3f"/>
+                                    <ComboBoxItem Content="16" Background="#121622" Foreground="#0a1a3f"/>
+                                    <ComboBoxItem Content="32" Background="#121622" Foreground="#0a1a3f"/>
                 </ComboBox>
 
                 <Button Grid.Column="4" Name="btnStartDownload" Content="START DOWNLOAD" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
