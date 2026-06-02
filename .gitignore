@@ -1,0 +1,21 @@
+[Oo]bjects/
+[Bb]in/
+ *.user
+ *.suo
+ *.userosscache
+ *.sln.docstates
+ *.cache
+ *.g.cs
+ *.baml
+ *.resources
+ *.xml
+ *.xsd
+ *.config
+ *.binlog
+ *.html
+ *.json
+ *.txt
+ *.js
+ *.py
+ *.ps1
+ *.md
