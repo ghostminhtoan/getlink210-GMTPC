@@ -5,6 +5,8 @@ using System.Net.Http;
 using System.Linq;
 using System.Threading;
 using System.Windows;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 
 namespace get_link_manga
 {
@@ -36,7 +38,7 @@ namespace get_link_manga
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
 
-        public MainWindow()
+public MainWindow()
         {
             InitializeComponent();
             dgResults.ItemsSource = _scrapedItems;
@@ -48,6 +50,28 @@ namespace get_link_manga
             catch {}
 
             Log("System initialized. Ready for commands.");
+
+            Loaded += (s, e) =>
+            {
+                StyleComboBoxPopup(cmbNhentaiSort);
+                StyleComboBoxPopup(cmbConnections);
+            };
+        }
+
+        private void StyleComboBoxPopup(System.Windows.Controls.ComboBox comboBox)
+        {
+            comboBox.ApplyTemplate();
+            var popup = comboBox.Template.FindName("Popup", comboBox) as Popup;
+            if (popup != null)
+            {
+                popup.Opened += (sender, args) =>
+                {
+                    if (popup.Child is System.Windows.Controls.Border border)
+                    {
+                        border.Background = new SolidColorBrush(Color.FromRgb(0x12, 0x16, 0x22));
+                    }
+                };
+            }
         }
 
         internal void Log(string message)

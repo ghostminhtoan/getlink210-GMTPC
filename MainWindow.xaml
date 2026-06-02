@@ -95,11 +95,13 @@
             <Setter Property="Background" Value="#0e121a"/>
             <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,2"/>
         </Style>
         
-        <!-- ComboBox Item Style with dark background -->
-        <Style x:Key="CyberpunkComboBoxItem" TargetType="ComboBoxItem">
-            <Setter Property="Background" Value="#121622"/>
+        <!-- ComboBoxItem Style for dropdown items -->
+        <Style x:Key="CyberpunkComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="{StaticResource CyberpunkCardBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="Padding" Value="10,4"/>
             <Style.Triggers>
@@ -112,12 +114,6 @@
                     <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
                 </Trigger>
             </Style.Triggers>
-        </Style>
-        
-        <!-- ComboBox ListBox Style for dark popup background -->
-        <Style x:Key="CyberpunkComboBoxListBox" TargetType="ListBox">
-            <Setter Property="Background" Value="#121622"/>
-            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
         </Style>
     </Window.Resources>
     
@@ -339,7 +335,7 @@
                                             </ItemsPanelTemplate>
                                         </ComboBox.ItemsPanel>
                                         <ComboBox.ItemContainerStyle>
-                                            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItem}"/>
+                                            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItemStyle}"/>
                                         </ComboBox.ItemContainerStyle>
                                         <ComboBoxItem Content="Recent" Tag="date"/>
                                         <ComboBoxItem Content="Popular Today" Tag="popular-today"/>
@@ -784,7 +780,7 @@
                         </ItemsPanelTemplate>
                     </ComboBox.ItemsPanel>
                     <ComboBox.ItemContainerStyle>
-                        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItem}"/>
+                        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItemStyle}"/>
                     </ComboBox.ItemContainerStyle>
                     <ComboBoxItem Content="1"/>
                     <ComboBoxItem Content="2"/>
@@ -794,7 +790,7 @@
                     <ComboBoxItem Content="32"/>
                 </ComboBox>
 
-                                <Button Grid.Column="4" Name="btnStartDownload" Content="START DOWNLOAD" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
+                <Button Grid.Column="4" Name="btnStartDownload" Content="START DOWNLOAD" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
                                 <Button Grid.Column="6" Name="btnPauseDownload" Content="PAUSE" Click="BtnPauseDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="80" FontSize="11" IsEnabled="False"/>
                                 <Button Grid.Column="8" Name="btnStopDownload" Content="STOP" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="80" FontSize="11" IsEnabled="False"/>
                             </Grid>
