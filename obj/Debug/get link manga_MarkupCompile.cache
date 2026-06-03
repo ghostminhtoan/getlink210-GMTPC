@@ -4,16 +4,16 @@
 winexe
 C#
 .cs
-r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Debug\
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Debug\
 get_link_manga
 none
 false
 
-r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\App.xaml
-4-1701532379
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\App.xaml
+4-543204923
 
-16-143737789
-14-2118940170
+16-863932397
+16540229069
 MainWindow.xaml;DuplicateWindow.xaml;DirectDownloadWindow.xaml;CaptchaWindow.xaml;
 
 False

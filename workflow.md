@@ -69,3 +69,7 @@ Tài liệu này chứa toàn bộ quy tắc code, cấu trúc dự án, hướn
 - **Khôi phục thư viện:** `nuget restore`
 - **Build dự án:** `msbuild "get link manga.csproj" /p:Configuration=Release` hoặc dùng Visual Studio.
 - **Đường dẫn file thực thi:** `bin\Release\get link manga.exe`
+
+## 6. Quy tắc git commit
+- **Sau khi build file exe ra release thành công, luôn luôn git push git commit lên repo github**
+

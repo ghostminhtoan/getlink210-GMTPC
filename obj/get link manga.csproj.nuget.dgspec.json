@@ -1,22 +1,22 @@
 {
   "format": 1,
   "restore": {
-    "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj": {}
+    "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj": {}
   },
   "projects": {
-    "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj": {
+    "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+        "projectUniqueName": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
         "projectName": "get link manga",
-        "projectPath": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+        "projectPath": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
         "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\obj\\",
+        "outputPath": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\obj\\",
         "projectStyle": "PackageReference",
         "skipContentFileWrite": true,
         "UsingMicrosoftNETSdk": false,
         "configFilePaths": [
-          "R:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\NuGet.Config",
+          "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\NuGet.Config",
           "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -51,6 +51,10 @@
             "Fody": {
               "target": "Package",
               "version": "[6.9.3, )"
+            },
+            "Microsoft.Web.WebView2": {
+              "target": "Package",
+              "version": "[1.0.1901.177, )"
             }
           }
         }

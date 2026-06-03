@@ -22,12 +22,7 @@ namespace get_link_manga
                 return;
             }
 
-            // Target vi-hentai.pro subdirectory if it exists, otherwise use root
-            string targetFolder = Path.Combine(downloadRoot, "vi-hentai.pro");
-            if (!Directory.Exists(targetFolder))
-            {
-                targetFolder = downloadRoot;
-            }
+            string targetFolder = GetActiveTargetFolder(downloadRoot);
 
             Log($"[Merge] Bắt đầu gộp thư mục tại: {targetFolder}");
             lblStatus.Text = "Merging folders...";
@@ -121,12 +116,7 @@ namespace get_link_manga
                 return;
             }
 
-            // Target vi-hentai.pro subdirectory if it exists, otherwise use root
-            string targetFolder = Path.Combine(downloadRoot, "vi-hentai.pro");
-            if (!Directory.Exists(targetFolder))
-            {
-                targetFolder = downloadRoot;
-            }
+            string targetFolder = GetActiveTargetFolder(downloadRoot);
 
             Log($"[Split] Bắt đầu tách thư mục tại: {targetFolder}");
             lblStatus.Text = "Splitting folders...";
@@ -220,6 +210,45 @@ namespace get_link_manga
                 MergeDirectoryContents(dir, destDir);
             }
             Directory.Delete(source, true);
+        }
+
+        private string GetActiveTargetFolder(string downloadRoot)
+        {
+            string subFolder = "";
+            int tabIndex = 0;
+            Dispatcher.Invoke(() =>
+            {
+                if (tabLeftPanel != null)
+                {
+                    tabIndex = tabLeftPanel.SelectedIndex;
+                }
+            });
+
+            switch (tabIndex)
+            {
+                case 0:
+                    subFolder = "hentaiforce.net";
+                    break;
+                case 1:
+                    subFolder = "nhentai.net";
+                    break;
+                case 2:
+                    subFolder = "vi-hentai.pro";
+                    break;
+                case 3:
+                    subFolder = "truyenqq";
+                    break;
+            }
+
+            string targetFolder = string.IsNullOrEmpty(subFolder) 
+                ? downloadRoot 
+                : Path.Combine(downloadRoot, subFolder);
+
+            if (!Directory.Exists(targetFolder))
+            {
+                targetFolder = downloadRoot;
+            }
+            return targetFolder;
         }
     }
 }

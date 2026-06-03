@@ -464,6 +464,12 @@ namespace get_link_manga
             await _viHentaiHtmlGate.WaitAsync(token);
             try
             {
+                bool ok = await SolveViHentaiCaptchaIfNeededAsync(url);
+                if (!ok)
+                {
+                    throw new Exception("Bị chặn bởi Cloudflare Captcha trên vi-hentai.pro.");
+                }
+
                 int delayMs = 1200;
                 for (int attempt = 1; attempt <= 4; attempt++)
                 {
@@ -475,8 +481,16 @@ namespace get_link_manga
                         {
                             if ((int)response.StatusCode == 429 && attempt < 4)
                             {
+                                ViHentaiLog($"[Throttle] vi-hentai trả về 429 khi {action}. Tự động mở cửa sổ Captcha để gia hạn session...");
+                                bool solved = await SolveViHentaiCaptchaIfNeededAsync(url);
+                                if (solved)
+                                {
+                                    ViHentaiLog("[Throttle] Đã giải captcha thành công, thử lại ngay lập tức.");
+                                    continue;
+                                }
+
                                 int retryDelay = GetRetryDelayMilliseconds(response, attempt, delayMs);
-                                ViHentaiLog($"[Throttle] vi-hentai trả về 429 khi {action}. Chờ {retryDelay}ms rồi thử lại ({attempt}/4).");
+                                ViHentaiLog($"[Throttle] vi-hentai trả về 429. Chờ {retryDelay}ms rồi thử lại ({attempt}/4).");
                                 await Task.Delay(retryDelay, token);
                                 delayMs = Math.Min(delayMs * 2, 8000);
                                 continue;
@@ -796,7 +810,8 @@ namespace get_link_manga
             string safeManga = GetSafePathName(mangaTitle);
             string safeChapter = GetSafePathName(chapterTitle);
             string targetFolder = Path.Combine(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
-            Directory.CreateDirectory(targetFolder);
+            string tempFolder = Path.Combine(rootFolder, "vi-hentai.pro", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
+            Directory.CreateDirectory(tempFolder);
 
             var evalIndex = html.IndexOf("eval(function(h,u,n,t,e,r)");
             if (evalIndex == -1)
@@ -847,7 +862,7 @@ namespace get_link_manga
 
             Log($"[vi-hentai.pro] Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
-            using (var semaphore = new SemaphoreSlim(maxThreads))
+            using (var semaphore = new DynamicSemaphore(maxThreads, () => Math.Max(1, Math.Min(GetCurrentConnectionLimit(), 2))))
             {
                 var tasks = new System.Collections.Generic.List<Task>();
                 int completedPages = 0;
@@ -879,9 +894,11 @@ namespace get_link_manga
 
                             string ext = Path.GetExtension(imgUrl.Split('?')[0]);
                             if (string.IsNullOrEmpty(ext)) ext = ".jpg";
-                            string localFilePath = Path.Combine(targetFolder, $"{index + 1:D3}{ext}");
+                            string localFilePath = Path.Combine(tempFolder, $"{index + 1:D3}{ext}");
+                            string finalFilePath = Path.Combine(targetFolder, $"{index + 1:D3}{ext}");
 
-                            if (File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024)
+                            if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024) ||
+                                (File.Exists(finalFilePath) && new FileInfo(finalFilePath).Length > 1024))
                             {
                                 lock (lockObj)
                                 {
@@ -919,6 +936,25 @@ namespace get_link_manga
                     }, token));
 
                     await Task.WhenAll(tasks);
+                }
+
+                try
+                {
+                    if (Directory.Exists(tempFolder))
+                    {
+                        if (Directory.Exists(targetFolder))
+                        {
+                            MergeDirectoryContents(tempFolder, targetFolder);
+                        }
+                        else
+                        {
+                            Directory.Move(tempFolder, targetFolder);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Lỗi] Không thể di chuyển thư mục tạm vi-hentai: {ex.Message}");
                 }
             }
         }

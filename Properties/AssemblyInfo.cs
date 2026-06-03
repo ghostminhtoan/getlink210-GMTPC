@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -7,13 +7,13 @@ using System.Windows;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("get link manga")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("NEON LINK SCRAPER")]
+[assembly: AssemblyDescription("Premium Cyberpunk Link Scraper and Crawler Utility")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("get link manga")]
-[assembly: AssemblyCopyright("Copyright ©  2026")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCompany("GMTPC Studio")]
+[assembly: AssemblyProduct("NEON LINK SCRAPER // CRAWLER SYSTEM")]
+[assembly: AssemblyCopyright("Copyright © GMTPC 2026. All rights reserved.")]
+[assembly: AssemblyTrademark("GMTPC")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible

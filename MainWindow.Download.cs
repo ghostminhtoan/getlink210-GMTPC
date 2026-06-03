@@ -81,6 +81,12 @@ namespace get_link_manga
                 return;
             }
 
+            if (itemsToDownload.Any(item => item.Link.Contains("nhentai.net")))
+            {
+                MessageBox.Show("Không thể download truyện được trên nhentai.", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             await StartDownloadProcessAsync(itemsToDownload);
         }
 
@@ -159,7 +165,8 @@ namespace get_link_manga
             btnFetchInfo.IsEnabled = false;
             if (btnNhentaiScrape != null) btnNhentaiScrape.IsEnabled = false;
             if (btnNhentaiFetchInfo != null) btnNhentaiFetchInfo.IsEnabled = false;
-            cmbConnections.IsEnabled = false;
+            // cmbConnections.IsEnabled = false;
+            if (cmbMultiDownload != null) cmbMultiDownload.IsEnabled = false;
 
             progressBar.Value = 0;
             progressBar.IsIndeterminate = false;
@@ -167,46 +174,92 @@ namespace get_link_manga
             int totalGalleries = itemsToDownload.Count;
             int completedGalleries = 0;
 
-            Log($"Bắt đầu tải {totalGalleries} truyện...");
+            int maxParallelBooks = 2;
+            Dispatcher.Invoke(() =>
+            {
+                if (cmbMultiDownload != null && cmbMultiDownload.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem && int.TryParse(selectedItem.Content.ToString(), out int val))
+                {
+                    maxParallelBooks = val;
+                }
+            });
+
+            Log($"Bắt đầu tải song song {totalGalleries} truyện với tối đa {maxParallelBooks} truyện cùng lúc...");
             lblStatus.Text = $"Downloading 0/{totalGalleries} galleries...";
 
             try
             {
-                for (int i = 0; i < totalGalleries; i++)
+                using (var bookSemaphore = new SemaphoreSlim(maxParallelBooks))
                 {
-                    token.ThrowIfCancellationRequested();
+                    var tasks = new System.Collections.Generic.List<Task>();
+                    object lockObj = new object();
 
-                    // Respect pause check
-                    while (_isDownloadPaused)
+                    for (int i = 0; i < totalGalleries; i++)
                     {
-                        token.ThrowIfCancellationRequested();
-                        await Task.Delay(200, token);
+                        int index = i;
+                        var item = itemsToDownload[index];
+
+                        tasks.Add(Task.Run(async () =>
+                        {
+                            while (_isDownloadPaused)
+                            {
+                                token.ThrowIfCancellationRequested();
+                                await Task.Delay(200, token);
+                            }
+                            token.ThrowIfCancellationRequested();
+
+                            await bookSemaphore.WaitAsync(token);
+                            try
+                            {
+                                while (_isDownloadPaused)
+                                {
+                                    token.ThrowIfCancellationRequested();
+                                    await Task.Delay(200, token);
+                                }
+                                token.ThrowIfCancellationRequested();
+
+                                Log($"[Download {index + 1}/{totalGalleries}] Đang tải: {item.Name} ({item.Link})");
+                                
+                                try
+                                {
+                                    await DownloadGalleryAsync(item, downloadRoot, token);
+                                    lock (lockObj)
+                                    {
+                                        completedGalleries++;
+                                    }
+                                    Log($"[Download {index + 1}/{totalGalleries}] Hoàn thành truyện: {item.Name}");
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        // Auto-untick checkbox after successful download
+                                        item.IsChecked = false;
+                                    });
+                                }
+                                catch (OperationCanceledException)
+                                {
+                                    throw;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
+                                }
+
+                                lock (lockObj)
+                                {
+                                    double overallProgress = ((double)completedGalleries / totalGalleries) * 100;
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        progressBar.Value = overallProgress;
+                                        lblStatus.Text = $"Downloading {completedGalleries}/{totalGalleries} galleries...";
+                                    });
+                                }
+                            }
+                            finally
+                            {
+                                bookSemaphore.Release();
+                            }
+                        }, token));
                     }
 
-                    var item = itemsToDownload[i];
-
-                    Log($"[Download {i + 1}/{totalGalleries}] Đang tải: {item.Name} ({item.Link})");
-                    
-                    try
-                {
-                    await DownloadGalleryAsync(item, downloadRoot, token);
-                    completedGalleries++;
-                    Log($"[Download {i + 1}/{totalGalleries}] Hoàn thành truyện: {item.Name}");
-                    // Auto-untick checkbox after successful download
-                    item.IsChecked = false;
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
-                }
-
-                    double overallProgress = ((double)completedGalleries / totalGalleries) * 100;
-                    progressBar.Value = overallProgress;
-                    lblStatus.Text = $"Downloading {completedGalleries}/{totalGalleries} galleries...";
+                    await Task.WhenAll(tasks);
                 }
 
                 progressBar.Value = 100;
@@ -243,6 +296,7 @@ namespace get_link_manga
                 if (btnNhentaiScrape != null) btnNhentaiScrape.IsEnabled = true;
                 if (btnNhentaiFetchInfo != null) btnNhentaiFetchInfo.IsEnabled = true;
                 cmbConnections.IsEnabled = true;
+                if (cmbMultiDownload != null) cmbMultiDownload.IsEnabled = true;
             }
         }
 
@@ -257,7 +311,7 @@ namespace get_link_manga
 
             if (hostName.Contains("nhentai.net"))
             {
-                await DownloadNhentaiGalleryAsync(item, rootFolder, token);
+                Log($"[Bỏ qua] nhentai chỉ dùng để get link, không hỗ trợ tải: {item.Name}");
                 return;
             }
 
@@ -267,9 +321,16 @@ namespace get_link_manga
                 return;
             }
 
+            if (IsTruyenqqUrl(item.Link))
+            {
+                await DownloadTruyenqqGalleryAsync(item, rootFolder, token);
+                return;
+            }
+
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, hostName, safeTitle);
-            Directory.CreateDirectory(targetFolder);
+            string tempFolder = Path.Combine(rootFolder, hostName, $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            Directory.CreateDirectory(tempFolder);
 
             // Fetch gallery homepage
             string html = await _httpClient.GetStringAsync(item.Link);
@@ -326,7 +387,7 @@ namespace get_link_manga
             bool isFastPath = !string.IsNullOrEmpty(prefix);
             Log($"[Đa luồng] Bắt đầu tải {totalPages} trang với tối đa {maxThreads} kết nối song song...");
 
-            using (var semaphore = new SemaphoreSlim(maxThreads))
+            using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
                 var tasks = new System.Collections.Generic.List<Task>();
                 int completedPages = 0;
@@ -357,10 +418,12 @@ namespace get_link_manga
                             token.ThrowIfCancellationRequested();
 
                             string fileName = isFastPath ? $"{pageNum:D3}.{ext}" : $"{pageNum:D3}.jpg";
-                            string localFilePath = Path.Combine(targetFolder, fileName);
+                            string localFilePath = Path.Combine(tempFolder, fileName);
+                            string finalFilePath = Path.Combine(targetFolder, fileName);
 
-                            // Skip if file already exists
-                            if (File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024)
+                            // Skip if file already exists in either temp or final folder
+                            if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024) ||
+                                (File.Exists(finalFilePath) && new FileInfo(finalFilePath).Length > 1024))
                             {
                                 lock (lockObj)
                                 {
@@ -417,6 +480,25 @@ namespace get_link_manga
                 }
 
                 await Task.WhenAll(tasks);
+
+                try
+                {
+                    if (Directory.Exists(tempFolder))
+                    {
+                        if (Directory.Exists(targetFolder))
+                        {
+                            MergeDirectoryContents(tempFolder, targetFolder);
+                        }
+                        else
+                        {
+                            Directory.Move(tempFolder, targetFolder);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Lỗi] Không thể di chuyển thư mục tạm HentaiForce: {ex.Message}");
+                }
             }
         }
 
@@ -482,7 +564,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
         {
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, "nhentai.net", safeTitle);
-            Directory.CreateDirectory(targetFolder);
+            string tempFolder = Path.Combine(rootFolder, "nhentai.net", $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            Directory.CreateDirectory(tempFolder);
 
             // Check if the link is a direct CDN link
             var cdnMatch = Regex.Match(item.Link, @"(?:https?:)?//(?<subdomain>[it]\d*)\.nhentai\.net/galleries/(?<mediaId>\d+)/(?<pageNum>\d+)(?<isThumb>t)?\.(?<ext>jpg|png|gif|webp|jpeg)", RegexOptions.IgnoreCase);
@@ -594,7 +677,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             string nhentaiModeLabel = isFastPath ? "Fast Path (CDN Direct)" : "Slow Path (Reader Page)";
             Log($"[Đa luồng nhentai] Bắt đầu tải {totalPages} trang, mode: {nhentaiModeLabel}, tối đa {maxThreads} kết nối song song...");
 
-            using (var semaphore = new SemaphoreSlim(maxThreads))
+            using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
                 var tasks = new System.Collections.Generic.List<Task>();
                 int completedPages = 0;
@@ -625,9 +708,10 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                             token.ThrowIfCancellationRequested();
 
                             string fileName = isFastPath ? $"{pageNum:D3}.{ext}" : $"{pageNum:D3}.jpg";
-                            string localFilePath = Path.Combine(targetFolder, fileName);
+                            string localFilePath = Path.Combine(tempFolder, fileName);
+                            string finalFilePath = Path.Combine(targetFolder, fileName);
 
-                            // Skip if file already exists (with any common image extension)
+                            // Skip if file already exists in either temp or final folder (with any common image extension)
                             bool alreadyExists = false;
                             string existingFile = null;
                             if (isFastPath)
@@ -637,17 +721,29 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                     alreadyExists = true;
                                     existingFile = localFilePath;
                                 }
+                                else if (File.Exists(finalFilePath) && new FileInfo(finalFilePath).Length > 1024)
+                                {
+                                    alreadyExists = true;
+                                    existingFile = finalFilePath;
+                                }
                             }
                             else
                             {
                                 string[] checkExts = { "jpg", "png", "webp", "gif", "jpeg" };
                                 foreach (var checkExt in checkExts)
                                 {
-                                    string testPath = Path.ChangeExtension(localFilePath, checkExt);
-                                    if (File.Exists(testPath) && new FileInfo(testPath).Length > 1024)
+                                    string testPathTemp = Path.ChangeExtension(localFilePath, checkExt);
+                                    string testPathFinal = Path.ChangeExtension(finalFilePath, checkExt);
+                                    if (File.Exists(testPathTemp) && new FileInfo(testPathTemp).Length > 1024)
                                     {
                                         alreadyExists = true;
-                                        existingFile = testPath;
+                                        existingFile = testPathTemp;
+                                        break;
+                                    }
+                                    if (File.Exists(testPathFinal) && new FileInfo(testPathFinal).Length > 1024)
+                                    {
+                                        alreadyExists = true;
+                                        existingFile = testPathFinal;
                                         break;
                                     }
                                 }
@@ -687,7 +783,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                         {
                                             string altUrl = $"{prefix}{pageNum}.{otherExt}";
                                             byte[] bytes = await GetByteArrayWithRefererAsync(altUrl, "https://nhentai.net/");
-                                            string finalPath = Path.Combine(targetFolder, $"{pageNum:D3}.{otherExt}");
+                                            string finalPath = Path.Combine(tempFolder, $"{pageNum:D3}.{otherExt}");
                                             File.WriteAllBytes(finalPath, bytes);
                                             success = true;
                                             break;
@@ -727,6 +823,25 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 }
 
                 await Task.WhenAll(tasks);
+
+                try
+                {
+                    if (Directory.Exists(tempFolder))
+                    {
+                        if (Directory.Exists(targetFolder))
+                        {
+                            MergeDirectoryContents(tempFolder, targetFolder);
+                        }
+                        else
+                        {
+                            Directory.Move(tempFolder, targetFolder);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Lỗi] Không thể di chuyển thư mục tạm nhentai: {ex.Message}");
+                }
             }
         }
 
@@ -986,6 +1101,103 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             return false;
         }
 
+        internal async Task<bool> CheckIfViHentaiBlockedAsync(string testUrl)
+        {
+            try
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, testUrl))
+                {
+                    using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+                    {
+                        if (response.StatusCode == HttpStatusCode.Forbidden || 
+                            response.StatusCode == HttpStatusCode.ServiceUnavailable ||
+                            (int)response.StatusCode == 429)
+                        {
+                            return true; // Cloudflare blocked or throttled (403/503/429)
+                        }
+
+                        using (var content = response.Content)
+                        {
+                            string html = await content.ReadAsStringAsync();
+                            if (html.Contains("cf-challenge") || 
+                                html.Contains("cf-turnstile") || 
+                                html.Contains("Turnstile") || 
+                                html.Contains("Just a moment...") ||
+                                html.Contains("xác minh bạn không phải là bot"))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("403") || ex.Message.Contains("503") || ex.Message.Contains("429"))
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        internal async Task<bool> SolveViHentaiCaptchaIfNeededAsync(string testUrl)
+        {
+            bool isBlocked = await CheckIfViHentaiBlockedAsync(testUrl);
+            if (!isBlocked)
+            {
+                return true; // Not blocked
+            }
+
+            Log("[vi-hentai.pro] Phát hiện thử thách Cloudflare / Captcha. Đang mở trình duyệt giải tự động...");
+
+            bool solved = false;
+            Dispatcher.Invoke(() =>
+            {
+                var captchaWin = new CaptchaWindow(testUrl)
+                {
+                    Owner = this
+                };
+
+                if (captchaWin.ShowDialog() == true)
+                {
+                    var uri = new Uri("https://vi-hentai.pro");
+                    var cookies = captchaWin.ResolvedCookies.GetCookies(uri);
+                    foreach (Cookie cookie in cookies)
+                    {
+                        _cookieContainer.Add(uri, cookie);
+                    }
+
+                    if (!string.IsNullOrEmpty(captchaWin.UserAgent))
+                    {
+                        _httpClient.DefaultRequestHeaders.UserAgent.Clear();
+                        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
+                    }
+
+                    Log("[vi-hentai.pro] Đồng bộ cookie và User-Agent thành công!");
+                    solved = true;
+                }
+                else
+                {
+                    Log("[vi-hentai.pro] Người dùng hủy bỏ giải captcha.");
+                }
+            });
+
+            if (solved)
+            {
+                bool stillBlocked = await CheckIfViHentaiBlockedAsync(testUrl);
+                if (stillBlocked)
+                {
+                    Log("[vi-hentai.pro] Vẫn bị chặn sau khi giải captcha. Vui lòng thử lại.");
+                    return false;
+                }
+                return true;
+            }
+
+            return false;
+        }
+
         private string GetSafePathName(string name)
         {
             if (string.IsNullOrEmpty(name)) return "Unnamed";
@@ -1001,7 +1213,21 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             safeName = Regex.Replace(safeName, @"\s+", " ");
             return safeName.Trim();
         }
+
+        private int GetCurrentConnectionLimit()
+        {
+            int val = 4;
+            Dispatcher.Invoke(() =>
+            {
+                if (cmbConnections != null && cmbConnections.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem && int.TryParse(selectedItem.Content.ToString(), out int parsed))
+                {
+                    val = parsed;
+                }
+            });
+            return val;
+        }
     }
+
 
     public class VistaFolderBrowser
     {
@@ -1086,6 +1312,64 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
         private enum SIGDN : uint
         {
             FILESYSPATH = 0x80058000
+        }
+    }
+
+    public class DynamicSemaphore : IDisposable
+    {
+        private readonly SemaphoreSlim _sem;
+        private int _currentLimit;
+        private readonly Func<int> _limitProvider;
+
+        public DynamicSemaphore(int initialLimit, Func<int> limitProvider)
+        {
+            _sem = new SemaphoreSlim(initialLimit);
+            _currentLimit = initialLimit;
+            _limitProvider = limitProvider;
+        }
+
+        public async Task WaitAsync(CancellationToken token)
+        {
+            AdjustLimit();
+            await _sem.WaitAsync(token);
+        }
+
+        public void Release()
+        {
+            _sem.Release();
+            AdjustLimit();
+        }
+
+        private void AdjustLimit()
+        {
+            int target = _limitProvider();
+            if (target == _currentLimit) return;
+
+            lock (this)
+            {
+                if (target > _currentLimit)
+                {
+                    int diff = target - _currentLimit;
+                    _sem.Release(diff);
+                    _currentLimit = target;
+                }
+                else if (target < _currentLimit)
+                {
+                    int diff = _currentLimit - target;
+                    for (int i = 0; i < diff; i++)
+                    {
+                        Task.Run(async () => {
+                            try { await _sem.WaitAsync(); } catch {}
+                        });
+                    }
+                    _currentLimit = target;
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            _sem.Dispose();
         }
     }
 }

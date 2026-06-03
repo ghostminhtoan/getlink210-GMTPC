@@ -21,6 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Fody" Version="6.9.3" />
     <PackageReference Include="Costura.Fody" Version="6.2.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1901.177" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -88,6 +89,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="MainWindow.TabViHentai.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.TabTruyenqq.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>

@@ -55,6 +55,7 @@ public MainWindow()
             {
                 StyleComboBoxPopup(cmbNhentaiSort);
                 StyleComboBoxPopup(cmbConnections);
+                StyleComboBoxPopup(cmbMultiDownload);
             };
         }
 
@@ -89,6 +90,11 @@ public MainWindow()
                     txtNhentaiLog.AppendText(logLine);
                     txtNhentaiLog.ScrollToEnd();
                 }
+                if (txtTruyenqqLog != null)
+                {
+                    txtTruyenqqLog.AppendText(logLine);
+                    txtTruyenqqLog.ScrollToEnd();
+                }
             });
         }
             private void BtnReverseOrder_Click(object sender, RoutedEventArgs e)
@@ -110,6 +116,32 @@ public MainWindow()
         {
             BtnReverseOrder_Click(sender, e);
             ViHentaiLog($"[Reverse] Đã đảo ngược thứ tự {_scrapedItems.Count} mục.");
+        }
+
+        private void BtnTruyenqqReverseOrder_Click(object sender, RoutedEventArgs e)
+        {
+            BtnReverseOrder_Click(sender, e);
+            TruyenqqLog($"[Reverse] Đã đảo ngược thứ tự {_scrapedItems.Count} mục.");
+        }
+
+        private void BtnClearLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (txtLog != null) txtLog.Clear();
+        }
+
+        private void BtnClearNhentaiLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (txtNhentaiLog != null) txtNhentaiLog.Clear();
+        }
+
+        private void BtnClearViHentaiLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (txtViHentaiLog != null) txtViHentaiLog.Clear();
+        }
+
+        private void BtnClearTruyenqqLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (txtTruyenqqLog != null) txtTruyenqqLog.Clear();
         }
     }
 }
