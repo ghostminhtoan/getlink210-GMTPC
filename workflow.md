@@ -71,5 +71,6 @@ Tài liệu này chứa toàn bộ quy tắc code, cấu trúc dự án, hướn
 - **Đường dẫn file thực thi:** `bin\Release\get link manga.exe`
 
 ## 6. Quy tắc git commit
-- **Sau khi build file exe ra release thành công, luôn luôn git push git commit lên repo github**
+- **Sau khi build file exe ra release thành công, luôn luôn thực hiện git commit & git push lên repo github.**
+- **Mỗi khi tạo commit mới, bắt buộc phải cập nhật lịch sử (Mã commit, Thời gian, Nội dung) vào file [log git commit.md](file:///r:/HDD R/ZC SYMLINK/USERS/source/repos/ghostminhtoan/get link manga/log git commit.md) với quy tắc: Commit mới nhất luôn nằm ở trên cùng (dưới phần tiêu đề).**
 

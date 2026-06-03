@@ -1,0 +1,19 @@
+# Lịch Sử Git Commit - Dự Án "get link manga"
+
+Tài liệu này ghi lại lịch sử toàn bộ các commit của dự án, sắp xếp thứ tự từ mới nhất ở trên đến cũ nhất ở dưới.
+
+- **Commit**: `3e13d01` | **Date**: 2026-06-03 20:35:08 | **Message**: feat: add parallel downloads, clear console buttons, nhentai download blocker popup, and vi-hentai 429 throttle captcha solver
+- **Commit**: `2edbd20` | **Date**: 2026-06-03 16:30:10 | **Message**: Optimize vi-hentai crawling, show correct books count, and add folder merge/split operations
+- **Commit**: `0556fe8` | **Date**: 2026-06-02 23:34:23 | **Message**: Change ComboBoxItem text color to dark blue for better contrast on dark background
+- **Commit**: `c1836ae` | **Date**: 2026-06-02 22:31:43 | **Message**: Style ComboBox popup to have dark background via code-behind
+- **Commit**: `06df31b` | **Date**: 2026-06-02 22:03:28 | **Message**: Fix ComboBox indentation and dark popup background
+- **Commit**: `4cf2023` | **Date**: 2026-06-02 21:40:09 | **Message**: Add dark popup background for ComboBox dropdowns via ItemsPanel
+- **Commit**: `927569b` | **Date**: 2026-06-02 21:34:40 | **Message**: Add dark themed ComboBox style for nhentai sort and connection dropdowns
+- **Commit**: `8dd4f0c` | **Date**: 2026-06-02 21:24:33 | **Message**: Reduce UI status updates to every 5 pages to minimize Explorer lag during downloads
+- **Commit**: `b5ee96e` | **Date**: 2026-06-02 21:18:58 | **Message**: Add dark themed ComboBoxItem style for nhentai sort and connection dropdowns
+- **Commit**: `1ced2c1` | **Date**: 2026-06-02 20:55:07 | **Message**: Auto-untick checkbox after download; show chapter count in grid; display manga-chapter name during vi-hentai download
+- **Commit**: `5b9aca2` | **Date**: 2026-06-02 20:06:19 | **Message**: Add REVERSE ORDER button to vi-hentai tab; update OriginalIndex on reverse for RESTORE ORDER compatibility; switch build to Release
+- **Commit**: `39628cf` | **Date**: 2026-06-02 18:42:27 | **Message**: Remove XML schema and build artifacts
+- **Commit**: `8a62dc7` | **Date**: 2026-06-02 18:41:29 | **Message**: Remove test and artifact files
+- **Commit**: `cb606bd` | **Date**: 2026-06-02 18:41:01 | **Message**: Add .gitignore and remove build artifacts
+- **Commit**: `68cc3e0` | **Date**: 2026-06-02 18:39:19 | **Message**: Initial commit
