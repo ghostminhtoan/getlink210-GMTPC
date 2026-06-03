@@ -901,7 +901,7 @@
                                           Height="30"
                                           VerticalContentAlignment="Center"
                                           HorizontalContentAlignment="Center"
-                                          SelectedIndex="2">
+                                          SelectedIndex="0">
                                     <ComboBox.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <VirtualizingStackPanel Background="#121622"/>
