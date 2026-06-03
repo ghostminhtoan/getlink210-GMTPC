@@ -1,4 +1,4 @@
-﻿<Window x:Class="get_link_manga.MainWindow"
+<Window x:Class="get_link_manga.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -575,7 +575,7 @@
 
                         <Border Grid.Column="3" Background="#1c1122" BorderBrush="{StaticResource CyberpunkPinkBrush}" BorderThickness="1" CornerRadius="3" Padding="10,4">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Total Links: " Foreground="{StaticResource CyberpunkTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Text="Total Books: " Foreground="{StaticResource CyberpunkTextBrush}" FontSize="11" FontWeight="Bold"/>
                                 <TextBlock Name="lblLinkCount" Text="0" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="11" FontWeight="Bold"/>
                             </StackPanel>
                         </Border>
@@ -719,9 +719,11 @@
                     <Border Grid.Row="3" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/> <!-- Path Config -->
                                 <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/> <!-- Folder Actions (Merge/Split) -->
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="Auto"/> <!-- Connections and Start Download -->
                             </Grid.RowDefinitions>
 
                             <!-- Row 0: Path Config -->
@@ -752,8 +754,24 @@
                                 <Button Grid.Column="6" Name="btnOpenFolder" Content="OPEN FOLDER" Click="BtnOpenFolder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="100" FontSize="11"/>
                             </Grid>
 
-                            <!-- Row 2: Connections and Actions -->
+                            <!-- Row 2: Folder Actions -->
                             <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/> <!-- "FOLDER ACTIONS" Label -->
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="Auto"/> <!-- MERGE FOLDERS button -->
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="Auto"/> <!-- SPLIT FOLDERS button -->
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="FOLDER ACTIONS" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button Grid.Column="2" Name="btnMergeFolders" Content="MERGE FOLDERS" Click="BtnMergeFolders_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="130" FontSize="11"/>
+                                <Button Grid.Column="4" Name="btnSplitFolders" Content="SPLIT FOLDERS" Click="BtnSplitFolders_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
+                            </Grid>
+
+                            <!-- Row 4: Connections and Actions -->
+                            <Grid Grid.Row="4">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/> <!-- "CONNECTION" Label -->
                                     <ColumnDefinition Width="8"/>

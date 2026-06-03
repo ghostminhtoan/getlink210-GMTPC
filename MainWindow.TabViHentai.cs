@@ -228,13 +228,6 @@ namespace get_link_manga
                 _scrapedItems.Clear();
                 foreach (var item in sortedItems) _scrapedItems.Add(item);
 
-                // Populate LinkCount for each item (total links per manga)
-                int totalLinks = _scrapedItems.Count;
-                foreach (var item in _scrapedItems)
-                {
-                    item.LinkCount = totalLinks;
-                }
-
                 RecalculateDuplicates();
                 ViHentaiLog($"Cào dữ liệu hoàn tất! Tổng cộng thu thập được {_scrapedItems.Count} liên kết độc nhất.");
                 lblStatus.Text = "Crawling completed successfully.";
@@ -731,6 +724,11 @@ namespace get_link_manga
                     var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
                     await DownloadViHentaiChapterAsync(chapItem, rootFolder, token);
                 }
+
+                Dispatcher.Invoke(() =>
+                {
+                    item.LinkCount = chapterLinks.Count;
+                });
             }
             else if (segments.Length >= 3)
             {
