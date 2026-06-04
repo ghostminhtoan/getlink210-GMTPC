@@ -188,16 +188,18 @@ namespace get_link_manga
 
             try
             {
+                var groupedByBook = itemsToDownload
+                    .GroupBy(item => GetBookIdentifier(item.Link))
+                    .ToList();
+
                 using (var bookSemaphore = new SemaphoreSlim(maxParallelBooks))
                 {
                     var tasks = new System.Collections.Generic.List<Task>();
                     object lockObj = new object();
 
-                    for (int i = 0; i < totalGalleries; i++)
+                    foreach (var group in groupedByBook)
                     {
-                        int index = i;
-                        var item = itemsToDownload[index];
-
+                        var bookGroup = group;
                         tasks.Add(Task.Run(async () =>
                         {
                             while (_isDownloadPaused)
@@ -210,46 +212,49 @@ namespace get_link_manga
                             await bookSemaphore.WaitAsync(token);
                             try
                             {
-                                while (_isDownloadPaused)
+                                foreach (var item in bookGroup)
                                 {
+                                    while (_isDownloadPaused)
+                                    {
+                                        token.ThrowIfCancellationRequested();
+                                        await Task.Delay(200, token);
+                                    }
                                     token.ThrowIfCancellationRequested();
-                                    await Task.Delay(200, token);
-                                }
-                                token.ThrowIfCancellationRequested();
 
-                                Log($"[Download {index + 1}/{totalGalleries}] Đang tải: {item.Name} ({item.Link})");
-                                
-                                try
-                                {
-                                    await DownloadGalleryAsync(item, downloadRoot, token);
+                                    Log($"[Download] Đang tải: {item.Name} ({item.Link})");
+
+                                    try
+                                    {
+                                        await DownloadGalleryAsync(item, downloadRoot, token);
+                                        lock (lockObj)
+                                        {
+                                            completedGalleries++;
+                                        }
+                                        Log($"[Download] Hoàn thành truyện: {item.Name}");
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            // Auto-untick checkbox after successful download
+                                            item.IsChecked = false;
+                                        });
+                                    }
+                                    catch (OperationCanceledException)
+                                    {
+                                        throw;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
+                                    }
+
                                     lock (lockObj)
                                     {
-                                        completedGalleries++;
+                                        double overallProgress = ((double)completedGalleries / totalGalleries) * 100;
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            progressBar.Value = overallProgress;
+                                            lblStatus.Text = $"Downloading {completedGalleries}/{totalGalleries} galleries...";
+                                        });
                                     }
-                                    Log($"[Download {index + 1}/{totalGalleries}] Hoàn thành truyện: {item.Name}");
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        // Auto-untick checkbox after successful download
-                                        item.IsChecked = false;
-                                    });
-                                }
-                                catch (OperationCanceledException)
-                                {
-                                    throw;
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
-                                }
-
-                                lock (lockObj)
-                                {
-                                    double overallProgress = ((double)completedGalleries / totalGalleries) * 100;
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        progressBar.Value = overallProgress;
-                                        lblStatus.Text = $"Downloading {completedGalleries}/{totalGalleries} galleries...";
-                                    });
                                 }
                             }
                             finally
@@ -445,8 +450,7 @@ namespace get_link_manga
                                 string imgUrl = $"{prefix}{pageNum}.{ext}";
                                 try
                                 {
-                                    byte[] bytes = await _httpClient.GetByteArrayAsync(imgUrl);
-                                    File.WriteAllBytes(localFilePath, bytes);
+                                    await DownloadUrlToFileWithRefererAsync(imgUrl, null, localFilePath, token);
                                 }
                                 catch (Exception ex)
                                 {
@@ -538,8 +542,7 @@ namespace get_link_manga
                 }
                 token.ThrowIfCancellationRequested();
 
-                byte[] bytes = await _httpClient.GetByteArrayAsync(imgUrl);
-                File.WriteAllBytes(finalPath, bytes);
+                await DownloadUrlToFileWithRefererAsync(imgUrl, null, finalPath, token);
             }
             else
             {
@@ -768,8 +771,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                 string imgUrl = $"{prefix}{pageNum}.{ext}";
                                 try
                                 {
-                                    byte[] bytes = await GetByteArrayWithRefererAsync(imgUrl, "https://nhentai.net/");
-                                    File.WriteAllBytes(localFilePath, bytes);
+                                    await DownloadUrlToFileWithRefererAsync(imgUrl, "https://nhentai.net/", localFilePath, token);
                                 }
                                 catch (Exception ex)
                                 {
@@ -782,9 +784,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                         try
                                         {
                                             string altUrl = $"{prefix}{pageNum}.{otherExt}";
-                                            byte[] bytes = await GetByteArrayWithRefererAsync(altUrl, "https://nhentai.net/");
                                             string finalPath = Path.Combine(tempFolder, $"{pageNum:D3}.{otherExt}");
-                                            File.WriteAllBytes(finalPath, bytes);
+                                            await DownloadUrlToFileWithRefererAsync(altUrl, "https://nhentai.net/", finalPath, token);
                                             success = true;
                                             break;
                                         }
@@ -994,8 +995,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 }
                 token.ThrowIfCancellationRequested();
 
-                byte[] bytes = await GetByteArrayWithRefererAsync(imgUrl, pageUrl);
-                File.WriteAllBytes(finalPath, bytes);
+                await DownloadUrlToFileWithRefererAsync(imgUrl, pageUrl, finalPath, token);
             }
             else
             {
@@ -1225,6 +1225,106 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 }
             });
             return val;
+        }
+
+        private string GetBookIdentifier(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return url;
+            try
+            {
+                var uri = new Uri(url);
+                string host = uri.Host.ToLower();
+                string path = uri.AbsolutePath;
+
+                if (host.Contains("vi-hentai.pro"))
+                {
+                    var segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (segments.Length >= 2 && segments[0].Equals("truyen", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return "vi-hentai.pro|" + segments[1].ToLower();
+                    }
+                }
+
+                if (host.Contains("truyenqq"))
+                {
+                    var segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (segments.Length >= 2 && segments[0].Equals("truyen-tranh", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string rawSlug = segments[1].ToLower();
+                        int idx = rawSlug.IndexOf("-chap", StringComparison.OrdinalIgnoreCase);
+                        if (idx != -1)
+                        {
+                            rawSlug = rawSlug.Substring(0, idx);
+                        }
+                        return "truyenqq|" + rawSlug;
+                    }
+                }
+            }
+            catch {}
+            return url;
+        }
+
+        private async Task DownloadUrlToFileWithRefererAsync(string url, string referer, string filePath, CancellationToken token, bool isViHentai = false, bool isTruyenqq = false)
+        {
+            if (File.Exists(filePath) && new FileInfo(filePath).Length > 1024)
+            {
+                return; // skip duplicate
+            }
+
+            int delayMs = isViHentai ? 800 : (isTruyenqq ? 600 : 500);
+            int maxAttempts = 4;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                token.ThrowIfCancellationRequested();
+                try
+                {
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+                    {
+                        if (!string.IsNullOrEmpty(referer))
+                        {
+                            request.Headers.Referrer = new Uri(referer);
+                        }
+
+                        using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token))
+                        {
+                            if (isViHentai && (int)response.StatusCode == 429 && attempt < maxAttempts)
+                            {
+                                int retryDelay = GetRetryDelayMilliseconds(response, attempt, delayMs);
+                                Log($"[vi-hentai.pro] 429 khi tải ảnh. Chờ {retryDelay}ms rồi thử lại ({attempt}/{maxAttempts}): {url}");
+                                await Task.Delay(retryDelay, token);
+                                delayMs = Math.Min(delayMs * 2, 8000);
+                                continue;
+                            }
+
+                            response.EnsureSuccessStatusCode();
+
+                            using (var contentStream = await response.Content.ReadAsStreamAsync())
+                            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                            {
+                                await contentStream.CopyToAsync(fileStream, 81920, token);
+                            }
+                            return; // Success!
+                        }
+                    }
+                }
+                catch (HttpRequestException ex) when (attempt < maxAttempts)
+                {
+                    string label = isViHentai ? "[vi-hentai.pro]" : (isTruyenqq ? "[truyenqq]" : "[network]");
+                    Log($"{label} Thử tải lại ảnh do lỗi mạng: {ex.Message}. Chờ {delayMs}ms ({attempt}/{maxAttempts}).");
+                    await Task.Delay(delayMs, token);
+                    delayMs = Math.Min(delayMs * 2, 8000);
+                }
+                catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < maxAttempts)
+                {
+                    string label = isViHentai ? "[vi-hentai.pro]" : (isTruyenqq ? "[truyenqq]" : "[network]");
+                    Log($"{label} Thử tải lại ảnh do timeout. Chờ {delayMs}ms ({attempt}/{maxAttempts}).");
+                    await Task.Delay(delayMs, token);
+                    delayMs = Math.Min(delayMs * 2, 8000);
+                }
+            }
+
+            throw new Exception($"Không thể tải ảnh sau {maxAttempts} lần thử: {url}");
         }
     }
 

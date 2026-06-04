@@ -251,9 +251,30 @@ namespace get_link_manga
                 _cts.Cancel();
                 btnTruyenqqScrape.Content = "CANCELLING...";
                 btnTruyenqqScrape.IsEnabled = false;
+                if (btnTruyenqqCrawlMore != null) btnTruyenqqCrawlMore.IsEnabled = false;
                 return;
             }
+            await ScrapeTruyenqqAsync(clearExisting: true);
+        }
 
+        private async void BtnTruyenqqCrawlMore_Click(object sender, RoutedEventArgs e)
+        {
+            if (_cts != null)
+            {
+                _cts.Cancel();
+                if (btnTruyenqqCrawlMore != null)
+                {
+                    btnTruyenqqCrawlMore.Content = "CANCELLING...";
+                    btnTruyenqqCrawlMore.IsEnabled = false;
+                }
+                btnTruyenqqScrape.IsEnabled = false;
+                return;
+            }
+            await ScrapeTruyenqqAsync(clearExisting: false);
+        }
+
+        private async Task ScrapeTruyenqqAsync(bool clearExisting)
+        {
             string baseUrl = txtTruyenqqTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(baseUrl))
             {
@@ -283,16 +304,23 @@ namespace get_link_manga
             CancellationToken token = _cts.Token;
 
             btnTruyenqqScrape.Content = "STOP CRAWLER";
+            if (btnTruyenqqCrawlMore != null)
+            {
+                btnTruyenqqCrawlMore.Content = "STOP CRAWLER";
+            }
             btnTruyenqqFetchInfo.IsEnabled = false;
             lblStatus.Text = "Đang cào truyenqq...";
             progressBar.Value = 0;
 
-            _scrapedItems.Clear();
-            if (chkSelectAll != null)
+            if (clearExisting)
             {
-                chkSelectAll.IsChecked = false;
+                _scrapedItems.Clear();
+                if (chkSelectAll != null)
+                {
+                    chkSelectAll.IsChecked = false;
+                }
+                lblLinkCount.Text = "0";
             }
-            lblLinkCount.Text = "0";
 
             TruyenqqLog($"Bắt đầu cào từ trang {pageFrom} đến {pageTo}...");
 
@@ -407,6 +435,11 @@ namespace get_link_manga
                 _cts = null;
                 btnTruyenqqScrape.Content = "START CRAWLING";
                 btnTruyenqqScrape.IsEnabled = true;
+                if (btnTruyenqqCrawlMore != null)
+                {
+                    btnTruyenqqCrawlMore.Content = "CRAWL MORE";
+                    btnTruyenqqCrawlMore.IsEnabled = true;
+                }
                 btnTruyenqqFetchInfo.IsEnabled = true;
             }
         }
@@ -957,8 +990,7 @@ namespace get_link_manga
                                 return;
                             }
 
-                            byte[] bytes = await GetTruyenqqByteArrayWithRefererAsync(imgUrl, item.Link, token);
-                            File.WriteAllBytes(localFilePath, bytes);
+                            await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isTruyenqq: true);
 
                             lock (lockObj)
                             {

@@ -190,13 +190,33 @@ namespace get_link_manga
         {
             if (_cts != null)
             {
-                // Cancel active crawling process
                 _cts.Cancel();
                 btnScrape.Content = "CANCELLING...";
                 btnScrape.IsEnabled = false;
+                if (btnCrawlMore != null) btnCrawlMore.IsEnabled = false;
                 return;
             }
+            await ScrapeHentaiforceAsync(clearExisting: true);
+        }
 
+        private async void BtnCrawlMore_Click(object sender, RoutedEventArgs e)
+        {
+            if (_cts != null)
+            {
+                _cts.Cancel();
+                if (btnCrawlMore != null)
+                {
+                    btnCrawlMore.Content = "CANCELLING...";
+                    btnCrawlMore.IsEnabled = false;
+                }
+                btnScrape.IsEnabled = false;
+                return;
+            }
+            await ScrapeHentaiforceAsync(clearExisting: false);
+        }
+
+        private async Task ScrapeHentaiforceAsync(bool clearExisting)
+        {
             string baseUrl = txtTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(baseUrl))
             {
@@ -233,16 +253,23 @@ namespace get_link_manga
             CancellationToken token = _cts.Token;
 
             btnScrape.Content = "STOP CRAWLER";
+            if (btnCrawlMore != null)
+            {
+                btnCrawlMore.Content = "STOP CRAWLER";
+            }
             btnFetchInfo.IsEnabled = false;
             lblStatus.Text = "Crawling in progress...";
             progressBar.Value = 0;
 
-            _scrapedItems.Clear();
-            if (chkSelectAll != null)
+            if (clearExisting)
             {
-                chkSelectAll.IsChecked = false;
+                _scrapedItems.Clear();
+                if (chkSelectAll != null)
+                {
+                    chkSelectAll.IsChecked = false;
+                }
+                lblLinkCount.Text = "0";
             }
-            lblLinkCount.Text = "0";
 
             Log($"Starting crawler from page {pageFrom} to {pageTo}...");
 
@@ -366,6 +393,11 @@ namespace get_link_manga
                 _cts = null;
                 btnScrape.Content = "START CRAWLING";
                 btnScrape.IsEnabled = true;
+                if (btnCrawlMore != null)
+                {
+                    btnCrawlMore.Content = "CRAWL MORE";
+                    btnCrawlMore.IsEnabled = true;
+                }
                 btnFetchInfo.IsEnabled = true;
             }
         }

@@ -245,10 +245,13 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
                                     <Button Grid.Column="0" Name="btnScrape" Content="START CRAWLING" Click="BtnScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnPasteDirect" Content="PASTE DIRECT LINK" Click="BtnPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="2" Name="btnCrawlMore" Content="CRAWL MORE" Click="BtnCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="4" Name="btnPasteDirect" Content="PASTE DIRECT LINK" Click="BtnPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
@@ -383,10 +386,13 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
                                     <Button Grid.Column="0" Name="btnNhentaiScrape" Content="START CRAWLING" Click="BtnNhentaiScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnNhentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNhentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="2" Name="btnNhentaiCrawlMore" Content="CRAWL MORE" Click="BtnNhentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="4" Name="btnNhentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNhentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
@@ -495,13 +501,16 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="3*"/>
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="2*"/>
                                     </Grid.ColumnDefinitions>
                                     <Button Grid.Column="0" Name="btnViHentaiScrape" Content="START CRAWLING" Click="BtnViHentaiScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="4" Name="btnViHentaiReverseOrder" Content="REVERSE ORDER" Click="BtnViHentaiReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="2" Name="btnViHentaiCrawlMore" Content="CRAWL MORE" Click="BtnViHentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="4" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="6" Name="btnViHentaiReverseOrder" Content="REVERSE ORDER" Click="BtnViHentaiReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
@@ -610,13 +619,16 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="3*"/>
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="2*"/>
                                     </Grid.ColumnDefinitions>
                                     <Button Grid.Column="0" Name="btnTruyenqqScrape" Content="START CRAWLING" Click="BtnTruyenqqScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnTruyenqqPasteDirect" Content="PASTE DIRECT LINK" Click="BtnTruyenqqPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="4" Name="btnTruyenqqReverseOrder" Content="REVERSE ORDER" Click="BtnTruyenqqReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="2" Name="btnTruyenqqCrawlMore" Content="CRAWL MORE" Click="BtnTruyenqqCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="4" Name="btnTruyenqqPasteDirect" Content="PASTE DIRECT LINK" Click="BtnTruyenqqPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="6" Name="btnTruyenqqReverseOrder" Content="REVERSE ORDER" Click="BtnTruyenqqReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->

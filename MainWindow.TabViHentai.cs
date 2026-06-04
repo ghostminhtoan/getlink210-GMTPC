@@ -114,9 +114,30 @@ namespace get_link_manga
                 _cts.Cancel();
                 btnViHentaiScrape.Content = "CANCELLING...";
                 btnViHentaiScrape.IsEnabled = false;
+                if (btnViHentaiCrawlMore != null) btnViHentaiCrawlMore.IsEnabled = false;
                 return;
             }
+            await ScrapeViHentaiAsync(clearExisting: true);
+        }
 
+        private async void BtnViHentaiCrawlMore_Click(object sender, RoutedEventArgs e)
+        {
+            if (_cts != null)
+            {
+                _cts.Cancel();
+                if (btnViHentaiCrawlMore != null)
+                {
+                    btnViHentaiCrawlMore.Content = "CANCELLING...";
+                    btnViHentaiCrawlMore.IsEnabled = false;
+                }
+                btnViHentaiScrape.IsEnabled = false;
+                return;
+            }
+            await ScrapeViHentaiAsync(clearExisting: false);
+        }
+
+        private async Task ScrapeViHentaiAsync(bool clearExisting)
+        {
             string baseUrl = txtViHentaiTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(baseUrl))
             {
@@ -146,16 +167,23 @@ namespace get_link_manga
             CancellationToken token = _cts.Token;
 
             btnViHentaiScrape.Content = "STOP CRAWLER";
+            if (btnViHentaiCrawlMore != null)
+            {
+                btnViHentaiCrawlMore.Content = "STOP CRAWLER";
+            }
             btnViHentaiFetchInfo.IsEnabled = false;
             lblStatus.Text = "Đang cào vi-hentai.pro...";
             progressBar.Value = 0;
 
-            _scrapedItems.Clear();
-            if (chkSelectAll != null)
+            if (clearExisting)
             {
-                chkSelectAll.IsChecked = false;
+                _scrapedItems.Clear();
+                if (chkSelectAll != null)
+                {
+                    chkSelectAll.IsChecked = false;
+                }
+                lblLinkCount.Text = "0";
             }
-            lblLinkCount.Text = "0";
 
             ViHentaiLog($"Bắt đầu cào từ trang {pageFrom} đến {pageTo}...");
 
@@ -249,6 +277,11 @@ namespace get_link_manga
                 _cts = null;
                 btnViHentaiScrape.Content = "START CRAWLING";
                 btnViHentaiScrape.IsEnabled = true;
+                if (btnViHentaiCrawlMore != null)
+                {
+                    btnViHentaiCrawlMore.Content = "CRAWL MORE";
+                    btnViHentaiCrawlMore.IsEnabled = true;
+                }
                 btnViHentaiFetchInfo.IsEnabled = true;
             }
         }
@@ -914,8 +947,7 @@ namespace get_link_manga
                                 return;
                             }
 
-                            byte[] bytes = await GetViHentaiByteArrayWithRefererAsync(imgUrl, item.Link, token);
-                            File.WriteAllBytes(localFilePath, bytes);
+                            await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isViHentai: true);
 
                             lock (lockObj)
                             {

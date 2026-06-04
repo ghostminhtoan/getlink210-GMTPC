@@ -211,13 +211,33 @@ namespace get_link_manga
         {
             if (_cts != null)
             {
-                // Cancel active crawling process
                 _cts.Cancel();
                 btnNhentaiScrape.Content = "CANCELLING...";
                 btnNhentaiScrape.IsEnabled = false;
+                if (btnNhentaiCrawlMore != null) btnNhentaiCrawlMore.IsEnabled = false;
                 return;
             }
+            await ScrapeNhentaiAsync(clearExisting: true);
+        }
 
+        private async void BtnNhentaiCrawlMore_Click(object sender, RoutedEventArgs e)
+        {
+            if (_cts != null)
+            {
+                _cts.Cancel();
+                if (btnNhentaiCrawlMore != null)
+                {
+                    btnNhentaiCrawlMore.Content = "CANCELLING...";
+                    btnNhentaiCrawlMore.IsEnabled = false;
+                }
+                btnNhentaiScrape.IsEnabled = false;
+                return;
+            }
+            await ScrapeNhentaiAsync(clearExisting: false);
+        }
+
+        private async Task ScrapeNhentaiAsync(bool clearExisting)
+        {
             string baseUrl = txtNhentaiTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(baseUrl))
             {
@@ -248,16 +268,23 @@ namespace get_link_manga
             CancellationToken token = _cts.Token;
 
             btnNhentaiScrape.Content = "STOP CRAWLER";
+            if (btnNhentaiCrawlMore != null)
+            {
+                btnNhentaiCrawlMore.Content = "STOP CRAWLER";
+            }
             btnNhentaiFetchInfo.IsEnabled = false;
             lblStatus.Text = "Crawling nhentai.net in progress...";
             progressBar.Value = 0;
 
-            _scrapedItems.Clear();
-            if (chkSelectAll != null)
+            if (clearExisting)
             {
-                chkSelectAll.IsChecked = false;
+                _scrapedItems.Clear();
+                if (chkSelectAll != null)
+                {
+                    chkSelectAll.IsChecked = false;
+                }
+                lblLinkCount.Text = "0";
             }
-            lblLinkCount.Text = "0";
 
             Log($"Starting nhentai crawler from page {pageFrom} to {pageTo}...");
 
@@ -409,6 +436,11 @@ namespace get_link_manga
                 _cts = null;
                 btnNhentaiScrape.Content = "START CRAWLING";
                 btnNhentaiScrape.IsEnabled = true;
+                if (btnNhentaiCrawlMore != null)
+                {
+                    btnNhentaiCrawlMore.Content = "CRAWL MORE";
+                    btnNhentaiCrawlMore.IsEnabled = true;
+                }
                 btnNhentaiFetchInfo.IsEnabled = true;
             }
         }

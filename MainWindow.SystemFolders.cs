@@ -200,9 +200,12 @@ namespace get_link_manga
                 string destFile = Path.Combine(dest, Path.GetFileName(file));
                 if (File.Exists(destFile))
                 {
-                    File.Delete(destFile);
+                    File.Delete(file);
                 }
-                File.Move(file, destFile);
+                else
+                {
+                    File.Move(file, destFile);
+                }
             }
             foreach (var dir in Directory.GetDirectories(source))
             {
