@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử toàn bộ các commit của dự án, sắp xếp thứ tự từ mới nhất ở trên đến cũ nhất ở dưới.
 
+- **Commit**: `b87a16b` | **Date**: 2026-06-05 05:42:00 | **Message**: feat: fix progress bar calculation, add captcha solver, clear complete books, save checkbox state to md, and adjust window size
 - **Commit**: `0aefc14` | **Date**: 2026-06-04 07:29:51 | **Message**: feat: optimize download, implement parallel book downloads, skip duplicates, and add Crawl More buttons
 - **Commit**: `6a15c67` | **Date**: 2026-06-03 20:37:40 | **Message**: docs: create log git commit.md and update commit rules in workflow.md
 - **Commit**: `3e13d01` | **Date**: 2026-06-03 20:35:08 | **Message**: feat: add parallel downloads, clear console buttons, nhentai download blocker popup, and vi-hentai 429 throttle captcha solver
