@@ -135,6 +135,10 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 
                 <StackPanel Orientation="Vertical">
@@ -149,7 +153,11 @@
                                Margin="2,2,0,0"/>
                 </StackPanel>
 
-                <Border Grid.Column="1" BorderBrush="{StaticResource CyberpunkCyanBrush}" BorderThickness="1" CornerRadius="3" Padding="8,4" Background="#121622">
+                <!-- Bookmark & History Buttons -->
+                <Button Grid.Column="1" Name="btnOpenBookmarks" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" FontSize="11" Padding="10,0"/>
+                <Button Grid.Column="3" Name="btnOpenHistory" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" FontSize="11" Padding="10,0"/>
+
+                <Border Grid.Column="5" BorderBrush="{StaticResource CyberpunkCyanBrush}" BorderThickness="1" CornerRadius="3" Padding="8,4" Background="#121622">
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="8" Height="8" Fill="#00ff00" VerticalAlignment="Center" Margin="0,0,6,0">
                             <Ellipse.Effect>
@@ -673,6 +681,8 @@
                         <RowDefinition Height="Auto"/> <!-- Header -->
                         <RowDefinition Height="Auto"/> <!-- Filter & Sort Toolbar -->
                         <RowDefinition Height="*"/>    <!-- DataGrid -->
+                        <RowDefinition Height="Auto"/> <!-- Download Queue Header -->
+                        <RowDefinition Height="150"/>  <!-- Download Queue DataGrid -->
                         <RowDefinition Height="Auto"/> <!-- Download Section -->
                     </Grid.RowDefinitions>
 
@@ -752,6 +762,9 @@
                                 <MenuItem Header="Bỏ tích dòng đang bôi đen (Uncheck Selected)" Click="MenuUncheckSelected_Click"/>
                                 <MenuItem Header="Đảo ngược trạng thái tích (Invert Checked)" Click="MenuInvertChecked_Click"/>
                                 <Separator/>
+                                <MenuItem Header="📌 Bookmark dòng đang chọn" Click="MenuBookmarkSelected_Click"/>
+                                <MenuItem Header="🌐 Mở link trong trình duyệt" Click="MenuOpenInBrowser_Click"/>
+                                <Separator/>
                                 <MenuItem Header="Copy link các dòng đang chọn (Copy Selected Links)" Click="MenuCopySelectedLinks_Click"/>
                                 <Separator/>
                                 <MenuItem Header="Xóa các dòng đang bôi đen (Delete Selected)" Click="MenuDeleteSelected_Click"/>
@@ -830,16 +843,185 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
+
+                            <!-- Action Buttons Column -->
+                            <DataGridTemplateColumn Header="ACTIONS" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Button Content="🌐" 
+                                                    Tag="{Binding Link}" 
+                                                    Click="BtnOpenLinkInRow_Click"
+                                                    Width="30" Height="28" Margin="2,0"
+                                                    Style="{StaticResource CyberpunkButtonCyan}"
+                                                    FontSize="13" Padding="0"
+                                                    ToolTip="Mở link trong trình duyệt"/>
+                                            <Button Content="⬇️" 
+                                                    Click="BtnDownloadSingleInRow_Click"
+                                                    Width="30" Height="28" Margin="2,0"
+                                                    Style="{StaticResource CyberpunkButtonPink}"
+                                                    FontSize="13" Padding="0"
+                                                    ToolTip="Tải truyện này"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Download Queue Header -->
+                    <Grid Grid.Row="3" Margin="0,8,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="DOWNLOAD QUEUE" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <TextBlock Name="lblQueueErrors" Text="0 Errors" Foreground="#ff4444" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <Button Name="btnClearQueue" Content="CLEAR QUEUE" Click="BtnClearQueue_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="24" Width="100" FontSize="9" Padding="0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Download Queue DataGrid -->
+                    <DataGrid Grid.Row="4" 
+                              Name="dgDownloadQueue"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Background="#06090e"
+                              RowBackground="#06090e"
+                              AlternatingRowBackground="#0c0f17"
+                              BorderBrush="{StaticResource CyberpunkBorderBrush}"
+                              BorderThickness="1"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#1f293d"
+                              Foreground="{StaticResource CyberpunkTextBrush}"
+                              HeadersVisibility="Column"
+                              RowHeaderWidth="0"
+                              CanUserAddRows="False"
+                              SelectionMode="Single"
+                              ColumnHeaderStyle="{StaticResource CyberpunkDataGridColumnHeader}"
+                              CellStyle="{StaticResource CyberpunkDataGridCell}">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#161f30"/>
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                        <Setter Property="Background" Value="#0a1a0a"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="Error">
+                                        <Setter Property="Background" Value="#1a0a0a"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.Columns>
+                            <!-- Status Icon -->
+                            <DataGridTemplateColumn Header="" Width="35">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock HorizontalAlignment="Center" FontSize="14">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="⏳"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                                            <Setter Property="Text" Value="⬇️"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                            <Setter Property="Text" Value="✅"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Error">
+                                                            <Setter Property="Text" Value="❌"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                                            <Setter Property="Text" Value="⏸️"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <!-- Name -->
+                            <DataGridTextColumn Header="NAME" Binding="{Binding Name}" Width="*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource CyberpunkYellowBrush}"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <!-- N.Chap -->
+                            <DataGridTextColumn Header="N.CHAP" Binding="{Binding TotalChapters}" Width="55">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <!-- Status -->
+                            <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="80">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <!-- Process -->
+                            <DataGridTextColumn Header="PROCESS" Binding="{Binding CurrentProcess}" Width="100">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <!-- N.Error -->
+                            <DataGridTemplateColumn Header="N.ERROR" Width="65">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding ErrorCount}" 
+                                                Click="BtnShowErrors_Click"
+                                                HorizontalAlignment="Center"
+                                                Width="40" Height="22"
+                                                FontSize="11" Padding="0">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ErrorCount, Converter={x:Static local:GreaterThanZeroConverter.Instance}}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                            <Setter Property="Background" Value="#ff2222"/>
+                                                            <Setter Property="BorderBrush" Value="#ff4444"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
 
                     <!-- Download Section -->
-                    <Border Grid.Row="3" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
+                    <Border Grid.Row="5" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/> <!-- Path Config -->
                                 <RowDefinition Height="10"/>
                                 <RowDefinition Height="Auto"/> <!-- Folder Actions (Merge/Split) -->
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="Auto"/> <!-- Chapter Selection -->
                                 <RowDefinition Height="10"/>
                                 <RowDefinition Height="Auto"/> <!-- Connections and Start Download -->
                             </Grid.RowDefinitions>
@@ -888,8 +1070,26 @@
                                 <Button Grid.Column="4" Name="btnSplitFolders" Content="SPLIT FOLDERS" Click="BtnSplitFolders_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
                             </Grid>
 
-                            <!-- Row 4: Connections and Actions -->
+                            <!-- Row 4: Chapter Selection -->
                             <Grid Grid.Row="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="CHAPTER SELECTION" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="2" Name="txtChapterSelection"
+                                         Background="#0e121a"
+                                         BorderBrush="{StaticResource CyberpunkBorderBrush}"
+                                         Foreground="{StaticResource CyberpunkTextBrush}"
+                                         CaretBrush="{StaticResource CyberpunkCyanBrush}"
+                                         Height="28"
+                                         VerticalContentAlignment="Center"
+                                         ToolTip="Nhập chap cần tải. VD: 1-10;15;20-25 (để trống = tải tất cả)"/>
+                            </Grid>
+
+                            <!-- Row 6: Connections and Actions -->
+                            <Grid Grid.Row="6">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/> <!-- "CONNECTION" Label -->
                                     <ColumnDefinition Width="6"/>

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -682,7 +683,7 @@ namespace get_link_manga
             return j;
         }
 
-        private async Task DownloadViHentaiGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token)
+        private async Task DownloadViHentaiGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, HashSet<int> chapterFilter = null)
         {
             var uri = new Uri(item.Link);
             var segments = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
@@ -760,7 +761,44 @@ namespace get_link_manga
                     return;
                 }
 
+                var totalFoundChapters = chapterLinks.Count;
+                if (chapterFilter != null)
+                {
+                    var filtered = new System.Collections.Generic.List<string>();
+                    foreach (var link in chapterLinks)
+                    {
+                        double chapNum = ParseChapterNumber(link);
+                        int chapInt = (int)Math.Floor(chapNum);
+                        if (chapterFilter.Contains(chapInt))
+                        {
+                            filtered.Add(link);
+                        }
+                    }
+                    chapterLinks = filtered;
+                    if (chapterLinks.Count == 0)
+                    {
+                        Log($"[vi-hentai.pro] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
+                        if (queueItem != null)
+                        {
+                            Dispatcher.Invoke(() => {
+                                queueItem.Status = "Completed";
+                                queueItem.CurrentProcess = "Không có chương trùng khớp bộ lọc";
+                            });
+                        }
+                        return;
+                    }
+                }
+
                 Log($"[vi-hentai.pro] Phát hiện {chapterLinks.Count} chapters cho truyện '{item.Name}'. Sẽ tải lần lượt...");
+
+                if (queueItem != null)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        queueItem.TotalChapters = chapterLinks.Count;
+                        queueItem.CompletedChapters = 0;
+                    });
+                }
 
                 for (int idx = 0; idx < chapterLinks.Count; idx++)
                 {
@@ -769,7 +807,16 @@ namespace get_link_manga
                     Log($"[vi-hentai.pro] Đang tải chapter {idx + 1}/{chapterLinks.Count}: {chapLink}");
 
                     var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
-                    await DownloadViHentaiChapterAsync(chapItem, rootFolder, token);
+                    await DownloadViHentaiChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
+
+                    if (queueItem != null)
+                    {
+                        int currentIdx = idx + 1;
+                        Dispatcher.Invoke(() =>
+                        {
+                            queueItem.CompletedChapters = currentIdx;
+                        });
+                    }
                 }
 
                 Dispatcher.Invoke(() =>
@@ -780,7 +827,7 @@ namespace get_link_manga
             else if (segments.Length >= 3)
             {
                 // Direct Chapter page
-                await DownloadViHentaiChapterAsync(item, rootFolder, token);
+                await DownloadViHentaiChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
             }
             else
             {
@@ -788,7 +835,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadViHentaiChapterAsync(GalleryItem item, string rootFolder, CancellationToken token)
+        private async Task DownloadViHentaiChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, bool isParentQueue = false)
         {
             string html = await GetViHentaiStringWithRetryAsync(item.Link, token, $"load chapter page '{item.Link}'");
 
@@ -895,6 +942,15 @@ namespace get_link_manga
 
             Log($"[vi-hentai.pro] Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
+            if (queueItem != null && !isParentQueue)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    queueItem.TotalChapters = imageUrls.Count;
+                    queueItem.CompletedChapters = 0;
+                });
+            }
+
             using (var semaphore = new DynamicSemaphore(maxThreads, () => Math.Max(1, Math.Min(GetCurrentConnectionLimit(), 2))))
             {
                 var tasks = new System.Collections.Generic.List<Task>();
@@ -936,6 +992,21 @@ namespace get_link_manga
                                 lock (lockObj)
                                 {
                                     completedPages++;
+                                    if (queueItem != null)
+                                    {
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            if (isParentQueue)
+                                            {
+                                                queueItem.CurrentProcess = $"{chapterTitle} (trang {completedPages}/{imageUrls.Count})";
+                                            }
+                                            else
+                                            {
+                                                queueItem.CompletedChapters = completedPages;
+                                                queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
+                                            }
+                                        });
+                                    }
                                     if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
                                     {
                                         Dispatcher.Invoke(() =>
@@ -947,11 +1018,40 @@ namespace get_link_manga
                                 return;
                             }
 
-                            await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isViHentai: true);
+                            try
+                            {
+                                await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isViHentai: true);
+                            }
+                            catch (Exception ex)
+                            {
+                                lock (lockObj)
+                                {
+                                    if (queueItem != null)
+                                    {
+                                        queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl);
+                                    }
+                                    Log($"[vi-hentai.pro] Lỗi tải trang {index + 1} của chapter '{chapterTitle}': {ex.Message}");
+                                }
+                            }
 
                             lock (lockObj)
                             {
                                 completedPages++;
+                                if (queueItem != null)
+                                {
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        if (isParentQueue)
+                                        {
+                                            queueItem.CurrentProcess = $"{chapterTitle} (trang {completedPages}/{imageUrls.Count})";
+                                        }
+                                        else
+                                        {
+                                            queueItem.CompletedChapters = completedPages;
+                                            queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
+                                        }
+                                    });
+                                }
                                 if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
                                 {
                                     Dispatcher.Invoke(() =>
@@ -966,9 +1066,9 @@ namespace get_link_manga
                             semaphore.Release();
                         }
                     }, token));
-
-                    await Task.WhenAll(tasks);
                 }
+
+                await Task.WhenAll(tasks);
 
                 try
                 {
@@ -988,6 +1088,9 @@ namespace get_link_manga
                 {
                     Log($"[Lỗi] Không thể di chuyển thư mục tạm vi-hentai: {ex.Message}");
                 }
+
+                // Check for missing files
+                ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem, chapterTitle);
             }
         }
     }

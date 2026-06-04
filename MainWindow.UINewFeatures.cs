@@ -1,0 +1,346 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace get_link_manga
+{
+    /// <summary>
+    /// Partial class for new UI features: Bookmarks, History, Download Queue,
+    /// Open Link/Download buttons, and Chapter Selection.
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        // ===== BOOKMARK & HISTORY =====
+
+        private void BtnOpenBookmarks_Click(object sender, RoutedEventArgs e)
+        {
+            OpenBookmarkHistoryWindow();
+        }
+
+        private void BtnOpenHistory_Click(object sender, RoutedEventArgs e)
+        {
+            OpenBookmarkHistoryWindow();
+        }
+
+        private void OpenBookmarkHistoryWindow()
+        {
+            if (_bookmarkHistoryWindowInstance != null)
+            {
+                if (_bookmarkHistoryWindowInstance.WindowState == WindowState.Minimized)
+                    _bookmarkHistoryWindowInstance.WindowState = WindowState.Normal;
+                _bookmarkHistoryWindowInstance.Activate();
+            }
+            else
+            {
+                _bookmarkHistoryWindowInstance = new BookmarkHistoryWindow
+                {
+                    Owner = this
+                };
+                _bookmarkHistoryWindowInstance.Closed += (s, args) => { _bookmarkHistoryWindowInstance = null; };
+                _bookmarkHistoryWindowInstance.Show();
+            }
+        }
+
+        private void MenuBookmarkSelected_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgResults.SelectedItems.Count == 0) return;
+
+            int count = 0;
+            foreach (var item in dgResults.SelectedItems.Cast<GalleryItem>())
+            {
+                string domain = "";
+                try { domain = new Uri(item.Link).Host; } catch { }
+
+                _bookmarkManager.AddBookmark(new BookmarkEntry
+                {
+                    Name = item.Name,
+                    Url = item.Link,
+                    SourceDomain = domain,
+                    BookmarkedAt = DateTime.Now
+                });
+                count++;
+            }
+
+            Log($"📌 Đã bookmark {count} truyện.");
+
+            // Refresh bookmark window if open
+            if (_bookmarkHistoryWindowInstance != null)
+            {
+                _bookmarkHistoryWindowInstance.RefreshBookmarks();
+            }
+        }
+
+        private void MenuOpenInBrowser_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgResults.SelectedItem is GalleryItem item && !string.IsNullOrEmpty(item.Link))
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = item.Link,
+                        UseShellExecute = true
+                    });
+                    Log($"🌐 Opened: {item.Link}");
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to open link: {ex.Message}");
+                }
+            }
+        }
+
+        // ===== ROW ACTION BUTTONS (🌐 Open Link, ⬇️ Download Single) =====
+
+        private void BtnOpenLinkInRow_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string url && !string.IsNullOrEmpty(url))
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    });
+                    Log($"🌐 Opened: {url}");
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to open link: {ex.Message}");
+                }
+            }
+        }
+
+        private async void BtnDownloadSingleInRow_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn)
+            {
+                // Get the DataContext (GalleryItem) from the button
+                var item = btn.DataContext as GalleryItem;
+                if (item == null) return;
+
+                string downloadRoot = txtDownloadPath.Text.Trim();
+                if (string.IsNullOrEmpty(downloadRoot))
+                {
+                    MessageBox.Show("Vui lòng chọn thư mục lưu trước.", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                await StartDownloadProcessAsync(new List<GalleryItem> { item });
+            }
+        }
+
+        // ===== DOWNLOAD QUEUE =====
+
+        private void BtnClearQueue_Click(object sender, RoutedEventArgs e)
+        {
+            // Only clear completed/errored items, not active downloads
+            var toRemove = _downloadQueueItems
+                .Where(q => q.Status == "Completed" || q.Status == "Error" || q.Status == "Queued")
+                .ToList();
+
+            foreach (var item in toRemove)
+            {
+                _downloadQueueItems.Remove(item);
+            }
+
+            UpdateQueueErrorLabel();
+            Log($"Cleared {toRemove.Count} items from download queue.");
+        }
+
+        private void BtnShowErrors_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is DownloadQueueItem queueItem)
+            {
+                if (queueItem.ErrorCount > 0)
+                {
+                    var errorWindow = new ErrorReportWindow(queueItem, this)
+                    {
+                        Owner = this
+                    };
+                    errorWindow.ShowDialog();
+                }
+            }
+        }
+
+        internal void UpdateQueueErrorLabel()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                int totalErrors = _downloadQueueItems.Sum(q => q.ErrorCount);
+                lblQueueErrors.Text = $"{totalErrors} Errors";
+                lblQueueErrors.Foreground = totalErrors > 0
+                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xff, 0x44, 0x44))
+                    : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x66, 0x66, 0x66));
+            });
+        }
+
+        /// <summary>
+        /// Add a gallery to the download history after successful download.
+        /// </summary>
+        internal void AddToHistory(GalleryItem item, int chaptersDownloaded, string downloadPath)
+        {
+            string domain = "";
+            try { domain = new Uri(item.Link).Host; } catch { }
+
+            _bookmarkManager.AddHistory(new HistoryEntry
+            {
+                Name = item.Name,
+                Url = item.Link,
+                SourceDomain = domain,
+                DownloadedAt = DateTime.Now,
+                ChaptersDownloaded = chaptersDownloaded,
+                DownloadPath = downloadPath
+            });
+
+            // Refresh history window if open
+            if (_bookmarkHistoryWindowInstance != null)
+            {
+                Dispatcher.Invoke(() => _bookmarkHistoryWindowInstance.RefreshHistory());
+            }
+        }
+
+        /// <summary>
+        /// Parse the chapter selection textbox and return the filter HashSet.
+        /// Returns null if empty (download all). Shows error message if invalid.
+        /// </summary>
+        internal HashSet<int> GetChapterSelectionFilter()
+        {
+            string input = "";
+            Dispatcher.Invoke(() => { input = txtChapterSelection?.Text?.Trim() ?? ""; });
+
+            if (string.IsNullOrEmpty(input))
+                return null; // Download all
+
+            if (ChapterRangeParser.TryParse(input, out var result, out string errorMsg))
+            {
+                if (result != null)
+                {
+                    string display = ChapterRangeParser.ToDisplayString(result);
+                    Log($"Chapter filter applied: {display} ({result.Count} chapters)");
+                }
+                return result;
+            }
+            else
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show($"Cú pháp chọn chapter không hợp lệ:\n{errorMsg}\n\nVí dụ: 1-10;15;20-25",
+                        "Chapter Selection Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                });
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Thử tải lại các trang bị lỗi của một DownloadQueueItem.
+        /// </summary>
+        public async Task RetryDownloadQueueItemErrorsAsync(DownloadQueueItem queueItem)
+        {
+            if (queueItem == null || queueItem.Errors == null || queueItem.Errors.Count == 0)
+                return;
+
+            // Make a copy of errors to retry
+            var errorsToRetry = queueItem.Errors.ToList();
+            
+            // Clear current errors before retrying so we can track new ones
+            Dispatcher.Invoke(() => {
+                queueItem.Errors.Clear();
+                queueItem.ErrorCount = 0;
+                queueItem.Status = "Downloading";
+                queueItem.CurrentProcess = "Retrying errors...";
+            });
+
+            Log($"[Retry] Đang thử tải lại {errorsToRetry.Count} trang bị lỗi của '{queueItem.Name}'...");
+
+            int successfulRetries = 0;
+            int failedRetries = 0;
+
+            foreach (var err in errorsToRetry)
+            {
+                if (string.IsNullOrEmpty(err.ImageUrl))
+                {
+                    failedRetries++;
+                    Dispatcher.Invoke(() => {
+                        queueItem.AddError(err.ChapterName, err.PageNumber, "No image URL available", null);
+                    });
+                    continue;
+                }
+
+                try
+                {
+                    string targetFolder;
+                    bool isViHentai = queueItem.SourceDomain.Contains("vi-hentai.pro");
+                    bool isTruyenqq = queueItem.SourceDomain.Contains("truyenqq");
+
+                    string safeManga = GetSafePathName(queueItem.Name);
+                    
+                    if (isViHentai)
+                    {
+                        string safeChapter = GetSafePathName(err.ChapterName);
+                        targetFolder = Path.Combine(queueItem.DownloadPath, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
+                    }
+                    else if (isTruyenqq)
+                    {
+                        string safeChapter = GetSafePathName(err.ChapterName);
+                        targetFolder = Path.Combine(queueItem.DownloadPath, "truyenqq", $"{safeManga}-{safeChapter}");
+                    }
+                    else
+                    {
+                        targetFolder = Path.Combine(queueItem.DownloadPath, queueItem.SourceDomain, safeManga);
+                    }
+
+                    Directory.CreateDirectory(targetFolder);
+
+                    string ext = Path.GetExtension(err.ImageUrl.Split('?')[0]);
+                    if (string.IsNullOrEmpty(ext)) ext = ".jpg";
+                    string fileName = $"{err.PageNumber:D3}{ext}";
+                    string finalFilePath = Path.Combine(targetFolder, fileName);
+
+                    var token = _downloadCts?.Token ?? System.Threading.CancellationToken.None;
+
+                    await DownloadUrlToFileWithRefererAsync(
+                        err.ImageUrl, 
+                        queueItem.SourceUrl,
+                        finalFilePath, 
+                        token, 
+                        isViHentai: isViHentai, 
+                        isTruyenqq: isTruyenqq
+                    );
+
+                    successfulRetries++;
+                    Log($"[Retry] Đã tải thành công: {err.ChapterName}, Trang {err.PageNumber}");
+                }
+                catch (Exception ex)
+                {
+                    failedRetries++;
+                    Log($"[Retry] Thất bại khi tải {err.ChapterName}, Trang {err.PageNumber}: {ex.Message}");
+                    Dispatcher.Invoke(() => {
+                        queueItem.AddError(err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl);
+                    });
+                }
+
+                Dispatcher.Invoke(() => {
+                    queueItem.CurrentProcess = $"Retry: {successfulRetries} ok, {failedRetries} fail";
+                });
+            }
+
+            Dispatcher.Invoke(() => {
+                queueItem.Status = queueItem.ErrorCount > 0 ? "Error" : "Completed";
+                queueItem.CurrentProcess = queueItem.ErrorCount > 0 ? "Done with errors" : "Done";
+            });
+
+            UpdateQueueErrorLabel();
+
+            Log($"[Retry] Hoàn tất thử tải lại cho '{queueItem.Name}'. Thành công: {successfulRetries}/{errorsToRetry.Count}.");
+            MessageBox.Show($"Thử tải lại hoàn tất!\nThành công: {successfulRetries}\nThất bại: {failedRetries}", 
+                "Retry Completed", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+}

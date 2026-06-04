@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -652,7 +653,7 @@ namespace get_link_manga
             return html;
         }
 
-        private async Task DownloadTruyenqqGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token)
+        private async Task DownloadTruyenqqGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, HashSet<int> chapterFilter = null)
         {
             string cleanLink = item.Link.TrimEnd('/');
             string activeDomain = ExtractTruyenqqBaseUrl(cleanLink);
@@ -722,14 +723,51 @@ namespace get_link_manga
                     // Check if it's actually a direct chapter page (was matched as details page but has no chapters inside)
                     // Some chapters might have similar pattern, but if no sub-chapters are found, let's treat it as a direct chapter page download
                     Log($"[truyenqq] Không tìm thấy chương nào trong '{item.Name}'. Thử tải trực tiếp trang này như một chapter...");
-                    await DownloadTruyenqqChapterAsync(item, rootFolder, token);
+                    await DownloadTruyenqqChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
                     return;
                 }
 
                 // Sort chapters in ascending order so that oldest chapters (like Chap 1) are downloaded first.
                 chapterLinks = chapterLinks.OrderBy(ParseChapterNumber).ToList();
 
+                var totalFoundChapters = chapterLinks.Count;
+                if (chapterFilter != null)
+                {
+                    var filtered = new System.Collections.Generic.List<string>();
+                    foreach (var link in chapterLinks)
+                    {
+                        double chapNum = ParseChapterNumber(link);
+                        int chapInt = (int)Math.Floor(chapNum);
+                        if (chapterFilter.Contains(chapInt))
+                        {
+                            filtered.Add(link);
+                        }
+                    }
+                    chapterLinks = filtered;
+                    if (chapterLinks.Count == 0)
+                    {
+                        Log($"[truyenqq] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
+                        if (queueItem != null)
+                        {
+                            Dispatcher.Invoke(() => {
+                                queueItem.Status = "Completed";
+                                queueItem.CurrentProcess = "Không có chương trùng khớp bộ lọc";
+                            });
+                        }
+                        return;
+                    }
+                }
+
                 Log($"[truyenqq] Phát hiện {chapterLinks.Count} chương cho truyện '{item.Name}'. Bắt đầu tải lần lượt...");
+
+                if (queueItem != null)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        queueItem.TotalChapters = chapterLinks.Count;
+                        queueItem.CompletedChapters = 0;
+                    });
+                }
 
                 for (int idx = 0; idx < chapterLinks.Count; idx++)
                 {
@@ -738,7 +776,16 @@ namespace get_link_manga
                     Log($"[truyenqq] Đang tải chương {idx + 1}/{chapterLinks.Count}: {chapLink}");
 
                     var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
-                    await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token);
+                    await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
+
+                    if (queueItem != null)
+                    {
+                        int currentIdx = idx + 1;
+                        Dispatcher.Invoke(() =>
+                        {
+                            queueItem.CompletedChapters = currentIdx;
+                        });
+                    }
                 }
 
                 Dispatcher.Invoke(() =>
@@ -749,11 +796,11 @@ namespace get_link_manga
             else
             {
                 // Direct Chapter page
-                await DownloadTruyenqqChapterAsync(item, rootFolder, token);
+                await DownloadTruyenqqChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
             }
         }
 
-        private async Task DownloadTruyenqqChapterAsync(GalleryItem item, string rootFolder, CancellationToken token)
+        private async Task DownloadTruyenqqChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, bool isParentQueue = false)
         {
             bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(item.Link);
             if (!captchaOk)
@@ -938,6 +985,15 @@ namespace get_link_manga
 
             Log($"[truyenqq] Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
+            if (queueItem != null && !isParentQueue)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    queueItem.TotalChapters = imageUrls.Count;
+                    queueItem.CompletedChapters = 0;
+                });
+            }
+
             using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
                 var tasks = new System.Collections.Generic.List<Task>();
@@ -979,27 +1035,71 @@ namespace get_link_manga
                                 lock (lockObj)
                                 {
                                     completedPages++;
+                                    if (queueItem != null)
+                                    {
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            if (isParentQueue)
+                                            {
+                                                queueItem.CurrentProcess = $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})";
+                                            }
+                                            else
+                                            {
+                                                queueItem.CompletedChapters = completedPages;
+                                                queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
+                                            }
+                                        });
+                                    }
                                     if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
                                     {
                                         Dispatcher.Invoke(() =>
                                         {
-                                            lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
+                                            lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {cleanManga} - {cleanChapter}";
                                         });
                                     }
                                 }
                                 return;
                             }
 
-                            await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isTruyenqq: true);
+                            try
+                            {
+                                await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isTruyenqq: true);
+                            }
+                            catch (Exception ex)
+                            {
+                                lock (lockObj)
+                                {
+                                    if (queueItem != null)
+                                    {
+                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl);
+                                    }
+                                    Log($"[truyenqq] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");
+                                }
+                            }
 
                             lock (lockObj)
                             {
                                 completedPages++;
+                                if (queueItem != null)
+                                {
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        if (isParentQueue)
+                                        {
+                                            queueItem.CurrentProcess = $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})";
+                                        }
+                                        else
+                                        {
+                                            queueItem.CompletedChapters = completedPages;
+                                            queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
+                                        }
+                                    });
+                                }
                                 if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
                                 {
                                     Dispatcher.Invoke(() =>
                                     {
-                                        lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
+                                        lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {cleanManga} - {cleanChapter}";
                                     });
                                 }
                             }
@@ -1027,12 +1127,15 @@ namespace get_link_manga
                         Directory.Move(tempFolder, targetFolder);
                     }
                 }
-                Log($"[truyenqq] Tải xong chapter '{chapterTitle}' của truyện '{mangaTitle}'.");
+                Log($"[truyenqq] Tải xong chapter '{cleanChapter}' của truyện '{cleanManga}'.");
             }
             catch (Exception ex)
             {
                 Log($"[truyenqq] [Lỗi] Không thể di chuyển thư mục tạm: {ex.Message}");
             }
+
+            // Check for missing files
+            ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem, cleanChapter);
         }
 
         private double ParseChapterNumber(string url)

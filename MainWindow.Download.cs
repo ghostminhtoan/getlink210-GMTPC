@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -149,6 +150,9 @@ namespace get_link_manga
                 }
             }
 
+            // Parse chapter selection filter
+            HashSet<int> chapterFilter = GetChapterSelectionFilter();
+
             _downloadCts = new CancellationTokenSource();
             CancellationToken token = _downloadCts.Token;
             _isDownloadPaused = false;
@@ -182,6 +186,30 @@ namespace get_link_manga
                     maxParallelBooks = val;
                 }
             });
+
+            // Create DownloadQueueItems for each gallery
+            var queueItemMap = new System.Collections.Generic.Dictionary<GalleryItem, DownloadQueueItem>();
+            foreach (var item in itemsToDownload)
+            {
+                string domain = "";
+                try { domain = new Uri(item.Link).Host; } catch { }
+
+                var queueItem = new DownloadQueueItem
+                {
+                    Name = item.Name,
+                    SourceUrl = item.Link,
+                    SourceDomain = domain,
+                    TotalChapters = item.LinkCount > 0 ? item.LinkCount : 1,
+                    CompletedChapters = 0,
+                    Status = "Queued",
+                    CurrentProcess = "Waiting...",
+                    ErrorCount = 0,
+                    DownloadPath = downloadRoot
+                };
+
+                queueItemMap[item] = queueItem;
+                Dispatcher.Invoke(() => _downloadQueueItems.Add(queueItem));
+            }
 
             Log($"Bắt đầu tải song song {totalGalleries} truyện với tối đa {maxParallelBooks} truyện cùng lúc...");
             lblStatus.Text = $"Downloading 0/{totalGalleries} galleries...";
@@ -221,29 +249,69 @@ namespace get_link_manga
                                     }
                                     token.ThrowIfCancellationRequested();
 
+                                    var queueItem = queueItemMap.ContainsKey(item) ? queueItemMap[item] : null;
+
+                                    // Update queue status
+                                    if (queueItem != null)
+                                    {
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            queueItem.Status = "Downloading";
+                                            queueItem.CurrentProcess = "Starting...";
+                                        });
+                                    }
+
                                     Log($"[Download] Đang tải: {item.Name} ({item.Link})");
 
                                     try
                                     {
-                                        await DownloadGalleryAsync(item, downloadRoot, token);
+                                        await DownloadGalleryAsync(item, downloadRoot, token, queueItem, chapterFilter);
                                         lock (lockObj)
                                         {
                                             completedGalleries++;
                                         }
-                                        Log($"[Download] Hoàn thành truyện: {item.Name}");
-                                        Dispatcher.Invoke(() =>
+
+                                        if (queueItem != null)
                                         {
-                                            // Auto-untick checkbox after successful download
-                                            item.IsChecked = false;
-                                        });
+                                            Dispatcher.Invoke(() =>
+                                            {
+                                                queueItem.Status = queueItem.ErrorCount > 0 ? "Error" : "Completed";
+                                                queueItem.CurrentProcess = "Done";
+                                            });
+                                        }
+
+                                        Log($"[Download] Hoàn thành truyện: {item.Name}");
+
+                                        // Auto-untick
+                                        Dispatcher.Invoke(() => { item.IsChecked = false; });
+
+                                        // Add to history
+                                        try
+                                        {
+                                            int chapCount = queueItem?.CompletedChapters ?? 1;
+                                            string dlPath = queueItem?.DownloadPath ?? downloadRoot;
+                                            AddToHistory(item, chapCount, dlPath);
+                                        }
+                                        catch { }
                                     }
                                     catch (OperationCanceledException)
                                     {
+                                        if (queueItem != null)
+                                            Dispatcher.Invoke(() => { queueItem.Status = "Paused"; queueItem.CurrentProcess = "Cancelled"; });
                                         throw;
                                     }
                                     catch (Exception ex)
                                     {
                                         Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
+                                        if (queueItem != null)
+                                        {
+                                            Dispatcher.Invoke(() =>
+                                            {
+                                                queueItem.Status = "Error";
+                                                queueItem.CurrentProcess = "Failed";
+                                                queueItem.AddError("General", 0, ex.Message);
+                                            });
+                                        }
                                     }
 
                                     lock (lockObj)
@@ -255,6 +323,8 @@ namespace get_link_manga
                                             lblStatus.Text = $"Downloading {completedGalleries}/{totalGalleries} galleries...";
                                         });
                                     }
+
+                                    UpdateQueueErrorLabel();
                                 }
                             }
                             finally
@@ -302,10 +372,12 @@ namespace get_link_manga
                 if (btnNhentaiFetchInfo != null) btnNhentaiFetchInfo.IsEnabled = true;
                 cmbConnections.IsEnabled = true;
                 if (cmbMultiDownload != null) cmbMultiDownload.IsEnabled = true;
+
+                UpdateQueueErrorLabel();
             }
         }
 
-        private async Task DownloadGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token)
+        private async Task DownloadGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, HashSet<int> chapterFilter = null)
         {
             string hostName = "hentaiforce.net";
             try
@@ -322,13 +394,13 @@ namespace get_link_manga
 
             if (hostName.Contains("vi-hentai.pro"))
             {
-                await DownloadViHentaiGalleryAsync(item, rootFolder, token);
+                await DownloadViHentaiGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
                 return;
             }
 
             if (IsTruyenqqUrl(item.Link))
             {
-                await DownloadTruyenqqGalleryAsync(item, rootFolder, token);
+                await DownloadTruyenqqGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
                 return;
             }
 
@@ -391,6 +463,15 @@ namespace get_link_manga
 
             bool isFastPath = !string.IsNullOrEmpty(prefix);
             Log($"[Đa luồng] Bắt đầu tải {totalPages} trang với tối đa {maxThreads} kết nối song song...");
+
+            if (queueItem != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    queueItem.TotalChapters = totalPages;
+                    queueItem.CurrentProcess = $"0/{totalPages} pages";
+                });
+            }
 
             using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
@@ -503,6 +584,9 @@ namespace get_link_manga
                 {
                     Log($"[Lỗi] Không thể di chuyển thư mục tạm HentaiForce: {ex.Message}");
                 }
+
+                // Check for missing files
+                ValidateDownloadedFiles(targetFolder, totalPages, queueItem, "Pages");
             }
         }
 
@@ -1325,6 +1409,55 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
 
             throw new Exception($"Không thể tải ảnh sau {maxAttempts} lần thử: {url}");
+        }
+
+        private void ValidateDownloadedFiles(string folderPath, int expectedCount, DownloadQueueItem queueItem, string chapterName = "General")
+        {
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                return;
+
+            try
+            {
+                var files = Directory.GetFiles(folderPath);
+                var existingPageNumbers = new HashSet<int>();
+                foreach (var file in files)
+                {
+                    string nameWithoutExt = Path.GetFileNameWithoutExtension(file);
+                    if (int.TryParse(nameWithoutExt, out int pageNum))
+                    {
+                        existingPageNumbers.Add(pageNum);
+                    }
+                }
+
+                var missingPages = new List<int>();
+                for (int i = 1; i <= expectedCount; i++)
+                {
+                    if (!existingPageNumbers.Contains(i))
+                    {
+                        missingPages.Add(i);
+                    }
+                }
+
+                if (missingPages.Count > 0)
+                {
+                    string missingMsg = $"Thiếu các trang: {string.Join(", ", missingPages.Select(p => p.ToString("D3")))}";
+                    Log($"[Cảnh báo] Thư mục '{Path.GetFileName(folderPath)}' bị thiếu {missingPages.Count} trang!");
+                    if (queueItem != null)
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            foreach (var p in missingPages)
+                            {
+                                queueItem.AddError(chapterName, p, "Trang bị thiếu (Missing page)", null);
+                            }
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[Lỗi] Không thể kiểm tra tính toàn vẹn của thư mục '{folderPath}': {ex.Message}");
+            }
         }
     }
 
