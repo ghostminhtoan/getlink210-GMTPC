@@ -140,9 +140,6 @@
     <Compile Include="ChapterRangeParser.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DownloadQueueItem.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="ErrorReportWindow.xaml.cs">
       <DependentUpon>ErrorReportWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

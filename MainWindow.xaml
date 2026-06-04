@@ -681,8 +681,6 @@
                         <RowDefinition Height="Auto"/> <!-- Header -->
                         <RowDefinition Height="Auto"/> <!-- Filter & Sort Toolbar -->
                         <RowDefinition Height="*"/>    <!-- DataGrid -->
-                        <RowDefinition Height="Auto"/> <!-- Download Queue Header -->
-                        <RowDefinition Height="150"/>  <!-- Download Queue DataGrid -->
                         <RowDefinition Height="Auto"/> <!-- Download Section -->
                     </Grid.RowDefinitions>
 
@@ -713,6 +711,8 @@
                     <Grid Grid.Row="1" Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="10"/>
@@ -839,6 +839,146 @@
                                                        Foreground="{StaticResource CyberpunkMutedTextBrush}" 
                                                        FontSize="10"
                                                        Margin="0,4,0,0"/>
+
+                                            <!-- Progress and Controls (Only visible when Status is not null and not empty) -->
+                                            <Grid Margin="0,6,0,0">
+                                                <Grid.Style>
+                                                    <Style TargetType="Grid">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Grid.Style>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/> <!-- Status Icon -->
+                                                    <ColumnDefinition Width="Auto"/> <!-- Status text & Progress -->
+                                                    <ColumnDefinition Width="*"/>    <!-- Progress Bar -->
+                                                    <ColumnDefinition Width="Auto"/> <!-- Error button -->
+                                                    <ColumnDefinition Width="Auto"/> <!-- Local Actions -->
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Status Icon -->
+                                                <TextBlock Grid.Column="0" FontSize="12" VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="⏳"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                                                    <Setter Property="Text" Value="⬇️"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                                    <Setter Property="Text" Value="✅"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Error">
+                                                                    <Setter Property="Text" Value="❌"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                                                    <Setter Property="Text" Value="⏸️"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+
+                                                <!-- Status Text & CurrentProcess -->
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="6,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="11" FontWeight="Bold"/>
+                                                    <TextBlock Text=" - " Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11"/>
+                                                    <TextBlock Text="{Binding CurrentProcess}" Foreground="{StaticResource CyberpunkTextBrush}" FontSize="11"/>
+                                                </StackPanel>
+
+                                                <!-- ProgressBar (Only visible when downloading or paused) -->
+                                                <ProgressBar Grid.Column="2" Value="{Binding ProgressPercent}" Height="6" Minimum="0" Maximum="100" Foreground="{StaticResource CyberpunkCyanBrush}" Margin="10,0" VerticalAlignment="Center">
+                                                    <ProgressBar.Style>
+                                                        <Style TargetType="ProgressBar" BasedOn="{StaticResource ProgressBarSuccess}">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ProgressBar.Style>
+                                                </ProgressBar>
+
+                                                <!-- Error Button -->
+                                                <Button Grid.Column="3" Content="{Binding ErrorCount, StringFormat=Lỗi: {0}}" 
+                                                        Click="BtnShowErrors_Click"
+                                                        VerticalAlignment="Center"
+                                                        Margin="5,0" Height="20" Padding="5,0" FontSize="10">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ErrorCount, Converter={x:Static local:GreaterThanZeroConverter.Instance}}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                    <Setter Property="Background" Value="#ff2222"/>
+                                                                    <Setter Property="BorderBrush" Value="#ff4444"/>
+                                                                    <Setter Property="Foreground" Value="White"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+
+                                                <!-- Local Action Buttons (Sub-operations) -->
+                                                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <!-- Play/Resume Button -->
+                                                    <Button Content="▶️" Click="BtnRowResume_Click" Width="22" Height="20" Margin="2,0" Padding="0" FontSize="9" ToolTip="Resume download">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                    <!-- Pause Button -->
+                                                    <Button Content="⏸️" Click="BtnRowPause_Click" Width="22" Height="20" Margin="2,0" Padding="0" FontSize="9" ToolTip="Pause download">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                    <!-- Stop Button -->
+                                                    <Button Content="⏹️" Click="BtnRowStop_Click" Width="22" Height="20" Margin="2,0" Padding="0" FontSize="9" ToolTip="Stop download">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="Queued">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -869,152 +1009,8 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <!-- Download Queue Header -->
-                    <Grid Grid.Row="3" Margin="0,8,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="DOWNLOAD QUEUE" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <TextBlock Name="lblQueueErrors" Text="0 Errors" Foreground="#ff4444" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <Button Name="btnClearQueue" Content="CLEAR QUEUE" Click="BtnClearQueue_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="24" Width="100" FontSize="9" Padding="0"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <!-- Download Queue DataGrid -->
-                    <DataGrid Grid.Row="4" 
-                              Name="dgDownloadQueue"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              Background="#06090e"
-                              RowBackground="#06090e"
-                              AlternatingRowBackground="#0c0f17"
-                              BorderBrush="{StaticResource CyberpunkBorderBrush}"
-                              BorderThickness="1"
-                              GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#1f293d"
-                              Foreground="{StaticResource CyberpunkTextBrush}"
-                              HeadersVisibility="Column"
-                              RowHeaderWidth="0"
-                              CanUserAddRows="False"
-                              SelectionMode="Single"
-                              ColumnHeaderStyle="{StaticResource CyberpunkDataGridColumnHeader}"
-                              CellStyle="{StaticResource CyberpunkDataGridCell}">
-                        <DataGrid.RowStyle>
-                            <Style TargetType="DataGridRow">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#161f30"/>
-                                    </Trigger>
-                                    <DataTrigger Binding="{Binding Status}" Value="Completed">
-                                        <Setter Property="Background" Value="#0a1a0a"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Status}" Value="Error">
-                                        <Setter Property="Background" Value="#1a0a0a"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGrid.RowStyle>
-                        <DataGrid.Columns>
-                            <!-- Status Icon -->
-                            <DataGridTemplateColumn Header="" Width="35">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock HorizontalAlignment="Center" FontSize="14">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Text" Value="⏳"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Downloading">
-                                                            <Setter Property="Text" Value="⬇️"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Completed">
-                                                            <Setter Property="Text" Value="✅"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Error">
-                                                            <Setter Property="Text" Value="❌"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Paused">
-                                                            <Setter Property="Text" Value="⏸️"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <!-- Name -->
-                            <DataGridTextColumn Header="NAME" Binding="{Binding Name}" Width="*">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource CyberpunkYellowBrush}"/>
-                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                                        <Setter Property="Padding" Value="4,2"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <!-- N.Chap -->
-                            <DataGridTextColumn Header="N.CHAP" Binding="{Binding TotalChapters}" Width="55">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
-                                        <Setter Property="HorizontalAlignment" Value="Center"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <!-- Status -->
-                            <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="80">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
-                                        <Setter Property="Padding" Value="4,2"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <!-- Process -->
-                            <DataGridTextColumn Header="PROCESS" Binding="{Binding CurrentProcess}" Width="100">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
-                                        <Setter Property="Padding" Value="4,2"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <!-- N.Error -->
-                            <DataGridTemplateColumn Header="N.ERROR" Width="65">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Button Content="{Binding ErrorCount}" 
-                                                Click="BtnShowErrors_Click"
-                                                HorizontalAlignment="Center"
-                                                Width="40" Height="22"
-                                                FontSize="11" Padding="0">
-                                            <Button.Style>
-                                                <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding ErrorCount, Converter={x:Static local:GreaterThanZeroConverter.Instance}}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                            <Setter Property="Background" Value="#ff2222"/>
-                                                            <Setter Property="BorderBrush" Value="#ff4444"/>
-                                                            <Setter Property="Foreground" Value="White"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-
                     <!-- Download Section -->
-                    <Border Grid.Row="5" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
+                    <Border Grid.Row="3" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/> <!-- Path Config -->
@@ -1158,9 +1154,9 @@
                                     <ComboBoxItem Content="10"/>
                                 </ComboBox>
 
-                                <Button Grid.Column="8" Name="btnStartDownload" Content="START DOWNLOAD" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
-                                <Button Grid.Column="10" Name="btnPauseDownload" Content="PAUSE" Click="BtnPauseDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="80" FontSize="11" IsEnabled="False"/>
-                                <Button Grid.Column="12" Name="btnStopDownload" Content="STOP" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="80" FontSize="11" IsEnabled="False"/>
+                                <Button Grid.Column="8" Name="btnStartDownload" Content="▶️" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="45" FontSize="11" ToolTip="Start Download"/>
+                                <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Click="BtnPauseDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" IsEnabled="False" ToolTip="Pause / Resume"/>
+                                <Button Grid.Column="12" Name="btnStopDownload" Content="⏹️" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="45" FontSize="11" IsEnabled="False" ToolTip="Stop"/>
                             </Grid>
                         </Grid>
                     </Border>
@@ -1193,10 +1189,8 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Name="lblStatus" Text="Ready." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold"/>
-                <ProgressBar Grid.Column="1" Name="progressBar" Width="250" Height="8" Minimum="0" Maximum="100" Style="{StaticResource ProgressBarSuccess}" Foreground="{StaticResource CyberpunkCyanBrush}"/>
             </Grid>
         </Border>
     </Grid>

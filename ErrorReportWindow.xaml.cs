@@ -7,10 +7,10 @@ namespace get_link_manga
 {
     public partial class ErrorReportWindow : Window
     {
-        private readonly DownloadQueueItem _queueItem;
+        private readonly GalleryItem _queueItem;
         private readonly MainWindow _mainWindow;
 
-        public ErrorReportWindow(DownloadQueueItem queueItem, MainWindow mainWindow)
+        public ErrorReportWindow(GalleryItem queueItem, MainWindow mainWindow)
         {
             InitializeComponent();
             _queueItem = queueItem;
@@ -56,7 +56,7 @@ namespace get_link_manga
 
             var sb = new StringBuilder();
             sb.AppendLine($"Error Report — {_queueItem.Name}");
-            sb.AppendLine($"Source: {_queueItem.SourceUrl}");
+            sb.AppendLine($"Source: {_queueItem.Link}");
             sb.AppendLine($"Total errors: {_queueItem.ErrorCount}");
             sb.AppendLine(new string('-', 60));
 

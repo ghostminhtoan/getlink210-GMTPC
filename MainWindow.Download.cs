@@ -98,14 +98,30 @@ namespace get_link_manga
             if (_isDownloadPaused)
             {
                 _isDownloadPaused = false;
-                btnPauseDownload.Content = "PAUSE";
+                btnPauseDownload.Content = "⏸️";
                 Log("Đã tiếp tục tải xuống (Download resumed).");
+                foreach (var item in _scrapedItems)
+                {
+                    if (item.Status == "Paused" || item.IsPaused)
+                    {
+                        item.IsPaused = false;
+                        item.Status = "Downloading";
+                    }
+                }
             }
             else
             {
                 _isDownloadPaused = true;
-                btnPauseDownload.Content = "RESUME";
+                btnPauseDownload.Content = "▶️";
                 Log("Đã tạm dừng tải xuống (Download paused).");
+                foreach (var item in _scrapedItems)
+                {
+                    if (item.Status == "Downloading" || !item.IsPaused)
+                    {
+                        item.IsPaused = true;
+                        item.Status = "Paused";
+                    }
+                }
             }
         }
 
@@ -115,10 +131,19 @@ namespace get_link_manga
             {
                 _downloadCts.Cancel();
                 _isDownloadPaused = false;
-                btnStopDownload.Content = "STOPPING...";
+                btnStopDownload.Content = "⏹️...";
                 btnStopDownload.IsEnabled = false;
                 btnPauseDownload.IsEnabled = false;
                 Log("Đang dừng quá trình tải xuống... (Stopping download process...)");
+
+                foreach (var item in _scrapedItems)
+                {
+                    if (item.Status == "Downloading" || item.Status == "Paused" || item.Status == "Queued")
+                    {
+                        item.IsStopped = true;
+                        item.Status = "Cancelled";
+                    }
+                }
             }
         }
 
@@ -158,10 +183,10 @@ namespace get_link_manga
             _isDownloadPaused = false;
 
             btnStartDownload.IsEnabled = false;
-            btnPauseDownload.Content = "PAUSE";
+            btnPauseDownload.Content = "⏸️";
             btnPauseDownload.IsEnabled = true;
             btnStopDownload.IsEnabled = true;
-            btnStopDownload.Content = "STOP";
+            btnStopDownload.Content = "⏹️";
 
             btnBrowseFolder.IsEnabled = false;
             // btnOpenFolder remains enabled per user request
@@ -171,9 +196,6 @@ namespace get_link_manga
             if (btnNhentaiFetchInfo != null) btnNhentaiFetchInfo.IsEnabled = false;
             // cmbConnections.IsEnabled = false;
             if (cmbMultiDownload != null) cmbMultiDownload.IsEnabled = false;
-
-            progressBar.Value = 0;
-            progressBar.IsIndeterminate = false;
 
             int totalGalleries = itemsToDownload.Count;
             int completedGalleries = 0;
@@ -187,28 +209,26 @@ namespace get_link_manga
                 }
             });
 
-            // Create DownloadQueueItems for each gallery
-            var queueItemMap = new System.Collections.Generic.Dictionary<GalleryItem, DownloadQueueItem>();
+            // Initialize GalleryItems for downloading
             foreach (var item in itemsToDownload)
             {
                 string domain = "";
                 try { domain = new Uri(item.Link).Host; } catch { }
 
-                var queueItem = new DownloadQueueItem
+                Dispatcher.Invoke(() =>
                 {
-                    Name = item.Name,
-                    SourceUrl = item.Link,
-                    SourceDomain = domain,
-                    TotalChapters = item.LinkCount > 0 ? item.LinkCount : 1,
-                    CompletedChapters = 0,
-                    Status = "Queued",
-                    CurrentProcess = "Waiting...",
-                    ErrorCount = 0,
-                    DownloadPath = downloadRoot
-                };
-
-                queueItemMap[item] = queueItem;
-                Dispatcher.Invoke(() => _downloadQueueItems.Add(queueItem));
+                    item.SourceDomain = domain;
+                    item.TotalChapters = item.LinkCount > 0 ? item.LinkCount : 1;
+                    item.CompletedChapters = 0;
+                    item.Status = "Queued";
+                    item.CurrentProcess = "Waiting...";
+                    item.ErrorCount = 0;
+                    item.DownloadPath = downloadRoot;
+                    item.ProgressPercent = 0;
+                    item.IsPaused = false;
+                    item.IsStopped = false;
+                    item.Errors.Clear();
+                });
             }
 
             Log($"Bắt đầu tải song song {totalGalleries} truyện với tối đa {maxParallelBooks} truyện cùng lúc...");
@@ -242,43 +262,36 @@ namespace get_link_manga
                             {
                                 foreach (var item in bookGroup)
                                 {
-                                    while (_isDownloadPaused)
+                                    while (_isDownloadPaused || item.IsPaused)
                                     {
                                         token.ThrowIfCancellationRequested();
+                                        if (item.IsStopped) throw new OperationCanceledException();
                                         await Task.Delay(200, token);
                                     }
                                     token.ThrowIfCancellationRequested();
 
-                                    var queueItem = queueItemMap.ContainsKey(item) ? queueItemMap[item] : null;
-
                                     // Update queue status
-                                    if (queueItem != null)
+                                    Dispatcher.Invoke(() =>
                                     {
-                                        Dispatcher.Invoke(() =>
-                                        {
-                                            queueItem.Status = "Downloading";
-                                            queueItem.CurrentProcess = "Starting...";
-                                        });
-                                    }
+                                        item.Status = "Downloading";
+                                        item.CurrentProcess = "Starting...";
+                                    });
 
                                     Log($"[Download] Đang tải: {item.Name} ({item.Link})");
 
                                     try
                                     {
-                                        await DownloadGalleryAsync(item, downloadRoot, token, queueItem, chapterFilter);
+                                        await DownloadGalleryAsync(item, downloadRoot, token, item, chapterFilter);
                                         lock (lockObj)
                                         {
                                             completedGalleries++;
                                         }
 
-                                        if (queueItem != null)
+                                        Dispatcher.Invoke(() =>
                                         {
-                                            Dispatcher.Invoke(() =>
-                                            {
-                                                queueItem.Status = queueItem.ErrorCount > 0 ? "Error" : "Completed";
-                                                queueItem.CurrentProcess = "Done";
-                                            });
-                                        }
+                                            item.Status = item.ErrorCount > 0 ? "Error" : "Completed";
+                                            item.CurrentProcess = "Done";
+                                        });
 
                                         Log($"[Download] Hoàn thành truyện: {item.Name}");
 
@@ -288,38 +301,33 @@ namespace get_link_manga
                                         // Add to history
                                         try
                                         {
-                                            int chapCount = queueItem?.CompletedChapters ?? 1;
-                                            string dlPath = queueItem?.DownloadPath ?? downloadRoot;
+                                            int chapCount = item.CompletedChapters;
+                                            if (chapCount <= 0) chapCount = 1;
+                                            string dlPath = item.DownloadPath ?? downloadRoot;
                                             AddToHistory(item, chapCount, dlPath);
                                         }
                                         catch { }
                                     }
                                     catch (OperationCanceledException)
                                     {
-                                        if (queueItem != null)
-                                            Dispatcher.Invoke(() => { queueItem.Status = "Paused"; queueItem.CurrentProcess = "Cancelled"; });
+                                        Dispatcher.Invoke(() => { item.Status = "Paused"; item.CurrentProcess = "Cancelled"; });
                                         throw;
                                     }
                                     catch (Exception ex)
                                     {
                                         Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
-                                        if (queueItem != null)
+                                        Dispatcher.Invoke(() =>
                                         {
-                                            Dispatcher.Invoke(() =>
-                                            {
-                                                queueItem.Status = "Error";
-                                                queueItem.CurrentProcess = "Failed";
-                                                queueItem.AddError("General", 0, ex.Message);
-                                            });
-                                        }
+                                            item.Status = "Error";
+                                            item.CurrentProcess = "Failed";
+                                            item.AddError("General", 0, ex.Message);
+                                        });
                                     }
 
                                     lock (lockObj)
                                     {
-                                        double overallProgress = ((double)completedGalleries / totalGalleries) * 100;
                                         Dispatcher.Invoke(() =>
                                         {
-                                            progressBar.Value = overallProgress;
                                             lblStatus.Text = $"Downloading {completedGalleries}/{totalGalleries} galleries...";
                                         });
                                     }
@@ -337,7 +345,6 @@ namespace get_link_manga
                     await Task.WhenAll(tasks);
                 }
 
-                progressBar.Value = 100;
                 lblStatus.Text = "Tải xuống hoàn tất! (Downloads completed)";
                 Log("Tải xuống toàn bộ thành công!");
                 MessageBox.Show("Đã tải xong toàn bộ truyện được chọn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -359,10 +366,10 @@ namespace get_link_manga
                 _isDownloadPaused = false;
 
                 btnStartDownload.IsEnabled = true;
-                btnPauseDownload.Content = "PAUSE";
+                btnPauseDownload.Content = "⏸️";
                 btnPauseDownload.IsEnabled = false;
                 btnStopDownload.IsEnabled = false;
-                btnStopDownload.Content = "STOP";
+                btnStopDownload.Content = "⏹️";
 
                 btnBrowseFolder.IsEnabled = true;
                 btnOpenFolder.IsEnabled = true;
@@ -377,7 +384,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, HashSet<int> chapterFilter = null)
+        private async Task DownloadGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, HashSet<int> chapterFilter = null)
         {
             string hostName = "hentaiforce.net";
             try
@@ -464,15 +471,6 @@ namespace get_link_manga
             bool isFastPath = !string.IsNullOrEmpty(prefix);
             Log($"[Đa luồng] Bắt đầu tải {totalPages} trang với tối đa {maxThreads} kết nối song song...");
 
-            if (queueItem != null)
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    queueItem.TotalChapters = totalPages;
-                    queueItem.CurrentProcess = $"0/{totalPages} pages";
-                });
-            }
-
             using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
                 var tasks = new System.Collections.Generic.List<Task>();
@@ -485,9 +483,10 @@ namespace get_link_manga
                     tasks.Add(Task.Run(async () =>
                     {
                         // Check pause/cancel before waiting on semaphore
-                        while (_isDownloadPaused)
+                        while (_isDownloadPaused || item.IsPaused)
                         {
                             token.ThrowIfCancellationRequested();
+                            if (item.IsStopped) throw new OperationCanceledException();
                             await Task.Delay(200, token);
                         }
                         token.ThrowIfCancellationRequested();
@@ -496,9 +495,10 @@ namespace get_link_manga
                         try
                         {
                             // Check pause/cancel after acquiring semaphore
-                            while (_isDownloadPaused)
+                            while (_isDownloadPaused || item.IsPaused)
                             {
                                 token.ThrowIfCancellationRequested();
+                                if (item.IsStopped) throw new OperationCanceledException();
                                 await Task.Delay(200, token);
                             }
                             token.ThrowIfCancellationRequested();
@@ -514,12 +514,12 @@ namespace get_link_manga
                                 lock (lockObj)
                                 {
                                     completedPages++;
-                                    if (completedPages % 5 == 0 || completedPages == totalPages)
+                                    if (queueItem != null)
                                     {
-                                        string modeText = isFastPath ? "Fast Path" : "Slow Path";
                                         Dispatcher.Invoke(() =>
                                         {
-                                            lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} ({modeText})";
+                                            queueItem.CompletedChapters = completedPages;
+                                            queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
                                         });
                                     }
                                 }
@@ -536,23 +536,23 @@ namespace get_link_manga
                                 catch (Exception ex)
                                 {
                                     Log($"[Fast Path] Lỗi trang {pageNum} ({ex.Message}). Thử Slow Path fallback...");
-                                    await DownloadPageSlowPathAsync(item.Link, pageNum, localFilePath, token);
+                                    await DownloadPageSlowPathAsync(item, pageNum, localFilePath, token);
                                 }
                             }
                             else
                             {
-                                await DownloadPageSlowPathAsync(item.Link, pageNum, localFilePath, token);
+                                await DownloadPageSlowPathAsync(item, pageNum, localFilePath, token);
                             }
 
                             lock (lockObj)
                             {
                                 completedPages++;
-                                if (completedPages % 5 == 0 || completedPages == totalPages)
+                                if (queueItem != null)
                                 {
-                                    string modeText = isFastPath ? "Fast Path" : "Slow Path";
                                     Dispatcher.Invoke(() =>
                                     {
-                                        lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} ({modeText})";
+                                        queueItem.CompletedChapters = completedPages;
+                                        queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
                                     });
                                 }
                             }
@@ -590,17 +590,18 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadPageSlowPathAsync(string galleryUrl, int pageNum, string targetPath, CancellationToken token)
+        private async Task DownloadPageSlowPathAsync(GalleryItem item, int pageNum, string targetPath, CancellationToken token)
         {
             // Respect pause check
-            while (_isDownloadPaused)
+            while (_isDownloadPaused || item.IsPaused)
             {
                 token.ThrowIfCancellationRequested();
+                if (item.IsStopped) throw new OperationCanceledException();
                 await Task.Delay(200, token);
             }
             token.ThrowIfCancellationRequested();
 
-            string pageUrl = $"{galleryUrl}/{pageNum}";
+            string pageUrl = $"{item.Link}/{pageNum}";
             string html = await _httpClient.GetStringAsync(pageUrl);
 
             // Match image src/data-src in Hentaiforce reader page
@@ -619,9 +620,10 @@ namespace get_link_manga
                 }
 
                 // Respect pause check
-                while (_isDownloadPaused)
+                while (_isDownloadPaused || item.IsPaused)
                 {
                     token.ThrowIfCancellationRequested();
+                    if (item.IsStopped) throw new OperationCanceledException();
                     await Task.Delay(200, token);
                 }
                 token.ThrowIfCancellationRequested();
@@ -1411,7 +1413,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             throw new Exception($"Không thể tải ảnh sau {maxAttempts} lần thử: {url}");
         }
 
-        private void ValidateDownloadedFiles(string folderPath, int expectedCount, DownloadQueueItem queueItem, string chapterName = "General")
+        private void ValidateDownloadedFiles(string folderPath, int expectedCount, GalleryItem queueItem, string chapterName = "General")
         {
             if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
                 return;

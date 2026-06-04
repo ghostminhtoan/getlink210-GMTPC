@@ -138,29 +138,13 @@ namespace get_link_manga
 
         // ===== DOWNLOAD QUEUE =====
 
-        private void BtnClearQueue_Click(object sender, RoutedEventArgs e)
-        {
-            // Only clear completed/errored items, not active downloads
-            var toRemove = _downloadQueueItems
-                .Where(q => q.Status == "Completed" || q.Status == "Error" || q.Status == "Queued")
-                .ToList();
-
-            foreach (var item in toRemove)
-            {
-                _downloadQueueItems.Remove(item);
-            }
-
-            UpdateQueueErrorLabel();
-            Log($"Cleared {toRemove.Count} items from download queue.");
-        }
-
         private void BtnShowErrors_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.DataContext is DownloadQueueItem queueItem)
+            if (sender is Button btn && btn.DataContext is GalleryItem item)
             {
-                if (queueItem.ErrorCount > 0)
+                if (item.ErrorCount > 0)
                 {
-                    var errorWindow = new ErrorReportWindow(queueItem, this)
+                    var errorWindow = new ErrorReportWindow(item, this)
                     {
                         Owner = this
                     };
@@ -169,16 +153,39 @@ namespace get_link_manga
             }
         }
 
+        private void BtnRowResume_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is GalleryItem item)
+            {
+                item.IsPaused = false;
+                item.Status = "Downloading";
+                Log($"[Local Actions] Resumed download for '{item.Name}'");
+            }
+        }
+
+        private void BtnRowPause_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is GalleryItem item)
+            {
+                item.IsPaused = true;
+                item.Status = "Paused";
+                Log($"[Local Actions] Paused download for '{item.Name}'");
+            }
+        }
+
+        private void BtnRowStop_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is GalleryItem item)
+            {
+                item.IsStopped = true;
+                item.Status = "Cancelled";
+                Log($"[Local Actions] Stopped download for '{item.Name}'");
+            }
+        }
+
         internal void UpdateQueueErrorLabel()
         {
-            Dispatcher.Invoke(() =>
-            {
-                int totalErrors = _downloadQueueItems.Sum(q => q.ErrorCount);
-                lblQueueErrors.Text = $"{totalErrors} Errors";
-                lblQueueErrors.Foreground = totalErrors > 0
-                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xff, 0x44, 0x44))
-                    : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x66, 0x66, 0x66));
-            });
+            // No-op since label was removed from UI
         }
 
         /// <summary>
@@ -239,9 +246,9 @@ namespace get_link_manga
         }
 
         /// <summary>
-        /// Thử tải lại các trang bị lỗi của một DownloadQueueItem.
+        /// Thử tải lại các trang bị lỗi của một GalleryItem.
         /// </summary>
-        public async Task RetryDownloadQueueItemErrorsAsync(DownloadQueueItem queueItem)
+        public async Task RetryDownloadQueueItemErrorsAsync(GalleryItem queueItem)
         {
             if (queueItem == null || queueItem.Errors == null || queueItem.Errors.Count == 0)
                 return;
@@ -276,8 +283,8 @@ namespace get_link_manga
                 try
                 {
                     string targetFolder;
-                    bool isViHentai = queueItem.SourceDomain.Contains("vi-hentai.pro");
-                    bool isTruyenqq = queueItem.SourceDomain.Contains("truyenqq");
+                    bool isViHentai = queueItem.SourceDomain != null && queueItem.SourceDomain.Contains("vi-hentai.pro");
+                    bool isTruyenqq = queueItem.SourceDomain != null && queueItem.SourceDomain.Contains("truyenqq");
 
                     string safeManga = GetSafePathName(queueItem.Name);
                     
@@ -293,7 +300,7 @@ namespace get_link_manga
                     }
                     else
                     {
-                        targetFolder = Path.Combine(queueItem.DownloadPath, queueItem.SourceDomain, safeManga);
+                        targetFolder = Path.Combine(queueItem.DownloadPath, queueItem.SourceDomain ?? "", safeManga);
                     }
 
                     Directory.CreateDirectory(targetFolder);
@@ -307,7 +314,7 @@ namespace get_link_manga
 
                     await DownloadUrlToFileWithRefererAsync(
                         err.ImageUrl, 
-                        queueItem.SourceUrl,
+                        queueItem.Link, 
                         finalFilePath, 
                         token, 
                         isViHentai: isViHentai, 

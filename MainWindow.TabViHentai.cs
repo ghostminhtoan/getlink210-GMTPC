@@ -683,7 +683,7 @@ namespace get_link_manga
             return j;
         }
 
-        private async Task DownloadViHentaiGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, HashSet<int> chapterFilter = null)
+        private async Task DownloadViHentaiGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, HashSet<int> chapterFilter = null)
         {
             var uri = new Uri(item.Link);
             var segments = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
@@ -789,7 +789,7 @@ namespace get_link_manga
                     }
                 }
 
-                Log($"[vi-hentai.pro] Phát hiện {chapterLinks.Count} chapters cho truyện '{item.Name}'. Sẽ tải lần lượt...");
+                Log($"[vi-hentai.pro] Truy cập {chapterLinks.Count} chapters cho truyện '{item.Name}'. Sẽ tải lần lượt...");
 
                 if (queueItem != null)
                 {
@@ -835,7 +835,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadViHentaiChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, bool isParentQueue = false)
+        private async Task DownloadViHentaiChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
         {
             string html = await GetViHentaiStringWithRetryAsync(item.Link, token, $"load chapter page '{item.Link}'");
 
@@ -964,9 +964,10 @@ namespace get_link_manga
 
                     tasks.Add(Task.Run(async () =>
                     {
-                        while (_isDownloadPaused)
+                        while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
                         {
                             token.ThrowIfCancellationRequested();
+                            if (queueItem != null && queueItem.IsStopped) throw new OperationCanceledException();
                             await Task.Delay(200, token);
                         }
                         token.ThrowIfCancellationRequested();
@@ -974,9 +975,10 @@ namespace get_link_manga
                         await semaphore.WaitAsync(token);
                         try
                         {
-                            while (_isDownloadPaused)
+                            while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
                             {
                                 token.ThrowIfCancellationRequested();
+                                if (queueItem != null && queueItem.IsStopped) throw new OperationCanceledException();
                                 await Task.Delay(200, token);
                             }
                             token.ThrowIfCancellationRequested();
@@ -1005,13 +1007,6 @@ namespace get_link_manga
                                                 queueItem.CompletedChapters = completedPages;
                                                 queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
                                             }
-                                        });
-                                    }
-                                    if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
-                                    {
-                                        Dispatcher.Invoke(() =>
-                                        {
-                                            lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
                                         });
                                     }
                                 }
@@ -1050,13 +1045,6 @@ namespace get_link_manga
                                             queueItem.CompletedChapters = completedPages;
                                             queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
                                         }
-                                    });
-                                }
-                                if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
-                                {
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {mangaTitle} - {chapterTitle}";
                                     });
                                 }
                             }

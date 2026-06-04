@@ -653,7 +653,7 @@ namespace get_link_manga
             return html;
         }
 
-        private async Task DownloadTruyenqqGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, HashSet<int> chapterFilter = null)
+        private async Task DownloadTruyenqqGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, HashSet<int> chapterFilter = null)
         {
             string cleanLink = item.Link.TrimEnd('/');
             string activeDomain = ExtractTruyenqqBaseUrl(cleanLink);
@@ -800,7 +800,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadTruyenqqChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, DownloadQueueItem queueItem = null, bool isParentQueue = false)
+        private async Task DownloadTruyenqqChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
         {
             bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(item.Link);
             if (!captchaOk)
@@ -1007,9 +1007,10 @@ namespace get_link_manga
 
                     tasks.Add(Task.Run(async () =>
                     {
-                        while (_isDownloadPaused)
+                        while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
                         {
                             token.ThrowIfCancellationRequested();
+                            if (queueItem != null && queueItem.IsStopped) throw new OperationCanceledException();
                             await Task.Delay(200, token);
                         }
                         token.ThrowIfCancellationRequested();
@@ -1017,9 +1018,10 @@ namespace get_link_manga
                         await semaphore.WaitAsync(token);
                         try
                         {
-                            while (_isDownloadPaused)
+                            while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
                             {
                                 token.ThrowIfCancellationRequested();
+                                if (queueItem != null && queueItem.IsStopped) throw new OperationCanceledException();
                                 await Task.Delay(200, token);
                             }
                             token.ThrowIfCancellationRequested();
@@ -1048,13 +1050,6 @@ namespace get_link_manga
                                                 queueItem.CompletedChapters = completedPages;
                                                 queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
                                             }
-                                        });
-                                    }
-                                    if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
-                                    {
-                                        Dispatcher.Invoke(() =>
-                                        {
-                                            lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {cleanManga} - {cleanChapter}";
                                         });
                                     }
                                 }
@@ -1093,13 +1088,6 @@ namespace get_link_manga
                                             queueItem.CompletedChapters = completedPages;
                                             queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
                                         }
-                                    });
-                                }
-                                if (completedPages % 5 == 0 || completedPages == imageUrls.Count)
-                                {
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        lblStatus.Text = $"[{completedPages}/{imageUrls.Count}] Tải {cleanManga} - {cleanChapter}";
                                     });
                                 }
                             }

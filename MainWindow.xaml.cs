@@ -23,9 +23,9 @@ namespace get_link_manga
         private bool _usePagePathSegment = false;
         internal ObservableCollection<GalleryItem> _scrapedItems = new ObservableCollection<GalleryItem>();
         internal DuplicateWindow _duplicateWindowInstance;
-        internal ObservableCollection<DownloadQueueItem> _downloadQueueItems = new ObservableCollection<DownloadQueueItem>();
         internal BookmarkHistoryManager _bookmarkManager = new BookmarkHistoryManager();
         private BookmarkHistoryWindow _bookmarkHistoryWindowInstance;
+        private readonly System.Windows.Controls.ProgressBar progressBar = new System.Windows.Controls.ProgressBar();
 
         static MainWindow()
         {
@@ -45,7 +45,6 @@ public MainWindow()
         {
             InitializeComponent();
             dgResults.ItemsSource = _scrapedItems;
-            dgDownloadQueue.ItemsSource = _downloadQueueItems;
 
             try
             {
