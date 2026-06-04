@@ -11,6 +11,7 @@
         SizeChanged="Window_SizeChanged">
 
     <Window.Resources>
+        <local:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter"/>
         <!-- Missing resource definitions -->
         <Style x:Key="ToggleButtonSwitch" TargetType="ToggleButton">
             <Setter Property="Width" Value="40"/>
@@ -757,7 +758,7 @@
                               MouseDoubleClick="DgResults_MouseDoubleClick"
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling"
-                              VirtualizingPanel.ScrollUnit="Row"
+                              VirtualizingPanel.ScrollUnit="Item"
                               EnableRowVirtualization="True"
                               Margin="0,0,0,15">
                         <DataGrid.ContextMenu>
@@ -963,7 +964,7 @@
                                                          <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
                                                              <Setter Property="Visibility" Value="Collapsed"/>
                                                              <Style.Triggers>
-                                                                 <DataTrigger Binding="{Binding ErrorCount, Converter={x:Static local:GreaterThanZeroConverter.Instance}}" Value="True">
+                                                                 <DataTrigger Binding="{Binding ErrorCount, Converter={StaticResource GreaterThanZeroConverter}}" Value="True">
                                                                      <Setter Property="Visibility" Value="Visible"/>
                                                                      <Setter Property="Background" Value="#ff2222"/>
                                                                      <Setter Property="BorderBrush" Value="#ff4444"/>
