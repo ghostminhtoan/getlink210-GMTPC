@@ -40,6 +40,8 @@ namespace get_link_manga
         private List<ErrorDetail> _errors = new List<ErrorDetail>();
         private bool _isPaused;
         private bool _isStopped;
+        private string _downloadingChapter;
+        private string _downloadingPageProgress;
 
         public bool HasNoChapters
         {
@@ -171,7 +173,49 @@ namespace get_link_manga
         public string CurrentProcess
         {
             get => _currentProcess;
-            set { if (_currentProcess != value) { _currentProcess = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_currentProcess != value)
+                {
+                    _currentProcess = value;
+                    OnPropertyChanged();
+
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        DownloadingChapter = "";
+                        DownloadingPageProgress = "";
+                    }
+                    else if (value.Contains(" (trang "))
+                    {
+                        int idx = value.IndexOf(" (trang ");
+                        DownloadingChapter = value.Substring(0, idx).Trim();
+                        string p = value.Substring(idx + " (trang ".Length).Replace(")", "").Trim();
+                        DownloadingPageProgress = $"Trang {p}";
+                    }
+                    else if (value.StartsWith("Trang ") || value.Contains("/"))
+                    {
+                        DownloadingChapter = "General";
+                        if (value.EndsWith(" pages"))
+                        {
+                            DownloadingPageProgress = $"Trang {value.Replace(" pages", "").Trim()}";
+                        }
+                        else
+                        {
+                            DownloadingPageProgress = value;
+                        }
+                    }
+                    else if (value.StartsWith("Retry:"))
+                    {
+                        DownloadingChapter = "Retrying errors";
+                        DownloadingPageProgress = value.Replace("Retry:", "").Trim();
+                    }
+                    else
+                    {
+                        DownloadingChapter = value;
+                        DownloadingPageProgress = "";
+                    }
+                }
+            }
         }
 
         public int ErrorCount
@@ -208,6 +252,18 @@ namespace get_link_manga
         {
             get => _isStopped;
             set { if (_isStopped != value) { _isStopped = value; OnPropertyChanged(); } }
+        }
+
+        public string DownloadingChapter
+        {
+            get => _downloadingChapter;
+            set { if (_downloadingChapter != value) { _downloadingChapter = value; OnPropertyChanged(); } }
+        }
+
+        public string DownloadingPageProgress
+        {
+            get => _downloadingPageProgress;
+            set { if (_downloadingPageProgress != value) { _downloadingPageProgress = value; OnPropertyChanged(); } }
         }
 
         public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null)
