@@ -149,5 +149,86 @@ public MainWindow()
         {
             if (txtTruyenqqLog != null) txtTruyenqqLog.Clear();
         }
+
+        private void BtnCaptcha_Click(object sender, RoutedEventArgs e)
+        {
+            string url = "";
+            var btn = sender as System.Windows.Controls.Button;
+            if (btn == btnFetchCaptcha) url = txtTagUrl.Text;
+            else if (btn == btnNhentaiFetchCaptcha) url = txtNhentaiTagUrl.Text;
+            else if (btn == btnViHentaiFetchCaptcha) url = txtViHentaiTagUrl.Text;
+            else if (btn == btnTruyenqqFetchCaptcha) url = txtTruyenqqTagUrl.Text;
+
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                MessageBox.Show("Vui lòng nhập TARGET TAG URL trước.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var captchaWin = new CaptchaWindow(url)
+            {
+                Owner = this
+            };
+
+            if (captchaWin.ShowDialog() == true)
+            {
+                try
+                {
+                    var originalUri = new Uri(url);
+                    var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
+
+                    // Add cookies for resolvedUri
+                    var resolvedCookies = captchaWin.ResolvedCookies.GetCookies(resolvedUri);
+                    foreach (Cookie cookie in resolvedCookies)
+                    {
+                        _cookieContainer.Add(resolvedUri, cookie);
+                    }
+
+                    // Add cookies for originalUri if different
+                    if (originalUri.Host != resolvedUri.Host)
+                    {
+                        var originalCookies = captchaWin.ResolvedCookies.GetCookies(originalUri);
+                        foreach (Cookie cookie in originalCookies)
+                        {
+                            _cookieContainer.Add(originalUri, cookie);
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(captchaWin.UserAgent))
+                    {
+                        _httpClient.DefaultRequestHeaders.UserAgent.Clear();
+                        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
+                    }
+
+                    Log("Đồng bộ cookie và user-agent từ CaptchaWindow thành công!");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi lưu cookie: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void BtnClearComplete_Click(object sender, RoutedEventArgs e)
+        {
+            var toRemove = _scrapedItems.Where(item => 
+                item.Status == "Completed" || 
+                item.Status == "Done" || 
+                item.CurrentProcess == "Done"
+            ).ToList();
+
+            if (toRemove.Count == 0)
+            {
+                MessageBox.Show("Không có truyện nào hoàn thành để xóa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            foreach (var item in toRemove)
+            {
+                _scrapedItems.Remove(item);
+            }
+            Log($"Đã xóa {toRemove.Count} truyện hoàn thành khỏi danh sách.");
+            lblLinkCount.Text = _scrapedItems.Count.ToString();
+        }
     }
 }

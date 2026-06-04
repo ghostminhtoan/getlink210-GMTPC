@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:get_link_manga"
         mc:Ignorable="d"
-        Title="NEON LINK SCRAPER v1.0" Height="700" Width="1100"
+        Title="NEON LINK SCRAPER v1.0" Height="850" Width="1280"
         Background="{StaticResource CyberpunkDarkBrush}"
         WindowStartupLocation="CenterScreen"
         SizeChanged="Window_SizeChanged">
@@ -212,7 +212,10 @@
                                 </StackPanel>
 
                                 <!-- Fetch Info Action -->
-                                <Button Grid.Row="2" Name="btnFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,20"/>
+                                <StackPanel Grid.Row="2" Margin="0,0,0,20">
+                                    <Button Name="btnFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,10"/>
+                                    <Button Name="btnFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                </StackPanel>
 
                                 <!-- Page Info Status -->
                                 <Border Grid.Row="3" Background="#0c0f17" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Padding="12" CornerRadius="3" Margin="0,0,0,15">
@@ -353,7 +356,10 @@
                                 </StackPanel>
 
                                 <!-- Fetch Info Action -->
-                                <Button Grid.Row="3" Name="btnNhentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnNhentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,20"/>
+                                <StackPanel Grid.Row="3" Margin="0,0,0,20">
+                                    <Button Name="btnNhentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnNhentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,10"/>
+                                    <Button Name="btnNhentaiFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                </StackPanel>
 
                                 <!-- Page Info Status -->
                                 <Border Grid.Row="4" Background="#0c0f17" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Padding="12" CornerRadius="3" Margin="0,0,0,15">
@@ -468,7 +474,10 @@
                                 </StackPanel>
 
                                 <!-- Fetch Info Action -->
-                                <Button Grid.Row="2" Name="btnViHentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnViHentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,20"/>
+                                <StackPanel Grid.Row="2" Margin="0,0,0,20">
+                                    <Button Name="btnViHentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnViHentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,10"/>
+                                    <Button Name="btnViHentaiFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                </StackPanel>
 
                                 <!-- Page Info Status -->
                                 <Border Grid.Row="3" Background="#0c0f17" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Padding="12" CornerRadius="3" Margin="0,0,0,15">
@@ -586,7 +595,10 @@
                                 </StackPanel>
 
                                 <!-- Fetch Info Action -->
-                                <Button Grid.Row="2" Name="btnTruyenqqFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnTruyenqqFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,20"/>
+                                <StackPanel Grid.Row="2" Margin="0,0,0,20">
+                                    <Button Name="btnTruyenqqFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnTruyenqqFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,10"/>
+                                    <Button Name="btnTruyenqqFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                </StackPanel>
 
                                 <!-- Page Info Status -->
                                 <Border Grid.Row="3" Background="#0c0f17" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Padding="12" CornerRadius="3" Margin="0,0,0,15">
@@ -721,6 +733,8 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         
@@ -738,6 +752,7 @@
                         <Button Grid.Column="6" Name="btnDuplicateName" Content="DUPLICATE NAME" Click="BtnDuplicateName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11"/>
                         <Button Grid.Column="8" Name="btnNoLinkViHentai" Content="NO LINK (VI-HENTAI)" Click="BtnNoLinkViHentai_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="150" FontSize="11"/>
                         <Button Grid.Column="10" Name="btnReverseOrder" Content="REVERSE ORDER" Click="BtnReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="150" FontSize="11"/>
+                        <Button Grid.Column="12" Name="btnClearComplete" Content="CLEAR COMPLETE BOOKS" Click="BtnClearComplete_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="180" FontSize="11"/>
                     </Grid>
 
                     <!-- Scraped links DataGrid -->
@@ -994,7 +1009,7 @@
                                                  <ProgressBar Value="{Binding ProgressPercent}" Minimum="0" Maximum="100" Foreground="{StaticResource CyberpunkCyanBrush}" Style="{StaticResource ProgressBarSuccess}" Height="14" VerticalAlignment="Center"/>
                                                  
                                                  <TextBlock Text="{Binding ProgressPercent, StringFormat={}{0:F0}%}" 
-                                                            Foreground="Black" 
+                                                            Foreground="Red" 
                                                             FontSize="9" 
                                                             FontWeight="Bold"
                                                             HorizontalAlignment="Center" 

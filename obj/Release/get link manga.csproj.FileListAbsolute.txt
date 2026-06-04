@@ -48,6 +48,14 @@ C:\Users\Admin\source\repos\ghostminhtoan\get link manga\bin\Release\runtimes\wi
 C:\Users\Admin\source\repos\ghostminhtoan\get link manga\bin\Release\runtimes\win-x64\native\WebView2Loader.dll
 C:\Users\Admin\source\repos\ghostminhtoan\get link manga\bin\Release\runtimes\win-arm64\native\WebView2Loader.dll
 C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\get link manga_Content.g.cs
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\BookmarkHistoryWindow.baml
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\ErrorReportWindow.baml
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\BookmarkHistoryWindow.g.cs
+C:\Users\Admin\source\repos\ghostminhtoan\get link manga\obj\Release\ErrorReportWindow.g.cs
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\BookmarkHistoryWindow.baml
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\ErrorReportWindow.baml
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\BookmarkHistoryWindow.g.cs
+R:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\obj\Release\ErrorReportWindow.g.cs
 C:\Users\Admin\source\repos\ghostminhtoan\get link manga\bin\Release\Costura.dll
 C:\Users\Admin\source\repos\ghostminhtoan\get link manga\bin\Release\Costura.pdb
 C:\Users\Admin\source\repos\ghostminhtoan\get link manga\bin\Release\Microsoft.Web.WebView2.Core.dll

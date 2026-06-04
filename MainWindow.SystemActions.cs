@@ -55,7 +55,7 @@ namespace get_link_manga
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            var items = GetItemsToExport();
+            var items = _scrapedItems.ToList();
             if (!items.Any())
             {
                 MessageBox.Show("No content to save.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -75,23 +75,22 @@ namespace get_link_manga
                     StringBuilder sb = new StringBuilder();
                     sb.AppendLine("# Scraped HentaiForce Galleries");
                     sb.AppendLine();
-                    sb.AppendLine("| No. | Gallery Name | Gallery Link |");
-                    sb.AppendLine("| :--- | :--- | :--- |");
+                    sb.AppendLine("| No. | Gallery Name | Gallery Link | Selected |");
+                    sb.AppendLine("| :--- | :--- | :--- | :--- |");
                     
                     for (int i = 0; i < items.Count; i++)
                     {
                         var item = items[i];
                         // Replace pipe characters to avoid breaking Markdown tables
                         string safeName = item.Name.Replace("|", "\\|");
-                        sb.AppendLine($"| {i + 1} | {safeName} | {item.Link} |");
+                        string checkedStr = item.IsChecked ? "[x]" : "[ ]";
+                        sb.AppendLine($"| {i + 1} | {safeName} | {item.Link} | {checkedStr} |");
                     }
 
                     File.WriteAllText(saveFileDialog.FileName, sb.ToString(), Encoding.UTF8);
                     
-                    bool showingSubset = items.Count < _scrapedItems.Count;
-                    string scopeText = showingSubset ? $"{items.Count} checked" : "All";
-                    Log($"{scopeText} content successfully saved to Markdown file: {saveFileDialog.FileName}");
-                    lblStatus.Text = $"Saved to MD file ({scopeText}).";
+                    Log($"All content successfully saved to Markdown file: {saveFileDialog.FileName}");
+                    lblStatus.Text = "Saved to MD file.";
                 }
                 catch (Exception ex)
                 {
@@ -141,6 +140,13 @@ namespace get_link_manga
                                 {
                                     // Restore original pipe characters
                                     name = name.Replace("\\|", "|");
+                                    bool isChecked = false;
+                                    if (parts.Length >= 5)
+                                    {
+                                        string selStr = parts[4].Trim();
+                                        isChecked = selStr.Contains("[x]") || selStr.Equals("Yes", StringComparison.OrdinalIgnoreCase) || selStr.Equals("1");
+                                    }
+
                                     if (!loadedItems.Any(item => item.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
                                     {
                                         loadedItems.Add(new GalleryItem 
@@ -148,7 +154,7 @@ namespace get_link_manga
                                             Name = name, 
                                             Link = link,
                                             OriginalIndex = loadedItems.Count,
-                                            IsChecked = false
+                                            IsChecked = isChecked
                                         });
                                     }
                                 }
@@ -178,7 +184,7 @@ namespace get_link_manga
                     }
                     else
                     {
-                        MessageBox.Show("No valid gallery table rows found in the selected Markdown file.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show("No valid entries found in the markdown file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                 }
                 catch (Exception ex)

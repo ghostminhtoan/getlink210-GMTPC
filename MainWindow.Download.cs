@@ -441,6 +441,15 @@ namespace get_link_manga
                 }
             }
 
+            if (queueItem != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    queueItem.TotalChapters = totalPages;
+                    queueItem.CompletedChapters = 0;
+                });
+            }
+
             // 2. Identify path pattern
             string prefix = null;
             string ext = "jpg";
