@@ -755,6 +755,10 @@
                               PreviewKeyDown="DgResults_PreviewKeyDown"
                               PreviewTextInput="DgResults_PreviewTextInput"
                               MouseDoubleClick="DgResults_MouseDoubleClick"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling"
+                              VirtualizingPanel.ScrollUnit="Row"
+                              EnableRowVirtualization="True"
                               Margin="0,0,0,15">
                         <DataGrid.ContextMenu>
                             <ContextMenu>

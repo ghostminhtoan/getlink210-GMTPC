@@ -167,11 +167,29 @@ namespace get_link_manga
         private string GetTruyenqqPageUrl(string baseUrl, int page)
         {
             baseUrl = baseUrl.Trim();
-            string cleanUrl = baseUrl;
-            // Remove /trang-\d+ if present
-            cleanUrl = Regex.Replace(cleanUrl, @"/trang-\d+/?", "", RegexOptions.IgnoreCase);
-            cleanUrl = cleanUrl.TrimEnd('/');
-            return $"{cleanUrl}/trang-{page}";
+            if (page == 1) return baseUrl;
+
+            try
+            {
+                var uri = new Uri(baseUrl);
+                string path = uri.AbsolutePath;
+                path = Regex.Replace(path, @"/trang-\d+/?", "", RegexOptions.IgnoreCase);
+                path = path.TrimEnd('/');
+                
+                string newPath = $"{path}/trang-{page}";
+                var builder = new UriBuilder(uri)
+                {
+                    Path = newPath
+                };
+                return builder.Uri.ToString();
+            }
+            catch
+            {
+                string cleanUrl = baseUrl;
+                cleanUrl = Regex.Replace(cleanUrl, @"/trang-\d+/?", "", RegexOptions.IgnoreCase);
+                cleanUrl = cleanUrl.TrimEnd('/');
+                return $"{cleanUrl}/trang-{page}";
+            }
         }
 
         private async void BtnTruyenqqFetchInfo_Click(object sender, RoutedEventArgs e)
@@ -346,8 +364,8 @@ namespace get_link_manga
 
                     string html = await _httpClient.GetStringAsync(pageUrl);
                     
-                    // Match <a> tags containing /truyen-tranh/ links
-                    var viewMatches = Regex.Matches(html, @"<a[^>]+href=[""'](?<link>[^""']*?/truyen-tranh/[^""']+)[""'][^>]*>(?<content>[\s\S]*?)<\/a>", RegexOptions.IgnoreCase);
+                    // Match <a> tags containing /truyen-tranh/ links robustly
+                    var viewMatches = Regex.Matches(html, @"<a\s+[^>]*?href=[""'](?<link>[^""']*?/truyen-tranh/[^""']+)[""'][^>]*>(?<content>[\s\S]*?)<\/a>", RegexOptions.IgnoreCase);
                     
                     int pageCount = 0;
                     foreach (Match match in viewMatches)
@@ -1039,7 +1057,7 @@ namespace get_link_manga
                                     completedPages++;
                                     if (queueItem != null)
                                     {
-                                        Dispatcher.Invoke(() =>
+                                        Dispatcher.BeginInvoke((Action)(() =>
                                         {
                                             if (isParentQueue)
                                             {
@@ -1050,7 +1068,7 @@ namespace get_link_manga
                                                 queueItem.CompletedChapters = completedPages;
                                                 queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
                                             }
-                                        });
+                                        }));
                                     }
                                 }
                                 return;
@@ -1077,7 +1095,7 @@ namespace get_link_manga
                                 completedPages++;
                                 if (queueItem != null)
                                 {
-                                    Dispatcher.Invoke(() =>
+                                    Dispatcher.BeginInvoke((Action)(() =>
                                     {
                                         if (isParentQueue)
                                         {
@@ -1088,7 +1106,7 @@ namespace get_link_manga
                                             queueItem.CompletedChapters = completedPages;
                                             queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
                                         }
-                                    });
+                                    }));
                                 }
                             }
                         }

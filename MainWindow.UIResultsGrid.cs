@@ -355,7 +355,7 @@ namespace get_link_manga
 
         private async void MenuDownloadChecked_Click(object sender, RoutedEventArgs e)
         {
-            var items = _scrapedItems.Where(item => item.IsChecked).ToList();
+            var items = dgResults.Items.Cast<GalleryItem>().Where(item => item.IsChecked).ToList();
             if (!items.Any())
             {
                 MessageBox.Show("Vui lòng tích chọn ít nhất 1 truyện để tải (Please check at least one gallery to download).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);

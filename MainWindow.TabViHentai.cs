@@ -996,7 +996,7 @@ namespace get_link_manga
                                     completedPages++;
                                     if (queueItem != null)
                                     {
-                                        Dispatcher.Invoke(() =>
+                                        Dispatcher.BeginInvoke((Action)(() =>
                                         {
                                             if (isParentQueue)
                                             {
@@ -1007,7 +1007,7 @@ namespace get_link_manga
                                                 queueItem.CompletedChapters = completedPages;
                                                 queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
                                             }
-                                        });
+                                        }));
                                     }
                                 }
                                 return;
@@ -1034,7 +1034,7 @@ namespace get_link_manga
                                 completedPages++;
                                 if (queueItem != null)
                                 {
-                                    Dispatcher.Invoke(() =>
+                                    Dispatcher.BeginInvoke((Action)(() =>
                                     {
                                         if (isParentQueue)
                                         {
@@ -1045,7 +1045,7 @@ namespace get_link_manga
                                             queueItem.CompletedChapters = completedPages;
                                             queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
                                         }
-                                    });
+                                    }));
                                 }
                             }
                         }

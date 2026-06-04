@@ -75,7 +75,7 @@ namespace get_link_manga
                 return;
             }
 
-            var itemsToDownload = _scrapedItems.Where(item => item.IsChecked).ToList();
+            var itemsToDownload = dgResults.Items.Cast<GalleryItem>().Where(item => item.IsChecked).ToList();
             if (!itemsToDownload.Any())
             {
                 MessageBox.Show("Vui lòng tích chọn ít nhất 1 truyện để tải (Please check at least one gallery to download).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -248,18 +248,21 @@ namespace get_link_manga
                     foreach (var group in groupedByBook)
                     {
                         var bookGroup = group;
+                        
+                        // Wait for semaphore sequentially in the main loop to enforce visual grid order
+                        await bookSemaphore.WaitAsync(token);
+
                         tasks.Add(Task.Run(async () =>
                         {
-                            while (_isDownloadPaused)
-                            {
-                                token.ThrowIfCancellationRequested();
-                                await Task.Delay(200, token);
-                            }
-                            token.ThrowIfCancellationRequested();
-
-                            await bookSemaphore.WaitAsync(token);
                             try
                             {
+                                while (_isDownloadPaused)
+                                {
+                                    token.ThrowIfCancellationRequested();
+                                    await Task.Delay(200, token);
+                                }
+                                token.ThrowIfCancellationRequested();
+
                                 foreach (var item in bookGroup)
                                 {
                                     while (_isDownloadPaused || item.IsPaused)
