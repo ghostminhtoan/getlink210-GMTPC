@@ -19,7 +19,8 @@ namespace get_link_manga
             Dispatcher.Invoke(() =>
             {
                 txtTruyenqqLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\r\n");
-                txtTruyenqqLog.ScrollToEnd();
+                if (!txtTruyenqqLog.IsMouseOver)
+                    txtTruyenqqLog.ScrollToEnd();
             });
         }
 
@@ -161,7 +162,7 @@ namespace get_link_manga
                     return match.Groups[1].Value;
                 }
             }
-            return "https://truyenqqto.com"; // Default fallback
+            return "https://truyenqqko.com"; // Default fallback
         }
 
         private string GetTruyenqqPageUrl(string baseUrl, int page)

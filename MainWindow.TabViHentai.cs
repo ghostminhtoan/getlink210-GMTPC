@@ -21,7 +21,8 @@ namespace get_link_manga
             Dispatcher.Invoke(() =>
             {
                 txtViHentaiLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\r\n");
-                txtViHentaiLog.ScrollToEnd();
+                if (!txtViHentaiLog.IsMouseOver)
+                    txtViHentaiLog.ScrollToEnd();
             });
         }
 

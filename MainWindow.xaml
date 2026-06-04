@@ -507,11 +507,11 @@
                                 <!-- Scrape & Direct Import Actions -->
                                 <Grid Grid.Row="5" Margin="0,0,0,15">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="2.8*"/>
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="3*"/>
+                                        <ColumnDefinition Width="3.2*"/>
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="2*"/>
                                     </Grid.ColumnDefinitions>
@@ -577,7 +577,7 @@
                                 <StackPanel Grid.Row="1" Margin="0,0,0,12">
                                     <TextBlock Text="TARGET TAG URL" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                                     <TextBox Name="txtTruyenqqTagUrl" 
-                                                Text="https://truyenqqto.com/the-loai/anime-62"
+                                                Text="https://truyenqqko.com/the-loai/action-26"
                                                 Background="#0e121a" 
                                                 BorderBrush="{StaticResource CyberpunkBorderBrush}" 
                                                 Foreground="{StaticResource CyberpunkTextBrush}" 
@@ -625,11 +625,11 @@
                                 <!-- Scrape & Direct Import Actions -->
                                 <Grid Grid.Row="5" Margin="0,0,0,15">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="2.8*"/>
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="3*"/>
+                                        <ColumnDefinition Width="3.2*"/>
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="2*"/>
                                     </Grid.ColumnDefinitions>

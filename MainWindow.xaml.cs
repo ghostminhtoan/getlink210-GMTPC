@@ -86,17 +86,20 @@ public MainWindow()
                 if (txtLog != null)
                 {
                     txtLog.AppendText(logLine);
-                    txtLog.ScrollToEnd();
+                    if (!txtLog.IsMouseOver)
+                        txtLog.ScrollToEnd();
                 }
                 if (txtNhentaiLog != null)
                 {
                     txtNhentaiLog.AppendText(logLine);
-                    txtNhentaiLog.ScrollToEnd();
+                    if (!txtNhentaiLog.IsMouseOver)
+                        txtNhentaiLog.ScrollToEnd();
                 }
                 if (txtTruyenqqLog != null)
                 {
                     txtTruyenqqLog.AppendText(logLine);
-                    txtTruyenqqLog.ScrollToEnd();
+                    if (!txtTruyenqqLog.IsMouseOver)
+                        txtTruyenqqLog.ScrollToEnd();
                 }
             });
         }
