@@ -7,7 +7,7 @@ namespace get_link_manga
 {
     public partial class MainWindow : Window
     {
-        private void BtnMergeFolders_Click(object sender, RoutedEventArgs e)
+        private async void BtnMergeFolders_Click(object sender, RoutedEventArgs e)
         {
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
@@ -89,6 +89,9 @@ namespace get_link_manga
                     }
                 }
 
+                Log("[Merge] Đang tạm ngừng 3 giây để hệ thống ổn định và nhận biết thư mục...");
+                await System.Threading.Tasks.Task.Delay(3000);
+
                 Log($"[Merge] Hoàn tất gộp {mergedCount} thư mục.");
                 lblStatus.Text = $"Merge completed. Merged {mergedCount} folders.";
                 MessageBox.Show($"Đã gộp thành công {mergedCount} thư mục!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -101,7 +104,7 @@ namespace get_link_manga
             }
         }
 
-        private void BtnSplitFolders_Click(object sender, RoutedEventArgs e)
+        private async void BtnSplitFolders_Click(object sender, RoutedEventArgs e)
         {
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
@@ -179,6 +182,9 @@ namespace get_link_manga
                         }
                     }
                 }
+
+                Log("[Split] Đang tạm ngừng 3 giây để hệ thống ổn định và nhận biết thư mục...");
+                await System.Threading.Tasks.Task.Delay(3000);
 
                 Log($"[Split] Hoàn tất tách {splitCount} thư mục.");
                 lblStatus.Text = $"Split completed. Split {splitCount} folders.";

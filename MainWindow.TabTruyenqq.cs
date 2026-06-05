@@ -971,7 +971,9 @@ namespace get_link_manga
             string safeChapter = GetSafePathName(cleanChapter);
             
             // Save inside "truyenqq" root directory
-            string targetFolder = Path.Combine(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}");
+            string unmergedPath = Path.Combine(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}");
+            string mergedPath = Path.Combine(rootFolder, "truyenqq", safeManga, safeChapter);
+            string targetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
             string tempFolder = Path.Combine(rootFolder, "truyenqq", ".tmp", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
@@ -1133,10 +1135,12 @@ namespace get_link_manga
                             string ext = Path.GetExtension(imgUrl.Split('?')[0]);
                             if (string.IsNullOrEmpty(ext)) ext = ".jpg";
                             string localFilePath = Path.Combine(tempFolder, $"{index + 1:D3}{ext}");
-                            string finalFilePath = Path.Combine(targetFolder, $"{index + 1:D3}{ext}");
+                            string unmergedFilePath = Path.Combine(unmergedPath, $"{index + 1:D3}{ext}");
+                            string mergedFilePath = Path.Combine(mergedPath, $"{index + 1:D3}{ext}");
 
                             if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024) ||
-                                (File.Exists(finalFilePath) && new FileInfo(finalFilePath).Length > 1024))
+                                (File.Exists(unmergedFilePath) && new FileInfo(unmergedFilePath).Length > 1024) ||
+                                (File.Exists(mergedFilePath) && new FileInfo(mergedFilePath).Length > 1024))
                             {
                                 lock (lockObj)
                                 {
@@ -1210,13 +1214,14 @@ namespace get_link_manga
             {
                 if (Directory.Exists(tempFolder))
                 {
-                    if (Directory.Exists(targetFolder))
+                    string currentTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
+                    if (Directory.Exists(currentTargetFolder))
                     {
-                        MergeDirectoryContents(tempFolder, targetFolder);
+                        MergeDirectoryContents(tempFolder, currentTargetFolder);
                     }
                     else
                     {
-                        Directory.Move(tempFolder, targetFolder);
+                        Directory.Move(tempFolder, currentTargetFolder);
                     }
                 }
                 Log($"[truyenqq] Tải xong chapter '{cleanChapter}' của truyện '{cleanManga}'.");
