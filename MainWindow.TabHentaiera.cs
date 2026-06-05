@@ -210,25 +210,17 @@ namespace get_link_manga
 
                     string html = await _httpClient.GetStringAsync(pageUrl);
                     
-                    var viewMatches = Regex.Matches(html, @"<a\s+[^>]*href=""[^""']*?/gallery/(?<id>\d+)/?""[^>]*>(?<inner>[\s\S]*?)</a>", RegexOptions.IgnoreCase);
+                    // Match items with class gallery_title or caption containing the gallery link and title
+                    var viewMatches = Regex.Matches(html, @"(?:<h2\s+class=""gallery_title""|<div\s+class=""(?:caption|title)"")[^>]*>\s*<a\s+[^>]*href=""[^""']*?/gallery/(?<id>\d+)/?""[^>]*>(?<title>[\s\S]*?)</a>", RegexOptions.IgnoreCase);
                     
                     int pageCount = 0;
                     foreach (Match match in viewMatches)
                     {
                         string id = match.Groups["id"].Value;
-                        string inner = match.Groups["inner"].Value;
+                        string titleRaw = match.Groups["title"].Value;
                         string fullLink = $"https://hentaiera.com/gallery/{id}/";
 
-                        string title = "";
-                        var titleMatch = Regex.Match(inner, @"<div\s+class=""(?:caption|title)""[^>]*>(?<t>[^<]+)</div>", RegexOptions.IgnoreCase);
-                        if (titleMatch.Success)
-                        {
-                            title = titleMatch.Groups["t"].Value.Trim();
-                        }
-                        else
-                        {
-                            title = Regex.Replace(inner, @"<[^>]+>", "").Trim();
-                        }
+                        string title = Regex.Replace(titleRaw, @"<[^>]+>", "").Trim();
 
                         if (string.IsNullOrEmpty(title))
                         {
@@ -364,7 +356,7 @@ namespace get_link_manga
                         }
 
                         string html = await _httpClient.GetStringAsync(link);
-                        var titleMatch = Regex.Match(html, @"<h1[^>]*>\s*(.*?)\s*</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                        var titleMatch = Regex.Match(html, @"<title[^>]*>\s*(.*?)\s*</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
                         string title = "Gallery ID " + GetHentaieraGalleryIdFromLink(link);
                         
                         if (titleMatch.Success)
@@ -372,6 +364,9 @@ namespace get_link_manga
                             string titleRaw = titleMatch.Groups[1].Value;
                             title = Regex.Replace(titleRaw, @"<[^>]+>", ""); // Strip HTML tags
                             title = WebUtility.HtmlDecode(title).Trim();
+                            
+                            // Strip suffix like " - HentaiEra" or " | HentaiEra"
+                            title = Regex.Replace(title, @"\s*[-|]\s*HentaiEra\s*$", "", RegexOptions.IgnoreCase);
                         }
                         title = FormatGalleryTitle(title);
 

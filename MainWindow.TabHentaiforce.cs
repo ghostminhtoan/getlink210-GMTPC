@@ -531,65 +531,28 @@ namespace get_link_manga
         {
             if (string.IsNullOrEmpty(title)) return title;
 
-            string original = title.Trim();
-            string leadingBrackets = "";
-            
-            while (true)
+            // Find all bracketed contents: [...] or (...) or {...}
+            var matches = Regex.Matches(title, @"[\[({][^\])}]*[\])}]");
+            System.Collections.Generic.List<string> bracketsList = new System.Collections.Generic.List<string>();
+            foreach (Match m in matches)
             {
-                string trimmed = original.TrimStart();
-                if (trimmed.Length == 0) break;
-                
-                char firstChar = trimmed[0];
-                if (firstChar != '(' && firstChar != '[' && firstChar != '{')
-                {
-                    break;
-                }
-                
-                char closeChar = firstChar == '(' ? ')' : (firstChar == '[' ? ']' : '}');
-                
-                // Find matching closing bracket considering nesting depth
-                int depth = 0;
-                int closeIndex = -1;
-                for (int i = 0; i < trimmed.Length; i++)
-                {
-                    if (trimmed[i] == firstChar)
-                    {
-                        depth++;
-                    }
-                    else if (trimmed[i] == closeChar)
-                    {
-                        depth--;
-                        if (depth == 0)
-                        {
-                            closeIndex = i;
-                            break;
-                        }
-                    }
-                }
-                
-                if (closeIndex != -1)
-                {
-                    string bracketContent = trimmed.Substring(0, closeIndex + 1);
-                    leadingBrackets += " " + bracketContent;
-                    original = trimmed.Substring(closeIndex + 1);
-                }
-                else
-                {
-                    break;
-                }
+                bracketsList.Add(m.Value.Trim());
             }
-            
-            title = original.Trim();
-            
-            // Clean up leading delimiters like hyphens, dashes, dots, commas, colons, slashes, plus signs, pipes, underscores, or tildes left over after stripping brackets
-            title = Regex.Replace(title, @"^[-–—_.\u2026·•．・°:;：,/\\+~=|*\s]+", "");
 
-            if (!string.IsNullOrEmpty(leadingBrackets))
+            // Remove all bracketed contents from the title
+            string cleanTitle = Regex.Replace(title, @"[\[({][^\])}]*[\])}]", "");
+
+            // Clean up consecutive spaces and delimiters
+            cleanTitle = Regex.Replace(cleanTitle, @"\s+", " ").Trim();
+            cleanTitle = Regex.Replace(cleanTitle, @"^[-–—_.\u2026·•．・°:;：,/\\+~=|*\s]+", "");
+            cleanTitle = Regex.Replace(cleanTitle, @"[-–—_.\u2026·•．・°:;：,/\\+~=|*\s]+$", "");
+
+            if (bracketsList.Count > 0)
             {
-                title = title + " " + leadingBrackets.Trim();
+                cleanTitle = cleanTitle + " " + string.Join(" ", bracketsList);
             }
-            
-            return title.Trim();
+
+            return Regex.Replace(cleanTitle, @"\s+", " ").Trim();
         }
     }
 }
