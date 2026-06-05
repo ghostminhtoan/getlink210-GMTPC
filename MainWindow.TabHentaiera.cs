@@ -48,6 +48,9 @@ namespace get_link_manga
                 url = "https://" + url;
             }
 
+            url = NormalizeHentaieraUrl(url);
+            txtHentaieraTagUrl.Text = url;
+
             btnHentaieraFetchInfo.IsEnabled = false;
             lblStatus.Text = "Đang phân tích trang hentaiera.com...";
             progressBar.IsIndeterminate = true;
@@ -147,6 +150,9 @@ namespace get_link_manga
             {
                 baseUrl = "https://" + baseUrl;
             }
+
+            baseUrl = NormalizeHentaieraUrl(baseUrl);
+            txtHentaieraTagUrl.Text = baseUrl;
 
             if (!int.TryParse(txtHentaieraPageFrom.Text, out int pageFrom) || pageFrom < 1)
             {
@@ -329,6 +335,16 @@ namespace get_link_manga
                 for (int i = 0; i < total; i++)
                 {
                     string link = links[i];
+                    if (!string.IsNullOrEmpty(link))
+                    {
+                        link = link.Trim();
+                        if (!link.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
+                            !link.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                        {
+                            link = "https://" + link;
+                        }
+                        link = NormalizeHentaieraUrl(link);
+                    }
                     lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
 
                     try
@@ -416,12 +432,32 @@ namespace get_link_manga
 
         private string GetHentaieraGalleryIdFromLink(string link)
         {
-            var match = Regex.Match(link, @"/gallery/(\d+)", RegexOptions.IgnoreCase);
+            var match = Regex.Match(link, @"/(?:gallery|view)/(\d+)", RegexOptions.IgnoreCase);
             if (match.Success)
             {
                 return match.Groups[1].Value;
             }
             return "Unknown";
+        }
+
+        private string NormalizeHentaieraUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+
+            // Match view link structure e.g. https://hentaiera.com/view/1431024/1/
+            var match = Regex.Match(url, @"^(https?://[^/]+)?/view/(\d+)", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                string domain = match.Groups[1].Value;
+                if (string.IsNullOrEmpty(domain))
+                {
+                    domain = "https://hentaiera.com";
+                }
+                string id = match.Groups[2].Value;
+                return $"{domain}/gallery/{id}/";
+            }
+
+            return url;
         }
 
         internal async Task<bool> SolveHentaieraCaptchaIfNeededAsync(string testUrl)

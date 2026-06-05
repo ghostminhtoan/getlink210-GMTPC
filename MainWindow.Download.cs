@@ -1716,6 +1716,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
     {
         private async Task DownloadHentaieraGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
         {
+            item.Link = NormalizeHentaieraUrl(item.Link);
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, "hentaiera.com", safeTitle);
             string tempFolder = Path.Combine(rootFolder, "hentaiera.com", ".tmp", $".tmp_{safeTitle}_{Guid.NewGuid()}");
@@ -1816,12 +1817,22 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                 }
                                 token.ThrowIfCancellationRequested();
 
-                                string fileName = $"{pageNum:D3}.jpg";
-                                string localFilePath = Path.Combine(tempFolder, fileName);
-                                string finalFilePath = Path.Combine(targetFolder, fileName);
+                                string localFileWithoutExt = Path.Combine(tempFolder, $"{pageNum:D3}");
+                                string finalFileWithoutExt = Path.Combine(targetFolder, $"{pageNum:D3}");
 
-                                if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024) ||
-                                    (File.Exists(finalFilePath) && new FileInfo(finalFilePath).Length > 1024))
+                                bool exists = false;
+                                string[] extensions = new string[] { ".jpg", ".png", ".jpeg", ".webp" };
+                                foreach (var ext in extensions)
+                                {
+                                    if ((File.Exists(localFileWithoutExt + ext) && new FileInfo(localFileWithoutExt + ext).Length > 1024) ||
+                                        (File.Exists(finalFileWithoutExt + ext) && new FileInfo(finalFileWithoutExt + ext).Length > 1024))
+                                    {
+                                        exists = true;
+                                        break;
+                                    }
+                                }
+
+                                if (exists)
                                 {
                                     lock (lockObj)
                                     {
@@ -1837,6 +1848,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                     }
                                     return;
                                 }
+
+                                string localFilePath = Path.Combine(tempFolder, $"{pageNum:D3}.jpg");
 
                                 // Fetch hentaiera viewer page to extract image source
                                 // e.g. https://hentaiera.com/view/315003/1
@@ -1921,20 +1934,58 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 viewHtml = await _httpClient.GetStringAsync(viewUrl);
             }
 
-            // Extract image container source
-            var imgMatch = Regex.Match(viewHtml, @"<img[^>]*?id=""image-container""[^>]*?src=""(?<imgUrl>[^""]+?)""", RegexOptions.IgnoreCase);
-            if (!imgMatch.Success)
+            // Extract image container source using gimg first, handling any attribute order
+            string imgUrl = null;
+            var tagMatch = Regex.Match(viewHtml, @"<img[^>]+id=""gimg""[^>]*>", RegexOptions.IgnoreCase);
+            if (tagMatch.Success)
             {
-                imgMatch = Regex.Match(viewHtml, @"<img[^>]*?src=""(?<imgUrl>https?://[^""]+?/galleries/\d+/\d+\.(?:jpg|png|jpeg|webp))""", RegexOptions.IgnoreCase);
-            }
-            if (!imgMatch.Success)
-            {
-                imgMatch = Regex.Match(viewHtml, @"<img[^>]*?src=""(?<imgUrl>https?://[^""]+?/galleries/[^""]+?\.(?:jpg|png|jpeg|webp))""", RegexOptions.IgnoreCase);
+                string imgTag = tagMatch.Value;
+                var srcMatch = Regex.Match(imgTag, @"src=""(?<url>[^""]+?)""", RegexOptions.IgnoreCase);
+                if (srcMatch.Success)
+                {
+                    imgUrl = srcMatch.Groups["url"].Value;
+                }
+                else
+                {
+                    var dataSrcMatch = Regex.Match(imgTag, @"data-src=""(?<url>[^""]+?)""", RegexOptions.IgnoreCase);
+                    if (dataSrcMatch.Success)
+                    {
+                        imgUrl = dataSrcMatch.Groups["url"].Value;
+                    }
+                }
             }
 
-            if (imgMatch.Success)
+            if (string.IsNullOrEmpty(imgUrl))
             {
-                string imgUrl = imgMatch.Groups["imgUrl"].Value;
+                // Fallback to class containing image_ or lazy preloader
+                var lazyMatch = Regex.Match(viewHtml, @"<img[^>]+class=""[^""]*?(?:lazy|image_)[^""]*""[^>]*>", RegexOptions.IgnoreCase);
+                if (lazyMatch.Success)
+                {
+                    string imgTag = lazyMatch.Value;
+                    var srcMatch = Regex.Match(imgTag, @"data-src=""(?<url>[^""]+?)""", RegexOptions.IgnoreCase);
+                    if (!srcMatch.Success)
+                    {
+                        srcMatch = Regex.Match(imgTag, @"src=""(?<url>[^""]+?)""", RegexOptions.IgnoreCase);
+                    }
+                    if (srcMatch.Success)
+                    {
+                        imgUrl = srcMatch.Groups["url"].Value;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(imgUrl))
+            {
+                // General match of src/data-src inside galleries/
+                var genMatch = Regex.Match(viewHtml, @"(?:src|data-src)\s*=\s*""(?<imgUrl>https?://[^""]+?/(?:galleries|img)/\d+/\d+\.(?:jpg|png|jpeg|webp))""", RegexOptions.IgnoreCase);
+                if (genMatch.Success)
+                {
+                    imgUrl = genMatch.Groups["imgUrl"].Value;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(imgUrl))
+            {
                 if (imgUrl.StartsWith("//"))
                 {
                     imgUrl = "https:" + imgUrl;
