@@ -83,7 +83,7 @@
                 <Setter Property="Template" Value="{StaticResource CyberpunkButtonTemplate}"/>
                 <Setter Property="Background" Value="#121622"/>
                 <Setter Property="BorderBrush" Value="{StaticResource CyberpunkPinkBrush}"/>
-                <Setter Property="Foreground" Value="{StaticResource CyberpunkPinkBrush}"/>
+                <Setter Property="Foreground" Value="#ffffff"/>
                 <Setter Property="BorderThickness" Value="1.5"/>
                 <Setter Property="FontWeight" Value="Bold"/>
                 <Setter Property="Cursor" Value="Hand"/>

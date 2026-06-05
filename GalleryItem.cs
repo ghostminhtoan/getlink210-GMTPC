@@ -24,7 +24,7 @@ namespace get_link_manga
         private string _link;
         private string _name;
         private int _originalIndex;
-        private int _linkCount;
+        private string _linkCount = "";
         private bool _isDuplicate;
         private bool _hasNoChapters;
 
@@ -121,7 +121,7 @@ namespace get_link_manga
             }
         }
 
-        public int LinkCount
+        public string LinkCount
         {
             get => _linkCount;
             set

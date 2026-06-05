@@ -18,12 +18,12 @@ namespace get_link_manga
 
         private void ViHentaiLog(string message)
         {
-            Dispatcher.Invoke(() =>
+            Dispatcher.BeginInvoke(new Action(() =>
             {
                 txtViHentaiLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\r\n");
-                if (!txtViHentaiLog.IsMouseOver)
-                    txtViHentaiLog.ScrollToEnd();
-            });
+                if (chkAutoScrollViHentaiLog?.IsChecked == true)
+                    ScrollTextBoxToEnd(txtViHentaiLog);
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
         private string GetViHentaiPageUrl(string baseUrl, int page)
@@ -247,6 +247,7 @@ namespace get_link_manga
                     double progressPct = ((double)pagesProcessed / totalPages) * 100;
                     progressBar.Value = progressPct;
                     lblStatus.Text = $"Searching page {page}/{pageTo} ({progressPct:0}%)";
+                    lblLinkCount.Text = _scrapedItems.Count.ToString(); // real-time update
                     ViHentaiLog($"Trang {page} hoàn tất. Tìm thấy {pageCount} liên kết mới.");
                 }
 
@@ -277,29 +278,29 @@ namespace get_link_manga
             {
                 _cts.Dispose();
                 _cts = null;
-                btnViHentaiScrape.Content = "START CRAWLING";
+                btnViHentaiScrape.Content = "GET LINK";
                 btnViHentaiScrape.IsEnabled = true;
                 if (btnViHentaiCrawlMore != null)
                 {
-                    btnViHentaiCrawlMore.Content = "CRAWL MORE";
+                    btnViHentaiCrawlMore.Content = "GET MORE";
                     btnViHentaiCrawlMore.IsEnabled = true;
                 }
                 btnViHentaiFetchInfo.IsEnabled = true;
             }
         }
 
-        private async void BtnViHentaiPasteDirect_Click(object sender, RoutedEventArgs e)
+        private void BtnViHentaiPasteDirect_Click(object sender, RoutedEventArgs e)
         {
             var win = new DirectDownloadWindow(isNhentai: false);
             win.Owner = this;
-            if (win.ShowDialog() == true)
+            win.OnImport = async (links) =>
             {
-                var links = win.ImportedLinks;
                 if (links != null && links.Any())
                 {
                     await ImportViHentaiDirectLinksAsync(links);
                 }
-            }
+            };
+            win.Show();
         }
 
         private async Task ImportViHentaiDirectLinksAsync(System.Collections.Generic.List<string> links)
@@ -376,6 +377,7 @@ namespace get_link_manga
 
                     double pct = ((double)(i + 1) / total) * 100;
                     progressBar.Value = pct;
+                    lblLinkCount.Text = _scrapedItems.Count.ToString(); // real-time update
                 }
 
                 RecalculateDuplicates();
@@ -684,7 +686,7 @@ namespace get_link_manga
             return j;
         }
 
-        private async Task DownloadViHentaiGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, HashSet<int> chapterFilter = null)
+        private async Task DownloadViHentaiGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
         {
             var uri = new Uri(item.Link);
             var segments = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
@@ -769,8 +771,7 @@ namespace get_link_manga
                     foreach (var link in chapterLinks)
                     {
                         double chapNum = ParseChapterNumber(link);
-                        int chapInt = (int)Math.Floor(chapNum);
-                        if (chapterFilter.Contains(chapInt))
+                        if (chapterFilter.IsMatch(chapNum))
                         {
                             filtered.Add(link);
                         }
@@ -822,7 +823,7 @@ namespace get_link_manga
 
                 Dispatcher.Invoke(() =>
                 {
-                    item.LinkCount = chapterLinks.Count;
+                    item.LinkCount = chapterLinks.Count.ToString();
                 });
             }
             else if (segments.Length >= 3)
@@ -891,8 +892,9 @@ namespace get_link_manga
             string safeManga = GetSafePathName(mangaTitle);
             string safeChapter = GetSafePathName(chapterTitle);
             string targetFolder = Path.Combine(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
-            string tempFolder = Path.Combine(rootFolder, "vi-hentai.pro", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
+            string tempFolder = Path.Combine(rootFolder, "vi-hentai.pro", ".tmp", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
 
             var evalIndex = html.IndexOf("eval(function(h,u,n,t,e,r)");
             if (evalIndex == -1)
@@ -1076,6 +1078,10 @@ namespace get_link_manga
                 catch (Exception ex)
                 {
                     Log($"[Lỗi] Không thể di chuyển thư mục tạm vi-hentai: {ex.Message}");
+                }
+                finally
+                {
+                    UnregisterTempFolder(tempFolder);
                 }
 
                 // Check for missing files

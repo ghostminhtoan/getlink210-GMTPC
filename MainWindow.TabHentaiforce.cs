@@ -369,6 +369,7 @@ namespace get_link_manga
                     double progressPct = ((double)pagesProcessed / totalPages) * 100;
                     progressBar.Value = progressPct;
                     lblStatus.Text = $"Searching page {page}/{pageTo} ({progressPct:0}%)";
+                    lblLinkCount.Text = _scrapedItems.Count.ToString(); // real-time update
                 }
 
                 RecalculateDuplicates();
@@ -391,29 +392,29 @@ namespace get_link_manga
             {
                 _cts.Dispose();
                 _cts = null;
-                btnScrape.Content = "START CRAWLING";
+                btnScrape.Content = "GET LINK";
                 btnScrape.IsEnabled = true;
                 if (btnCrawlMore != null)
                 {
-                    btnCrawlMore.Content = "CRAWL MORE";
+                    btnCrawlMore.Content = "GET MORE";
                     btnCrawlMore.IsEnabled = true;
                 }
                 btnFetchInfo.IsEnabled = true;
             }
         }
 
-        private async void BtnPasteDirect_Click(object sender, RoutedEventArgs e)
+        private void BtnPasteDirect_Click(object sender, RoutedEventArgs e)
         {
             var win = new DirectDownloadWindow();
             win.Owner = this;
-            if (win.ShowDialog() == true)
+            win.OnImport = async (links) =>
             {
-                var links = win.ImportedLinks;
                 if (links != null && links.Any())
                 {
                     await ImportDirectLinksAsync(links);
                 }
-            }
+            };
+            win.Show();
         }
 
         private async Task ImportDirectLinksAsync(System.Collections.Generic.List<string> links)
@@ -496,6 +497,7 @@ namespace get_link_manga
 
                     double pct = ((double)(i + 1) / total) * 100;
                     progressBar.Value = pct;
+                    lblLinkCount.Text = _scrapedItems.Count.ToString(); // real-time update
                 }
 
                 RecalculateDuplicates();

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:get_link_manga"
         mc:Ignorable="d"
-        Title="NEON LINK SCRAPER v1.0" Height="850" Width="1280"
+        Title="NEON LINK SCRAPER v1.0" Height="850" Width="1400"
         Background="{StaticResource CyberpunkDarkBrush}"
         WindowStartupLocation="CenterScreen"
         SizeChanged="Window_SizeChanged">
@@ -15,7 +15,45 @@
         <Style x:Key="ToggleButtonSwitch" TargetType="ToggleButton">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="20"/>
-            <Setter Property="Background" Value="{StaticResource CyberpunkBorderBrush}"/>
+            <Setter Property="Background" Value="#121622"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="BackgroundBorder" 
+                                CornerRadius="10" 
+                                Background="#121622" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Ellipse x:Name="Thumb" 
+                                         Fill="#888888" 
+                                         Width="12" Height="12" 
+                                         HorizontalAlignment="Left" 
+                                         Margin="3,0,3,0"
+                                         VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="BackgroundBorder" Property="Background" Value="#172e42"/>
+                                <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource CyberpunkCyanBrush}"/>
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Thumb" Property="Fill" Value="{StaticResource CyberpunkCyanBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="BackgroundBorder" Property="Background" Value="#121622"/>
+                                <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Left"/>
+                                <Setter TargetName="Thumb" Property="Fill" Value="#666666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="ProgressBarSuccess" TargetType="ProgressBar">
             <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
@@ -129,46 +167,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <Border Grid.Row="0" BorderBrush="{StaticResource CyberpunkPinkBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,15">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="8"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="8"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                
-                <StackPanel Orientation="Vertical">
-                    <TextBlock Text="CYBERPUNK LINK SCRAPE // CRAWLER SYSTEM" 
-                               FontSize="22" 
-                               FontWeight="ExtraBold" 
-                               Style="{StaticResource CyberpunkHeader}"/>
-                    <TextBlock Text="NET FRAMEWORK 4.8 / HANDY CONTROL POWERED" 
-                               FontSize="10" 
-                               Foreground="{StaticResource CyberpunkCyanBrush}" 
-                               FontWeight="Bold"
-                               Margin="2,2,0,0"/>
-                </StackPanel>
 
-                <!-- Bookmark & History Buttons -->
-                <Button Grid.Column="1" Name="btnOpenBookmarks" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" FontSize="11" Padding="10,0"/>
-                <Button Grid.Column="3" Name="btnOpenHistory" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" FontSize="11" Padding="10,0"/>
-
-                <Border Grid.Column="5" BorderBrush="{StaticResource CyberpunkCyanBrush}" BorderThickness="1" CornerRadius="3" Padding="8,4" Background="#121622">
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="8" Height="8" Fill="#00ff00" VerticalAlignment="Center" Margin="0,0,6,0">
-                            <Ellipse.Effect>
-                                <DropShadowEffect Color="#00ff00" BlurRadius="6" ShadowDepth="0" Opacity="0.8"/>
-                            </Ellipse.Effect>
-                        </Ellipse>
-                        <TextBlock Text="SYSTEM ONLINE" FontSize="11" Foreground="#00ff00" FontWeight="Bold" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </Border>
 
         <!-- Grid for Content -->
         <Grid Grid.Row="1" Name="gridMainContent" Margin="0,15,0,0">
@@ -196,8 +195,18 @@
                                     <RowDefinition Height="*"/>    <!-- Progress Logs -->
                                 </Grid.RowDefinitions>
 
-                                <!-- Panel Header -->
-                                <TextBlock Grid.Row="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" Margin="0,0,0,15"/>
+                                <!-- Panel Header with Bookmarks & History -->
+                                <Grid Grid.Row="0" Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="5"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                </Grid>
 
                                 <!-- Target URL -->
                                 <StackPanel Grid.Row="1" Margin="0,0,0,12">
@@ -275,23 +284,28 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="REAL-TIME CRAWL CONSOLE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="1" Name="btnClearLog" Content="CLEAR" Click="BtnClearLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                        <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="AUTO SCROLL" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                            <ToggleButton Name="chkAutoScrollLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="3" Name="btnClearLog" Content="CLEAR" Click="BtnClearLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
                                     </Grid>
                                     <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <TextBox Name="txtLog" 
-                                                     Background="Transparent" 
-                                                     BorderThickness="0" 
-                                                     Foreground="#a8ffb2" 
-                                                     FontFamily="Consolas, Courier New" 
-                                                     FontSize="11" 
-                                                     IsReadOnly="True" 
-                                                     AcceptsReturn="True" 
-                                                     Padding="10"
-                                                     TextWrapping="Wrap"/>
-                                        </ScrollViewer>
+                                        <TextBox Name="txtLog" 
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 Background="Transparent" 
+                                                 BorderThickness="0" 
+                                                 Foreground="#a8ffb2" 
+                                                 FontFamily="Consolas, Courier New" 
+                                                 FontSize="11" 
+                                                 IsReadOnly="True" 
+                                                 AcceptsReturn="True" 
+                                                 Padding="10"
+                                                 TextWrapping="Wrap"/>
                                     </Border>
                                 </Grid>
                             </Grid>
@@ -315,8 +329,18 @@
                                     <RowDefinition Height="*"/>    <!-- Progress Logs -->
                                 </Grid.RowDefinitions>
 
-                                <!-- Panel Header -->
-                                <TextBlock Grid.Row="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" Margin="0,0,0,15"/>
+                                <!-- Panel Header with Bookmarks & History -->
+                                <Grid Grid.Row="0" Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="5"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                </Grid>
 
                                 <!-- Target URL -->
                                 <StackPanel Grid.Row="1" Margin="0,0,0,12">
@@ -416,26 +440,31 @@
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
                                     <Grid Grid.Row="0" Margin="0,0,0,6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="REAL-TIME CRAWL CONSOLE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="1" Name="btnClearNhentaiLog" Content="CLEAR" Click="BtnClearNhentaiLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
-                                    </Grid>
+                                         <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="*"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                             <ColumnDefinition Width="10"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                         </Grid.ColumnDefinitions>
+                                         <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                             <TextBlock Text="AUTO SCROLL" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                             <ToggleButton Name="chkAutoScrollNhentaiLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
+                                         </StackPanel>
+                                         <Button Grid.Column="3" Name="btnClearNhentaiLog" Content="CLEAR" Click="BtnClearNhentaiLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                     </Grid>
                                     <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <TextBox Name="txtNhentaiLog" 
-                                                     Background="Transparent" 
-                                                     BorderThickness="0" 
-                                                     Foreground="#a8ffb2" 
-                                                     FontFamily="Consolas, Courier New" 
-                                                     FontSize="11" 
-                                                     IsReadOnly="True" 
-                                                     AcceptsReturn="True" 
-                                                     Padding="10"
-                                                     TextWrapping="Wrap"/>
-                                        </ScrollViewer>
+                                        <TextBox Name="txtNhentaiLog" 
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 Background="Transparent" 
+                                                 BorderThickness="0" 
+                                                 Foreground="#a8ffb2" 
+                                                 FontFamily="Consolas, Courier New" 
+                                                 FontSize="11" 
+                                                 IsReadOnly="True" 
+                                                 AcceptsReturn="True" 
+                                                 Padding="10"
+                                                 TextWrapping="Wrap"/>
                                     </Border>
                                 </Grid>
                             </Grid>
@@ -458,8 +487,18 @@
                                     <RowDefinition Height="*"/>    <!-- Progress Logs -->
                                 </Grid.RowDefinitions>
 
-                                <!-- Panel Header -->
-                                <TextBlock Grid.Row="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" Margin="0,0,0,15"/>
+                                <!-- Panel Header with Bookmarks & History -->
+                                <Grid Grid.Row="0" Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="5"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                </Grid>
 
                                 <!-- Target URL -->
                                 <StackPanel Grid.Row="1" Margin="0,0,0,12">
@@ -513,22 +552,19 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- Scrape & Direct Import Actions -->
-                                <Grid Grid.Row="5" Margin="0,0,0,15">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2.8*"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="2*"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="3.2*"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="2*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" Name="btnViHentaiScrape" Content="START CRAWLING" Click="BtnViHentaiScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnViHentaiCrawlMore" Content="CRAWL MORE" Click="BtnViHentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="4" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="6" Name="btnViHentaiReverseOrder" Content="REVERSE ORDER" Click="BtnViHentaiReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                </Grid>
+                                 <!-- Scrape & Direct Import Actions -->
+                                 <Grid Grid.Row="5" Margin="0,15,0,15">
+                                     <Grid.ColumnDefinitions>
+                                         <ColumnDefinition Width="*"/>
+                                         <ColumnDefinition Width="10"/>
+                                         <ColumnDefinition Width="*"/>
+                                         <ColumnDefinition Width="10"/>
+                                         <ColumnDefinition Width="*"/>
+                                     </Grid.ColumnDefinitions>
+                                     <Button Grid.Column="0" Name="btnViHentaiScrape" Content="START CRAWLING" Click="BtnViHentaiScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
+                                     <Button Grid.Column="2" Name="btnViHentaiCrawlMore" Content="CRAWL MORE" Click="BtnViHentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                     <Button Grid.Column="4" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
                                 <Grid Grid.Row="6">
@@ -537,26 +573,31 @@
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
                                     <Grid Grid.Row="0" Margin="0,0,0,6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="REAL-TIME CRAWL CONSOLE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="1" Name="btnClearViHentaiLog" Content="CLEAR" Click="BtnClearViHentaiLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
-                                    </Grid>
+                                         <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="*"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                             <ColumnDefinition Width="10"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                         </Grid.ColumnDefinitions>
+                                         <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                             <TextBlock Text="AUTO SCROLL" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                             <ToggleButton Name="chkAutoScrollViHentaiLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
+                                         </StackPanel>
+                                         <Button Grid.Column="3" Name="btnClearViHentaiLog" Content="CLEAR" Click="BtnClearViHentaiLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                     </Grid>
                                     <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <TextBox Name="txtViHentaiLog" 
-                                                     Background="Transparent" 
-                                                     BorderThickness="0" 
-                                                     Foreground="#a8ffb2" 
-                                                     FontFamily="Consolas, Courier New" 
-                                                     FontSize="11" 
-                                                     IsReadOnly="True" 
-                                                     AcceptsReturn="True" 
-                                                     Padding="10"
-                                                     TextWrapping="Wrap"/>
-                                        </ScrollViewer>
+                                        <TextBox Name="txtViHentaiLog" 
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 Background="Transparent" 
+                                                 BorderThickness="0" 
+                                                 Foreground="#a8ffb2" 
+                                                 FontFamily="Consolas, Courier New" 
+                                                 FontSize="11" 
+                                                 IsReadOnly="True" 
+                                                 AcceptsReturn="True" 
+                                                 Padding="10"
+                                                 TextWrapping="Wrap"/>
                                     </Border>
                                 </Grid>
                             </Grid>
@@ -574,17 +615,26 @@
                                     <RowDefinition Height="Auto"/> <!-- URL Input -->
                                     <RowDefinition Height="Auto"/> <!-- Fetch Button -->
                                     <RowDefinition Height="Auto"/> <!-- Page Info -->
-                                    <RowDefinition Height="Auto"/> <!-- Row Range Input -->
+                                    <RowDefinition Height="0"/>    <!-- Row Range Input -->
                                     <RowDefinition Height="Auto"/> <!-- Scrape Button -->
                                     <RowDefinition Height="*"/>    <!-- Progress Logs -->
                                 </Grid.RowDefinitions>
 
-                                <!-- Panel Header -->
-                                <TextBlock Grid.Row="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" Margin="0,0,0,15"/>
+                                <Grid Grid.Row="0" Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="5"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                </Grid>
 
                                 <!-- Target URL -->
                                 <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                                    <TextBlock Text="TARGET TAG URL" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <TextBlock Text="DOWNLOAD MULTIPLE WITH TAG OR ARTIST" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                                     <TextBox Name="txtTruyenqqTagUrl" 
                                                 Text="https://truyenqqko.com/the-loai/action-26"
                                                 Background="#0e121a" 
@@ -595,60 +645,57 @@
                                 </StackPanel>
 
                                 <!-- Fetch Info Action -->
-                                <StackPanel Grid.Row="2" Margin="0,0,0,20">
-                                    <Button Name="btnTruyenqqFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnTruyenqqFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,10"/>
-                                    <Button Name="btnTruyenqqFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
-                                </StackPanel>
-
-                                <!-- Page Info Status -->
-                                <Border Grid.Row="3" Background="#0c0f17" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Padding="12" CornerRadius="3" Margin="0,0,0,15">
-                                    <StackPanel>
-                                        <TextBlock Text="TARGET PAGE ANALYSIS" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="100"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="Total Pages Found:" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                            <TextBox Grid.Column="1" Name="txtTruyenqqTotalPages" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkYellowBrush}" CaretBrush="{StaticResource CyberpunkYellowBrush}" FontSize="13" FontWeight="Bold" Height="30" HorizontalContentAlignment="Center" TextChanged="TxtTruyenqqTotalPages_TextChanged"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Page Range Input -->
-                                <Grid Grid.Row="4" Margin="0,0,0,20">
+                                <Grid Grid.Row="2" Margin="0,0,0,15">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="15"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" Name="btnTruyenqqFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnTruyenqqFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35"/>
+                                    <Button Grid.Column="2" Name="btnTruyenqqFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                </Grid>
+
+                                <!-- Page Info Status (TOTAL, FROM, TO pages all on the same row) -->
+                                <Grid Grid.Row="3" Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     
                                     <StackPanel Grid.Column="0">
+                                        <TextBlock Text="TOTAL PAGES" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                        <TextBox Name="txtTruyenqqTotalPages" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkYellowBrush}" FontSize="13" FontWeight="Bold" Height="32" HorizontalContentAlignment="Center" TextChanged="TxtTruyenqqTotalPages_TextChanged"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
                                         <TextBlock Text="FROM PAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                                         <TextBox Name="txtTruyenqqPageFrom" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkTextBrush}" CaretBrush="{StaticResource CyberpunkCyanBrush}" Height="32" HorizontalContentAlignment="Center"/>
                                     </StackPanel>
 
-                                    <StackPanel Grid.Column="2">
+                                    <StackPanel Grid.Column="4">
                                         <TextBlock Text="TO PAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                                         <TextBox Name="txtTruyenqqPageTo" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkTextBrush}" CaretBrush="{StaticResource CyberpunkCyanBrush}" Height="32" HorizontalContentAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
 
+                                <!-- Page Range Input (Unused, height set to 0) -->
+                                <Grid Grid.Row="4" Height="0" Margin="0"/>
+
                                 <!-- Scrape & Direct Import Actions -->
-                                <Grid Grid.Row="5" Margin="0,0,0,15">
+                                <Grid Grid.Row="5" Margin="0,15,0,15">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2.8*"/>
+                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="3.2*"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" Name="btnTruyenqqScrape" Content="START CRAWLING" Click="BtnTruyenqqScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnTruyenqqCrawlMore" Content="CRAWL MORE" Click="BtnTruyenqqCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="0" Name="btnTruyenqqScrape" Content="GET LINK" Click="BtnTruyenqqScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="2" Name="btnTruyenqqCrawlMore" Content="GET MORE" Click="BtnTruyenqqCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
                                     <Button Grid.Column="4" Name="btnTruyenqqPasteDirect" Content="PASTE DIRECT LINK" Click="BtnTruyenqqPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="6" Name="btnTruyenqqReverseOrder" Content="REVERSE ORDER" Click="BtnTruyenqqReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
@@ -658,26 +705,31 @@
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
                                     <Grid Grid.Row="0" Margin="0,0,0,6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="REAL-TIME CRAWL CONSOLE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="1" Name="btnClearTruyenqqLog" Content="CLEAR" Click="BtnClearTruyenqqLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
-                                    </Grid>
+                                         <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="*"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                             <ColumnDefinition Width="10"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                         </Grid.ColumnDefinitions>
+                                         <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                             <TextBlock Text="AUTO SCROLL" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                             <ToggleButton Name="chkAutoScrollTruyenqqLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
+                                         </StackPanel>
+                                         <Button Grid.Column="3" Name="btnClearTruyenqqLog" Content="CLEAR" Click="BtnClearTruyenqqLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                     </Grid>
                                     <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <TextBox Name="txtTruyenqqLog" 
-                                                     Background="Transparent" 
-                                                     BorderThickness="0" 
-                                                     Foreground="#a8ffb2" 
-                                                     FontFamily="Consolas, Courier New" 
-                                                     FontSize="11" 
-                                                     IsReadOnly="True" 
-                                                     AcceptsReturn="True" 
-                                                     Padding="10"
-                                                     TextWrapping="Wrap"/>
-                                        </ScrollViewer>
+                                        <TextBox Name="txtTruyenqqLog" 
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 Background="Transparent" 
+                                                 BorderThickness="0" 
+                                                 Foreground="#a8ffb2" 
+                                                 FontFamily="Consolas, Courier New" 
+                                                 FontSize="11" 
+                                                 IsReadOnly="True" 
+                                                 AcceptsReturn="True" 
+                                                 Padding="10"
+                                                 TextWrapping="Wrap"/>
                                     </Border>
                                 </Grid>
                             </Grid>
@@ -708,7 +760,7 @@
                         <!-- Word Wrap Switch -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="WORD WRAP" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ToggleButton Name="chkWordWrap" Style="{StaticResource ToggleButtonSwitch}" Height="20" Width="40" Background="#121622" BorderBrush="{StaticResource CyberpunkBorderBrush}"/>
+                            <ToggleButton Name="chkWordWrap" Style="{StaticResource ToggleButtonSwitch}" Height="20" Width="40"/>
                         </StackPanel>
 
                         <Border Grid.Column="3" Background="#1c1122" BorderBrush="{StaticResource CyberpunkPinkBrush}" BorderThickness="1" CornerRadius="3" Padding="10,4">
@@ -722,8 +774,6 @@
                     <!-- Toolbar for Filtering and Sorting -->
                     <Grid Grid.Row="1" Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="Auto"/>
@@ -737,22 +787,12 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        
-                        <TextBox Name="txtFilter" 
-                                    TextChanged="TxtFilter_TextChanged"
-                                    Background="#0e121a" 
-                                    BorderBrush="{StaticResource CyberpunkBorderBrush}" 
-                                    Foreground="{StaticResource CyberpunkTextBrush}" 
-                                    CaretBrush="{StaticResource CyberpunkCyanBrush}"
-                                    Height="30"
-                                    VerticalContentAlignment="Center"/>
-                        
-                        <Button Grid.Column="2" Name="btnSortByName" Content="SORT BY NAME" Click="BtnSortByName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11"/>
-                        <Button Grid.Column="4" Name="btnRestoreOrder" Content="RESTORE ORDER" Click="BtnRestoreOrder_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="120" FontSize="11"/>
-                        <Button Grid.Column="6" Name="btnDuplicateName" Content="DUPLICATE NAME" Click="BtnDuplicateName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11"/>
-                        <Button Grid.Column="8" Name="btnNoLinkViHentai" Content="NO LINK (VI-HENTAI)" Click="BtnNoLinkViHentai_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="150" FontSize="11"/>
-                        <Button Grid.Column="10" Name="btnReverseOrder" Content="REVERSE ORDER" Click="BtnReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="150" FontSize="11"/>
-                        <Button Grid.Column="12" Name="btnClearComplete" Content="CLEAR COMPLETE BOOKS" Click="BtnClearComplete_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="180" FontSize="11"/>
+                        <Button Grid.Column="0" Name="btnSortByName" Content="SORT BY NAME" Click="BtnSortByName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11"/>
+                        <Button Grid.Column="2" Name="btnRestoreOrder" Content="RESTORE ORDER" Click="BtnRestoreOrder_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="120" FontSize="11"/>
+                        <Button Grid.Column="4" Name="btnDuplicateName" Content="DUPLICATE NAME" Click="BtnDuplicateName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11"/>
+                        <Button Grid.Column="6" Name="btnNoLinkViHentai" Content="NO LINK (VI-HENTAI)" Click="BtnNoLinkViHentai_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="150" FontSize="11"/>
+                        <Button Grid.Column="8" Name="btnReverseOrder" Content="REVERSE ORDER" Click="BtnReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="150" FontSize="11"/>
+                        <Button Grid.Column="10" Name="btnClearComplete" Content="CLEAR COMPLETE BOOKS" Click="BtnClearComplete_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="180" FontSize="11"/>
                     </Grid>
 
                     <!-- Scraped links DataGrid -->
@@ -854,7 +894,7 @@
                                                 </TextBlock.Style>
                                             </TextBlock>
                                             <!-- Chapter Count -->
-                                            <TextBlock Text="{Binding LinkCount, StringFormat=Chapters: {0}}" 
+                                            <TextBlock Text="{Binding LinkCount, StringFormat=latest chap: {0}}" 
                                                        Foreground="{StaticResource CyberpunkMutedTextBrush}" 
                                                        FontSize="10"
                                                        Margin="0,4,0,0"/>
@@ -1130,12 +1170,26 @@
                                     <ColumnDefinition Width="Auto"/> <!-- MERGE FOLDERS button -->
                                     <ColumnDefinition Width="10"/>
                                     <ColumnDefinition Width="Auto"/> <!-- SPLIT FOLDERS button -->
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                    <ColumnDefinition Width="Auto"/> <!-- SEARCH Label -->
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>    <!-- Search Textbox -->
                                 </Grid.ColumnDefinitions>
 
                                 <TextBlock Grid.Column="0" Text="FOLDER ACTIONS" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <Button Grid.Column="2" Name="btnMergeFolders" Content="MERGE FOLDERS" Click="BtnMergeFolders_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="130" FontSize="11"/>
                                 <Button Grid.Column="4" Name="btnSplitFolders" Content="SPLIT FOLDERS" Click="BtnSplitFolders_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
+
+                                <TextBlock Grid.Column="6" Text="SEARCH" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="8" Name="txtFilter" 
+                                         TextChanged="TxtFilter_TextChanged"
+                                         Background="#0e121a" 
+                                         BorderBrush="{StaticResource CyberpunkBorderBrush}" 
+                                         Foreground="{StaticResource CyberpunkTextBrush}" 
+                                         CaretBrush="{StaticResource CyberpunkCyanBrush}"
+                                         Height="30"
+                                         VerticalContentAlignment="Center"
+                                         ToolTip="Tìm kiếm tên truyện..."/>
                             </Grid>
 
                             <!-- Row 4: Chapter Selection -->
@@ -1172,6 +1226,8 @@
                                     <ColumnDefinition Width="Auto"/> <!-- PAUSE button -->
                                     <ColumnDefinition Width="8"/>
                                     <ColumnDefinition Width="Auto"/> <!-- STOP button -->
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/> <!-- RETRY ERRORS button -->
                                 </Grid.ColumnDefinitions>
 
                                 <TextBlock Grid.Column="0" Text="CONNECTION" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -1205,7 +1261,8 @@
                                           Height="30"
                                           VerticalContentAlignment="Center"
                                           HorizontalContentAlignment="Center"
-                                          SelectedIndex="1">
+                                          SelectedIndex="1"
+                                          SelectionChanged="CmbMultiDownload_SelectionChanged">
                                     <ComboBox.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <VirtualizingStackPanel Background="#121622"/>
@@ -1226,9 +1283,10 @@
                                     <ComboBoxItem Content="10"/>
                                 </ComboBox>
 
-                                <Button Grid.Column="8" Name="btnStartDownload" Content="▶️" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="45" FontSize="11" ToolTip="Start Download"/>
+                                <Button Grid.Column="8" Name="btnStartDownload" Content="⬇️" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" ToolTip="Start Download"/>
                                 <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Click="BtnPauseDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" IsEnabled="False" ToolTip="Pause / Resume"/>
-                                <Button Grid.Column="12" Name="btnStopDownload" Content="⏹️" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="45" FontSize="11" IsEnabled="False" ToolTip="Stop"/>
+                                <Button Grid.Column="12" Name="btnStopDownload" Content="⏹️" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" IsEnabled="False" ToolTip="Stop"/>
+                                <Button Grid.Column="14" Name="btnRetryErrors" Content="⚠️" Click="BtnRetryErrors_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" ToolTip="Tải tiếp các chap bị lỗi"/>
                             </Grid>
                         </Grid>
                     </Border>

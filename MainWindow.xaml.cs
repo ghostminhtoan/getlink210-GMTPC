@@ -7,6 +7,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using System.ComponentModel;
 
 namespace get_link_manga
 {
@@ -18,6 +19,8 @@ namespace get_link_manga
         private static readonly CookieContainer _cookieContainer;
         private static readonly HttpClientHandler _httpHandler;
         private static readonly HttpClient _httpClient;
+        private static readonly SemaphoreSlim _captchaSemaphore = new SemaphoreSlim(1, 1);
+        private static volatile bool _isCaptchaWindowActive = false;
         private CancellationTokenSource _cts;
         private int _detectedMaxPage = 1;
         private bool _usePagePathSegment = false;
@@ -59,6 +62,12 @@ public MainWindow()
                 StyleComboBoxPopup(cmbNhentaiSort);
                 StyleComboBoxPopup(cmbConnections);
                 StyleComboBoxPopup(cmbMultiDownload);
+
+                var view = ResultsView;
+                if (view != null && view.SortDescriptions.Count == 0)
+                {
+                    view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Ascending));
+                }
             };
         }
 
@@ -78,56 +87,141 @@ public MainWindow()
             }
         }
 
+        // Scroll a TextBox to the end WITHOUT needing keyboard focus.
+        // WPF TextBox.ScrollToEnd() only works when the TextBox has focus;
+        // accessing the inner ScrollViewer directly bypasses that restriction.
+        private static void ScrollTextBoxToEnd(System.Windows.Controls.TextBox textBox)
+        {
+            if (textBox == null) return;
+            // Walk visual tree to find the embedded ScrollViewer
+            var sv = FindVisualChild<System.Windows.Controls.ScrollViewer>(textBox);
+            if (sv != null)
+            {
+                sv.ScrollToEnd();
+            }
+            else
+            {
+                // Fallback: move caret then call ScrollToEnd
+                textBox.CaretIndex = textBox.Text.Length;
+                textBox.ScrollToEnd();
+            }
+        }
+
+        public static double ExtractNumber(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return 0.0;
+            var matches = System.Text.RegularExpressions.Regex.Matches(input, @"\d+(?:\.\d+)?");
+            if (matches.Count > 0)
+            {
+                if (double.TryParse(matches[matches.Count - 1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double result))
+                {
+                    return result;
+                }
+            }
+            return 0.0;
+        }
+
+        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typed) return typed;
+                var result = FindVisualChild<T>(child);
+                if (result != null) return result;
+            }
+            return null;
+        }
+
         internal void Log(string message)
         {
-            Dispatcher.Invoke(() =>
+            Dispatcher.BeginInvoke(new Action(() =>
             {
                 string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
                 if (txtLog != null)
                 {
                     txtLog.AppendText(logLine);
-                    if (!txtLog.IsMouseOver)
-                        txtLog.ScrollToEnd();
+                    if (chkAutoScrollLog?.IsChecked == true)
+                        ScrollTextBoxToEnd(txtLog);
                 }
                 if (txtNhentaiLog != null)
                 {
                     txtNhentaiLog.AppendText(logLine);
-                    if (!txtNhentaiLog.IsMouseOver)
-                        txtNhentaiLog.ScrollToEnd();
+                    if (chkAutoScrollNhentaiLog?.IsChecked == true)
+                        ScrollTextBoxToEnd(txtNhentaiLog);
                 }
                 if (txtTruyenqqLog != null)
                 {
                     txtTruyenqqLog.AppendText(logLine);
-                    if (!txtTruyenqqLog.IsMouseOver)
-                        txtTruyenqqLog.ScrollToEnd();
+                    if (chkAutoScrollTruyenqqLog?.IsChecked == true)
+                        ScrollTextBoxToEnd(txtTruyenqqLog);
                 }
-            });
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
-            private void BtnReverseOrder_Click(object sender, RoutedEventArgs e)
+        private void BtnReverseOrder_Click(object sender, RoutedEventArgs e)
         {
-            var reversed = _scrapedItems.Reverse().ToList();
-            for (int i = 0; i < reversed.Count; i++)
+            var view = ResultsView;
+            if (view != null)
             {
-                reversed[i].OriginalIndex = i;
+                if (view.SortDescriptions.Count > 0)
+                {
+                    var currentSort = view.SortDescriptions[0];
+                    string propertyName = currentSort.PropertyName;
+                    var newDirection = currentSort.Direction == ListSortDirection.Ascending 
+                        ? ListSortDirection.Descending 
+                        : ListSortDirection.Ascending;
+
+                    view.SortDescriptions.Clear();
+                    view.SortDescriptions.Add(new SortDescription(propertyName, newDirection));
+                    
+                    if (propertyName == "HasNoChapters")
+                    {
+                        view.SortDescriptions.Add(new SortDescription("OriginalIndex", newDirection));
+                    }
+
+                    Log($"Đảo ngược chiều sắp xếp cho {propertyName} ({newDirection}).");
+                }
+                else
+                {
+                    view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Descending));
+                    Log("Đảo ngược chiều sắp xếp cho OriginalIndex (Descending).");
+                }
             }
-            _scrapedItems.Clear();
-            foreach (var item in reversed)
-            {
-                _scrapedItems.Add(item);
-            }
-            Log("Order reversed.");
         }
 
-        private void BtnViHentaiReverseOrder_Click(object sender, RoutedEventArgs e)
+        private async void BtnRetryErrors_Click(object sender, RoutedEventArgs e)
         {
-            BtnReverseOrder_Click(sender, e);
-            ViHentaiLog($"[Reverse] Đã đảo ngược thứ tự {_scrapedItems.Count} mục.");
-        }
+            var targetItems = _scrapedItems.Where(item => item.IsChecked && item.ErrorCount > 0).ToList();
+            if (!targetItems.Any())
+            {
+                targetItems = _scrapedItems.Where(item => item.ErrorCount > 0).ToList();
+            }
 
-        private void BtnTruyenqqReverseOrder_Click(object sender, RoutedEventArgs e)
-        {
-            BtnReverseOrder_Click(sender, e);
-            TruyenqqLog($"[Reverse] Đã đảo ngược thứ tự {_scrapedItems.Count} mục.");
+            if (!targetItems.Any())
+            {
+                MessageBox.Show("Không tìm thấy truyện nào có lỗi để tải lại.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            btnRetryErrors.IsEnabled = false;
+            Log($"[Retry] Bắt đầu tải lại lỗi cho {targetItems.Count} truyện...");
+            try
+            {
+                foreach (var item in targetItems)
+                {
+                    await RetryDownloadQueueItemErrorsAsync(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[Retry Error] Lỗi khi chạy hàng đợi tải lại: {ex.Message}");
+            }
+            finally
+            {
+                btnRetryErrors.IsEnabled = true;
+            }
         }
 
         private void BtnClearLog_Click(object sender, RoutedEventArgs e)
@@ -229,6 +323,48 @@ public MainWindow()
             }
             Log($"Đã xóa {toRemove.Count} truyện hoàn thành khỏi danh sách.");
             lblLinkCount.Text = _scrapedItems.Count.ToString();
+        }
+
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _activeTempFolders = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+        private int _currentMaxParallelBooks = 2;
+
+        internal void RegisterTempFolder(string path)
+        {
+            if (!string.IsNullOrEmpty(path))
+            {
+                _activeTempFolders.TryAdd(path, 0);
+            }
+        }
+
+        internal void UnregisterTempFolder(string path)
+        {
+            if (!string.IsNullOrEmpty(path))
+            {
+                _activeTempFolders.TryRemove(path, out _);
+            }
+        }
+
+        internal void CleanupActiveTempFolders()
+        {
+            foreach (var path in _activeTempFolders.Keys)
+            {
+                try
+                {
+                    if (System.IO.Directory.Exists(path))
+                    {
+                        System.IO.Directory.Delete(path, true);
+                        Log($"[Cleanup] Đã xóa thư mục tạm: {path}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Cleanup Error] Không thể xóa thư mục tạm '{path}': {ex.Message}");
+                }
+                finally
+                {
+                    _activeTempFolders.TryRemove(path, out _);
+                }
+            }
         }
     }
 }

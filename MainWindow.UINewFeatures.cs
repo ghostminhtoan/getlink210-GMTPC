@@ -18,20 +18,21 @@ namespace get_link_manga
 
         private void BtnOpenBookmarks_Click(object sender, RoutedEventArgs e)
         {
-            OpenBookmarkHistoryWindow();
+            OpenBookmarkHistoryWindow(1); // Bookmarks is index 1
         }
 
         private void BtnOpenHistory_Click(object sender, RoutedEventArgs e)
         {
-            OpenBookmarkHistoryWindow();
+            OpenBookmarkHistoryWindow(0); // History is index 0
         }
 
-        private void OpenBookmarkHistoryWindow()
+        private void OpenBookmarkHistoryWindow(int selectedTab = 0)
         {
             if (_bookmarkHistoryWindowInstance != null)
             {
                 if (_bookmarkHistoryWindowInstance.WindowState == WindowState.Minimized)
                     _bookmarkHistoryWindowInstance.WindowState = WindowState.Normal;
+                _bookmarkHistoryWindowInstance.SelectTab(selectedTab);
                 _bookmarkHistoryWindowInstance.Activate();
             }
             else
@@ -41,6 +42,7 @@ namespace get_link_manga
                     Owner = this
                 };
                 _bookmarkHistoryWindowInstance.Closed += (s, args) => { _bookmarkHistoryWindowInstance = null; };
+                _bookmarkHistoryWindowInstance.SelectTab(selectedTab);
                 _bookmarkHistoryWindowInstance.Show();
             }
         }
@@ -148,7 +150,7 @@ namespace get_link_manga
                     {
                         Owner = this
                     };
-                    errorWindow.ShowDialog();
+                    errorWindow.Show();
                 }
             }
         }
@@ -217,7 +219,7 @@ namespace get_link_manga
         /// Parse the chapter selection textbox and return the filter HashSet.
         /// Returns null if empty (download all). Shows error message if invalid.
         /// </summary>
-        internal HashSet<int> GetChapterSelectionFilter()
+        internal ChapterFilter GetChapterSelectionFilter()
         {
             string input = "";
             Dispatcher.Invoke(() => { input = txtChapterSelection?.Text?.Trim() ?? ""; });
@@ -230,7 +232,7 @@ namespace get_link_manga
                 if (result != null)
                 {
                     string display = ChapterRangeParser.ToDisplayString(result);
-                    Log($"Chapter filter applied: {display} ({result.Count} chapters)");
+                    Log($"Chapter filter applied: {display}");
                 }
                 return result;
             }
@@ -238,7 +240,7 @@ namespace get_link_manga
             {
                 Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show($"Cú pháp chọn chapter không hợp lệ:\n{errorMsg}\n\nVí dụ: 1-10;15;20-25",
+                    MessageBox.Show($"Cú pháp chọn chapter không hợp lệ:\n{errorMsg}\n\nVí dụ: 324-328;324.5",
                         "Chapter Selection Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 });
                 return null;

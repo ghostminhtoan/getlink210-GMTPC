@@ -16,12 +16,12 @@ namespace get_link_manga
     {
         private void TruyenqqLog(string message)
         {
-            Dispatcher.Invoke(() =>
+            Dispatcher.BeginInvoke(new Action(() =>
             {
                 txtTruyenqqLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\r\n");
-                if (!txtTruyenqqLog.IsMouseOver)
-                    txtTruyenqqLog.ScrollToEnd();
-            });
+                if (chkAutoScrollTruyenqqLog?.IsChecked == true)
+                    ScrollTextBoxToEnd(txtTruyenqqLog);
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
         internal async Task<bool> CheckIfTruyenqqBlockedAsync(string testUrl)
@@ -72,65 +72,91 @@ namespace get_link_manga
                 return true; // Not blocked
             }
 
-            TruyenqqLog("Phát hiện thử thách Cloudflare / Captcha. Đang mở trình duyệt giải tự động...");
-
-            bool solved = false;
-            Dispatcher.Invoke(() =>
+            if (_isCaptchaWindowActive)
             {
-                var captchaWin = new CaptchaWindow(testUrl)
+                while (_isCaptchaWindowActive)
                 {
-                    Owner = this
-                };
-
-                if (captchaWin.ShowDialog() == true)
-                {
-                    var originalUri = new Uri(testUrl);
-                    var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
-
-                    // Add cookies for resolvedUri
-                    var resolvedCookies = captchaWin.ResolvedCookies.GetCookies(resolvedUri);
-                    foreach (Cookie cookie in resolvedCookies)
-                    {
-                        _cookieContainer.Add(resolvedUri, cookie);
-                    }
-
-                    // Add cookies for originalUri if different
-                    if (originalUri.Host != resolvedUri.Host)
-                    {
-                        var originalCookies = captchaWin.ResolvedCookies.GetCookies(originalUri);
-                        foreach (Cookie cookie in originalCookies)
-                        {
-                            _cookieContainer.Add(originalUri, cookie);
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(captchaWin.UserAgent))
-                    {
-                        _httpClient.DefaultRequestHeaders.UserAgent.Clear();
-                        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
-                    }
-
-                    TruyenqqLog("Đồng bộ cookie và User-Agent thành công!");
-                    solved = true;
+                    await Task.Delay(500);
                 }
-                else
+                isBlocked = await CheckIfTruyenqqBlockedAsync(testUrl);
+                if (!isBlocked)
                 {
-                    TruyenqqLog("Người dùng hủy bỏ giải captcha.");
+                    return true;
                 }
-            });
-
-            if (solved)
-            {
-                bool stillBlocked = await CheckIfTruyenqqBlockedAsync(testUrl);
-                if (stillBlocked)
-                {
-                    TruyenqqLog("Vẫn bị chặn sau khi giải captcha. Vui lòng thử lại.");
-                    return false;
-                }
-                return true;
             }
 
-            return false;
+            await _captchaSemaphore.WaitAsync();
+            try
+            {
+                // Re-check after acquiring lock
+                isBlocked = await CheckIfTruyenqqBlockedAsync(testUrl);
+                if (!isBlocked)
+                {
+                    return true;
+                }
+
+                _isCaptchaWindowActive = true;
+                _isDownloadPaused = true;
+                TruyenqqLog("Phát hiện thử thách Cloudflare / Captcha. Tạm dừng tải và đang mở trình duyệt giải tự động...");
+
+                bool solved = false;
+                try
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        var captchaWin = new CaptchaWindow(testUrl)
+                        {
+                            Owner = this
+                        };
+
+                        if (captchaWin.ShowDialog() == true)
+                        {
+                            var originalUri = new Uri(testUrl);
+                            var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
+
+                            // Add cookies for resolvedUri
+                            var resolvedCookies = captchaWin.ResolvedCookies.GetCookies(resolvedUri);
+                            foreach (Cookie cookie in resolvedCookies)
+                            {
+                                _cookieContainer.Add(resolvedUri, cookie);
+                            }
+
+                            // Add cookies for originalUri if different
+                            if (originalUri.Host != resolvedUri.Host)
+                            {
+                                var originalCookies = captchaWin.ResolvedCookies.GetCookies(originalUri);
+                                foreach (Cookie cookie in originalCookies)
+                                {
+                                    _cookieContainer.Add(originalUri, cookie);
+                                }
+                            }
+
+                            if (!string.IsNullOrEmpty(captchaWin.UserAgent))
+                            {
+                                _httpClient.DefaultRequestHeaders.UserAgent.Clear();
+                                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
+                            }
+                            solved = true;
+                        }
+                    });
+                }
+                finally
+                {
+                    _isCaptchaWindowActive = false;
+                }
+
+                if (solved)
+                {
+                    TruyenqqLog("Giải captcha thành công. Tiếp tục tải...");
+                    _isDownloadPaused = false;
+                    return true;
+                }
+                return false;
+            }
+            finally
+            {
+                _captchaSemaphore.Release();
+            }
         }
 
         private bool IsTruyenqqUrl(string url)
@@ -365,35 +391,20 @@ namespace get_link_manga
 
                     string html = await _httpClient.GetStringAsync(pageUrl);
                     
-                    // Match <a> tags containing /truyen-tranh/ links robustly
+                    // Match all <a> tags containing /truyen-tranh/ links, parent or child (chapter) links
                     var viewMatches = Regex.Matches(html, @"<a\s+[^>]*?href=[""'](?<link>[^""']*?/truyen-tranh/[^""']+)[""'][^>]*>(?<content>[\s\S]*?)<\/a>", RegexOptions.IgnoreCase);
                     
                     int pageCount = 0;
+                    
+                    // Parse parent links first and find their latest chap from adjacent child links
+                    var pageParents = new System.Collections.Generic.List<GalleryItem>();
+                    var parentLatestChaps = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                    // First pass: extract all parents and trace adjacent chapter mappings
+                    string lastParentUrl = null;
                     foreach (Match match in viewMatches)
                     {
                         string relativeLink = match.Groups["link"].Value.Trim();
-                        if (Regex.IsMatch(relativeLink, @"-chap(?:-|\b)", RegexOptions.IgnoreCase))
-                        {
-                            continue; // Skip chapter links
-                        }
-                        string rawContent = match.Groups["content"].Value;
-                        string title = Regex.Replace(rawContent, @"<[^>]+>", "").Trim();
-                        title = WebUtility.HtmlDecode(title);
-
-                        // Try to get title from title attribute if any
-                        var titleAttrMatch = Regex.Match(match.Value, @"title=[""'](?<titleAttr>[^""']+)[""']", RegexOptions.IgnoreCase);
-                        if (titleAttrMatch.Success)
-                        {
-                            string t = WebUtility.HtmlDecode(titleAttrMatch.Groups["titleAttr"].Value.Trim());
-                            if (!string.IsNullOrEmpty(t) && t.Length > title.Length)
-                            {
-                                title = t;
-                            }
-                        }
-
-                        if (string.IsNullOrWhiteSpace(title) || title.Length < 2) continue;
-
-                        // Normalize link
                         string fullLink = relativeLink;
                         if (!fullLink.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
                             !fullLink.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
@@ -401,28 +412,84 @@ namespace get_link_manga
                             string activeDomain = ExtractTruyenqqBaseUrl(pageUrl);
                             fullLink = activeDomain + (fullLink.StartsWith("/") ? "" : "/") + fullLink;
                         }
-
-                        // Remove trailing slash for normalization
                         fullLink = fullLink.TrimEnd('/');
 
-                        var existingItem = _scrapedItems.FirstOrDefault(item => item.Link.Equals(fullLink, StringComparison.OrdinalIgnoreCase));
-                        if (existingItem == null)
+                        if (Regex.IsMatch(relativeLink, @"-chap(?:-|\b)", RegexOptions.IgnoreCase))
                         {
-                            _scrapedItems.Add(new GalleryItem
+                            // It's a chapter link. If we have a preceding parent, associate the chapter text.
+                            if (lastParentUrl != null)
                             {
-                                Link = fullLink,
-                                Name = FormatGalleryTitle(title),
-                                OriginalIndex = _scrapedItems.Count,
-                                IsChecked = false
-                            });
-                            pageCount++;
+                                string textVal = Regex.Replace(match.Groups["content"].Value, @"<[^>]+>", "").Trim();
+                                textVal = WebUtility.HtmlDecode(textVal);
+                                if (!string.IsNullOrEmpty(textVal))
+                                {
+                                    if (!parentLatestChaps.ContainsKey(lastParentUrl))
+                                    {
+                                        parentLatestChaps[lastParentUrl] = textVal;
+                                    }
+                                    else
+                                    {
+                                        double existingNum = ParseChapterNumberFromText(parentLatestChaps[lastParentUrl]);
+                                        double currentNum = ParseChapterNumberFromText(textVal);
+                                        if (currentNum > existingNum)
+                                        {
+                                            parentLatestChaps[lastParentUrl] = textVal;
+                                        }
+                                    }
+                                }
+                            }
                         }
+                        else
+                        {
+                            // It's a parent link
+                            lastParentUrl = fullLink;
+                            
+                            string rawContent = match.Groups["content"].Value;
+                            string title = Regex.Replace(rawContent, @"<[^>]+>", "").Trim();
+                            title = WebUtility.HtmlDecode(title);
+
+                            var titleAttrMatch = Regex.Match(match.Value, @"title=[""'](?<titleAttr>[^""']+)[""']", RegexOptions.IgnoreCase);
+                            if (titleAttrMatch.Success)
+                            {
+                                string t = WebUtility.HtmlDecode(titleAttrMatch.Groups["titleAttr"].Value.Trim());
+                                if (!string.IsNullOrEmpty(t) && t.Length > title.Length)
+                                {
+                                    title = t;
+                                }
+                            }
+
+                            if (string.IsNullOrWhiteSpace(title) || title.Length < 2) continue;
+
+                            var existingItem = _scrapedItems.FirstOrDefault(item => item.Link.Equals(fullLink, StringComparison.OrdinalIgnoreCase));
+                            if (existingItem == null && !pageParents.Any(p => p.Link.Equals(fullLink, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                pageParents.Add(new GalleryItem
+                                {
+                                    Link = fullLink,
+                                    Name = FormatGalleryTitle(title),
+                                    OriginalIndex = _scrapedItems.Count + pageParents.Count,
+                                    IsChecked = false
+                                });
+                            }
+                        }
+                    }
+
+                    // Apply the latest chap numbers and add to list
+                    foreach (var item in pageParents)
+                    {
+                        if (parentLatestChaps.TryGetValue(item.Link, out string latestChap))
+                        {
+                            item.LinkCount = latestChap;
+                        }
+                        _scrapedItems.Add(item);
+                        pageCount++;
                     }
 
                     pagesProcessed++;
                     double progressPct = ((double)pagesProcessed / totalPages) * 100;
                     progressBar.Value = progressPct;
                     lblStatus.Text = $"Searching page {page}/{pageTo} ({progressPct:0}%)";
+                    lblLinkCount.Text = _scrapedItems.Count.ToString();
                     TruyenqqLog($"Trang {page} hoàn tất. Tìm thấy {pageCount} liên kết mới.");
                 }
 
@@ -453,29 +520,29 @@ namespace get_link_manga
             {
                 _cts.Dispose();
                 _cts = null;
-                btnTruyenqqScrape.Content = "START CRAWLING";
+                btnTruyenqqScrape.Content = "GET LINK";
                 btnTruyenqqScrape.IsEnabled = true;
                 if (btnTruyenqqCrawlMore != null)
                 {
-                    btnTruyenqqCrawlMore.Content = "CRAWL MORE";
+                    btnTruyenqqCrawlMore.Content = "GET MORE";
                     btnTruyenqqCrawlMore.IsEnabled = true;
                 }
                 btnTruyenqqFetchInfo.IsEnabled = true;
             }
         }
 
-        private async void BtnTruyenqqPasteDirect_Click(object sender, RoutedEventArgs e)
+        private void BtnTruyenqqPasteDirect_Click(object sender, RoutedEventArgs e)
         {
             var win = new DirectDownloadWindow(isNhentai: false);
             win.Owner = this;
-            if (win.ShowDialog() == true)
+            win.OnImport = async (links) =>
             {
-                var links = win.ImportedLinks;
                 if (links != null && links.Any())
                 {
                     await ImportTruyenqqDirectLinksAsync(links);
                 }
-            }
+            };
+            win.Show();
         }
 
         private async Task ImportTruyenqqDirectLinksAsync(System.Collections.Generic.List<string> links)
@@ -528,20 +595,12 @@ namespace get_link_manga
                         string html = await _httpClient.GetStringAsync(link);
                         var titleMatch = Regex.Match(html, @"<title>\s*(.*?)\s*</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
                         string title = "Manga - " + link.Split('/').Last();
+                        string latestChapText = "";
                         if (titleMatch.Success)
                         {
                             string rawTitle = WebUtility.HtmlDecode(titleMatch.Groups[1].Value).Trim();
-                            
-                            // Remove common suffixes
-                            string[] commonSuffixes = { " - TruyệnQQ", " - TruyenQQ", " | TruyệnQQ", " | TruyenQQ" };
-                            foreach (var suffix in commonSuffixes)
-                            {
-                                if (rawTitle.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    rawTitle = rawTitle.Substring(0, rawTitle.Length - suffix.Length).Trim();
-                                }
-                            }
-                            title = rawTitle;
+                            ParseMangaNameAndLatestChap(rawTitle, out string mangaName, out latestChapText);
+                            title = mangaName;
                         }
 
                         Dispatcher.Invoke(() =>
@@ -552,7 +611,8 @@ namespace get_link_manga
                                 Name = FormatGalleryTitle(title),
                                 OriginalIndex = _scrapedItems.Count,
                                 IsChecked = true,
-                                HasNoChapters = false
+                                HasNoChapters = false,
+                                LinkCount = latestChapText
                             });
                         });
 
@@ -580,6 +640,7 @@ namespace get_link_manga
 
                     double pct = ((double)(i + 1) / total) * 100;
                     progressBar.Value = pct;
+                    lblLinkCount.Text = _scrapedItems.Count.ToString(); // real-time update
                 }
 
                 RecalculateDuplicates();
@@ -672,7 +733,7 @@ namespace get_link_manga
             return html;
         }
 
-        private async Task DownloadTruyenqqGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, HashSet<int> chapterFilter = null)
+        private async Task DownloadTruyenqqGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
         {
             string cleanLink = item.Link.TrimEnd('/');
             string activeDomain = ExtractTruyenqqBaseUrl(cleanLink);
@@ -714,7 +775,9 @@ namespace get_link_manga
                 string escapedPath = Regex.Escape(parentPath);
 
                 // Scrape child links: href=".../truyen-tranh/slug-{suffix}"
-                string pattern = @"href=[""'](?<link>[^""']*?" + escapedPath + @"-(?<suffix>[^""'\s?#]+))[""']";
+                // IMPORTANT: only match links where the suffix starts with "chap"
+                // to avoid matching other non-chapter links that share the same slug prefix.
+                string pattern = @"href=[""'](?<link>[^""']*?" + escapedPath + @"-chap(?:[^""'\s?#]*)?)[""']";
                 var matches = Regex.Matches(html, pattern, RegexOptions.IgnoreCase);
 
                 var chapterLinks = new System.Collections.Generic.List<string>();
@@ -756,8 +819,7 @@ namespace get_link_manga
                     foreach (var link in chapterLinks)
                     {
                         double chapNum = ParseChapterNumber(link);
-                        int chapInt = (int)Math.Floor(chapNum);
-                        if (chapterFilter.Contains(chapInt))
+                        if (chapterFilter.IsMatch(chapNum))
                         {
                             filtered.Add(link);
                         }
@@ -809,7 +871,7 @@ namespace get_link_manga
 
                 Dispatcher.Invoke(() =>
                 {
-                    item.LinkCount = chapterLinks.Count;
+                    item.LinkCount = chapterLinks.Count.ToString();
                 });
             }
             else
@@ -846,11 +908,33 @@ namespace get_link_manga
                 }
 
                 // TruyenQQ formats title: "Tên Truyện - Tên Chương"
+                // Some manga names have " - " in them so we must find the RIGHTMOST
+                // chapter-like part (containing chap/chương/chapter keyword) as the separator.
                 string[] parts = rawTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length >= 2)
                 {
-                    mangaTitle = parts[0].Trim();
-                    chapterTitle = parts[1].Trim();
+                    // Find the rightmost part that looks like a chapter label
+                    int chapPartIdx = -1;
+                    for (int i = parts.Length - 1; i >= 1; i--)
+                    {
+                        if (Regex.IsMatch(parts[i], @"\b(chap|chương|chapter)\b", RegexOptions.IgnoreCase))
+                        {
+                            chapPartIdx = i;
+                            break;
+                        }
+                    }
+                    if (chapPartIdx > 0)
+                    {
+                        // Join everything before the chapter part as manga title
+                        mangaTitle = string.Join(" - ", parts, 0, chapPartIdx).Trim();
+                        chapterTitle = string.Join(" - ", parts, chapPartIdx, parts.Length - chapPartIdx).Trim();
+                    }
+                    else
+                    {
+                        // Fallback: last part is chapter
+                        mangaTitle = string.Join(" - ", parts, 0, parts.Length - 1).Trim();
+                        chapterTitle = parts[parts.Length - 1].Trim();
+                    }
                 }
                 else if (parts.Length == 1)
                 {
@@ -888,8 +972,9 @@ namespace get_link_manga
             
             // Save inside "truyenqq" root directory
             string targetFolder = Path.Combine(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}");
-            string tempFolder = Path.Combine(rootFolder, "truyenqq", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
+            string tempFolder = Path.Combine(rootFolder, "truyenqq", ".tmp", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
 
             // Isolate images using Safe Chapter HTML (no comments section)
             string safeHtml = GetSafeChapterHtml(html);
@@ -1140,6 +1225,10 @@ namespace get_link_manga
             {
                 Log($"[truyenqq] [Lỗi] Không thể di chuyển thư mục tạm: {ex.Message}");
             }
+            finally
+            {
+                UnregisterTempFolder(tempFolder);
+            }
 
             // Check for missing files
             ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem, cleanChapter);
@@ -1149,6 +1238,35 @@ namespace get_link_manga
         {
             if (string.IsNullOrEmpty(url)) return 0.0;
             var match = Regex.Match(url, @"(?:chap|chapter|chuong|trang)[^\d]*(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
+            if (match.Success && double.TryParse(match.Groups["num"].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double num))
+            {
+                return num;
+            }
+            return 0.0;
+        }
+
+        private static void ParseMangaNameAndLatestChap(string rawTitle, out string mangaName, out string latestChap)
+        {
+            mangaName = rawTitle;
+            latestChap = "";
+            string[] commonSuffixes = { " - TruyệnQQ", " - TruyenQQ", " | TruyệnQQ", " | TruyenQQ" };
+            foreach (var suffix in commonSuffixes)
+            {
+                if (mangaName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                    mangaName = mangaName.Substring(0, mangaName.Length - suffix.Length).Trim();
+            }
+            var match = Regex.Match(mangaName, @"^(?<manga>.*?)\s+(?<indicator>chương mới nhất|chap mới nhất|chương|chap|chapter)\s+(?<val>[\d\w\.-]+(?:[\s\S]*?))$", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                mangaName = match.Groups["manga"].Value.Trim();
+                latestChap = match.Groups["indicator"].Value.Trim() + " " + match.Groups["val"].Value.Trim();
+            }
+        }
+
+        private double ParseChapterNumberFromText(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return 0.0;
+            var match = Regex.Match(text, @"(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
             if (match.Success && double.TryParse(match.Groups["num"].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double num))
             {
                 return num;

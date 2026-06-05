@@ -412,6 +412,7 @@ namespace get_link_manga
                     double progressPct = ((double)pagesProcessed / totalPages) * 100;
                     progressBar.Value = progressPct;
                     lblStatus.Text = $"Searching page {page}/{pageTo} ({progressPct:0}%)";
+                    lblLinkCount.Text = _scrapedItems.Count.ToString(); // real-time update
                 }
 
                 RecalculateDuplicates();
@@ -434,29 +435,29 @@ namespace get_link_manga
             {
                 _cts.Dispose();
                 _cts = null;
-                btnNhentaiScrape.Content = "START CRAWLING";
+                btnNhentaiScrape.Content = "GET LINK";
                 btnNhentaiScrape.IsEnabled = true;
                 if (btnNhentaiCrawlMore != null)
                 {
-                    btnNhentaiCrawlMore.Content = "CRAWL MORE";
+                    btnNhentaiCrawlMore.Content = "GET MORE";
                     btnNhentaiCrawlMore.IsEnabled = true;
                 }
                 btnNhentaiFetchInfo.IsEnabled = true;
             }
         }
 
-        private async void BtnNhentaiPasteDirect_Click(object sender, RoutedEventArgs e)
+        private void BtnNhentaiPasteDirect_Click(object sender, RoutedEventArgs e)
         {
             var win = new DirectDownloadWindow(isNhentai: true);
             win.Owner = this;
-            if (win.ShowDialog() == true)
+            win.OnImport = async (links) =>
             {
-                var links = win.ImportedLinks;
                 if (links != null && links.Any())
                 {
                     await ImportNhentaiDirectLinksAsync(links);
                 }
-            }
+            };
+            win.Show();
         }
 
         private async Task ImportNhentaiDirectLinksAsync(System.Collections.Generic.List<string> links)
@@ -582,6 +583,7 @@ namespace get_link_manga
 
                     double pct = ((double)(i + 1) / total) * 100;
                     progressBar.Value = pct;
+                    lblLinkCount.Text = _scrapedItems.Count.ToString(); // real-time update
                 }
 
                 RecalculateDuplicates();

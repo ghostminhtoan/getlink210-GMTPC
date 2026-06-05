@@ -144,6 +144,8 @@ namespace get_link_manga
                         item.Status = "Cancelled";
                     }
                 }
+                
+                CleanupActiveTempFolders();
             }
         }
 
@@ -176,7 +178,7 @@ namespace get_link_manga
             }
 
             // Parse chapter selection filter
-            HashSet<int> chapterFilter = GetChapterSelectionFilter();
+            ChapterFilter chapterFilter = GetChapterSelectionFilter();
 
             _downloadCts = new CancellationTokenSource();
             CancellationToken token = _downloadCts.Token;
@@ -195,8 +197,6 @@ namespace get_link_manga
             if (btnNhentaiScrape != null) btnNhentaiScrape.IsEnabled = false;
             if (btnNhentaiFetchInfo != null) btnNhentaiFetchInfo.IsEnabled = false;
             // cmbConnections.IsEnabled = false;
-            if (cmbMultiDownload != null) cmbMultiDownload.IsEnabled = false;
-
             int totalGalleries = itemsToDownload.Count;
             int completedGalleries = 0;
 
@@ -208,6 +208,7 @@ namespace get_link_manga
                     maxParallelBooks = val;
                 }
             });
+            _currentMaxParallelBooks = maxParallelBooks;
 
             // Initialize GalleryItems for downloading
             foreach (var item in itemsToDownload)
@@ -218,7 +219,8 @@ namespace get_link_manga
                 Dispatcher.Invoke(() =>
                 {
                     item.SourceDomain = domain;
-                    item.TotalChapters = item.LinkCount > 0 ? item.LinkCount : 1;
+                    double num = ExtractNumber(item.LinkCount);
+                    item.TotalChapters = num > 0 ? (int)Math.Ceiling(num) : 1;
                     item.CompletedChapters = 0;
                     item.Status = "Queued";
                     item.CurrentProcess = "Waiting...";
@@ -240,7 +242,7 @@ namespace get_link_manga
                     .GroupBy(item => GetBookIdentifier(item.Link))
                     .ToList();
 
-                using (var bookSemaphore = new SemaphoreSlim(maxParallelBooks))
+                using (var bookSemaphore = new DynamicSemaphore(maxParallelBooks, () => _currentMaxParallelBooks))
                 {
                     var tasks = new System.Collections.Generic.List<Task>();
                     object lockObj = new object();
@@ -381,13 +383,13 @@ namespace get_link_manga
                 if (btnNhentaiScrape != null) btnNhentaiScrape.IsEnabled = true;
                 if (btnNhentaiFetchInfo != null) btnNhentaiFetchInfo.IsEnabled = true;
                 cmbConnections.IsEnabled = true;
-                if (cmbMultiDownload != null) cmbMultiDownload.IsEnabled = true;
 
                 UpdateQueueErrorLabel();
+                CleanupActiveTempFolders();
             }
         }
 
-        private async Task DownloadGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, HashSet<int> chapterFilter = null)
+        private async Task DownloadGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
         {
             string hostName = "hentaiforce.net";
             try
@@ -416,8 +418,9 @@ namespace get_link_manga
 
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, hostName, safeTitle);
-            string tempFolder = Path.Combine(rootFolder, hostName, $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            string tempFolder = Path.Combine(rootFolder, hostName, ".tmp", $".tmp_{safeTitle}_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
 
             // Fetch gallery homepage
             string html = await _httpClient.GetStringAsync(item.Link);
@@ -596,6 +599,10 @@ namespace get_link_manga
                 {
                     Log($"[Lỗi] Không thể di chuyển thư mục tạm HentaiForce: {ex.Message}");
                 }
+                finally
+                {
+                    UnregisterTempFolder(tempFolder);
+                }
 
                 // Check for missing files
                 ValidateDownloadedFiles(targetFolder, totalPages, queueItem, "Pages");
@@ -665,8 +672,9 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
         {
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, "nhentai.net", safeTitle);
-            string tempFolder = Path.Combine(rootFolder, "nhentai.net", $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            string tempFolder = Path.Combine(rootFolder, "nhentai.net", ".tmp", $".tmp_{safeTitle}_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
 
             // Check if the link is a direct CDN link
             var cdnMatch = Regex.Match(item.Link, @"(?:https?:)?//(?<subdomain>[it]\d*)\.nhentai\.net/galleries/(?<mediaId>\d+)/(?<pageNum>\d+)(?<isThumb>t)?\.(?<ext>jpg|png|gif|webp|jpeg)", RegexOptions.IgnoreCase);
@@ -941,6 +949,10 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 {
                     Log($"[Lỗi] Không thể di chuyển thư mục tạm nhentai: {ex.Message}");
                 }
+                finally
+                {
+                    UnregisterTempFolder(tempFolder);
+                }
             }
         }
 
@@ -1148,55 +1160,80 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 return true; // Not blocked, all good!
             }
 
-            Log("[nhentai.net] Phát hiện thử thách Cloudflare / Captcha. Đang mở trình duyệt giải tự động...");
-
-            bool solved = false;
-            Dispatcher.Invoke(() =>
+            if (_isCaptchaWindowActive)
             {
-                var captchaWin = new CaptchaWindow(testUrl)
+                while (_isCaptchaWindowActive)
                 {
-                    Owner = this
-                };
-
-                if (captchaWin.ShowDialog() == true)
-                {
-                    // Copy cookies to our global CookieContainer
-                    var uri = new Uri("https://nhentai.net");
-                    var cookies = captchaWin.ResolvedCookies.GetCookies(uri);
-                    foreach (Cookie cookie in cookies)
-                    {
-                        _cookieContainer.Add(uri, cookie);
-                    }
-
-                    // Copy User-Agent to HttpClient DefaultRequestHeaders
-                    if (!string.IsNullOrEmpty(captchaWin.UserAgent))
-                    {
-                        _httpClient.DefaultRequestHeaders.UserAgent.Clear();
-                        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
-                    }
-
-                    Log("[nhentai.net] Đồng bộ cookie và User-Agent thành công!");
-                    solved = true;
+                    await Task.Delay(500);
                 }
-                else
+                isBlocked = await CheckIfNhentaiBlockedAsync(testUrl);
+                if (!isBlocked)
                 {
-                    Log("[nhentai.net] Người dùng hủy bỏ giải captcha.");
+                    return true;
                 }
-            });
-
-            if (solved)
-            {
-                // Double check if solved successfully
-                bool stillBlocked = await CheckIfNhentaiBlockedAsync(testUrl);
-                if (stillBlocked)
-                {
-                    Log("[nhentai.net] Vẫn bị chặn sau khi giải captcha. Vui lòng thử lại.");
-                    return false;
-                }
-                return true;
             }
 
-            return false;
+            await _captchaSemaphore.WaitAsync();
+            try
+            {
+                // Re-check after lock
+                isBlocked = await CheckIfNhentaiBlockedAsync(testUrl);
+                if (!isBlocked)
+                {
+                    return true;
+                }
+
+                _isCaptchaWindowActive = true;
+                _isDownloadPaused = true;
+                Log("[nhentai.net] Phát hiện thử thách Cloudflare / Captcha. Tạm dừng tải và đang mở trình duyệt giải tự động...");
+
+                bool solved = false;
+                try
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        var captchaWin = new CaptchaWindow(testUrl)
+                        {
+                            Owner = this
+                        };
+
+                        if (captchaWin.ShowDialog() == true)
+                        {
+                            // Copy cookies to our global CookieContainer
+                            var uri = new Uri("https://nhentai.net");
+                            var cookies = captchaWin.ResolvedCookies.GetCookies(uri);
+                            foreach (Cookie cookie in cookies)
+                            {
+                                _cookieContainer.Add(uri, cookie);
+                            }
+
+                            // Copy User-Agent to HttpClient DefaultRequestHeaders
+                            if (!string.IsNullOrEmpty(captchaWin.UserAgent))
+                            {
+                                _httpClient.DefaultRequestHeaders.UserAgent.Clear();
+                                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
+                            }
+                            solved = true;
+                        }
+                    });
+                }
+                finally
+                {
+                    _isCaptchaWindowActive = false;
+                }
+
+                if (solved)
+                {
+                    Log("[nhentai.net] Giải captcha thành công. Tiếp tục tải...");
+                    _isDownloadPaused = false;
+                    return true;
+                }
+                return false;
+            }
+            finally
+            {
+                _captchaSemaphore.Release();
+            }
         }
 
         internal async Task<bool> CheckIfViHentaiBlockedAsync(string testUrl)
@@ -1248,52 +1285,78 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 return true; // Not blocked
             }
 
-            Log("[vi-hentai.pro] Phát hiện thử thách Cloudflare / Captcha. Đang mở trình duyệt giải tự động...");
-
-            bool solved = false;
-            Dispatcher.Invoke(() =>
+            if (_isCaptchaWindowActive)
             {
-                var captchaWin = new CaptchaWindow(testUrl)
+                while (_isCaptchaWindowActive)
                 {
-                    Owner = this
-                };
-
-                if (captchaWin.ShowDialog() == true)
-                {
-                    var uri = new Uri("https://vi-hentai.pro");
-                    var cookies = captchaWin.ResolvedCookies.GetCookies(uri);
-                    foreach (Cookie cookie in cookies)
-                    {
-                        _cookieContainer.Add(uri, cookie);
-                    }
-
-                    if (!string.IsNullOrEmpty(captchaWin.UserAgent))
-                    {
-                        _httpClient.DefaultRequestHeaders.UserAgent.Clear();
-                        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
-                    }
-
-                    Log("[vi-hentai.pro] Đồng bộ cookie và User-Agent thành công!");
-                    solved = true;
+                    await Task.Delay(500);
                 }
-                else
+                isBlocked = await CheckIfViHentaiBlockedAsync(testUrl);
+                if (!isBlocked)
                 {
-                    Log("[vi-hentai.pro] Người dùng hủy bỏ giải captcha.");
+                    return true;
                 }
-            });
-
-            if (solved)
-            {
-                bool stillBlocked = await CheckIfViHentaiBlockedAsync(testUrl);
-                if (stillBlocked)
-                {
-                    Log("[vi-hentai.pro] Vẫn bị chặn sau khi giải captcha. Vui lòng thử lại.");
-                    return false;
-                }
-                return true;
             }
 
-            return false;
+            await _captchaSemaphore.WaitAsync();
+            try
+            {
+                // Re-check after lock
+                isBlocked = await CheckIfViHentaiBlockedAsync(testUrl);
+                if (!isBlocked)
+                {
+                    return true;
+                }
+
+                _isCaptchaWindowActive = true;
+                _isDownloadPaused = true;
+                Log("[vi-hentai.pro] Phát hiện thử thách Cloudflare / Captcha. Tạm dừng tải và đang mở trình duyệt giải tự động...");
+
+                bool solved = false;
+                try
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        var captchaWin = new CaptchaWindow(testUrl)
+                        {
+                            Owner = this
+                        };
+
+                        if (captchaWin.ShowDialog() == true)
+                        {
+                            var uri = new Uri("https://vi-hentai.pro");
+                            var cookies = captchaWin.ResolvedCookies.GetCookies(uri);
+                            foreach (Cookie cookie in cookies)
+                            {
+                                _cookieContainer.Add(uri, cookie);
+                            }
+
+                            if (!string.IsNullOrEmpty(captchaWin.UserAgent))
+                            {
+                                _httpClient.DefaultRequestHeaders.UserAgent.Clear();
+                                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
+                            }
+                            solved = true;
+                        }
+                    });
+                }
+                finally
+                {
+                    _isCaptchaWindowActive = false;
+                }
+
+                if (solved)
+                {
+                    Log("[vi-hentai.pro] Giải captcha thành công. Tiếp tục tải...");
+                    _isDownloadPaused = false;
+                    return true;
+                }
+                return false;
+            }
+            finally
+            {
+                _captchaSemaphore.Release();
+            }
         }
 
         private string GetSafePathName(string name)
@@ -1472,6 +1535,17 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             {
                 Log($"[Lỗi] Không thể kiểm tra tính toàn vẹn của thư mục '{folderPath}': {ex.Message}");
             }
+        }
+
+        private void CmbMultiDownload_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (cmbMultiDownload == null || cmbMultiDownload.SelectedItem == null) return;
+            var selectedItem = cmbMultiDownload.SelectedItem as System.Windows.Controls.ComboBoxItem;
+            if (selectedItem == null) return;
+            if (!int.TryParse(selectedItem.Content.ToString(), out int newVal)) return;
+
+            _currentMaxParallelBooks = newVal;
+            Log($"[Multi Download] Số luồng tải song song được chỉnh thành {newVal}.");
         }
     }
 

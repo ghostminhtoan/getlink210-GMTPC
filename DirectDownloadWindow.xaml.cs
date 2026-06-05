@@ -12,6 +12,7 @@ namespace get_link_manga
     {
         private readonly bool _isNhentai;
         public List<string> ImportedLinks { get; private set; } = new List<string>();
+        public Action<List<string>> OnImport { get; set; }
 
         public DirectDownloadWindow(bool isNhentai = false)
         {
@@ -72,13 +73,12 @@ namespace get_link_manga
             }
 
             ImportedLinks = filteredLinks;
-            DialogResult = true;
+            OnImport?.Invoke(ImportedLinks);
             Close();
         }
 
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
             Close();
         }
     }

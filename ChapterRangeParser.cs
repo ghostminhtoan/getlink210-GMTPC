@@ -1,33 +1,47 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace get_link_manga
 {
+    public class ChapterFilter
+    {
+        public List<Tuple<double, double>> Ranges { get; } = new List<Tuple<double, double>>();
+        public HashSet<double> Singles { get; } = new HashSet<double>();
+
+        public bool IsMatch(double chapNum)
+        {
+            foreach (var single in Singles)
+            {
+                if (Math.Abs(chapNum - single) < 0.0001)
+                    return true;
+            }
+
+            foreach (var range in Ranges)
+            {
+                if (chapNum >= range.Item1 - 0.0001 && chapNum <= range.Item2 + 0.0001)
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
     /// <summary>
-    /// Utility class để parse cú pháp chọn chapter kiểu máy in.
-    /// Ví dụ: "1-3;5;9-10" → HashSet { 1, 2, 3, 5, 9, 10 }
-    /// Dấu phân cách: ";" hoặc ","
-    /// Range: "1-10" → từ 1 đến 10
-    /// Single: "3" → chỉ 3
-    /// Empty/null → return null (tải tất cả)
+    /// Utility class để parse cú pháp chọn chapter kiểu máy in hỗ trợ số thực.
+    /// Ví dụ: "324-328;324.5"
     /// </summary>
     public static class ChapterRangeParser
     {
-        /// <summary>
-        /// Parse chuỗi chapter selection thành HashSet các số chapter.
-        /// Return null nếu chuỗi trống (nghĩa là tải tất cả).
-        /// Throw FormatException nếu cú pháp không hợp lệ.
-        /// </summary>
-        public static HashSet<int> Parse(string input)
+        public static ChapterFilter Parse(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
                 return null; // Tải tất cả
 
-            var result = new HashSet<int>();
+            var filter = new ChapterFilter();
             string cleaned = input.Trim();
 
-            // Split bằng ";" hoặc ","
             string[] segments = cleaned.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (string segment in segments)
@@ -38,45 +52,34 @@ namespace get_link_manga
 
                 if (trimmed.Contains("-"))
                 {
-                    // Range: "1-10"
                     string[] parts = trimmed.Split(new[] { '-' }, 2);
                     if (parts.Length != 2)
-                        throw new FormatException($"Cú pháp range không hợp lệ: '{trimmed}'. Dùng format: 1-10");
+                        throw new FormatException($"Cú pháp range không hợp lệ: '{trimmed}'. Dùng format: 324-328");
 
-                    if (!int.TryParse(parts[0].Trim(), out int start))
+                    if (!double.TryParse(parts[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out double start))
                         throw new FormatException($"Số bắt đầu không hợp lệ trong range: '{trimmed}'");
 
-                    if (!int.TryParse(parts[1].Trim(), out int end))
+                    if (!double.TryParse(parts[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out double end))
                         throw new FormatException($"Số kết thúc không hợp lệ trong range: '{trimmed}'");
 
                     if (start > end)
                         throw new FormatException($"Số bắt đầu ({start}) lớn hơn số kết thúc ({end}) trong range: '{trimmed}'");
 
-                    if (end - start > 10000)
-                        throw new FormatException($"Range quá lớn ({start}-{end}). Tối đa 10000 chapters.");
-
-                    for (int i = start; i <= end; i++)
-                    {
-                        result.Add(i);
-                    }
+                    filter.Ranges.Add(new Tuple<double, double>(start, end));
                 }
                 else
                 {
-                    // Single: "5"
-                    if (!int.TryParse(trimmed, out int num))
+                    if (!double.TryParse(trimmed, NumberStyles.Any, CultureInfo.InvariantCulture, out double num))
                         throw new FormatException($"Số không hợp lệ: '{trimmed}'");
 
-                    result.Add(num);
+                    filter.Singles.Add(num);
                 }
             }
 
-            return result.Count > 0 ? result : null;
+            return (filter.Ranges.Count > 0 || filter.Singles.Count > 0) ? filter : null;
         }
 
-        /// <summary>
-        /// Try-parse version, return false nếu cú pháp không hợp lệ.
-        /// </summary>
-        public static bool TryParse(string input, out HashSet<int> result, out string errorMessage)
+        public static bool TryParse(string input, out ChapterFilter result, out string errorMessage)
         {
             try
             {
@@ -92,35 +95,21 @@ namespace get_link_manga
             }
         }
 
-        /// <summary>
-        /// Tạo chuỗi mô tả ngắn gọn từ HashSet, ví dụ: "1-3, 5, 9-10"
-        /// </summary>
-        public static string ToDisplayString(HashSet<int> chapters)
+        public static string ToDisplayString(ChapterFilter filter)
         {
-            if (chapters == null || chapters.Count == 0)
+            if (filter == null || (filter.Ranges.Count == 0 && filter.Singles.Count == 0))
                 return "Tất cả";
 
-            var sorted = chapters.OrderBy(c => c).ToList();
-            var ranges = new List<string>();
-            int rangeStart = sorted[0];
-            int rangePrev = sorted[0];
-
-            for (int i = 1; i < sorted.Count; i++)
+            var parts = new List<string>();
+            foreach (var r in filter.Ranges)
             {
-                if (sorted[i] == rangePrev + 1)
-                {
-                    rangePrev = sorted[i];
-                }
-                else
-                {
-                    ranges.Add(rangeStart == rangePrev ? rangeStart.ToString() : $"{rangeStart}-{rangePrev}");
-                    rangeStart = sorted[i];
-                    rangePrev = sorted[i];
-                }
+                parts.Add($"{r.Item1.ToString(CultureInfo.InvariantCulture)}-{r.Item2.ToString(CultureInfo.InvariantCulture)}");
             }
-            ranges.Add(rangeStart == rangePrev ? rangeStart.ToString() : $"{rangeStart}-{rangePrev}");
-
-            return string.Join(", ", ranges);
+            foreach (var s in filter.Singles)
+            {
+                parts.Add(s.ToString(CultureInfo.InvariantCulture));
+            }
+            return string.Join(", ", parts);
         }
     }
 }

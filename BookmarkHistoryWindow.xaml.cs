@@ -122,5 +122,13 @@ namespace get_link_manga
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        public void SelectTab(int index)
+        {
+            if (tabMenu != null && index >= 0 && index < tabMenu.Items.Count)
+            {
+                tabMenu.SelectedIndex = index;
+            }
+        }
     }
 }
