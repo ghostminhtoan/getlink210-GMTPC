@@ -161,8 +161,6 @@
             <RowDefinition Height="Auto"/>
             <!-- Main Content Grid -->
             <RowDefinition Height="*"/>
-            <!-- Shared Actions Footer -->
-            <RowDefinition Height="Auto"/>
             <!-- Footer Status Bar -->
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -742,13 +740,23 @@
             <Border Name="borderRightPanel" Grid.Column="2" Grid.Row="0" Style="{StaticResource CyberpunkCard}" Padding="15">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Action Buttons -->
                         <RowDefinition Height="Auto"/> <!-- Header -->
                         <RowDefinition Height="Auto"/> <!-- Filter & Sort Toolbar -->
                         <RowDefinition Height="*"/>    <!-- DataGrid -->
                         <RowDefinition Height="Auto"/> <!-- Download Section -->
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <!-- Action Buttons Toolbar -->
+                    <WrapPanel Grid.Row="0" Margin="0,0,0,12" Orientation="Horizontal">
+                        <Button Content="COPY LINKS" Click="BtnCopyLinksOnly_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="130" Margin="0,0,8,8" FontWeight="Bold"/>
+                        <Button Content="COPY NAME+LINK" Click="BtnCopyNamesAndLinks_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35" Width="160" Margin="0,0,8,8" FontWeight="Bold"/>
+                        <Button Content="SAVE MD FILE" Click="BtnSave_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="130" Margin="0,0,8,8" FontWeight="Bold"/>
+                        <Button Content="LOAD MD FILE" Click="BtnLoad_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35" Width="130" Margin="0,0,8,8" FontWeight="Bold"/>
+                        <Button Content="CLEAR" Click="BtnClear_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="80" Margin="0,0,8,8" FontWeight="Bold"/>
+                    </WrapPanel>
+
+                    <Grid Grid.Row="1" Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -772,31 +780,17 @@
                     </Grid>
 
                     <!-- Toolbar for Filtering and Sorting -->
-                    <Grid Grid.Row="1" Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Button Grid.Column="0" Name="btnSortByName" Content="SORT BY NAME" Click="BtnSortByName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11"/>
-                        <Button Grid.Column="2" Name="btnRestoreOrder" Content="RESTORE ORDER" Click="BtnRestoreOrder_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="120" FontSize="11"/>
-                        <Button Grid.Column="4" Name="btnDuplicateName" Content="DUPLICATE NAME" Click="BtnDuplicateName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11"/>
-                        <Button Grid.Column="6" Name="btnNoLinkViHentai" Content="NO LINK (VI-HENTAI)" Click="BtnNoLinkViHentai_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="150" FontSize="11"/>
-                        <Button Grid.Column="8" Name="btnReverseOrder" Content="REVERSE ORDER" Click="BtnReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="150" FontSize="11"/>
-                        <Button Grid.Column="10" Name="btnClearComplete" Content="CLEAR COMPLETE BOOKS" Click="BtnClearComplete_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="180" FontSize="11"/>
-                    </Grid>
+                    <WrapPanel Grid.Row="2" Margin="0,0,0,10" Orientation="Horizontal">
+                        <Button Name="btnSortByName" Content="SORT BY NAME" Click="BtnSortByName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11" Margin="0,0,8,8"/>
+                        <Button Name="btnRestoreOrder" Content="RESTORE ORDER" Click="BtnRestoreOrder_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="120" FontSize="11" Margin="0,0,8,8"/>
+                        <Button Name="btnDuplicateName" Content="DUPLICATE NAME" Click="BtnDuplicateName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11" Margin="0,0,8,8"/>
+                        <Button Name="btnNoLinkViHentai" Content="NO LINK (VI-HENTAI)" Click="BtnNoLinkViHentai_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="150" FontSize="11" Margin="0,0,8,8"/>
+                        <Button Name="btnReverseOrder" Content="REVERSE ORDER" Click="BtnReverseOrder_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="150" FontSize="11" Margin="0,0,8,8"/>
+                        <Button Name="btnClearComplete" Content="CLEAR COMPLETE BOOKS" Click="BtnClearComplete_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="180" FontSize="11" Margin="0,0,8,8"/>
+                    </WrapPanel>
 
                     <!-- Scraped links DataGrid -->
-                    <DataGrid Grid.Row="2" 
+                    <DataGrid Grid.Row="3" 
                               Name="dgResults"
                               Style="{StaticResource CyberpunkDataGrid}"
                               ColumnHeaderStyle="{StaticResource CyberpunkDataGridColumnHeader}"
@@ -1122,7 +1116,7 @@
                     </DataGrid>
 
                     <!-- Download Section -->
-                    <Border Grid.Row="3" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
+                    <Border Grid.Row="4" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,10,0,0">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/> <!-- Path Config -->
@@ -1294,28 +1288,8 @@
             </Border>
         </Grid>
 
-        <!-- Shared Actions Footer -->
-        <Grid Grid.Row="2" Margin="0,15,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="130"/>
-                <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="130"/>
-                <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="70"/>
-            </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="COPY LINKS" Click="BtnCopyLinksOnly_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35"/>
-            <Button Grid.Column="2" Content="COPY NAME+LINK" Click="BtnCopyNamesAndLinks_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
-            <Button Grid.Column="4" Content="SAVE MD FILE" Click="BtnSave_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35"/>
-            <Button Grid.Column="6" Content="LOAD MD FILE" Click="BtnLoad_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
-            <Button Grid.Column="8" Content="CLEAR" Click="BtnClear_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35"/>
-        </Grid>
-
         <!-- Footer -->
-        <Border Grid.Row="3" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,15,0,0">
+        <Border Grid.Row="2" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,15,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
