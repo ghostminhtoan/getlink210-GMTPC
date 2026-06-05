@@ -38,12 +38,85 @@ namespace get_link_manga
                 await webView.EnsureCoreWebView2Async(env);
                 
                 webView.Source = new Uri(_targetUrl);
+
+                // Start auto-bypass detection loop
+                _ = AutoDetectBypassAsync();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi khởi tạo trình duyệt WebView2: {ex.Message}\n\nHãy đảm bảo bạn đã cài đặt WebView2 Runtime trên hệ thống.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 DialogResult = false;
                 Close();
+            }
+        }
+
+        private async Task AutoDetectBypassAsync()
+        {
+            while (true)
+            {
+                await Task.Delay(1000);
+                if (webView.CoreWebView2 == null) continue;
+
+                try
+                {
+                    string url = "";
+                    string title = "";
+                    Dispatcher.Invoke(() =>
+                    {
+                        url = webView.Source?.ToString() ?? "";
+                        title = webView.CoreWebView2.DocumentTitle ?? "";
+                    });
+
+                    // Execute JS check to see if we've successfully loaded the page content without cloudflare block
+                    string jsCheck = @"
+                        (function() {
+                            var html = document.documentElement.outerHTML || '';
+                            if (html.indexOf('cf-challenge') !== -1 || 
+                                html.indexOf('cf-turnstile') !== -1 || 
+                                html.indexOf('Turnstile') !== -1 || 
+                                html.indexOf('Just a moment...') !== -1 ||
+                                html.indexOf('Performing security verification') !== -1 ||
+                                html.indexOf('thực hiện xác minh bảo mật') !== -1 ||
+                                html.indexOf('xác minh bạn không phải là bot') !== -1) {
+                                return 'challenge';
+                            }
+                            if (document.getElementById('cf-challenge-running') || 
+                                document.getElementById('challenge-form') || 
+                                html.indexOf('challenge-platform') !== -1) {
+                                return 'challenge';
+                            }
+                            return 'ok';
+                        })()";
+
+                    string result = await Dispatcher.Invoke(async () =>
+                    {
+                        try
+                        {
+                            return await webView.CoreWebView2.ExecuteScriptAsync(jsCheck);
+                        }
+                        catch
+                        {
+                            return "challenge";
+                        }
+                    });
+
+                    if (result != null && result.Trim('"') == "ok")
+                    {
+                        if (!title.Contains("Just a moment") && !title.Contains("Cloudflare"))
+                        {
+                            // Great! We bypassed it. Let's auto click done.
+                            Dispatcher.Invoke(() =>
+                            {
+                                BtnDone_Click(this, null);
+                            });
+                            break;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore errors during page loading
+                }
             }
         }
 
