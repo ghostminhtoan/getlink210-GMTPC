@@ -7,10 +7,10 @@
     <ProjectGuid>{67D7A160-D0DD-4B9D-BD14-3828F9011A8E}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>get_link_manga</RootNamespace>
-    <AssemblyName>get link manga</AssemblyName>
+    <AssemblyName>Comic-GMTPC</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <ApplicationIcon>get link manga.ico</ApplicationIcon>
+    <ApplicationIcon>Comic-GMTPC.ico</ApplicationIcon>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
