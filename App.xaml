@@ -40,7 +40,7 @@
             <DropShadowEffect x:Key="CyberpunkPinkGlow" Color="{StaticResource CyberpunkPinkColor}" BlurRadius="8" ShadowDepth="0" Opacity="0.75" />
             
             <!-- Cyberpunk Button Base Template -->
-            <ControlTemplate x:Key="CyberpunkButtonTemplate" TargetType="Button">
+             <ControlTemplate x:Key="CyberpunkButtonTemplate" TargetType="Button">
                 <Border x:Name="border"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
@@ -48,7 +48,14 @@
                         CornerRadius="2"
                         SnapsToDevicePixels="True">
                     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-                                      Margin="{TemplateBinding Padding}"/>
+                                      Margin="{TemplateBinding Padding}">
+                        <ContentPresenter.Resources>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="Wrap"/>
+                                <Setter Property="TextAlignment" Value="Center"/>
+                            </Style>
+                        </ContentPresenter.Resources>
+                    </ContentPresenter>
                 </Border>
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsEnabled" Value="False">
