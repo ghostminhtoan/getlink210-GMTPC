@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "c2zq5sFxOgc=",
+  "dgSpecHash": "sJVeCfIiLSo=",
   "success": true,
-  "projectFilePath": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+  "projectFilePath": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\Comic-GMTPC.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Admin\\.nuget\\packages\\costura.fody\\6.2.0\\costura.fody.6.2.0.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\fody\\6.9.3\\fody.6.9.3.nupkg.sha512",

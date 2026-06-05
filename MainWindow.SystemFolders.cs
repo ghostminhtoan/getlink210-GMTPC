@@ -227,30 +227,39 @@ namespace get_link_manga
         private string GetActiveTargetFolder(string downloadRoot)
         {
             string subFolder = "";
-            int tabIndex = 0;
             Dispatcher.Invoke(() =>
             {
-                if (tabLeftPanel != null)
+                if (tabLeftPanel == null) return;
+
+                if (tabLeftPanel.SelectedIndex == 0) // MANGA
                 {
-                    tabIndex = tabLeftPanel.SelectedIndex;
+                    if (tabManga != null && tabManga.SelectedItem is System.Windows.Controls.TabItem selectedMangaTab)
+                    {
+                        string header = selectedMangaTab.Header?.ToString().ToLower() ?? "";
+                        if (header.Contains("truyenqq"))
+                            subFolder = "truyenqq";
+                    }
+                    else
+                    {
+                        subFolder = "truyenqq";
+                    }
+                }
+                else if (tabLeftPanel.SelectedIndex == 1) // HENTAI
+                {
+                    if (tabHentai != null && tabHentai.SelectedItem is System.Windows.Controls.TabItem selectedHentaiTab)
+                    {
+                        string header = selectedHentaiTab.Header?.ToString().ToLower() ?? "";
+                        if (header.Contains("hentaiforce"))
+                            subFolder = "hentaiforce.net";
+                        else if (header.Contains("nhentai"))
+                            subFolder = "nhentai.net";
+                        else if (header.Contains("hentaivn"))
+                            subFolder = "vi-hentai.pro"; // Giữ nguyên tên thư mục vi-hentai.pro cũ để tránh lỗi tương thích đường dẫn
+                        else if (header.Contains("hentaiera"))
+                            subFolder = "hentaiera.com";
+                    }
                 }
             });
-
-            switch (tabIndex)
-            {
-                case 0:
-                    subFolder = "hentaiforce.net";
-                    break;
-                case 1:
-                    subFolder = "nhentai.net";
-                    break;
-                case 2:
-                    subFolder = "vi-hentai.pro";
-                    break;
-                case 3:
-                    subFolder = "truyenqq";
-                    break;
-            }
 
             string targetFolder = string.IsNullOrEmpty(subFolder) 
                 ? downloadRoot 

@@ -196,6 +196,12 @@ namespace get_link_manga
             btnFetchInfo.IsEnabled = false;
             if (btnNhentaiScrape != null) btnNhentaiScrape.IsEnabled = false;
             if (btnNhentaiFetchInfo != null) btnNhentaiFetchInfo.IsEnabled = false;
+            if (btnViHentaiScrape != null) btnViHentaiScrape.IsEnabled = false;
+            if (btnViHentaiFetchInfo != null) btnViHentaiFetchInfo.IsEnabled = false;
+            if (btnTruyenqqScrape != null) btnTruyenqqScrape.IsEnabled = false;
+            if (btnTruyenqqFetchInfo != null) btnTruyenqqFetchInfo.IsEnabled = false;
+            if (btnHentaieraScrape != null) btnHentaieraScrape.IsEnabled = false;
+            if (btnHentaieraFetchInfo != null) btnHentaieraFetchInfo.IsEnabled = false;
             // cmbConnections.IsEnabled = false;
             int totalGalleries = itemsToDownload.Count;
             int completedGalleries = 0;
@@ -382,6 +388,12 @@ namespace get_link_manga
                 btnFetchInfo.IsEnabled = true;
                 if (btnNhentaiScrape != null) btnNhentaiScrape.IsEnabled = true;
                 if (btnNhentaiFetchInfo != null) btnNhentaiFetchInfo.IsEnabled = true;
+                if (btnViHentaiScrape != null) btnViHentaiScrape.IsEnabled = true;
+                if (btnViHentaiFetchInfo != null) btnViHentaiFetchInfo.IsEnabled = true;
+                if (btnTruyenqqScrape != null) btnTruyenqqScrape.IsEnabled = true;
+                if (btnTruyenqqFetchInfo != null) btnTruyenqqFetchInfo.IsEnabled = true;
+                if (btnHentaieraScrape != null) btnHentaieraScrape.IsEnabled = true;
+                if (btnHentaieraFetchInfo != null) btnHentaieraFetchInfo.IsEnabled = true;
                 cmbConnections.IsEnabled = true;
 
                 UpdateQueueErrorLabel();
@@ -407,6 +419,12 @@ namespace get_link_manga
             if (hostName.Contains("vi-hentai.pro"))
             {
                 await DownloadViHentaiGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
+                return;
+            }
+
+            if (hostName.Contains("hentaiera.com"))
+            {
+                await DownloadHentaieraGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
                 return;
             }
 
@@ -1691,6 +1709,259 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
         public void Dispose()
         {
             _sem.Dispose();
+        }
+    }
+
+    public partial class MainWindow : Window
+    {
+        private async Task DownloadHentaieraGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
+        {
+            string safeTitle = GetSafePathName(item.Name);
+            string targetFolder = Path.Combine(rootFolder, "hentaiera.com", safeTitle);
+            string tempFolder = Path.Combine(rootFolder, "hentaiera.com", ".tmp", $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
+
+            try
+            {
+                // Fetch gallery homepage
+                string html = null;
+                try
+                {
+                    html = await _httpClient.GetStringAsync(item.Link);
+                }
+                catch (HttpRequestException)
+                {
+                    bool ok = await SolveHentaieraCaptchaIfNeededAsync(item.Link);
+                    if (!ok)
+                        throw new Exception("Không thể vượt qua Cloudflare của hentaiera.com. Tải xuống bị hủy.");
+                    html = await _httpClient.GetStringAsync(item.Link);
+                }
+
+                // 1. Find total pages of the book (similar to nhentai search)
+                int totalPages = 1;
+                var pagesMatch = Regex.Match(html, @"(\d+)\s+pages", RegexOptions.IgnoreCase);
+                if (pagesMatch.Success)
+                {
+                    totalPages = int.Parse(pagesMatch.Groups[1].Value);
+                }
+                else
+                {
+                    var pagesValueMatch = Regex.Match(html, @"Pages:.*?class=""value""[^>]*>(\d+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                    if (pagesValueMatch.Success)
+                    {
+                        totalPages = int.Parse(pagesValueMatch.Groups[1].Value);
+                    }
+                    else
+                    {
+                        var pagesLabelMatch = Regex.Match(html, @"Pages:\s*(\d+)", RegexOptions.IgnoreCase);
+                        if (pagesLabelMatch.Success)
+                        {
+                            totalPages = int.Parse(pagesLabelMatch.Groups[1].Value);
+                        }
+                    }
+                }
+
+                if (queueItem != null)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        queueItem.TotalChapters = totalPages;
+                        queueItem.CompletedChapters = 0;
+                    });
+                }
+
+                // Get number of connections limit
+                int maxThreads = 4;
+                Dispatcher.Invoke(() =>
+                {
+                    if (cmbConnections.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem && int.TryParse(selectedItem.Content.ToString(), out int val))
+                    {
+                        maxThreads = val;
+                    }
+                });
+
+                Log($"[Hentaiera] Bắt đầu tải {totalPages} trang với tối đa {maxThreads} kết nối song song...");
+
+                using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
+                {
+                    var tasks = new System.Collections.Generic.List<Task>();
+                    int completedPages = 0;
+                    object lockObj = new object();
+
+                    // Gallery ID from link
+                    string galleryId = GetHentaieraGalleryIdFromLink(item.Link);
+
+                    for (int p = 1; p <= totalPages; p++)
+                    {
+                        int pageNum = p;
+                        tasks.Add(Task.Run(async () =>
+                        {
+                            while (_isDownloadPaused || item.IsPaused)
+                            {
+                                token.ThrowIfCancellationRequested();
+                                if (item.IsStopped) throw new OperationCanceledException();
+                                await Task.Delay(200, token);
+                            }
+                            token.ThrowIfCancellationRequested();
+
+                            await semaphore.WaitAsync(token);
+                            try
+                            {
+                                while (_isDownloadPaused || item.IsPaused)
+                                {
+                                    token.ThrowIfCancellationRequested();
+                                    if (item.IsStopped) throw new OperationCanceledException();
+                                    await Task.Delay(200, token);
+                                }
+                                token.ThrowIfCancellationRequested();
+
+                                string fileName = $"{pageNum:D3}.jpg";
+                                string localFilePath = Path.Combine(tempFolder, fileName);
+                                string finalFilePath = Path.Combine(targetFolder, fileName);
+
+                                if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024) ||
+                                    (File.Exists(finalFilePath) && new FileInfo(finalFilePath).Length > 1024))
+                                {
+                                    lock (lockObj)
+                                    {
+                                        completedPages++;
+                                        if (queueItem != null)
+                                        {
+                                            Dispatcher.Invoke(() =>
+                                            {
+                                                queueItem.CompletedChapters = completedPages;
+                                                queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
+                                            });
+                                        }
+                                    }
+                                    return;
+                                }
+
+                                // Fetch hentaiera viewer page to extract image source
+                                // e.g. https://hentaiera.com/view/315003/1
+                                await DownloadHentaieraPageAsync(item, galleryId, pageNum, localFilePath, token);
+
+                                lock (lockObj)
+                                {
+                                    completedPages++;
+                                    if (queueItem != null)
+                                    {
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            queueItem.CompletedChapters = completedPages;
+                                            queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
+                                        });
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                semaphore.Release();
+                            }
+                        }, token));
+                    }
+
+                    await Task.WhenAll(tasks);
+
+                    try
+                    {
+                        if (Directory.Exists(tempFolder))
+                        {
+                            if (Directory.Exists(targetFolder))
+                            {
+                                MergeDirectoryContents(tempFolder, targetFolder);
+                            }
+                            else
+                            {
+                                Directory.Move(tempFolder, targetFolder);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"[Lỗi] Không thể di chuyển thư mục tạm Hentaiera: {ex.Message}");
+                    }
+                    finally
+                    {
+                        UnregisterTempFolder(tempFolder);
+                    }
+
+                    // Check for missing files
+                    ValidateDownloadedFiles(targetFolder, totalPages, queueItem, "Pages");
+                }
+            }
+            finally
+            {
+                UnregisterTempFolder(tempFolder);
+            }
+        }
+
+        private async Task DownloadHentaieraPageAsync(GalleryItem item, string galleryId, int pageNum, string targetPath, CancellationToken token)
+        {
+            while (_isDownloadPaused || item.IsPaused)
+            {
+                token.ThrowIfCancellationRequested();
+                if (item.IsStopped) throw new OperationCanceledException();
+                await Task.Delay(200, token);
+            }
+            token.ThrowIfCancellationRequested();
+
+            string viewUrl = $"https://hentaiera.com/view/{galleryId}/{pageNum}";
+            string viewHtml = null;
+            try
+            {
+                viewHtml = await _httpClient.GetStringAsync(viewUrl);
+            }
+            catch (HttpRequestException)
+            {
+                bool ok = await SolveHentaieraCaptchaIfNeededAsync(viewUrl);
+                if (!ok)
+                    throw new Exception("Bị chặn bởi Captcha khi tải trang xem.");
+                viewHtml = await _httpClient.GetStringAsync(viewUrl);
+            }
+
+            // Extract image container source
+            var imgMatch = Regex.Match(viewHtml, @"<img[^>]*?id=""image-container""[^>]*?src=""(?<imgUrl>[^""]+?)""", RegexOptions.IgnoreCase);
+            if (!imgMatch.Success)
+            {
+                imgMatch = Regex.Match(viewHtml, @"<img[^>]*?src=""(?<imgUrl>https?://[^""]+?/galleries/\d+/\d+\.(?:jpg|png|jpeg|webp))""", RegexOptions.IgnoreCase);
+            }
+            if (!imgMatch.Success)
+            {
+                imgMatch = Regex.Match(viewHtml, @"<img[^>]*?src=""(?<imgUrl>https?://[^""]+?/galleries/[^""]+?\.(?:jpg|png|jpeg|webp))""", RegexOptions.IgnoreCase);
+            }
+
+            if (imgMatch.Success)
+            {
+                string imgUrl = imgMatch.Groups["imgUrl"].Value;
+                if (imgUrl.StartsWith("//"))
+                {
+                    imgUrl = "https:" + imgUrl;
+                }
+
+                string actualExt = Path.GetExtension(imgUrl);
+                string finalPath = targetPath;
+                if (!string.IsNullOrEmpty(actualExt) && !targetPath.EndsWith(actualExt, StringComparison.OrdinalIgnoreCase))
+                {
+                    finalPath = Path.ChangeExtension(targetPath, actualExt);
+                }
+
+                while (_isDownloadPaused || item.IsPaused)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (item.IsStopped) throw new OperationCanceledException();
+                    await Task.Delay(200, token);
+                }
+                token.ThrowIfCancellationRequested();
+
+                // Download using referer to avoid hotlinking protection
+                await DownloadUrlToFileWithRefererAsync(imgUrl, viewUrl, finalPath, token);
+            }
+            else
+            {
+                throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang đọc Hentaiera {pageNum}");
+            }
         }
     }
 }

@@ -158,6 +158,12 @@ public MainWindow()
                     if (chkAutoScrollTruyenqqLog?.IsChecked == true)
                         ScrollTextBoxToEnd(txtTruyenqqLog);
                 }
+                if (txtHentaieraLog != null)
+                {
+                    txtHentaieraLog.AppendText(logLine);
+                    if (chkAutoScrollHentaieraLog?.IsChecked == true)
+                        ScrollTextBoxToEnd(txtHentaieraLog);
+                }
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
         private void BtnReverseOrder_Click(object sender, RoutedEventArgs e)
@@ -244,6 +250,11 @@ public MainWindow()
             if (txtTruyenqqLog != null) txtTruyenqqLog.Clear();
         }
 
+        private void BtnClearHentaieraLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (txtHentaieraLog != null) txtHentaieraLog.Clear();
+        }
+
         private void BtnCaptcha_Click(object sender, RoutedEventArgs e)
         {
             string url = "";
@@ -252,6 +263,7 @@ public MainWindow()
             else if (btn == btnNhentaiFetchCaptcha) url = txtNhentaiTagUrl.Text;
             else if (btn == btnViHentaiFetchCaptcha) url = txtViHentaiTagUrl.Text;
             else if (btn == btnTruyenqqFetchCaptcha) url = txtTruyenqqTagUrl.Text;
+            else if (btnHentaieraFetchCaptcha != null && btn == btnHentaieraFetchCaptcha) url = txtHentaieraTagUrl.Text;
 
             if (string.IsNullOrWhiteSpace(url))
             {

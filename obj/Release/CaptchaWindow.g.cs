@@ -84,7 +84,7 @@ namespace get_link_manga {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/get link manga;component/captchawindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Comic-GMTPC;component/captchawindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\CaptchaWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

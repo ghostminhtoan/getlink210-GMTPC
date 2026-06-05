@@ -290,9 +290,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
-      "projectName": "get link manga",
-      "projectPath": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\get link manga.csproj",
+      "projectUniqueName": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\Comic-GMTPC.csproj",
+      "projectName": "Comic-GMTPC",
+      "projectPath": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\Comic-GMTPC.csproj",
       "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
       "outputPath": "r:\\HDD R\\ZC SYMLINK\\USERS\\source\\repos\\ghostminhtoan\\get link manga\\obj\\",
       "projectStyle": "PackageReference",
