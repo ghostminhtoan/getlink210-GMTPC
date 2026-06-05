@@ -7,11 +7,11 @@ using System.Windows;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("NEON LINK SCRAPER")]
+[assembly: AssemblyTitle("Comic-GMTPC")]
 [assembly: AssemblyDescription("Premium Cyberpunk Link Scraper and Crawler Utility")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("GMTPC Studio")]
-[assembly: AssemblyProduct("NEON LINK SCRAPER // CRAWLER SYSTEM")]
+[assembly: AssemblyProduct("Comic-GMTPC // CRAWLER SYSTEM")]
 [assembly: AssemblyCopyright("Copyright © GMTPC 2026. All rights reserved.")]
 [assembly: AssemblyTrademark("GMTPC")]
 [assembly: AssemblyCulture("")]
