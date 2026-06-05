@@ -418,7 +418,7 @@ namespace get_link_manga
 
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, hostName, safeTitle);
-            string tempFolder = Path.Combine(rootFolder, hostName, ".tmp", $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            string tempFolder = Path.Combine(rootFolder, hostName, $"{safeTitle}-tmp");
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 

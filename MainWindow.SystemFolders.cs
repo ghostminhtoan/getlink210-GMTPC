@@ -132,6 +132,9 @@ namespace get_link_manga
                 foreach (var dir in directories)
                 {
                     string parentName = Path.GetFileName(dir);
+                    if (parentName.StartsWith(".") || parentName.EndsWith("-tmp", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
                     var subDirs = Directory.GetDirectories(dir);
 
                     // Split if the folder contains 2 or more subfolders

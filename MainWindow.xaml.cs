@@ -346,25 +346,8 @@ public MainWindow()
 
         internal void CleanupActiveTempFolders()
         {
-            foreach (var path in _activeTempFolders.Keys)
-            {
-                try
-                {
-                    if (System.IO.Directory.Exists(path))
-                    {
-                        System.IO.Directory.Delete(path, true);
-                        Log($"[Cleanup] Đã xóa thư mục tạm: {path}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"[Cleanup Error] Không thể xóa thư mục tạm '{path}': {ex.Message}");
-                }
-                finally
-                {
-                    _activeTempFolders.TryRemove(path, out _);
-                }
-            }
+            // Bỏ việc tự động xóa thư mục tạm khi dừng/huỷ tải để hỗ trợ tải tiếp phần còn dở dang
+            Log("[Cleanup] Giữ lại các thư mục tạm chứa dữ liệu tải dở để hỗ trợ resume tải tiếp.");
         }
     }
 }
