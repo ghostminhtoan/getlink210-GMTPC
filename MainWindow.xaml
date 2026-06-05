@@ -220,7 +220,7 @@
 
                                 <!-- Fetch Info Action -->
                                 <StackPanel Grid.Row="2" Margin="0,0,0,20">
-                                    <Button Name="btnFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,10"/>
+                                    <Button Name="btnFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12" Margin="0,0,0,10"/>
                                     <Button Name="btnFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                 </StackPanel>
 
@@ -267,9 +267,9 @@
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" Name="btnScrape" Content="START CRAWLING" Click="BtnScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnCrawlMore" Content="CRAWL MORE" Click="BtnCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="4" Name="btnPasteDirect" Content="PASTE DIRECT LINK" Click="BtnPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="0" Name="btnScrape" Content="START CRAWLING" Click="BtnScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                    <Button Grid.Column="2" Name="btnCrawlMore" Content="CRAWL MORE" Click="BtnCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                    <Button Grid.Column="4" Name="btnPasteDirect" Content="PASTE DIRECT LINK" Click="BtnPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
@@ -379,7 +379,7 @@
 
                                 <!-- Fetch Info Action -->
                                 <StackPanel Grid.Row="3" Margin="0,0,0,20">
-                                    <Button Name="btnNhentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnNhentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,10"/>
+                                    <Button Name="btnNhentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnNhentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12" Margin="0,0,0,10"/>
                                     <Button Name="btnNhentaiFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                 </StackPanel>
 
@@ -426,9 +426,9 @@
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" Name="btnNhentaiScrape" Content="START CRAWLING" Click="BtnNhentaiScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnNhentaiCrawlMore" Content="CRAWL MORE" Click="BtnNhentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="4" Name="btnNhentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNhentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="0" Name="btnNhentaiScrape" Content="START CRAWLING" Click="BtnNhentaiScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                    <Button Grid.Column="2" Name="btnNhentaiCrawlMore" Content="CRAWL MORE" Click="BtnNhentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                    <Button Grid.Column="4" Name="btnNhentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNhentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
@@ -512,7 +512,7 @@
 
                                 <!-- Fetch Info Action -->
                                 <StackPanel Grid.Row="2" Margin="0,0,0,20">
-                                    <Button Name="btnViHentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnViHentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Margin="0,0,0,10"/>
+                                    <Button Name="btnViHentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnViHentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12" Margin="0,0,0,10"/>
                                     <Button Name="btnViHentaiFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                 </StackPanel>
 
@@ -559,9 +559,9 @@
                                          <ColumnDefinition Width="10"/>
                                          <ColumnDefinition Width="*"/>
                                      </Grid.ColumnDefinitions>
-                                     <Button Grid.Column="0" Name="btnViHentaiScrape" Content="START CRAWLING" Click="BtnViHentaiScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                     <Button Grid.Column="2" Name="btnViHentaiCrawlMore" Content="CRAWL MORE" Click="BtnViHentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                     <Button Grid.Column="4" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                     <Button Grid.Column="0" Name="btnViHentaiScrape" Content="START CRAWLING" Click="BtnViHentaiScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                     <Button Grid.Column="2" Name="btnViHentaiCrawlMore" Content="CRAWL MORE" Click="BtnViHentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                     <Button Grid.Column="4" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
                                  </Grid>
 
                                 <!-- Progress Logging Panel -->
@@ -649,7 +649,7 @@
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" Name="btnTruyenqqFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnTruyenqqFetchInfo_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35"/>
+                                    <Button Grid.Column="0" Name="btnTruyenqqFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnTruyenqqFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12"/>
                                     <Button Grid.Column="2" Name="btnTruyenqqFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                 </Grid>
 
@@ -691,9 +691,9 @@
                                         <ColumnDefinition Width="10"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" Name="btnTruyenqqScrape" Content="GET LINK" Click="BtnTruyenqqScrape_Click" Style="{StaticResource CyberpunkButtonPink}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="2" Name="btnTruyenqqCrawlMore" Content="GET MORE" Click="BtnTruyenqqCrawlMore_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
-                                    <Button Grid.Column="4" Name="btnTruyenqqPasteDirect" Content="PASTE DIRECT LINK" Click="BtnTruyenqqPasteDirect_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="40" FontSize="11"/>
+                                    <Button Grid.Column="0" Name="btnTruyenqqScrape" Content="GET LINK" Click="BtnTruyenqqScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                    <Button Grid.Column="2" Name="btnTruyenqqCrawlMore" Content="GET MORE" Click="BtnTruyenqqCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                    <Button Grid.Column="4" Name="btnTruyenqqPasteDirect" Content="PASTE DIRECT LINK" Click="BtnTruyenqqPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
                                 </Grid>
 
                                 <!-- Progress Logging Panel -->
@@ -1277,10 +1277,10 @@
                                     <ComboBoxItem Content="10"/>
                                 </ComboBox>
 
-                                <Button Grid.Column="8" Name="btnStartDownload" Content="⬇️" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" ToolTip="Start Download"/>
-                                <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Click="BtnPauseDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" IsEnabled="False" ToolTip="Pause / Resume"/>
-                                <Button Grid.Column="12" Name="btnStopDownload" Content="⏹️" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" IsEnabled="False" ToolTip="Stop"/>
-                                <Button Grid.Column="14" Name="btnRetryErrors" Content="⚠️" Click="BtnRetryErrors_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="45" FontSize="11" ToolTip="Tải tiếp các chap bị lỗi"/>
+                                <Button Grid.Column="8" Name="btnStartDownload" Content="⬇️" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="35" Width="55" FontSize="13" ToolTip="Start Download"/>
+                                <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Click="BtnPauseDownload_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="35" Width="55" FontSize="13" IsEnabled="False" ToolTip="Pause / Resume"/>
+                                <Button Grid.Column="12" Name="btnStopDownload" Content="⏹️" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="55" FontSize="13" IsEnabled="False" ToolTip="Stop"/>
+                                <Button Grid.Column="14" Name="btnRetryErrors" Content="⚠️" Click="BtnRetryErrors_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="55" FontSize="13" ToolTip="Tải tiếp các chap bị lỗi"/>
                             </Grid>
                         </Grid>
                     </Border>
