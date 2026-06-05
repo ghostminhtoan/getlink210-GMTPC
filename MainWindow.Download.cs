@@ -1730,6 +1730,10 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 try
                 {
                     html = await _httpClient.GetStringAsync(item.Link);
+                    if (html.Contains("Just a moment...") || html.Contains("cloudflare-challenge") || html.Contains("cf-challenge"))
+                    {
+                        throw new HttpRequestException("Cloudflare challenge detected");
+                    }
                 }
                 catch (HttpRequestException)
                 {
@@ -1920,11 +1924,15 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
             token.ThrowIfCancellationRequested();
 
-            string viewUrl = $"https://hentaiera.com/view/{galleryId}/{pageNum}";
+            string viewUrl = $"https://hentaiera.com/view/{galleryId}/{pageNum}/";
             string viewHtml = null;
             try
             {
                 viewHtml = await _httpClient.GetStringAsync(viewUrl);
+                if (viewHtml.Contains("Just a moment...") || viewHtml.Contains("cloudflare-challenge") || viewHtml.Contains("cf-challenge"))
+                {
+                    throw new HttpRequestException("Cloudflare challenge detected");
+                }
             }
             catch (HttpRequestException)
             {
@@ -1940,14 +1948,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             if (tagMatch.Success)
             {
                 string imgTag = tagMatch.Value;
-                var srcMatch = Regex.Match(imgTag, @"src=""(?<url>[^""]+?)""", RegexOptions.IgnoreCase);
+                var srcMatch = Regex.Match(imgTag, @"src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
                 if (srcMatch.Success)
                 {
                     imgUrl = srcMatch.Groups["url"].Value;
                 }
                 else
                 {
-                    var dataSrcMatch = Regex.Match(imgTag, @"data-src=""(?<url>[^""]+?)""", RegexOptions.IgnoreCase);
+                    var dataSrcMatch = Regex.Match(imgTag, @"data-src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
                     if (dataSrcMatch.Success)
                     {
                         imgUrl = dataSrcMatch.Groups["url"].Value;
@@ -1958,14 +1966,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             if (string.IsNullOrEmpty(imgUrl))
             {
                 // Fallback to class containing image_ or lazy preloader
-                var lazyMatch = Regex.Match(viewHtml, @"<img[^>]+class=""[^""]*?(?:lazy|image_)[^""]*""[^>]*>", RegexOptions.IgnoreCase);
+                var lazyMatch = Regex.Match(viewHtml, @"<img[^>]+class=['""][^'""]*?(?:lazy|image_)[^'""]*['""][^>]*>", RegexOptions.IgnoreCase);
                 if (lazyMatch.Success)
                 {
                     string imgTag = lazyMatch.Value;
-                    var srcMatch = Regex.Match(imgTag, @"data-src=""(?<url>[^""]+?)""", RegexOptions.IgnoreCase);
+                    var srcMatch = Regex.Match(imgTag, @"data-src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
                     if (!srcMatch.Success)
                     {
-                        srcMatch = Regex.Match(imgTag, @"src=""(?<url>[^""]+?)""", RegexOptions.IgnoreCase);
+                        srcMatch = Regex.Match(imgTag, @"src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
                     }
                     if (srcMatch.Success)
                     {
@@ -1977,7 +1985,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             if (string.IsNullOrEmpty(imgUrl))
             {
                 // General match of src/data-src for hentaiera CDN images: https://*.hentaiera.com/.../page.ext
-                var genMatch = Regex.Match(viewHtml, @"(?:src|data-src)\s*=\s*""(?<imgUrl>https?://[^""]*?\.hentaiera\.com/[^""]+?\.(?:jpg|png|jpeg|webp|gif|bmp))""", RegexOptions.IgnoreCase);
+                var genMatch = Regex.Match(viewHtml, @"(?:src|data-src)\s*=\s*['""](?<imgUrl>https?://[^'""]*?\.hentaiera\.com/[^'""]+?\.(?:jpg|png|jpeg|webp|gif|bmp))['""]", RegexOptions.IgnoreCase);
                 if (genMatch.Success)
                 {
                     imgUrl = genMatch.Groups["imgUrl"].Value;

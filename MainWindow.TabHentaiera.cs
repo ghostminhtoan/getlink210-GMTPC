@@ -67,7 +67,27 @@ namespace get_link_manga
                     return;
                 }
 
-                string html = await _httpClient.GetStringAsync(url);
+                string html = null;
+                try
+                {
+                    html = await _httpClient.GetStringAsync(url);
+                    if (html.Contains("Just a moment...") || html.Contains("cloudflare-challenge") || html.Contains("cf-challenge"))
+                    {
+                        throw new HttpRequestException("Cloudflare challenge detected");
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    bool ok2 = await SolveHentaieraCaptchaIfNeededAsync(url);
+                    if (!ok2)
+                    {
+                        lblStatus.Text = "Blocked by Cloudflare.";
+                        btnHentaieraFetchInfo.IsEnabled = true;
+                        progressBar.IsIndeterminate = false;
+                        return;
+                    }
+                    html = await _httpClient.GetStringAsync(url);
+                }
                 
                 int maxPage = 1;
                 // Check all page= href links
@@ -208,7 +228,24 @@ namespace get_link_manga
                         throw new Exception("Bị chặn bởi Cloudflare Captcha trên hentaiera.com.");
                     }
 
-                    string html = await _httpClient.GetStringAsync(pageUrl);
+                    string html = null;
+                    try
+                    {
+                        html = await _httpClient.GetStringAsync(pageUrl);
+                        if (html.Contains("Just a moment...") || html.Contains("cloudflare-challenge") || html.Contains("cf-challenge"))
+                        {
+                            throw new HttpRequestException("Cloudflare challenge detected");
+                        }
+                    }
+                    catch (HttpRequestException)
+                    {
+                        bool ok2 = await SolveHentaieraCaptchaIfNeededAsync(pageUrl);
+                        if (!ok2)
+                        {
+                            throw new Exception("Bị chặn bởi Cloudflare Captcha trên hentaiera.com.");
+                        }
+                        html = await _httpClient.GetStringAsync(pageUrl);
+                    }
                     
                     // Match items with class gallery_title or caption containing the gallery link and title
                     var viewMatches = Regex.Matches(html, @"(?:<h2\s+class=""gallery_title""|<div\s+class=""(?:caption|title)"")[^>]*>\s*<a\s+[^>]*href=""[^""']*?/gallery/(?<id>\d+)/?""[^>]*>(?<title>[\s\S]*?)</a>", RegexOptions.IgnoreCase);
@@ -355,7 +392,24 @@ namespace get_link_manga
                             throw new Exception("Bị chặn bởi Cloudflare Captcha.");
                         }
 
-                        string html = await _httpClient.GetStringAsync(link);
+                        string html = null;
+                        try
+                        {
+                            html = await _httpClient.GetStringAsync(link);
+                            if (html.Contains("Just a moment...") || html.Contains("cloudflare-challenge") || html.Contains("cf-challenge"))
+                            {
+                                throw new HttpRequestException("Cloudflare challenge detected");
+                            }
+                        }
+                        catch (HttpRequestException)
+                        {
+                            bool ok2 = await SolveHentaieraCaptchaIfNeededAsync(link);
+                            if (!ok2)
+                            {
+                                throw new Exception("Bị chặn bởi Cloudflare Captcha.");
+                            }
+                            html = await _httpClient.GetStringAsync(link);
+                        }
                         var titleMatch = Regex.Match(html, @"<title[^>]*>\s*(.*?)\s*</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
                         string title = "Gallery ID " + GetHentaieraGalleryIdFromLink(link);
                         
