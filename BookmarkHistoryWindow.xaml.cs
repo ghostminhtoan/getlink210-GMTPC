@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.Win32;
 
 namespace get_link_manga
 {
@@ -101,6 +102,104 @@ namespace get_link_manga
             {
                 _manager.ClearHistory();
                 RefreshHistory();
+            }
+        }
+
+        private void BtnSaveHistory_Click(object sender, RoutedEventArgs e)
+        {
+            var sfd = new SaveFileDialog
+            {
+                Filter = "JSON Files (*.json)|*.json",
+                FileName = "history_backup.json"
+            };
+            if (sfd.ShowDialog(this) == true)
+            {
+                try
+                {
+                    _manager.ExportHistory(sfd.FileName);
+                    MessageBox.Show("Lưu lịch sử thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi lưu lịch sử: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void BtnLoadHistory_Click(object sender, RoutedEventArgs e)
+        {
+            var ofd = new OpenFileDialog
+            {
+                Filter = "JSON Files (*.json)|*.json"
+            };
+            if (ofd.ShowDialog(this) == true)
+            {
+                try
+                {
+                    bool ok = _manager.ImportHistory(ofd.FileName);
+                    if (ok)
+                    {
+                        RefreshHistory();
+                        MessageBox.Show("Tải lịch sử thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Định dạng file lịch sử không hợp lệ.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi tải lịch sử: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void BtnSaveBookmarks_Click(object sender, RoutedEventArgs e)
+        {
+            var sfd = new SaveFileDialog
+            {
+                Filter = "JSON Files (*.json)|*.json",
+                FileName = "bookmarks_backup.json"
+            };
+            if (sfd.ShowDialog(this) == true)
+            {
+                try
+                {
+                    _manager.ExportBookmarks(sfd.FileName);
+                    MessageBox.Show("Lưu bookmarks thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi lưu bookmarks: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void BtnLoadBookmarks_Click(object sender, RoutedEventArgs e)
+        {
+            var ofd = new OpenFileDialog
+            {
+                Filter = "JSON Files (*.json)|*.json"
+            };
+            if (ofd.ShowDialog(this) == true)
+            {
+                try
+                {
+                    bool ok = _manager.ImportBookmarks(ofd.FileName);
+                    if (ok)
+                    {
+                        RefreshBookmarks();
+                        MessageBox.Show("Tải bookmarks thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Định dạng file bookmarks không hợp lệ.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi tải bookmarks: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 

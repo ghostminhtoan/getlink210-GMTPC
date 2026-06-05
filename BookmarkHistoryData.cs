@@ -49,9 +49,7 @@ namespace get_link_manga
 
         public BookmarkHistoryManager()
         {
-            _dataDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "NeonLinkScraper");
+            _dataDir = AppDomain.CurrentDomain.BaseDirectory;
             _bookmarksPath = Path.Combine(_dataDir, "bookmarks.json");
             _historyPath = Path.Combine(_dataDir, "history.json");
 
@@ -113,6 +111,51 @@ namespace get_link_manga
         public void ClearHistory()
         {
             SaveJson(_historyPath, new HistoryData());
+        }
+
+        public void ExportBookmarks(string destPath)
+        {
+            var data = LoadJson<BookmarkData>(_bookmarksPath) ?? new BookmarkData();
+            SaveJson(destPath, data);
+        }
+
+        public bool ImportBookmarks(string srcPath)
+        {
+            var data = LoadJson<BookmarkData>(srcPath);
+            if (data != null && data.Bookmarks != null)
+            {
+                var current = GetBookmarks();
+                foreach (var b in data.Bookmarks)
+                {
+                    if (!current.Any(x => x.Url.Equals(b.Url, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        current.Add(b);
+                    }
+                }
+                SaveJson(_bookmarksPath, new BookmarkData { Bookmarks = current });
+                return true;
+            }
+            return false;
+        }
+
+        public void ExportHistory(string destPath)
+        {
+            var data = LoadJson<HistoryData>(_historyPath) ?? new HistoryData();
+            SaveJson(destPath, data);
+        }
+
+        public bool ImportHistory(string srcPath)
+        {
+            var data = LoadJson<HistoryData>(srcPath);
+            if (data != null && data.Entries != null)
+            {
+                var current = GetHistory();
+                current.InsertRange(0, data.Entries);
+                var merged = current.OrderByDescending(x => x.DownloadedAt).Take(500).ToList();
+                SaveJson(_historyPath, new HistoryData { Entries = merged });
+                return true;
+            }
+            return false;
         }
 
         // ===== JSON helpers (DataContractJsonSerializer for .NET Framework 4.8 compatibility) =====

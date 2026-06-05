@@ -142,14 +142,26 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Name="lblHistoryCount" Grid.Column="0"
                                    Foreground="{StaticResource CyberpunkMutedTextBrush}" 
                                    FontSize="11" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="🗑️ CLEAR HISTORY" 
+                        <Button Grid.Column="1" Content="💾 SAVE" 
+                                Click="BtnSaveHistory_Click"
+                                Style="{StaticResource CyberpunkButtonCyan}" 
+                                Height="30" Width="70" FontSize="11"/>
+                        <Button Grid.Column="3" Content="📂 LOAD" 
+                                Click="BtnLoadHistory_Click"
+                                Style="{StaticResource CyberpunkButtonCyan}" 
+                                Height="30" Width="70" FontSize="11"/>
+                        <Button Grid.Column="5" Content="🗑️ CLEAR" 
                                 Click="BtnClearHistory_Click"
                                 Style="{StaticResource CyberpunkButtonPink}" 
-                                Height="30" Width="140" FontSize="11"/>
+                                Height="30" Width="90" FontSize="11"/>
                     </Grid>
                 </Grid>
             </TabItem>
@@ -234,11 +246,25 @@
                         </ListBox>
                     </Border>
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Right">
-                        <TextBlock Name="lblBookmarkCount" 
+                    <Grid Grid.Row="1" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Name="lblBookmarkCount" Grid.Column="0"
                                    Foreground="{StaticResource CyberpunkMutedTextBrush}" 
-                                   FontSize="11" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                    </StackPanel>
+                                   FontSize="11" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="💾 SAVE" 
+                                Click="BtnSaveBookmarks_Click"
+                                Style="{StaticResource CyberpunkButtonCyan}" 
+                                Height="30" Width="70" FontSize="11"/>
+                        <Button Grid.Column="3" Content="📂 LOAD" 
+                                Click="BtnLoadBookmarks_Click"
+                                Style="{StaticResource CyberpunkButtonCyan}" 
+                                Height="30" Width="70" FontSize="11"/>
+                    </Grid>
                 </Grid>
             </TabItem>
         </TabControl>
