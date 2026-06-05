@@ -186,8 +186,8 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#121622"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="{TemplateBinding Tag}"/>
-                                <Setter Property="Foreground" Value="{TemplateBinding Tag}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                <Setter Property="Foreground" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="False">
                                 <Setter TargetName="border" Property="BorderBrush" Value="Transparent"/>
@@ -207,7 +207,7 @@
                                     <Condition Property="IsSelected" Value="True"/>
                                 </MultiTrigger.Conditions>
                                 <Setter TargetName="border" Property="Background" Value="#171f2f"/>
-                                <Setter Property="Foreground" Value="{TemplateBinding Tag}"/>
+                                <Setter Property="Foreground" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
