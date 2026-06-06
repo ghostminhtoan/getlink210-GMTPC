@@ -16,9 +16,10 @@ namespace get_link_manga
     /// </summary>
     public partial class MainWindow : Window
     {
-        private static readonly CookieContainer _cookieContainer;
-        private static readonly HttpClientHandler _httpHandler;
-        private static readonly HttpClient _httpClient;
+        private static CookieContainer _cookieContainer;
+        private static HttpClientHandler _httpHandler;
+        private static HttpClient _httpClient;
+        private static readonly string _defaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
         private static readonly SemaphoreSlim _captchaSemaphore = new SemaphoreSlim(1, 1);
         private static volatile bool _isCaptchaWindowActive = false;
         internal string _truyenqqPreferredBaseUrl;
@@ -33,6 +34,11 @@ namespace get_link_manga
 
         static MainWindow()
         {
+            InitializeHttpClientState();
+        }
+
+        private static void InitializeHttpClientState()
+        {
             _cookieContainer = new CookieContainer();
             _httpHandler = new HttpClientHandler
             {
@@ -41,13 +47,14 @@ namespace get_link_manga
                 UseCookies = true
             };
             _httpClient = new HttpClient(_httpHandler);
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", _defaultUserAgent);
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
 
-public MainWindow()
+        public MainWindow()
         {
             InitializeComponent();
+            InitializeLogPanels();
             dgResults.ItemsSource = _scrapedItems;
 
             try
@@ -152,22 +159,7 @@ public MainWindow()
 
         private void AppendLogLine(System.Windows.Controls.RichTextBox rtb, string text, bool isError)
         {
-            if (rtb == null) return;
-            var brush = isError ? System.Windows.Media.Brushes.Red : null;
-            
-            var paragraph = rtb.Document.Blocks.LastBlock as System.Windows.Documents.Paragraph;
-            if (paragraph == null)
-            {
-                paragraph = new System.Windows.Documents.Paragraph { Margin = new Thickness(0) };
-                rtb.Document.Blocks.Add(paragraph);
-            }
-            
-            var run = new System.Windows.Documents.Run(text);
-            if (brush != null)
-            {
-                run.Foreground = brush;
-            }
-            paragraph.Inlines.Add(run);
+            AppendLogLineWithFilter(rtb, text, isError);
         }
 
         internal void Log(string message)
@@ -275,32 +267,32 @@ public MainWindow()
 
         private void BtnClearLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtLog != null) txtLog.Document.Blocks.Clear();
+            ClearLogPanel(txtLog);
         }
 
         private void BtnClearNhentaiLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtNhentaiLog != null) txtNhentaiLog.Document.Blocks.Clear();
+            ClearLogPanel(txtNhentaiLog);
         }
 
         private void BtnClearViHentaiLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtViHentaiLog != null) txtViHentaiLog.Document.Blocks.Clear();
+            ClearLogPanel(txtViHentaiLog);
         }
 
         private void BtnClearTruyenqqLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtTruyenqqLog != null) txtTruyenqqLog.Document.Blocks.Clear();
+            ClearLogPanel(txtTruyenqqLog);
         }
 
         private void BtnClearNettruyenLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtNettruyenLog != null) txtNettruyenLog.Document.Blocks.Clear();
+            ClearLogPanel(txtNettruyenLog);
         }
 
         private void BtnClearHentaieraLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtHentaieraLog != null) txtHentaieraLog.Document.Blocks.Clear();
+            ClearLogPanel(txtHentaieraLog);
         }
 
         private void BtnCaptcha_Click(object sender, RoutedEventArgs e)
@@ -319,6 +311,8 @@ public MainWindow()
                 MessageBox.Show("Vui lòng nhập TARGET TAG URL trước.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            ResetCookiesForCaptcha(url);
 
             var captchaWin = new CaptchaWindow(url)
             {
@@ -361,6 +355,23 @@ public MainWindow()
                 {
                     MessageBox.Show($"Lỗi lưu cookie: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private void ResetCookiesForCaptcha(string url)
+        {
+            try
+            {
+                InitializeHttpClientState();
+                if (IsTruyenqqUrl(url))
+                {
+                    _truyenqqPreferredBaseUrl = null;
+                }
+                Log("Đã xóa cookie và khởi tạo lại phiên captcha.");
+            }
+            catch (Exception ex)
+            {
+                Log($"[Captcha] Không thể reset cookie: {ex.Message}");
             }
         }
 

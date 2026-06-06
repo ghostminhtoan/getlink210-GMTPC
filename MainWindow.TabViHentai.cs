@@ -309,7 +309,6 @@ namespace get_link_manga
         {
             btnViHentaiScrape.IsEnabled = false;
             btnViHentaiFetchInfo.IsEnabled = false;
-            if (btnStartDownload != null) btnStartDownload.IsEnabled = false;
             
             progressBar.Value = 0;
             progressBar.IsIndeterminate = false;
@@ -510,7 +509,7 @@ namespace get_link_manga
                 }
 
                 int delayMs = 1200;
-                for (int attempt = 1; attempt <= 4; attempt++)
+                for (int attempt = 1; attempt <= 3; attempt++)
                 {
                     token.ThrowIfCancellationRequested();
                     try
@@ -518,7 +517,7 @@ namespace get_link_manga
                         using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                         using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, token))
                         {
-                            if ((int)response.StatusCode == 429 && attempt < 4)
+                            if ((int)response.StatusCode == 429 && attempt < 3)
                             {
                                 ViHentaiLog($"[Throttle] vi-hentai trả về 429 khi {action}. Tự động mở cửa sổ Captcha để gia hạn session...");
                                 bool solved = await SolveViHentaiCaptchaIfNeededAsync(url);
@@ -529,7 +528,7 @@ namespace get_link_manga
                                 }
 
                                 int retryDelay = GetRetryDelayMilliseconds(response, attempt, delayMs);
-                                ViHentaiLog($"[Throttle] vi-hentai trả về 429. Chờ {retryDelay}ms rồi thử lại ({attempt}/4).");
+                                ViHentaiLog($"[Throttle] vi-hentai trả về 429. Chờ {retryDelay}ms rồi thử lại ({attempt}/3).");
                                 await Task.Delay(retryDelay, token);
                                 delayMs = Math.Min(delayMs * 2, 8000);
                                 continue;
@@ -541,15 +540,15 @@ namespace get_link_manga
                             return content;
                         }
                     }
-                    catch (HttpRequestException ex) when (attempt < 4)
+                    catch (HttpRequestException ex) when (attempt < 3)
                     {
-                        ViHentaiLog($"[Retry] Lỗi request vi-hentai khi {action}: {ex.Message}. Thử lại sau {delayMs}ms ({attempt}/4).");
+                        ViHentaiLog($"[Retry] Lỗi request vi-hentai khi {action}: {ex.Message}. Thử lại sau {delayMs}ms ({attempt}/3).");
                         await Task.Delay(delayMs, token);
                         delayMs = Math.Min(delayMs * 2, 8000);
                     }
-                    catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < 4)
+                    catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < 3)
                     {
-                        ViHentaiLog($"[Retry] Request vi-hentai bị timeout khi {action}. Thử lại sau {delayMs}ms ({attempt}/4).");
+                        ViHentaiLog($"[Retry] Request vi-hentai bị timeout khi {action}. Thử lại sau {delayMs}ms ({attempt}/3).");
                         await Task.Delay(delayMs, token);
                         delayMs = Math.Min(delayMs * 2, 8000);
                     }
@@ -566,7 +565,7 @@ namespace get_link_manga
         private async Task<byte[]> GetViHentaiByteArrayWithRefererAsync(string url, string referer, CancellationToken token)
         {
             int delayMs = 800;
-            for (int attempt = 1; attempt <= 4; attempt++)
+            for (int attempt = 1; attempt <= 3; attempt++)
             {
                 token.ThrowIfCancellationRequested();
                 try
@@ -576,10 +575,10 @@ namespace get_link_manga
                         request.Headers.Referrer = new Uri(referer);
                         using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token))
                         {
-                            if ((int)response.StatusCode == 429 && attempt < 4)
+                            if ((int)response.StatusCode == 429 && attempt < 3)
                             {
                                 int retryDelay = GetRetryDelayMilliseconds(response, attempt, delayMs);
-                                Log($"[vi-hentai.pro] 429 khi tải ảnh. Chờ {retryDelay}ms rồi thử lại ({attempt}/4): {url}");
+                                Log($"[vi-hentai.pro] 429 khi tải ảnh. Chờ {retryDelay}ms rồi thử lại ({attempt}/3): {url}");
                                 await Task.Delay(retryDelay, token);
                                 delayMs = Math.Min(delayMs * 2, 8000);
                                 continue;
@@ -590,13 +589,13 @@ namespace get_link_manga
                         }
                     }
                 }
-                catch (HttpRequestException ex) when (attempt < 4)
+                catch (HttpRequestException ex) when (attempt < 3)
                 {
                     Log($"[vi-hentai.pro] Retry tải ảnh do lỗi mạng: {ex.Message}. Chờ {delayMs}ms.");
                     await Task.Delay(delayMs, token);
                     delayMs = Math.Min(delayMs * 2, 8000);
                 }
-                catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < 4)
+                catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < 3)
                 {
                     Log($"[vi-hentai.pro] Retry tải ảnh do timeout. Chờ {delayMs}ms.");
                     await Task.Delay(delayMs, token);

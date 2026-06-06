@@ -653,7 +653,6 @@ namespace get_link_manga
         {
             btnTruyenqqScrape.IsEnabled = false;
             btnTruyenqqFetchInfo.IsEnabled = false;
-            if (btnStartDownload != null) btnStartDownload.IsEnabled = false;
             
             progressBar.Value = 0;
             progressBar.IsIndeterminate = false;
@@ -769,7 +768,7 @@ namespace get_link_manga
         private async Task<byte[]> GetTruyenqqByteArrayWithRefererAsync(string url, string referer, CancellationToken token)
         {
             int delayMs = 600;
-            for (int attempt = 1; attempt <= 4; attempt++)
+            for (int attempt = 1; attempt <= 3; attempt++)
             {
                 token.ThrowIfCancellationRequested();
                 try
@@ -784,13 +783,13 @@ namespace get_link_manga
                         }
                     }
                 }
-                catch (HttpRequestException ex) when (attempt < 4)
+                catch (HttpRequestException ex) when (attempt < 3)
                 {
                     Log($"[truyenqq] Thử tải lại ảnh do lỗi mạng: {ex.Message}. Chờ {delayMs}ms.");
                     await Task.Delay(delayMs, token);
                     delayMs = Math.Min(delayMs * 2, 6000);
                 }
-                catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < 4)
+                catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < 3)
                 {
                     Log($"[truyenqq] Thử tải lại ảnh do timeout. Chờ {delayMs}ms.");
                     await Task.Delay(delayMs, token);

@@ -349,8 +349,6 @@ namespace get_link_manga
         {
             btnHentaieraScrape.IsEnabled = false;
             btnHentaieraFetchInfo.IsEnabled = false;
-            if (btnStartDownload != null) btnStartDownload.IsEnabled = false;
-            
             progressBar.Value = 0;
             progressBar.IsIndeterminate = false;
 

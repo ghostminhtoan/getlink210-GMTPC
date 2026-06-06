@@ -1,4 +1,4 @@
-﻿<Window x:Class="get_link_manga.MainWindow"
+<Window x:Class="get_link_manga.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -290,7 +290,7 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" Name="btnTruyenqqFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnTruyenqqFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12"/>
-                                            <Button Grid.Column="2" Name="btnTruyenqqFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                            <Button Grid.Column="2" Name="btnTruyenqqFetchCaptcha" Content="DELETE COOKIE" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                         </Grid>
 
                                         <!-- Page Info Status (TOTAL, FROM, TO pages all on the same row) -->
@@ -422,7 +422,7 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" Name="btnNettruyenFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnNettruyenFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12"/>
-                                            <Button Grid.Column="2" Name="btnNettruyenFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                            <Button Grid.Column="2" Name="btnNettruyenFetchCaptcha" Content="DELETE COOKIE" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                         </Grid>
 
                                         <!-- Page Info Status -->
@@ -556,7 +556,7 @@
                                         <!-- Fetch Info Action -->
                                         <StackPanel Grid.Row="2" Margin="0,0,0,20">
                                             <Button Name="btnViHentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnViHentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12" Margin="0,0,0,10"/>
-                                            <Button Name="btnViHentaiFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                            <Button Name="btnViHentaiFetchCaptcha" Content="DELETE COOKIE" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                         </StackPanel>
 
                                         <!-- Page Info Status -->
@@ -691,7 +691,7 @@
                                         <!-- Fetch Info Action -->
                                         <StackPanel Grid.Row="2" Margin="0,0,0,20">
                                             <Button Name="btnFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12" Margin="0,0,0,10"/>
-                                            <Button Name="btnFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                            <Button Name="btnFetchCaptcha" Content="DELETE COOKIE" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                         </StackPanel>
 
                                         <!-- Page Info Status -->
@@ -756,7 +756,15 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Grid.Column="1" Name="btnLogFilter" Content="🔎" Click="BtnLogFilter_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="28" FontSize="10" Padding="0" ToolTip="FILTER" Tag="main">
+                                                    <Button.ContextMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem Header="ALL" Tag="All" IsCheckable="True" IsChecked="True" Click="LogFilterMenuItem_Click"/>
+                                                            <MenuItem Header="ERROR" Tag="Error" IsCheckable="True" Click="LogFilterMenuItem_Click"/>
+                                                        </ContextMenu>
+                                                    </Button.ContextMenu>
+                                                </Button>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <TextBlock Text="AUTO SCROLL" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
                                                     <ToggleButton Name="chkAutoScrollLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
                                                 </StackPanel>
@@ -851,7 +859,7 @@
                                         <!-- Fetch Info Action -->
                                         <StackPanel Grid.Row="3" Margin="0,0,0,20">
                                             <Button Name="btnNhentaiFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnNhentaiFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12" Margin="0,0,0,10"/>
-                                            <Button Name="btnNhentaiFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                            <Button Name="btnNhentaiFetchCaptcha" Content="DELETE COOKIE" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                         </StackPanel>
 
                                         <!-- Page Info Status -->
@@ -985,7 +993,7 @@
                                         <!-- Fetch Info Action -->
                                         <StackPanel Grid.Row="2" Margin="0,0,0,20">
                                             <Button Name="btnHentaieraFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnHentaieraFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12" Margin="0,0,0,10"/>
-                                            <Button Name="btnHentaieraFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                            <Button Name="btnHentaieraFetchCaptcha" Content="DELETE COOKIE" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
                                         </StackPanel>
 
                                         <!-- Page Info Status -->
@@ -1617,10 +1625,51 @@
                                     <ComboBoxItem Content="10"/>
                                 </ComboBox>
 
-                                <Button Grid.Column="8" Name="btnStartDownload" Content="⬇️" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="35" Width="55" FontSize="13" ToolTip="Start Download"/>
-                                <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Click="BtnPauseDownload_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="35" Width="55" FontSize="13" IsEnabled="False" ToolTip="Pause / Resume"/>
+                                <Button Grid.Column="8" Name="btnStartDownload" Content="⬇️" Click="BtnStartDownload_Click" Height="35" Width="78" FontSize="13" ToolTip="DOWNLOAD ALL">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Content" Value="⬇️ ALL"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Click="BtnPauseDownload_Click" Height="35" Width="84" FontSize="13" IsEnabled="False" ToolTip="PAUSE / RESUME ALL">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
+                                            <Style.Triggers>
+                                                <MultiTrigger>
+                                                    <MultiTrigger.Conditions>
+                                                        <Condition Property="IsMouseOver" Value="True"/>
+                                                        <Condition Property="Content" Value="⏸️"/>
+                                                    </MultiTrigger.Conditions>
+                                                    <Setter Property="Content" Value="⏸️ ALL"/>
+                                                </MultiTrigger>
+                                                <MultiTrigger>
+                                                    <MultiTrigger.Conditions>
+                                                        <Condition Property="IsMouseOver" Value="True"/>
+                                                        <Condition Property="Content" Value="▶️"/>
+                                                    </MultiTrigger.Conditions>
+                                                    <Setter Property="Content" Value="▶️ ALL"/>
+                                                </MultiTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                                 <Button Grid.Column="12" Name="btnStopDownload" Content="⏹️" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="55" FontSize="13" IsEnabled="False" ToolTip="Stop"/>
-                                <Button Grid.Column="14" Name="btnRetryErrors" Content="⚠️" Click="BtnRetryErrors_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="55" FontSize="13" ToolTip="Tải tiếp các chap bị lỗi"/>
+                                <Button Grid.Column="14" Name="btnRetryErrors" Content="⚠️" Click="BtnRetryErrors_Click" Height="35" Width="78" FontSize="13" ToolTip="RETRY ALL">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Content" Value="⚠️ ALL"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                             </Grid>
                         </Grid>
                     </Border>
