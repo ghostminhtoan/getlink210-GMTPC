@@ -1,6 +1,8 @@
-# Lịch Sử Git Commit - Dự Án "get link manga"
+# Lá»‹ch Sá»­ Git Commit - Dá»± Ãn "get link manga"
 
-Tài liệu này ghi lại lịch sử toàn bộ các commit của dự án, sắp xếp thứ tự từ mới nhất ở trên đến cũ nhất ở dưới.
+TÃ i liá»‡u nÃ y ghi láº¡i lá»‹ch sá»­ toÃ n bá»™ cÃ¡c commit cá»§a dá»± Ã¡n, sáº¯p xáº¿p thá»© tá»± tá»« má»›i nháº¥t á»Ÿ trÃªn Ä‘áº¿n cÅ© nháº¥t á»Ÿ dÆ°á»›i.
+
+- **Commit**: `6b53d49` | **Date**: 2026-06-06 18:50:01 | **Message**: fix: resolve truyenqq redirect after captcha
 
 - **Commit**: `43a5fc5` | **Date**: 2026-06-06 18:13:43 | **Message**: feat: auto-merge chapter folders during download, move temp folders into .tmp, and support truyenqq variable domains
 - **Commit**: `86e2e99` | **Date**: 2026-06-06 13:09:36 | **Message**: feat: optimize error retry to avoid individual popups and format log error lines in red
