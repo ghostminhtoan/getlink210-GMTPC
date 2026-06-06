@@ -16,11 +16,13 @@ namespace get_link_manga
             _queueItem = queueItem;
             _mainWindow = mainWindow;
 
+            var uniqueErrors = queueItem.GetUniqueErrors();
+
             lblErrorTitle.Text = $"ERROR REPORT — {queueItem.Name}";
-            lblErrorSubtitle.Text = $"Source: {queueItem.SourceDomain} | Tổng lỗi: {queueItem.ErrorCount}";
+            lblErrorSubtitle.Text = $"Source: {queueItem.SourceDomain} | Tổng lỗi theo trang: {uniqueErrors.Count}";
 
             // Create display items from error details
-            var displayItems = queueItem.Errors.Select(e => new ErrorDisplayItem
+            var displayItems = uniqueErrors.Select(e => new ErrorDisplayItem
             {
                 Icon = "❌",
                 ChapterName = e.ChapterName ?? "N/A",
@@ -34,7 +36,7 @@ namespace get_link_manga
 
         private async void BtnRetryFailed_Click(object sender, RoutedEventArgs e)
         {
-            if (_queueItem.Errors == null || !_queueItem.Errors.Any())
+            if (_queueItem == null || !_queueItem.GetUniqueErrors().Any())
             {
                 MessageBox.Show("Không có lỗi nào để thử lại.", "Information",
                     MessageBoxButton.OK, MessageBoxImage.Information);
@@ -47,7 +49,8 @@ namespace get_link_manga
 
         private void BtnCopyErrors_Click(object sender, RoutedEventArgs e)
         {
-            if (_queueItem.Errors == null || !_queueItem.Errors.Any())
+            var uniqueErrors = _queueItem.GetUniqueErrors();
+            if (!uniqueErrors.Any())
             {
                 MessageBox.Show("Không có lỗi nào để sao chép.", "Information",
                     MessageBoxButton.OK, MessageBoxImage.Information);
@@ -57,10 +60,10 @@ namespace get_link_manga
             var sb = new StringBuilder();
             sb.AppendLine($"Error Report — {_queueItem.Name}");
             sb.AppendLine($"Source: {_queueItem.Link}");
-            sb.AppendLine($"Total errors: {_queueItem.ErrorCount}");
+            sb.AppendLine($"Total errors: {uniqueErrors.Count}");
             sb.AppendLine(new string('-', 60));
 
-            foreach (var error in _queueItem.Errors)
+            foreach (var error in uniqueErrors)
             {
                 sb.AppendLine($"❌ {error.ChapterName}, Trang {error.PageNumber} — {error.ErrorMessage}");
                 if (!string.IsNullOrEmpty(error.ImageUrl))
@@ -68,7 +71,7 @@ namespace get_link_manga
             }
 
             Clipboard.SetText(sb.ToString());
-            MessageBox.Show($"�� sao ch�p {_queueItem.Errors.Count} l?i v�o clipboard.", "Copied",
+            MessageBox.Show($"Đã sao chép {uniqueErrors.Count} lỗi vào clipboard.", "Copied",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
 

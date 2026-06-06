@@ -252,12 +252,13 @@ namespace get_link_manga
         /// </summary>
         public async Task RetryDownloadQueueItemErrorsAsync(GalleryItem queueItem, bool showMessageBox = true)
         {
-            if (queueItem == null || queueItem.Errors == null || queueItem.Errors.Count == 0)
+            if (queueItem == null)
                 return;
 
-            // Make a copy of errors to retry
-            var errorsToRetry = queueItem.Errors.ToList();
-            
+            var errorsToRetry = queueItem.GetUniqueErrors();
+            if (errorsToRetry.Count == 0)
+                return;
+
             // Clear current errors before retrying so we can track new ones
             Dispatcher.Invoke(() => {
                 queueItem.Errors.Clear();
@@ -341,8 +342,8 @@ namespace get_link_manga
             }
 
             Dispatcher.Invoke(() => {
-                queueItem.Status = queueItem.ErrorCount > 0 ? "Error" : "Completed";
-                queueItem.CurrentProcess = queueItem.ErrorCount > 0 ? "Done with errors" : "Done";
+                queueItem.Status = queueItem.GetUniqueErrorCount() > 0 ? "Error" : "Completed";
+                queueItem.CurrentProcess = queueItem.GetUniqueErrorCount() > 0 ? "Done with errors" : "Done";
             });
 
             UpdateQueueErrorLabel();

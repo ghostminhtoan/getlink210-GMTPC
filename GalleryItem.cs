@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace get_link_manga
@@ -266,16 +267,71 @@ namespace get_link_manga
             set { if (_downloadingPageProgress != value) { _downloadingPageProgress = value; OnPropertyChanged(); } }
         }
 
+        public List<ErrorDetail> GetUniqueErrors()
+        {
+            var uniqueErrors = new List<ErrorDetail>();
+            if (Errors == null || Errors.Count == 0)
+            {
+                return uniqueErrors;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var error in Errors)
+            {
+                if (error == null)
+                {
+                    continue;
+                }
+
+                string key = BuildErrorKey(error.ChapterName, error.PageNumber);
+                if (seen.Add(key))
+                {
+                    uniqueErrors.Add(error);
+                }
+            }
+
+            return uniqueErrors;
+        }
+
+        public int GetUniqueErrorCount()
+        {
+            return GetUniqueErrors().Count;
+        }
+
         public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null)
         {
-            Errors.Add(new ErrorDetail
+            if (Errors == null)
             {
-                ChapterName = chapterName,
-                PageNumber = pageNumber,
-                ErrorMessage = errorMessage,
-                ImageUrl = imageUrl
-            });
-            ErrorCount = Errors.Count;
+                Errors = new List<ErrorDetail>();
+            }
+
+            var existing = Errors.FirstOrDefault(e =>
+                e != null &&
+                string.Equals((e.ChapterName ?? string.Empty).Trim(), (chapterName ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase) &&
+                e.PageNumber == pageNumber);
+
+            if (existing != null)
+            {
+                existing.ErrorMessage = errorMessage;
+                existing.ImageUrl = imageUrl;
+            }
+            else
+            {
+                Errors.Add(new ErrorDetail
+                {
+                    ChapterName = chapterName,
+                    PageNumber = pageNumber,
+                    ErrorMessage = errorMessage,
+                    ImageUrl = imageUrl
+                });
+            }
+
+            ErrorCount = GetUniqueErrorCount();
+        }
+
+        private static string BuildErrorKey(string chapterName, int pageNumber)
+        {
+            return $"{(chapterName ?? string.Empty).Trim().ToUpperInvariant()}::{pageNumber}";
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

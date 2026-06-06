@@ -305,7 +305,7 @@ namespace get_link_manga
             win.Show();
         }
 
-        private async Task ImportViHentaiDirectLinksAsync(System.Collections.Generic.List<string> links)
+        private Task ImportViHentaiDirectLinksAsync(System.Collections.Generic.List<string> links)
         {
             btnViHentaiScrape.IsEnabled = false;
             btnViHentaiFetchInfo.IsEnabled = false;
@@ -395,6 +395,8 @@ namespace get_link_manga
                 if (btnStartDownload != null) btnStartDownload.IsEnabled = true;
                 progressBar.Value = 100;
             }
+
+            return Task.CompletedTask;
         }
 
         private string GetViHentaiSlugFromLink(string link)
