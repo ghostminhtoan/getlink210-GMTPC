@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Http;
@@ -367,7 +367,7 @@ namespace get_link_manga
                 {
                     _truyenqqPreferredBaseUrl = null;
                 }
-                Log("Đã xóa cookie và khởi tạo lại phiên captcha.");
+                Log("�� x�a cookie v� kh?i t?o l?i phi�n captcha.");
             }
             catch (Exception ex)
             {
@@ -393,7 +393,7 @@ namespace get_link_manga
             {
                 _scrapedItems.Remove(item);
             }
-            Log($"Đã xóa {toRemove.Count} truyện hoàn thành khỏi danh sách.");
+            Log($"�� x�a {toRemove.Count} truy?n ho�n th�nh kh?i danh s�ch.");
             lblLinkCount.Text = _scrapedItems.Count.ToString();
         }
 

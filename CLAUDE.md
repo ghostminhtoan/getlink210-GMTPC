@@ -1,4 +1,4 @@
-# CLAUDE.md - Central Guidelines Redirect
+﻿# CLAUDE.md - Central Guidelines Redirect
 
 ## Build Commands
 - **Restore NuGet Packages:** `nuget restore`
@@ -10,7 +10,7 @@ Before writing, modifying, or analyzing any code in this repository, you MUST re
 👉 [workflow.md](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/workflow.md)
 
 LƯU Ý QUAN TRỌNG:
-Trước khi viết code, chỉnh sửa hoặc phân tích dự án này, bạn BẮT BUỘC phải đọc kỹ toàn bộ quy tắc code, tiêu chuẩn giao diện và luồng xử lý tại file:
+Tru?c khi vi?t code, ch?nh s?a ho?c ph�n t�ch d? �n n�y, b?n B?T BU?C ph?i d?c k? to�n b? quy t?c code, ti�u chu?n giao di?n v� lu?ng x? l� t?i file:
 👉 [workflow.md](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/workflow.md)
 
 ### Code Splitting Rule

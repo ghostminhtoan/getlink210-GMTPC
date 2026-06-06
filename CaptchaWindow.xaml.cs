@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
@@ -48,7 +48,7 @@ namespace get_link_manga
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khởi tạo trình duyệt WebView2: {ex.Message}\n\nHãy đảm bảo bạn đã cài đặt WebView2 Runtime trên hệ thống.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"L?i kh?i t?o tr�nh duy?t WebView2: {ex.Message}\n\nH�y d?m b?o b?n d� c�i d?t WebView2 Runtime tr�n h? th?ng.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 DialogResult = false;
                 Close();
             }
@@ -331,7 +331,7 @@ namespace get_link_manga
                 if (webView.CoreWebView2 != null)
                 {
                     webView.CoreWebView2.CookieManager.DeleteAllCookies();
-                    MessageBox.Show("Đã xóa toàn bộ cookie thành công (All cookies deleted successfully).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("�� x�a to�n b? cookie th�nh c�ng (All cookies deleted successfully).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {

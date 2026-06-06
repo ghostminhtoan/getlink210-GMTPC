@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -80,7 +80,7 @@ namespace get_link_manga
                     {
                         if (!ShellFolderLauncher.TryOpenFolder(path, out string openError))
                         {
-                            MessageBox.Show($"KhÃ´ng thá»ƒ má»Ÿ thÆ° má»¥c: {openError}", "Warning",
+                            MessageBox.Show($"Không thể mở thư mục: {openError}", "Warning",
                                 MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -247,16 +247,16 @@ namespace get_link_manga
             }
 
             btnNettruyenFetchInfo.IsEnabled = false;
-            lblStatus.Text = "Đang phân tích trang Nettruyen...";
+            lblStatus.Text = "�ang ph�n t�ch trang Nettruyen...";
             progressBar.IsIndeterminate = true;
-            NettruyenLog($"Đang phân tích URL: {url}");
+            NettruyenLog($"�ang ph�n t�ch URL: {url}");
 
             try
             {
                 bool captchaOk = await SolveNettruyenCaptchaIfNeededAsync(url);
                 if (!captchaOk)
                 {
-                    NettruyenLog("Không thể bypass Cloudflare. Hủy phân tích.");
+                    NettruyenLog("Kh�ng th? bypass Cloudflare. H?y ph�n t�ch.");
                     lblStatus.Text = "Analysis failed (Cloudflare).";
                     return;
                 }
@@ -285,12 +285,12 @@ namespace get_link_manga
                 txtNettruyenTotalPages.Text = maxPage.ToString();
                 txtNettruyenPageTo.Text = maxPage.ToString();
                 
-                NettruyenLog($"Phân tích hoàn tất. Phát hiện tối đa {maxPage} trang.");
+                NettruyenLog($"Ph�n t�ch ho�n t?t. Ph�t hi?n t?i da {maxPage} trang.");
                 lblStatus.Text = $"Analysis complete. Found {maxPage} pages.";
             }
             catch (Exception ex)
             {
-                NettruyenLog($"Lỗi khi phân tích: {ex.Message}");
+                NettruyenLog($"L?i khi ph�n t�ch: {ex.Message}");
                 txtNettruyenTotalPages.Text = "1";
                 lblStatus.Text = "Analysis failed.";
             }
@@ -537,7 +537,7 @@ namespace get_link_manga
             }
             catch (OperationCanceledException)
             {
-                NettruyenLog("Đã hủy cào theo yêu cầu người dùng.");
+                NettruyenLog("�� h?y c�o theo y�u c?u ngu?i d�ng.");
                 lblStatus.Text = "Crawling cancelled.";
             }
             catch (Exception ex)
@@ -586,7 +586,7 @@ namespace get_link_manga
             int imported = 0;
             int failed = 0;
 
-            NettruyenLog($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
+            NettruyenLog($"[Import] B?t d?u ph�n t�ch v� nh?p {total} li�n k?t tr?c ti?p...");
             lblStatus.Text = $"Importing 0/{total} links...";
 
             try
@@ -601,13 +601,13 @@ namespace get_link_manga
                         link = "https://" + link;
                     }
 
-                    lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
+                    lblStatus.Text = $"[{i + 1}/{total}] �ang ph�n t�ch: {link}";
 
                     try
                     {
                         if (_scrapedItems.Any(item => item.Link.Equals(link, StringComparison.OrdinalIgnoreCase)))
                         {
-                            NettruyenLog($"[Import] Bỏ qua liên kết đã tồn tại: {link}");
+                            NettruyenLog($"[Import] B? qua li�n k?t d� t?n t?i: {link}");
                             imported++;
                             continue;
                         }
@@ -675,7 +675,7 @@ namespace get_link_manga
                 NettruyenLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"�� nh?p th�nh c�ng {total} du?ng d?n!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {
@@ -711,7 +711,7 @@ namespace get_link_manga
                 {
                     html = _lastCaptchaResolvedHtml;
                     _lastCaptchaResolvedHtml = null; // Clear it
-                    Log("[nettruyen] Sử dụng HTML đã nạp đầy đủ từ trình duyệt giải captcha.");
+                    Log("[nettruyen] S? d?ng HTML d� n?p d?y d? t? tr�nh duy?t gi?i captcha.");
                 }
                 else
                 {
@@ -864,7 +864,7 @@ namespace get_link_manga
                     if (!string.IsNullOrEmpty(webViewHtml))
                     {
                         chapterListHtml = webViewHtml;
-                        Log("[nettruyen] Đã lấy được HTML đầy đủ từ trình duyệt sau khi click 'Xem thêm'.");
+                        Log("[nettruyen] �� l?y du?c HTML d?y d? t? tr�nh duy?t sau khi click 'Xem th�m'.");
                     }
                 }
 
@@ -920,7 +920,7 @@ namespace get_link_manga
                     chapterLinks = filtered;
                     if (chapterLinks.Count == 0)
                     {
-                        Log($"[nettruyen] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
+                        Log($"[nettruyen] Kh�ng c� chuong n�o tr�ng kh?p v?i b? l?c d� ch?n trong t?ng s? {totalFoundChapters} chuong c?a '{item.Name}'.");
                         if (queueItem != null)
                         {
                             Dispatcher.Invoke(() => {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -428,7 +428,7 @@ namespace get_link_manga
             int imported = 0;
             int failed = 0;
 
-            Log($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
+            Log($"[Import] B?t d?u ph�n t�ch v� nh?p {total} li�n k?t tr?c ti?p...");
             lblStatus.Text = $"Importing 0/{total} links...";
 
             try
@@ -443,7 +443,7 @@ namespace get_link_manga
                         // Check if already exists in results grid
                         if (_scrapedItems.Any(item => item.Link.Equals(link, StringComparison.OrdinalIgnoreCase)))
                         {
-                            Log($"[Import] Bỏ qua liên kết đã tồn tại: {link}");
+                            Log($"[Import] B? qua li�n k?t d� t?n t?i: {link}");
                             imported++;
                             continue;
                         }
@@ -504,7 +504,7 @@ namespace get_link_manga
                 Log($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}. Tổng số liên kết hiện tại: {_scrapedItems.Count}");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"Đã nhập thành công {total} đường dẫn vào bảng Extracted Gallery Links!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"�� nh?p th�nh c�ng {total} du?ng d?n v�o b?ng Extracted Gallery Links!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {

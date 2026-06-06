@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -336,7 +336,7 @@ namespace get_link_manga
             }
 
             btnTruyenqqFetchInfo.IsEnabled = false;
-            lblStatus.Text = "Đang phân tích trang truyenqq...";
+            lblStatus.Text = "�ang ph�n t�ch trang truyenqq...";
             progressBar.IsIndeterminate = true;
 
 
@@ -344,11 +344,11 @@ namespace get_link_manga
             {
                 string normalizedUrl = ResolveTruyenqqRequestUrl(rawUrl);
                 txtTruyenqqTagUrl.Text = normalizedUrl;
-                TruyenqqLog($"Đang phân tích URL: {normalizedUrl}");
+                TruyenqqLog($"�ang ph�n t�ch URL: {normalizedUrl}");
                 bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(normalizedUrl);
                 if (!captchaOk)
                 {
-                    TruyenqqLog("Không thể bypass Cloudflare. Hủy phân tích.");
+                    TruyenqqLog("Kh�ng th? bypass Cloudflare. H?y ph�n t�ch.");
                     lblStatus.Text = "Analysis failed (Cloudflare).";
                     return;
                 }
@@ -373,12 +373,12 @@ namespace get_link_manga
                 txtTruyenqqTotalPages.Text = maxPage.ToString();
                 txtTruyenqqPageTo.Text = maxPage.ToString();
                 
-                TruyenqqLog($"Phân tích hoàn tất. Phát hiện tối đa {maxPage} trang.");
+                TruyenqqLog($"Ph�n t�ch ho�n t?t. Ph�t hi?n t?i da {maxPage} trang.");
                 lblStatus.Text = $"Analysis complete. Found {maxPage} pages.";
             }
             catch (Exception ex)
             {
-                TruyenqqLog($"Lỗi khi phân tích: {ex.Message}");
+                TruyenqqLog($"L?i khi ph�n t�ch: {ex.Message}");
                 txtTruyenqqTotalPages.Text = "1";
                 lblStatus.Text = "Analysis failed.";
             }
@@ -612,7 +612,7 @@ namespace get_link_manga
             }
             catch (OperationCanceledException)
             {
-                TruyenqqLog("Đã hủy cào theo yêu cầu người dùng.");
+                TruyenqqLog("�� h?y c�o theo y�u c?u ngu?i d�ng.");
                 lblStatus.Text = "Crawling cancelled.";
             }
             catch (Exception ex)
@@ -661,7 +661,7 @@ namespace get_link_manga
             int imported = 0;
             int failed = 0;
 
-            TruyenqqLog($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
+            TruyenqqLog($"[Import] B?t d?u ph�n t�ch v� nh?p {total} li�n k?t tr?c ti?p...");
             lblStatus.Text = $"Importing 0/{total} links...";
 
             try
@@ -676,15 +676,15 @@ namespace get_link_manga
                         link = NormalizeTruyenqqUrl(link);
                     }
 
-                    lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
+                    lblStatus.Text = $"[{i + 1}/{total}] �ang ph�n t�ch: {link}";
 
                     try
                     {
                         link = ResolveTruyenqqRequestUrl(link);
-                        lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
+                        lblStatus.Text = $"[{i + 1}/{total}] �ang ph�n t�ch: {link}";
                         if (_scrapedItems.Any(item => item.Link.Equals(link, StringComparison.OrdinalIgnoreCase)))
                         {
-                            TruyenqqLog($"[Import] Bỏ qua liên kết đã tồn tại: {link}");
+                            TruyenqqLog($"[Import] B? qua li�n k?t d� t?n t?i: {link}");
                             imported++;
                             continue;
                         }
@@ -754,7 +754,7 @@ namespace get_link_manga
                 TruyenqqLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"�� nh?p th�nh c�ng {total} du?ng d?n!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {
@@ -935,7 +935,7 @@ namespace get_link_manga
                     chapterLinks = filtered;
                     if (chapterLinks.Count == 0)
                     {
-                        Log($"[truyenqq] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
+                        Log($"[truyenqq] Kh�ng c� chuong n�o tr�ng kh?p v?i b? l?c d� ch?n trong t?ng s? {totalFoundChapters} chuong c?a '{item.Name}'.");
                         if (queueItem != null)
                         {
                             Dispatcher.Invoke(() => {
@@ -1002,7 +1002,7 @@ namespace get_link_manga
             string html = await _httpClient.GetStringAsync(item.Link);
 
             string mangaTitle = item.Name;
-            string chapterTitle = "ChÆ°Æ¡ng 1";
+            string chapterTitle = "Chương 1";
 
             // Try to extract clean titles from page
             var titleMatch = Regex.Match(html, @"<title>\s*(.*?)\s*</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
@@ -1020,7 +1020,7 @@ namespace get_link_manga
 
                 // TruyenQQ formats title: "Tên Truyện - Tên Chương"
                 // Some manga names have " - " in them so we must find the RIGHTMOST
-                // chapter-like part (containing chap/chÆ°Æ¡ng/chapter keyword) as the separator.
+                // chapter-like part (containing chap/chương/chapter keyword) as the separator.
                 string[] parts = rawTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length >= 2)
                 {
@@ -1028,7 +1028,7 @@ namespace get_link_manga
                     int chapPartIdx = -1;
                     for (int i = parts.Length - 1; i >= 1; i--)
                     {
-                        if (Regex.IsMatch(parts[i], @"\b(chap|chÆ°Æ¡ng|chapter)\b", RegexOptions.IgnoreCase))
+                        if (Regex.IsMatch(parts[i], @"\b(chap|chương|chapter)\b", RegexOptions.IgnoreCase))
                         {
                             chapPartIdx = i;
                             break;
@@ -1064,7 +1064,7 @@ namespace get_link_manga
 
             // Clean Chapter Title: extract the exact chapter string (e.g. chap 2)
             string cleanChapter = chapterTitle;
-            var chapMatch = Regex.Match(chapterTitle, @"(chap|chÆ°Æ¡ng|chapter)\s*(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
+            var chapMatch = Regex.Match(chapterTitle, @"(chap|chương|chapter)\s*(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
             if (chapMatch.Success)
             {
                 string type = chapMatch.Groups[1].Value.ToLower();

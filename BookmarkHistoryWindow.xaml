@@ -1,4 +1,4 @@
-<Window x:Class="get_link_manga.BookmarkHistoryWindow"
+﻿<Window x:Class="get_link_manga.BookmarkHistoryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="BOOKMARKS &amp; HISTORY" Height="600" Width="550"

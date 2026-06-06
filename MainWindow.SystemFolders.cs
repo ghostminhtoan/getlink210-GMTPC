@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -16,45 +16,45 @@ namespace get_link_manga
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
             {
-                MessageBox.Show("Vui lÃ²ng chá»n thÆ° má»¥c lÆ°u trÆ°á»›c (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Vui lòng chọn thư mục lưu trước (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!Directory.Exists(downloadRoot))
             {
-                MessageBox.Show("ThÆ° má»¥c lÆ°u khÃ´ng tá»“n táº¡i (Download folder does not exist).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Thư mục lưu không tồn tại (Download folder does not exist).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             string targetFolder = GetActiveTargetFolder(downloadRoot);
 
-            Log($"[Merge] Báº¯t Ä‘áº§u gá»™p thÆ° má»¥c táº¡i: {targetFolder}");
+            Log($"[Merge] Bắt đầu gộp thư mục tại: {targetFolder}");
             lblStatus.Text = "Merging folders...";
 
             try
             {
                 int mergedCount = await MergeFoldersInTargetFolderAsync(targetFolder, CancellationToken.None);
 
-                Log("[Merge] Äang táº¡m ngá»«ng 3 giÃ¢y Ä‘á»ƒ há»‡ thá»‘ng á»•n Ä‘á»‹nh vÃ  nháº­n biáº¿t thÆ° má»¥c...");
+                Log("[Merge] Đang tạm ngừng 3 giây để hệ thống ổn định và nhận biết thư mục...");
                 await Task.Delay(3000);
 
                 if (mergedCount == 0)
                 {
-                    Log("[Merge] KhÃ´ng tÃ¬m tháº¥y nhÃ³m thÆ° má»¥c nÃ o cÃ³ tÃªn giá»‘ng nhau trÆ°á»›c dáº¥u gáº¡ch ná»‘i.");
+                    Log("[Merge] Không tìm thấy nhóm thư mục nào có tên giống nhau trước dấu gạch nối.");
                     lblStatus.Text = "Merge completed. No folders merged.";
-                    MessageBox.Show("KhÃ´ng tÃ¬m tháº¥y thÆ° má»¥c nÃ o cÃ³ tÃªn giá»‘ng nhau trÆ°á»›c dáº¥u gáº¡ch ná»‘i Ä‘á»ƒ gá»™p (No matching folders found to merge).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Không tìm thấy thư mục nào có tên giống nhau trước dấu gạch nối để gộp (No matching folders found to merge).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
-                Log($"[Merge] HoÃ n táº¥t gá»™p {mergedCount} thÆ° má»¥c.");
+                Log($"[Merge] Hoàn tất gộp {mergedCount} thư mục.");
                 lblStatus.Text = $"Merge completed. Merged {mergedCount} folders.";
-                MessageBox.Show($"ÄÃ£ gá»™p thÃ nh cÃ´ng {mergedCount} thÆ° má»¥c!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Đã gộp thành công {mergedCount} thư mục!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                Log($"[Merge Error] Lá»—i nghiÃªm trá»ng khi gá»™p thÆ° má»¥c: {ex.Message}");
+                Log($"[Merge Error] Lỗi nghiêm trọng khi gộp thư mục: {ex.Message}");
                 lblStatus.Text = "Merge failed.";
-                MessageBox.Show($"Lá»—i khi gá»™p thÆ° má»¥c: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Lỗi khi gộp thư mục: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -63,37 +63,37 @@ namespace get_link_manga
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
             {
-                MessageBox.Show("Vui lÃ²ng chá»n thÆ° má»¥c lÆ°u trÆ°á»›c (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Vui lòng chọn thư mục lưu trước (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!Directory.Exists(downloadRoot))
             {
-                MessageBox.Show("ThÆ° má»¥c lÆ°u khÃ´ng tá»“n táº¡i (Download folder does not exist).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Thư mục lưu không tồn tại (Download folder does not exist).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             string targetFolder = GetActiveTargetFolder(downloadRoot);
 
-            Log($"[Split] Báº¯t Ä‘áº§u tÃ¡ch thÆ° má»¥c táº¡i: {targetFolder}");
+            Log($"[Split] Bắt đầu tách thư mục tại: {targetFolder}");
             lblStatus.Text = "Splitting folders...";
 
             try
             {
                 int splitCount = await SplitFoldersInTargetFolderAsync(targetFolder, CancellationToken.None);
 
-                Log("[Split] Äang táº¡m ngá»«ng 3 giÃ¢y Ä‘á»ƒ há»‡ thá»‘ng á»•n Ä‘á»‹nh vÃ  nháº­n biáº¿t thÆ° má»¥c...");
+                Log("[Split] Đang tạm ngừng 3 giây để hệ thống ổn định và nhận biết thư mục...");
                 await Task.Delay(3000);
 
-                Log($"[Split] HoÃ n táº¥t tÃ¡ch {splitCount} thÆ° má»¥c.");
+                Log($"[Split] Hoàn tất tách {splitCount} thư mục.");
                 lblStatus.Text = $"Split completed. Split {splitCount} folders.";
-                MessageBox.Show($"ÄÃ£ tÃ¡ch thÃ nh cÃ´ng {splitCount} thÆ° má»¥c!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Đã tách thành công {splitCount} thư mục!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                Log($"[Split Error] Lá»—i nghiÃªm trá»ng khi tÃ¡ch thÆ° má»¥c: {ex.Message}");
+                Log($"[Split Error] Lỗi nghiêm trọng khi tách thư mục: {ex.Message}");
                 lblStatus.Text = "Split failed.";
-                MessageBox.Show($"Lá»—i khi tÃ¡ch thÆ° má»¥c: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Lỗi khi tách thư mục: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -126,7 +126,7 @@ namespace get_link_manga
                     Directory.Move(unmergedPath, mergedPath);
                 }
 
-                Log($"[Auto Merge] ÄÃ£ gá»™p tá»± Ä‘á»™ng '{Path.GetFileName(unmergedPath)}' -> '{mergedPath}'");
+                Log($"[Auto Merge] Đã gộp tự động '{Path.GetFileName(unmergedPath)}' -> '{mergedPath}'");
             }
             finally
             {
@@ -183,11 +183,11 @@ namespace get_link_manga
                             }
 
                             mergedCount++;
-                            Log($"[Merge] ÄÃ£ gá»™p '{item.Name}' -> '{groupPrefix}\\{item.Suffix}'");
+                            Log($"[Merge] Đã gộp '{item.Name}' -> '{groupPrefix}\\{item.Suffix}'");
                         }
                         catch (Exception ex)
                         {
-                            Log($"[Merge Error] KhÃ´ng thá»ƒ gá»™p thÆ° má»¥c '{item.Name}': {ex.Message}");
+                            Log($"[Merge Error] Không thể gộp thư mục '{item.Name}': {ex.Message}");
                         }
                     }
                 }
@@ -245,11 +245,11 @@ namespace get_link_manga
                             }
 
                             splitCount++;
-                            Log($"[Split] ÄÃ£ tÃ¡ch '{parentName}\\{subName}' -> '{destName}'");
+                            Log($"[Split] Đã tách '{parentName}\\{subName}' -> '{destName}'");
                         }
                         catch (Exception ex)
                         {
-                            Log($"[Split Error] KhÃ´ng thá»ƒ tÃ¡ch thÆ° má»¥c '{parentName}\\{subName}': {ex.Message}");
+                            Log($"[Split Error] Không thể tách thư mục '{parentName}\\{subName}': {ex.Message}");
                         }
                     }
 
@@ -258,16 +258,16 @@ namespace get_link_manga
                         if (!Directory.EnumerateFileSystemEntries(dir).Any())
                         {
                             Directory.Delete(dir, false);
-                            Log($"[Split] ÄÃ£ xÃ³a thÆ° má»¥c cha trá»‘ng: '{parentName}'");
+                            Log($"[Split] Đã xóa thư mục cha trống: '{parentName}'");
                         }
                         else
                         {
-                            Log($"[Split] ThÆ° má»¥c cha '{parentName}' váº«n cÃ²n tá»‡p/thÆ° má»¥c khÃ¡c nÃªn khÃ´ng xÃ³a.");
+                            Log($"[Split] Thư mục cha '{parentName}' vẫn còn tệp/thư mục khác nên không xóa.");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Log($"[Split Warning] KhÃ´ng thá»ƒ xÃ³a thÆ° má»¥c cha '{parentName}': {ex.Message}");
+                        Log($"[Split Warning] Không thể xóa thư mục cha '{parentName}': {ex.Message}");
                     }
                 }
 

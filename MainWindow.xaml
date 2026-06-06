@@ -398,8 +398,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="Ã°Å¸â€œÅ“ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="Ã°Å¸â€œÅ’ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -1159,20 +1159,20 @@
                               Margin="0,0,0,15">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="TÃ­ch chá»n dÃ²ng Ä‘ang bÃ´i Ä‘en (Check Selected)" Click="MenuCheckSelected_Click"/>
-                                <MenuItem Header="Bá» tÃ­ch dÃ²ng Ä‘ang bÃ´i Ä‘en (Uncheck Selected)" Click="MenuUncheckSelected_Click"/>
-                                <MenuItem Header="Äáº£o ngÆ°á»£c tráº¡ng thÃ¡i tÃ­ch (Invert Checked)" Click="MenuInvertChecked_Click"/>
+                                <MenuItem Header="Tích chọn dòng đang bôi đen (Check Selected)" Click="MenuCheckSelected_Click"/>
+                                <MenuItem Header="Bỏ tích dòng đang bôi đen (Uncheck Selected)" Click="MenuUncheckSelected_Click"/>
+                                <MenuItem Header="Đảo ngược trạng thái tích (Invert Checked)" Click="MenuInvertChecked_Click"/>
                                 <Separator/>
-                                <MenuItem Header="ðŸ“Œ Bookmark dÃ²ng Ä‘ang chá»n" Click="MenuBookmarkSelected_Click"/>
-                                <MenuItem Header="ðŸŒ Má»Ÿ link trong trÃ¬nh duyá»‡t" Click="MenuOpenInBrowser_Click"/>
+                                <MenuItem Header="📌 Bookmark dòng đang chọn" Click="MenuBookmarkSelected_Click"/>
+                                <MenuItem Header="🌐 Mở link trong trình duyệt" Click="MenuOpenInBrowser_Click"/>
                                 <Separator/>
-                                <MenuItem Header="Copy link cÃ¡c dÃ²ng Ä‘ang chá»n (Copy Selected Links)" Click="MenuCopySelectedLinks_Click"/>
+                                <MenuItem Header="Copy link các dòng đang chọn (Copy Selected Links)" Click="MenuCopySelectedLinks_Click"/>
                                 <Separator/>
-                                <MenuItem Header="XÃ³a cÃ¡c dÃ²ng Ä‘ang bÃ´i Ä‘en (Delete Selected)" Click="MenuDeleteSelected_Click"/>
-                                <MenuItem Header="XÃ³a cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch (Delete Checked)" Click="MenuDeleteChecked_Click"/>
+                                <MenuItem Header="Xóa các dòng đang bôi đen (Delete Selected)" Click="MenuDeleteSelected_Click"/>
+                                <MenuItem Header="Xóa các dòng đã tích (Delete Checked)" Click="MenuDeleteChecked_Click"/>
                                 <Separator/>
-                                <MenuItem Header="Táº£i cÃ¡c dÃ²ng Ä‘ang bÃ´i Ä‘en (Download highlighted lines)" Click="MenuDownloadSelected_Click"/>
-                                <MenuItem Header="Táº£i cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch (Download selected lines)" Click="MenuDownloadChecked_Click"/>
+                                <MenuItem Header="Tải các dòng đang bôi đen (Download highlighted lines)" Click="MenuDownloadSelected_Click"/>
+                                <MenuItem Header="Tải các dòng đã tích (Download selected lines)" Click="MenuDownloadChecked_Click"/>
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                         <DataGrid.Columns>
@@ -1281,20 +1281,20 @@
                                                      <TextBlock FontSize="11" FontWeight="Bold" Foreground="{StaticResource CyberpunkCyanBrush}">
                                                          <TextBlock.Style>
                                                              <Style TargetType="TextBlock">
-                                                                 <Setter Property="Text" Value="â³ Waiting"/>
+                                                                 <Setter Property="Text" Value="⏳ Waiting"/>
                                                                  <Style.Triggers>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Downloading">
-                                                                         <Setter Property="Text" Value="â¬‡ï¸ Loading"/>
+                                                                         <Setter Property="Text" Value="⬇️ Loading"/>
                                                                      </DataTrigger>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Completed">
-                                                                         <Setter Property="Text" Value="âœ… Done"/>
+                                                                         <Setter Property="Text" Value="✅ Done"/>
                                                                      </DataTrigger>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Error">
-                                                                         <Setter Property="Text" Value="âŒ Error"/>
+                                                                         <Setter Property="Text" Value="❌ Error"/>
                                                                          <Setter Property="Foreground" Value="Red"/>
                                                                      </DataTrigger>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Paused">
-                                                                         <Setter Property="Text" Value="â¸ï¸ Paused"/>
+                                                                         <Setter Property="Text" Value="⏸️ Paused"/>
                                                                      </DataTrigger>
                                                                  </Style.Triggers>
                                                              </Style>
@@ -1305,7 +1305,7 @@
                                                  <!-- Row Buttons -->
                                                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="5,0,0,0">
                                                      <!-- Play/Resume Button -->
-                                                     <Button Content="â–¶ï¸" Click="BtnRowResume_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Resume download">
+                                                     <Button Content="▶️" Click="BtnRowResume_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Resume download">
                                                          <Button.Style>
                                                              <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
                                                                  <Setter Property="Visibility" Value="Collapsed"/>
@@ -1318,7 +1318,7 @@
                                                          </Button.Style>
                                                      </Button>
                                                      <!-- Pause Button -->
-                                                     <Button Content="â¸ï¸" Click="BtnRowPause_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Pause download">
+                                                     <Button Content="⏸️" Click="BtnRowPause_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Pause download">
                                                          <Button.Style>
                                                              <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
                                                                  <Setter Property="Visibility" Value="Collapsed"/>
@@ -1331,7 +1331,7 @@
                                                          </Button.Style>
                                                      </Button>
                                                      <!-- Stop Button -->
-                                                     <Button Content="â¹ï¸" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download">
+                                                     <Button Content="⏹️" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download">
                                                          <Button.Style>
                                                              <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
                                                                  <Setter Property="Visibility" Value="Collapsed"/>
@@ -1449,13 +1449,13 @@
                                                     Width="30" Height="28" Margin="2,0"
                                                     Style="{StaticResource CyberpunkButtonCyan}"
                                                     FontSize="13" Padding="0"
-                                                    ToolTip="Má»Ÿ link trong trÃ¬nh duyá»‡t"/>
-                                            <Button Content="â¬‡ï¸" 
+                                                    ToolTip="Mở link trong trình duyệt"/>
+                                            <Button Content="⬇️" 
                                                     Click="BtnDownloadSingleInRow_Click"
                                                     Width="30" Height="28" Margin="2,0"
                                                     Style="{StaticResource CyberpunkButtonPink}"
                                                     FontSize="13" Padding="0"
-                                                    ToolTip="Táº£i truyá»‡n nÃ y"/>
+                                                    ToolTip="Tải truyện này"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -1531,7 +1531,7 @@
                                          CaretBrush="{StaticResource CyberpunkCyanBrush}"
                                          Height="30"
                                          VerticalContentAlignment="Center"
-                                         ToolTip="TÃ¬m kiáº¿m tÃªn truyá»‡n..."/>
+                                         ToolTip="Tìm kiếm tên truyện..."/>
                             </Grid>
 
                             <!-- Row 4: Chapter Selection -->
@@ -1549,7 +1549,7 @@
                                          CaretBrush="{StaticResource CyberpunkCyanBrush}"
                                          Height="28"
                                          VerticalContentAlignment="Center"
-                                         ToolTip="Nháº­p chap cáº§n táº£i. VD: 1-10;15;20-25 (Ä‘á»ƒ trá»‘ng = táº£i táº¥t cáº£)"/>
+                                         ToolTip="Nhập chap cần tải. VD: 1-10;15;20-25 (để trống = tải tất cả)"/>
                             </Grid>
 
                             <!-- Row 6: Connections and Actions -->

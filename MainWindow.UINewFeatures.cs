@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -67,7 +67,7 @@ namespace get_link_manga
                 count++;
             }
 
-            Log($"📌 Đã bookmark {count} truyện.");
+            Log($"?? �� bookmark {count} truy?n.");
 
             // Refresh bookmark window if open
             if (_bookmarkHistoryWindowInstance != null)
@@ -324,7 +324,7 @@ namespace get_link_manga
                     );
 
                     successfulRetries++;
-                    Log($"[Retry] Đã tải thành công: {err.ChapterName}, Trang {err.PageNumber}");
+                    Log($"[Retry] �� t?i th�nh c�ng: {err.ChapterName}, Trang {err.PageNumber}");
                 }
                 catch (Exception ex)
                 {

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -68,7 +68,7 @@ namespace get_link_manga
             }
 
             Clipboard.SetText(sb.ToString());
-            MessageBox.Show($"Đã sao chép {_queueItem.Errors.Count} lỗi vào clipboard.", "Copied",
+            MessageBox.Show($"�� sao ch�p {_queueItem.Errors.Count} l?i v�o clipboard.", "Copied",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
