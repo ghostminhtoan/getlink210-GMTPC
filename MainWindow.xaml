@@ -1,4 +1,4 @@
-<Window x:Class="get_link_manga.MainWindow"
+﻿<Window x:Class="get_link_manga.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -266,8 +266,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -398,8 +398,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="Ã°Å¸â€œÅ“ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="Ã°Å¸â€œÅ’ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -537,8 +537,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -672,8 +672,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -756,7 +756,7 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                                <Button Grid.Column="1" Name="btnLogFilter" Content="🔎" Click="BtnLogFilter_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="28" FontSize="10" Padding="0" ToolTip="FILTER" Tag="main">
+                                                <Button Grid.Column="1" Name="btnLogFilter" Content="ðŸ”Ž" Click="BtnLogFilter_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="28" FontSize="10" Padding="0" ToolTip="FILTER" Tag="main">
                                                     <Button.ContextMenu>
                                                         <ContextMenu>
                                                             <MenuItem Header="ALL" Tag="All" IsCheckable="True" IsChecked="True" Click="LogFilterMenuItem_Click"/>
@@ -815,8 +815,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -974,8 +974,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -1159,20 +1159,20 @@
                               Margin="0,0,0,15">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="Tích chọn dòng đang bôi đen (Check Selected)" Click="MenuCheckSelected_Click"/>
-                                <MenuItem Header="Bỏ tích dòng đang bôi đen (Uncheck Selected)" Click="MenuUncheckSelected_Click"/>
-                                <MenuItem Header="Đảo ngược trạng thái tích (Invert Checked)" Click="MenuInvertChecked_Click"/>
+                                <MenuItem Header="TÃ­ch chá»n dÃ²ng Ä‘ang bÃ´i Ä‘en (Check Selected)" Click="MenuCheckSelected_Click"/>
+                                <MenuItem Header="Bá» tÃ­ch dÃ²ng Ä‘ang bÃ´i Ä‘en (Uncheck Selected)" Click="MenuUncheckSelected_Click"/>
+                                <MenuItem Header="Äáº£o ngÆ°á»£c tráº¡ng thÃ¡i tÃ­ch (Invert Checked)" Click="MenuInvertChecked_Click"/>
                                 <Separator/>
-                                <MenuItem Header="📌 Bookmark dòng đang chọn" Click="MenuBookmarkSelected_Click"/>
-                                <MenuItem Header="🌐 Mở link trong trình duyệt" Click="MenuOpenInBrowser_Click"/>
+                                <MenuItem Header="ðŸ“Œ Bookmark dÃ²ng Ä‘ang chá»n" Click="MenuBookmarkSelected_Click"/>
+                                <MenuItem Header="ðŸŒ Má»Ÿ link trong trÃ¬nh duyá»‡t" Click="MenuOpenInBrowser_Click"/>
                                 <Separator/>
-                                <MenuItem Header="Copy link các dòng đang chọn (Copy Selected Links)" Click="MenuCopySelectedLinks_Click"/>
+                                <MenuItem Header="Copy link cÃ¡c dÃ²ng Ä‘ang chá»n (Copy Selected Links)" Click="MenuCopySelectedLinks_Click"/>
                                 <Separator/>
-                                <MenuItem Header="Xóa các dòng đang bôi đen (Delete Selected)" Click="MenuDeleteSelected_Click"/>
-                                <MenuItem Header="Xóa các dòng đã tích (Delete Checked)" Click="MenuDeleteChecked_Click"/>
+                                <MenuItem Header="XÃ³a cÃ¡c dÃ²ng Ä‘ang bÃ´i Ä‘en (Delete Selected)" Click="MenuDeleteSelected_Click"/>
+                                <MenuItem Header="XÃ³a cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch (Delete Checked)" Click="MenuDeleteChecked_Click"/>
                                 <Separator/>
-                                <MenuItem Header="Tải các dòng đang bôi đen (Download highlighted lines)" Click="MenuDownloadSelected_Click"/>
-                                <MenuItem Header="Tải các dòng đã tích (Download selected lines)" Click="MenuDownloadChecked_Click"/>
+                                <MenuItem Header="Táº£i cÃ¡c dÃ²ng Ä‘ang bÃ´i Ä‘en (Download highlighted lines)" Click="MenuDownloadSelected_Click"/>
+                                <MenuItem Header="Táº£i cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch (Download selected lines)" Click="MenuDownloadChecked_Click"/>
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                         <DataGrid.Columns>
@@ -1281,20 +1281,20 @@
                                                      <TextBlock FontSize="11" FontWeight="Bold" Foreground="{StaticResource CyberpunkCyanBrush}">
                                                          <TextBlock.Style>
                                                              <Style TargetType="TextBlock">
-                                                                 <Setter Property="Text" Value="⏳ Waiting"/>
+                                                                 <Setter Property="Text" Value="â³ Waiting"/>
                                                                  <Style.Triggers>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Downloading">
-                                                                         <Setter Property="Text" Value="⬇️ Loading"/>
+                                                                         <Setter Property="Text" Value="â¬‡ï¸ Loading"/>
                                                                      </DataTrigger>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Completed">
-                                                                         <Setter Property="Text" Value="✅ Done"/>
+                                                                         <Setter Property="Text" Value="âœ… Done"/>
                                                                      </DataTrigger>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Error">
-                                                                         <Setter Property="Text" Value="❌ Error"/>
+                                                                         <Setter Property="Text" Value="âŒ Error"/>
                                                                          <Setter Property="Foreground" Value="Red"/>
                                                                      </DataTrigger>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Paused">
-                                                                         <Setter Property="Text" Value="⏸️ Paused"/>
+                                                                         <Setter Property="Text" Value="â¸ï¸ Paused"/>
                                                                      </DataTrigger>
                                                                  </Style.Triggers>
                                                              </Style>
@@ -1305,7 +1305,7 @@
                                                  <!-- Row Buttons -->
                                                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="5,0,0,0">
                                                      <!-- Play/Resume Button -->
-                                                     <Button Content="▶️" Click="BtnRowResume_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Resume download">
+                                                     <Button Content="â–¶ï¸" Click="BtnRowResume_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Resume download">
                                                          <Button.Style>
                                                              <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
                                                                  <Setter Property="Visibility" Value="Collapsed"/>
@@ -1318,7 +1318,7 @@
                                                          </Button.Style>
                                                      </Button>
                                                      <!-- Pause Button -->
-                                                     <Button Content="⏸️" Click="BtnRowPause_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Pause download">
+                                                     <Button Content="â¸ï¸" Click="BtnRowPause_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Pause download">
                                                          <Button.Style>
                                                              <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
                                                                  <Setter Property="Visibility" Value="Collapsed"/>
@@ -1331,7 +1331,7 @@
                                                          </Button.Style>
                                                      </Button>
                                                      <!-- Stop Button -->
-                                                     <Button Content="⏹️" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download">
+                                                     <Button Content="â¹ï¸" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download">
                                                          <Button.Style>
                                                              <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
                                                                  <Setter Property="Visibility" Value="Collapsed"/>
@@ -1443,19 +1443,19 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <Button Content="🌐" 
+                                            <Button Content="ðŸŒ" 
                                                     Tag="{Binding Link}" 
                                                     Click="BtnOpenLinkInRow_Click"
                                                     Width="30" Height="28" Margin="2,0"
                                                     Style="{StaticResource CyberpunkButtonCyan}"
                                                     FontSize="13" Padding="0"
-                                                    ToolTip="Mở link trong trình duyệt"/>
-                                            <Button Content="⬇️" 
+                                                    ToolTip="Má»Ÿ link trong trÃ¬nh duyá»‡t"/>
+                                            <Button Content="â¬‡ï¸" 
                                                     Click="BtnDownloadSingleInRow_Click"
                                                     Width="30" Height="28" Margin="2,0"
                                                     Style="{StaticResource CyberpunkButtonPink}"
                                                     FontSize="13" Padding="0"
-                                                    ToolTip="Tải truyện này"/>
+                                                    ToolTip="Táº£i truyá»‡n nÃ y"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -1531,7 +1531,7 @@
                                          CaretBrush="{StaticResource CyberpunkCyanBrush}"
                                          Height="30"
                                          VerticalContentAlignment="Center"
-                                         ToolTip="Tìm kiếm tên truyện..."/>
+                                         ToolTip="TÃ¬m kiáº¿m tÃªn truyá»‡n..."/>
                             </Grid>
 
                             <!-- Row 4: Chapter Selection -->
@@ -1549,7 +1549,7 @@
                                          CaretBrush="{StaticResource CyberpunkCyanBrush}"
                                          Height="28"
                                          VerticalContentAlignment="Center"
-                                         ToolTip="Nhập chap cần tải. VD: 1-10;15;20-25 (để trống = tải tất cả)"/>
+                                         ToolTip="Nháº­p chap cáº§n táº£i. VD: 1-10;15;20-25 (Ä‘á»ƒ trá»‘ng = táº£i táº¥t cáº£)"/>
                             </Grid>
 
                             <!-- Row 6: Connections and Actions -->
@@ -1636,21 +1636,21 @@
                                         </Style>
                                     </Button.Style>
                                 </Button>
-                                <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Click="BtnPauseDownload_Click" Height="35" Width="84" FontSize="13" IsEnabled="False" ToolTip="PAUSE / RESUME ALL">
+                                <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Tag="Pause" Click="BtnPauseDownload_Click" Height="35" Width="84" FontSize="13" IsEnabled="False" ToolTip="PAUSE / RESUME ALL">
                                     <Button.Style>
                                         <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
                                             <Style.Triggers>
                                                 <MultiTrigger>
                                                     <MultiTrigger.Conditions>
                                                         <Condition Property="IsMouseOver" Value="True"/>
-                                                        <Condition Property="Content" Value="⏸️"/>
+                                                        <Condition Property="Tag" Value="Pause"/>
                                                     </MultiTrigger.Conditions>
                                                     <Setter Property="Content" Value="⏸️ ALL"/>
                                                 </MultiTrigger>
                                                 <MultiTrigger>
                                                     <MultiTrigger.Conditions>
                                                         <Condition Property="IsMouseOver" Value="True"/>
-                                                        <Condition Property="Content" Value="▶️"/>
+                                                        <Condition Property="Tag" Value="Resume"/>
                                                     </MultiTrigger.Conditions>
                                                     <Setter Property="Content" Value="▶️ ALL"/>
                                                 </MultiTrigger>
@@ -1673,9 +1673,6 @@
                             </Grid>
                         </Grid>
                     </Border>
-                </Grid>
-            </Border>
-        </Grid>
 
         <!-- Footer -->
         <Border Grid.Row="2" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,15,0,0">
@@ -1686,5 +1683,8 @@
                 <TextBlock Name="lblStatus" Text="Ready." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold"/>
             </Grid>
         </Border>
+    </Grid>
+    </Border>
+    </Grid>
     </Grid>
 </Window>
