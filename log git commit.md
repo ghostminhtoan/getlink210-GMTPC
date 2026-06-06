@@ -1,5 +1,7 @@
 # Lá»‹ch Sá»­ Git Commit - Dá»± Ãn "get link manga"
 
+- **Commit**: cb2aa3c | **Date**: 2026-06-06 20:06:30 | **Message**: feat: add log filter and direct link captcha reset
+
 TÃ i liá»‡u nÃ y ghi láº¡i lá»‹ch sá»­ toÃ n bá»™ cÃ¡c commit cá»§a dá»± Ã¡n, sáº¯p xáº¿p thá»© tá»± tá»« má»›i nháº¥t á»Ÿ trÃªn Ä‘áº¿n cÅ© nháº¥t á»Ÿ dÆ°á»›i.
 
 - **Commit**: 915daf | **Date**: 2026-06-06 19:33:11 | **Message**: fix: reduce explorer spawns during download
