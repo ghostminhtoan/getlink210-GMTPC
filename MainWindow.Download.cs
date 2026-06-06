@@ -36,6 +36,12 @@ namespace get_link_manga
 
         private void BtnOpenFolder_Click(object sender, RoutedEventArgs e)
         {
+            if (_downloadCts != null)
+            {
+                Log("Đang tải xuống, tạm khóa mở thư mục để tránh mở Explorer lặp lại.");
+                return;
+            }
+
             string path = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(path))
             {
@@ -56,13 +62,9 @@ namespace get_link_manga
                 }
             }
 
-            try
+            if (!ShellFolderLauncher.TryOpenFolder(path, out string openError))
             {
-                System.Diagnostics.Process.Start("explorer.exe", $"\"{path}\"");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Không thể mở thư mục: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"KhÃ´ng thá»ƒ má»Ÿ thÆ° má»¥c: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -191,7 +193,7 @@ namespace get_link_manga
             btnStopDownload.Content = "⏹️";
 
             btnBrowseFolder.IsEnabled = false;
-            // btnOpenFolder remains enabled per user request
+            btnOpenFolder.IsEnabled = false;
             btnScrape.IsEnabled = false;
             btnFetchInfo.IsEnabled = false;
             if (btnNhentaiScrape != null) btnNhentaiScrape.IsEnabled = false;

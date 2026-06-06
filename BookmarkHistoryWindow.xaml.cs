@@ -78,7 +78,11 @@ namespace get_link_manga
                 {
                     if (System.IO.Directory.Exists(path))
                     {
-                        System.Diagnostics.Process.Start("explorer.exe", $"\"{path}\"");
+                        if (!ShellFolderLauncher.TryOpenFolder(path, out string openError))
+                        {
+                            MessageBox.Show($"KhÃ´ng thá»ƒ má»Ÿ thÆ° má»¥c: {openError}", "Warning",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
                     }
                     else
                     {

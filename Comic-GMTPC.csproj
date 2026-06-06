@@ -126,6 +126,9 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ShellFolderLauncher.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DuplicateWindow.xaml.cs">
       <DependentUpon>DuplicateWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
