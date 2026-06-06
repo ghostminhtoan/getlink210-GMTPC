@@ -2,6 +2,8 @@
 
 TÃ i liá»‡u nÃ y ghi láº¡i lá»‹ch sá»­ toÃ n bá»™ cÃ¡c commit cá»§a dá»± Ã¡n, sáº¯p xáº¿p thá»© tá»± tá»« má»›i nháº¥t á»Ÿ trÃªn Ä‘áº¿n cÅ© nháº¥t á»Ÿ dÆ°á»›i.
 
+- **Commit**: 915daf | **Date**: 2026-06-06 19:33:11 | **Message**: fix: reduce explorer spawns during download
+
 - **Commit**: 4aee5b0 | **Date**: 2026-06-06 19:03:30 | **Message**: fix: clean truyenqq utf8 strings
 
 - **Commit**: `6b53d49` | **Date**: 2026-06-06 18:50:01 | **Message**: fix: resolve truyenqq redirect after captcha
