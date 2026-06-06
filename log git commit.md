@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử toàn bộ các commit của dự án, sắp xếp thứ tự từ mới nhất ở trên đến cũ nhất ở dưới.
 
+- **Commit**: `86e2e99` | **Date**: 2026-06-06 13:09:36 | **Message**: feat: optimize error retry to avoid individual popups and format log error lines in red
 - **Commit**: `9ad99e7` | **Date**: 2026-06-06 08:47:42 | **Message**: docs: add page auto-detection to automated tab creation section in workflow.md
 - **Commit**: `1bed354` | **Date**: 2026-06-06 08:45:14 | **Message**: docs: add section 7 in workflow.md for automated tab creation guidelines
 - **Commit**: `b949e80` | **Date**: 2026-06-06 07:22:47 | **Message**: style: fix tab header text color and make them bright neon colors when active
