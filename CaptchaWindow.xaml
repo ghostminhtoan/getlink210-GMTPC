@@ -20,7 +20,7 @@
                            FontSize="16" 
                            FontWeight="ExtraBold" 
                            Style="{StaticResource CyberpunkHeader}"/>
-                <TextBlock Text="VUI L�NG HO�N TH�NH TH? TH�CH TR�N TR�NH DUY?T B�N DU?I. KHI TRANG T?I XONG, NH?N '�� HO�N TH�NH'" 
+                <TextBlock Text="VUI LÒNG HOÀN THÀNH THỬ THÁCH TRÊN TRÌNH DUYỆT BÊN DƯỚI. KHI TRANG TẢI XONG, NHẤN 'ĐÃ HOÀN THÀNH'" 
                            FontSize="9" 
                            Foreground="{StaticResource CyberpunkCyanBrush}" 
                            FontWeight="Bold"
@@ -46,7 +46,7 @@
             </Grid.ColumnDefinitions>
             
             <Button Grid.Column="1" x:Name="btnDeleteCookies" Content="XÓA COOKIE" Click="BtnDeleteCookies_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35" Width="120" FontWeight="Bold"/>
-            <Button Grid.Column="3" x:Name="btnDone" Content="�� HO�N TH�NH CAPTCHA" Click="BtnDone_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="200" FontWeight="Bold"/>
+            <Button Grid.Column="3" x:Name="btnDone" Content="ĐÃ HOÀN THÀNH CAPTCHA" Click="BtnDone_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="35" Width="200" FontWeight="Bold"/>
             <Button Grid.Column="5" x:Name="btnCancel" Content="HỦY BỎ" Click="BtnCancel_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35" Width="100" FontWeight="Bold"/>
         </Grid>
     </Grid>

@@ -48,7 +48,7 @@ namespace get_link_manga
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"L?i kh?i t?o tr�nh duy?t WebView2: {ex.Message}\n\nH�y d?m b?o b?n d� c�i d?t WebView2 Runtime tr�n h? th?ng.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Lỗi khởi tạo trình duyệt WebView2: {ex.Message}\n\nHãy đảm bảo bạn đã cài đặt WebView2 Runtime trên hệ thống.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 DialogResult = false;
                 Close();
             }
@@ -324,14 +324,36 @@ namespace get_link_manga
             }
         }
 
-        private void BtnDeleteCookies_Click(object sender, RoutedEventArgs e)
+        private async void BtnDeleteCookies_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 if (webView.CoreWebView2 != null)
                 {
                     webView.CoreWebView2.CookieManager.DeleteAllCookies();
-                    MessageBox.Show("�� x�a to�n b? cookie th�nh c�ng (All cookies deleted successfully).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Reset the bypass state so the challenge flow starts over cleanly.
+                    ResolvedCookies = new CookieContainer();
+                    ResolvedUri = null;
+                    ResolvedHtml = null;
+                    _captchaBypassStartTime = DateTime.MinValue;
+                    _lastCaptchaKeyboardAttempt = DateTime.MinValue;
+
+                    await Task.Delay(250);
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            if (webView.CoreWebView2 != null)
+                            {
+                                webView.CoreWebView2.Navigate(_targetUrl);
+                            }
+                        }
+                        catch { }
+                    });
+
+                    MessageBox.Show("Đã xóa cookie và tải lại trang để bypass captcha lại.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
