@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `5171176` | **Date**: 2026-06-06 22:23:49 | **Message**: fix: de-duplicate errors and persist gallery state
 - **Commit**: `6c85b05` | **Date**: 2026-06-06 20:42:33 | **Message**: fix: normalize utf8 and open folder behavior
 - **Commit**: `5820de6` | **Date**: 2026-06-06 20:06:30 | **Message**: docs: update git commit log
 - **Commit**: `4ee6c00` | **Date**: 2026-06-06 20:06:30 | **Message**: fix: restore download controls and keep open folder enabled
