@@ -1,8 +1,9 @@
-# Lá»‹ch Sá»­ Git Commit - Dá»± Ãn "get link manga"
+﻿# LÃ¡Â»â€¹ch SÃ¡Â»Â­ Git Commit - DÃ¡Â»Â± ÃƒÂn "get link manga"
 
+- **Commit**: `4ee6c00` | **Date**: 2026-06-06 20:06:30 | **Message**: fix: restore download controls and keep open folder enabled
 - **Commit**: cb2aa3c | **Date**: 2026-06-06 20:06:30 | **Message**: feat: add log filter and direct link captcha reset
 
-TÃ i liá»‡u nÃ y ghi láº¡i lá»‹ch sá»­ toÃ n bá»™ cÃ¡c commit cá»§a dá»± Ã¡n, sáº¯p xáº¿p thá»© tá»± tá»« má»›i nháº¥t á»Ÿ trÃªn Ä‘áº¿n cÅ© nháº¥t á»Ÿ dÆ°á»›i.
+TÃƒÂ i liÃ¡Â»â€¡u nÃƒÂ y ghi lÃ¡ÂºÂ¡i lÃ¡Â»â€¹ch sÃ¡Â»Â­ toÃƒÂ n bÃ¡Â»â„¢ cÃƒÂ¡c commit cÃ¡Â»Â§a dÃ¡Â»Â± ÃƒÂ¡n, sÃ¡ÂºÂ¯p xÃ¡ÂºÂ¿p thÃ¡Â»Â© tÃ¡Â»Â± tÃ¡Â»Â« mÃ¡Â»â€ºi nhÃ¡ÂºÂ¥t Ã¡Â»Å¸ trÃƒÂªn Ã„â€˜Ã¡ÂºÂ¿n cÃ…Â© nhÃ¡ÂºÂ¥t Ã¡Â»Å¸ dÃ†Â°Ã¡Â»â€ºi.
 
 - **Commit**: 915daf | **Date**: 2026-06-06 19:33:11 | **Message**: fix: reduce explorer spawns during download
 
