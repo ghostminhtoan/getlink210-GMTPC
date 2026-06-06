@@ -2,6 +2,11 @@
 
 Tài liệu này ghi lại lịch sử toàn bộ các commit của dự án, sắp xếp thứ tự từ mới nhất ở trên đến cũ nhất ở dưới.
 
+- **Commit**: `1bed354` | **Date**: 2026-06-06 08:45:14 | **Message**: docs: add section 7 in workflow.md for automated tab creation guidelines
+- **Commit**: `b949e80` | **Date**: 2026-06-06 07:22:47 | **Message**: style: fix tab header text color and make them bright neon colors when active
+- **Commit**: `095f3b1` | **Date**: 2026-06-06 07:01:22 | **Message**: Fix selected tab dim/black text color by binding TextBlock properties directly to TemplatedParent in Border resources
+- **Commit**: `2c3aafd` | **Date**: 2026-06-06 06:58:25 | **Message**: Fix XAML parse crash by replacing TemplateBinding Tag with TemplatedParent RelativeSource Binding inside MultiTriggers
+- **Commit**: `93540ca` | **Date**: 2026-06-06 06:57:11 | **Message**: Fix selected tab black text bug by removing incorrect resource override and restoring proper TemplateBinding Tag
 - **Commit**: `b87a16b` | **Date**: 2026-06-05 05:42:00 | **Message**: feat: fix progress bar calculation, add captcha solver, clear complete books, save checkbox state to md, and adjust window size
 - **Commit**: `0aefc14` | **Date**: 2026-06-04 07:29:51 | **Message**: feat: optimize download, implement parallel book downloads, skip duplicates, and add Crawl More buttons
 - **Commit**: `6a15c67` | **Date**: 2026-06-03 20:37:40 | **Message**: docs: create log git commit.md and update commit rules in workflow.md
