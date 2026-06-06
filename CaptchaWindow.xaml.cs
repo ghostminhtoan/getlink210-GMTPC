@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
+using System.Text.RegularExpressions;
 
 namespace get_link_manga
 {
@@ -11,7 +12,10 @@ namespace get_link_manga
         public CookieContainer ResolvedCookies { get; private set; } = new CookieContainer();
         public Uri ResolvedUri { get; private set; }
         public string UserAgent { get; private set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+        public string ResolvedHtml { get; private set; }
         private readonly string _targetUrl;
+        private DateTime _captchaBypassStartTime = DateTime.MinValue;
+        private DateTime _lastCaptchaKeyboardAttempt = DateTime.MinValue;
 
         public CaptchaWindow(string targetUrl)
         {
@@ -52,6 +56,8 @@ namespace get_link_manga
 
         private async Task AutoDetectBypassAsync()
         {
+            DateTime nettruyenChaptersWaitStartTime = DateTime.MinValue;
+            
             while (true)
             {
                 await Task.Delay(1000);
@@ -104,12 +110,141 @@ namespace get_link_manga
                     {
                         if (!title.Contains("Just a moment") && !title.Contains("Cloudflare"))
                         {
-                            // Great! We bypassed it. Let's auto click done.
-                            Dispatcher.Invoke(() =>
+                            bool shouldDelay = false;
+                            if (url.IndexOf("nettruyen", StringComparison.OrdinalIgnoreCase) >= 0)
                             {
-                                BtnDone_Click(this, null);
+                                // Find and click "Xem thêm" by text content (CSS selectors are unreliable across nettruyen domains)
+                                string processChaptersJs = @"
+                                    (function() {
+                                        var xemThem = null;
+                                        var allEls = document.querySelectorAll('a, button, span, div');
+                                        for (var i = 0; i < allEls.length; i++) {
+                                            var txt = (allEls[i].textContent || '').trim();
+                                            if (txt === 'Xem thêm' || txt === '+ Xem thêm' || txt === 'xem thêm' || txt === '+ xem thêm') {
+                                                xemThem = allEls[i];
+                                                break;
+                                            }
+                                        }
+                                        if (xemThem && (xemThem.offsetWidth > 0 || xemThem.offsetHeight > 0)) {
+                                            xemThem.click();
+                                            return 'clicked';
+                                        }
+                                        var html = document.documentElement.outerHTML || '';
+                                        var hasChapter = /\/(?:chuong|chap|chapter|c|chuong-tranh|chuong-doc)-(?:0|1|2|3|4|5|6|7|8|9|10)(?:\/|\s|""|'|\?|$)/i.test(html);
+                                        if (hasChapter) {
+                                            return 'ready';
+                                        }
+                                        if (!xemThem) {
+                                            return 'ready';
+                                        }
+                                        return 'waiting';
+                                    })()";
+
+                                string statusStr = await Dispatcher.Invoke(async () =>
+                                {
+                                    try { return await webView.CoreWebView2.ExecuteScriptAsync(processChaptersJs); } catch { return "ready"; }
+                                });
+
+                                string statusVal = statusStr?.Trim('"') ?? "ready";
+                                if (statusVal == "clicked" || statusVal == "waiting")
+                                {
+                                    if (nettruyenChaptersWaitStartTime == DateTime.MinValue)
+                                    {
+                                        nettruyenChaptersWaitStartTime = DateTime.Now;
+                                    }
+                                    
+                                    double elapsed = (DateTime.Now - nettruyenChaptersWaitStartTime).TotalSeconds;
+                                    if (elapsed < 15.0) // Timeout after 15 seconds of waiting for chapters to load
+                                    {
+                                        shouldDelay = true;
+                                    }
+                                }
+                            }
+
+                            if (!shouldDelay)
+                            {
+                                // Get final HTML
+                                string finalHtml = await Dispatcher.Invoke(async () =>
+                                {
+                                    try { return await webView.CoreWebView2.ExecuteScriptAsync("document.documentElement.outerHTML"); } catch { return null; }
+                                });
+                                if (!string.IsNullOrEmpty(finalHtml))
+                                {
+                                     if (finalHtml.StartsWith("\"") && finalHtml.EndsWith("\""))
+                                     {
+                                         finalHtml = UnescapeJsonString(finalHtml);
+                                     }
+                                    ResolvedHtml = finalHtml;
+                                }
+
+                                // Great! We bypassed it. Let's auto click done.
+                                Dispatcher.Invoke(() =>
+                                {
+                                    BtnDone_Click(this, null);
+                                });
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Turnstile captcha bypass via keyboard sequence: Ctrl+F → "human" → Escape → Shift+Tab → Space
+                    if (url.IndexOf("nettruyen", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        // Track when the captcha page first appeared
+                        if (_captchaBypassStartTime == DateTime.MinValue)
+                        {
+                            _captchaBypassStartTime = DateTime.Now;
+                        }
+
+                        double secsSinceStart = (DateTime.Now - _captchaBypassStartTime).TotalSeconds;
+                        double secsSinceLastAttempt = (DateTime.Now - _lastCaptchaKeyboardAttempt).TotalSeconds;
+
+                        // First attempt after 10 seconds, then every 5 seconds
+                        bool shouldAttempt = false;
+                        if (_lastCaptchaKeyboardAttempt == DateTime.MinValue && secsSinceStart >= 10)
+                        {
+                            shouldAttempt = true;
+                        }
+                        else if (_lastCaptchaKeyboardAttempt != DateTime.MinValue && secsSinceLastAttempt >= 5)
+                        {
+                            shouldAttempt = true;
+                        }
+
+                        if (shouldAttempt)
+                        {
+                            _lastCaptchaKeyboardAttempt = DateTime.Now;
+
+                            await Dispatcher.InvokeAsync(() =>
+                            {
+                                try
+                                {
+                                    // Activate window and focus WebView2
+                                    this.Activate();
+                                    webView.Focus();
+                                    System.Windows.Input.Keyboard.Focus(webView);
+                                }
+                                catch { }
                             });
-                            break;
+                            await Task.Delay(300);
+
+                            // Step 1: Ctrl+F to open Find dialog
+                            System.Windows.Forms.SendKeys.SendWait("^f");
+                            await Task.Delay(500);
+
+                            // Step 2: Type "human" to search
+                            System.Windows.Forms.SendKeys.SendWait("human");
+                            await Task.Delay(500);
+
+                            // Step 3: Escape to close Find dialog
+                            System.Windows.Forms.SendKeys.SendWait("{ESCAPE}");
+                            await Task.Delay(300);
+
+                            // Step 4: Shift+Tab to move focus to the checkbox
+                            System.Windows.Forms.SendKeys.SendWait("+{TAB}");
+                            await Task.Delay(300);
+
+                            // Step 5: Space to check the checkbox
+                            System.Windows.Forms.SendKeys.SendWait(" ");
                         }
                     }
                 }
@@ -205,6 +340,17 @@ namespace get_link_manga
         {
             DialogResult = false;
             Close();
+        }
+
+        private string UnescapeJsonString(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            value = value.Trim();
+            if (value.StartsWith("\"") && value.EndsWith("\"") && value.Length >= 2)
+            {
+                value = value.Substring(1, value.Length - 2);
+            }
+            return value.Replace("\\\"", "\"").Replace("\\\\", "\\");
         }
     }
 }

@@ -1,4 +1,4 @@
-<Window x:Class="get_link_manga.MainWindow"
+﻿<Window x:Class="get_link_manga.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -357,17 +357,147 @@
                                                  <Button Grid.Column="3" Name="btnClearTruyenqqLog" Content="CLEAR" Click="BtnClearTruyenqqLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
                                              </Grid>
                                             <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                                <TextBox Name="txtTruyenqqLog" 
-                                                         VerticalScrollBarVisibility="Auto"
-                                                         Background="Transparent" 
-                                                         BorderThickness="0" 
-                                                         Foreground="#a8ffb2" 
-                                                         FontFamily="Consolas, Courier New" 
-                                                         FontSize="11" 
-                                                         IsReadOnly="True" 
-                                                         AcceptsReturn="True" 
-                                                         Padding="10"
-                                                         TextWrapping="Wrap"/>
+                                                <RichTextBox Name="txtTruyenqqLog" 
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          Background="Transparent" 
+                                                          BorderThickness="0" 
+                                                          Foreground="#a8ffb2" 
+                                                          FontFamily="Consolas, Courier New" 
+                                                          FontSize="11" 
+                                                          IsReadOnly="True" 
+                                                          Padding="10"/>
+                                            </Border>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </TabItem>
+                        <!-- nettruyen tab -->
+                        <TabItem Header="nettruyen" Style="{StaticResource CyberpunkTabItem}">
+                            <TabItem.Tag>
+                                <SolidColorBrush Color="#00ffff"/>
+                            </TabItem.Tag>
+                            <Grid Margin="0,10,0,0">
+                                <Border Name="borderNettruyenLeftPanel" Style="{StaticResource CyberpunkCard}" Padding="15">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/> <!-- Section Title -->
+                                            <RowDefinition Height="Auto"/> <!-- URL Input -->
+                                            <RowDefinition Height="Auto"/> <!-- Fetch Button -->
+                                            <RowDefinition Height="Auto"/> <!-- Page Info -->
+                                            <RowDefinition Height="0"/>    <!-- Row Range Input -->
+                                            <RowDefinition Height="Auto"/> <!-- Scrape Button -->
+                                            <RowDefinition Height="*"/>    <!-- Progress Logs -->
+                                        </Grid.RowDefinitions>
+
+                                        <Grid Grid.Row="0" Margin="0,0,0,15">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="5"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                        </Grid>
+
+                                        <!-- Target URL -->
+                                        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                            <TextBlock Text="DOWNLOAD MULTIPLE WITH TAG OR ARTIST" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                            <TextBox Name="txtNettruyenTagUrl" 
+                                                        Text="https://nettruyenviet10.com/tim-truyen/adventure"
+                                                        Background="#0e121a" 
+                                                        BorderBrush="{StaticResource CyberpunkBorderBrush}" 
+                                                        Foreground="{StaticResource CyberpunkTextBrush}" 
+                                                        CaretBrush="{StaticResource CyberpunkCyanBrush}"
+                                                        Height="32"/>
+                                        </StackPanel>
+
+                                        <!-- Fetch Info Action -->
+                                        <Grid Grid.Row="2" Margin="0,0,0,15">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Name="btnNettruyenFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnNettruyenFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12"/>
+                                            <Button Grid.Column="2" Name="btnNettruyenFetchCaptcha" Content="CAPTCHA" Click="BtnCaptcha_Click" Style="{StaticResource CyberpunkButtonPink}" Height="35"/>
+                                        </Grid>
+
+                                        <!-- Page Info Status -->
+                                        <Grid Grid.Row="3" Margin="0,0,0,15">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="TOTAL PAGES" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                <TextBox Name="txtNettruyenTotalPages" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkYellowBrush}" FontSize="13" FontWeight="Bold" Height="32" HorizontalContentAlignment="Center" TextChanged="TxtNettruyenTotalPages_TextChanged"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="FROM PAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                <TextBox Name="txtNettruyenPageFrom" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkTextBrush}" CaretBrush="{StaticResource CyberpunkCyanBrush}" Height="32" HorizontalContentAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="4">
+                                                <TextBlock Text="TO PAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                <TextBox Name="txtNettruyenPageTo" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkTextBrush}" CaretBrush="{StaticResource CyberpunkCyanBrush}" Height="32" HorizontalContentAlignment="Center"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Page Range Input (Unused, height set to 0) -->
+                                        <Grid Grid.Row="4" Height="0" Margin="0"/>
+
+                                        <!-- Scrape & Direct Import Actions -->
+                                        <Grid Grid.Row="5" Margin="0,15,0,15">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Name="btnNettruyenScrape" Content="GET LINK" Click="BtnNettruyenScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                            <Button Grid.Column="2" Name="btnNettruyenCrawlMore" Content="GET MORE" Click="BtnNettruyenCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                            <Button Grid.Column="4" Name="btnNettruyenPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNettruyenPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                        </Grid>
+
+                                        <!-- Progress Logging Panel -->
+                                        <Grid Grid.Row="6">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid Grid.Row="0" Margin="0,0,0,6">
+                                                 <Grid.ColumnDefinitions>
+                                                     <ColumnDefinition Width="*"/>
+                                                     <ColumnDefinition Width="Auto"/>
+                                                     <ColumnDefinition Width="10"/>
+                                                     <ColumnDefinition Width="Auto"/>
+                                                 </Grid.ColumnDefinitions>
+                                                 <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                     <TextBlock Text="AUTO SCROLL" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                     <ToggleButton Name="chkAutoScrollNettruyenLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
+                                                 </StackPanel>
+                                                 <Button Grid.Column="3" Name="btnClearNettruyenLog" Content="CLEAR" Click="BtnClearNettruyenLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                             </Grid>
+                                            <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
+                                                <RichTextBox Name="txtNettruyenLog" 
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          Background="Transparent" 
+                                                          BorderThickness="0" 
+                                                          Foreground="#a8ffb2" 
+                                                          FontFamily="Consolas, Courier New" 
+                                                          FontSize="11" 
+                                                          IsReadOnly="True" 
+                                                          Padding="10"/>
                                             </Border>
                                         </Grid>
                                     </Grid>
@@ -498,17 +628,15 @@
                                                  <Button Grid.Column="3" Name="btnClearViHentaiLog" Content="CLEAR" Click="BtnClearViHentaiLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
                                              </Grid>
                                             <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                                <TextBox Name="txtViHentaiLog" 
-                                                         VerticalScrollBarVisibility="Auto"
-                                                         Background="Transparent" 
-                                                         BorderThickness="0" 
-                                                         Foreground="#a8ffb2" 
-                                                         FontFamily="Consolas, Courier New" 
-                                                         FontSize="11" 
-                                                         IsReadOnly="True" 
-                                                         AcceptsReturn="True" 
-                                                         Padding="10"
-                                                         TextWrapping="Wrap"/>
+                                                <RichTextBox Name="txtViHentaiLog" 
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          Background="Transparent" 
+                                                          BorderThickness="0" 
+                                                          Foreground="#a8ffb2" 
+                                                          FontFamily="Consolas, Courier New" 
+                                                          FontSize="11" 
+                                                          IsReadOnly="True" 
+                                                          Padding="10"/>
                                             </Border>
                                         </Grid>
                                     </Grid>
@@ -635,17 +763,15 @@
                                                 <Button Grid.Column="3" Name="btnClearLog" Content="CLEAR" Click="BtnClearLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
                                             </Grid>
                                             <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                                <TextBox Name="txtLog" 
-                                                         VerticalScrollBarVisibility="Auto"
-                                                         Background="Transparent" 
-                                                         BorderThickness="0" 
-                                                         Foreground="#a8ffb2" 
-                                                         FontFamily="Consolas, Courier New" 
-                                                         FontSize="11" 
-                                                         IsReadOnly="True" 
-                                                         AcceptsReturn="True" 
-                                                         Padding="10"
-                                                         TextWrapping="Wrap"/>
+                                                <RichTextBox Name="txtLog" 
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          Background="Transparent" 
+                                                          BorderThickness="0" 
+                                                          Foreground="#a8ffb2" 
+                                                          FontFamily="Consolas, Courier New" 
+                                                          FontSize="11" 
+                                                          IsReadOnly="True" 
+                                                          Padding="10"/>
                                             </Border>
                                         </Grid>
                                     </Grid>
@@ -797,17 +923,15 @@
                                                  <Button Grid.Column="3" Name="btnClearNhentaiLog" Content="CLEAR" Click="BtnClearNhentaiLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
                                              </Grid>
                                             <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                                <TextBox Name="txtNhentaiLog" 
-                                                         VerticalScrollBarVisibility="Auto"
-                                                         Background="Transparent" 
-                                                         BorderThickness="0" 
-                                                         Foreground="#a8ffb2" 
-                                                         FontFamily="Consolas, Courier New" 
-                                                         FontSize="11" 
-                                                         IsReadOnly="True" 
-                                                         AcceptsReturn="True" 
-                                                         Padding="10"
-                                                         TextWrapping="Wrap"/>
+                                                <RichTextBox Name="txtNhentaiLog" 
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          Background="Transparent" 
+                                                          BorderThickness="0" 
+                                                          Foreground="#a8ffb2" 
+                                                          FontFamily="Consolas, Courier New" 
+                                                          FontSize="11" 
+                                                          IsReadOnly="True" 
+                                                          Padding="10"/>
                                             </Border>
                                         </Grid>
                                     </Grid>
@@ -933,17 +1057,15 @@
                                                  <Button Grid.Column="3" Name="btnClearHentaieraLog" Content="CLEAR" Click="BtnClearHentaieraLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
                                              </Grid>
                                             <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                                <TextBox Name="txtHentaieraLog" 
-                                                         VerticalScrollBarVisibility="Auto"
-                                                         Background="Transparent" 
-                                                         BorderThickness="0" 
-                                                         Foreground="#a8ffb2" 
-                                                         FontFamily="Consolas, Courier New" 
-                                                         FontSize="11" 
-                                                         IsReadOnly="True" 
-                                                         AcceptsReturn="True" 
-                                                         Padding="10"
-                                                         TextWrapping="Wrap"/>
+                                                <RichTextBox Name="txtHentaieraLog" 
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          Background="Transparent" 
+                                                          BorderThickness="0" 
+                                                          Foreground="#a8ffb2" 
+                                                          FontFamily="Consolas, Courier New" 
+                                                          FontSize="11" 
+                                                          IsReadOnly="True" 
+                                                          Padding="10"/>
                                             </Border>
                                         </Grid>
                                     </Grid>
@@ -1147,7 +1269,7 @@
                                                  </Grid.ColumnDefinitions>
 
                                                  <!-- Status Display -->
-                                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" MouseLeftButtonUp="StatusCell_Click" Cursor="Hand" Background="Transparent">
                                                      <TextBlock FontSize="11" FontWeight="Bold" Foreground="{StaticResource CyberpunkCyanBrush}">
                                                          <TextBlock.Style>
                                                              <Style TargetType="TextBlock">
@@ -1274,9 +1396,9 @@
 
                              <!-- Process Column -->
                              <DataGridTemplateColumn Header="PROCESS" Width="200">
-                                 <DataGridTemplateColumn.CellTemplate>
-                                     <DataTemplate>
-                                         <StackPanel Margin="5,4" Orientation="Vertical">
+                                  <DataGridTemplateColumn.CellTemplate>
+                                      <DataTemplate>
+                                          <StackPanel Margin="5,4" Orientation="Vertical" MouseLeftButtonUp="ProcessCell_Click" Cursor="Hand" Background="Transparent">
                                              <StackPanel.Style>
                                                  <Style TargetType="StackPanel">
                                                      <Setter Property="Visibility" Value="Visible"/>

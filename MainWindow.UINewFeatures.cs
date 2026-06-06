@@ -250,7 +250,7 @@ namespace get_link_manga
         /// <summary>
         /// Thử tải lại các trang bị lỗi của một GalleryItem.
         /// </summary>
-        public async Task RetryDownloadQueueItemErrorsAsync(GalleryItem queueItem)
+        public async Task RetryDownloadQueueItemErrorsAsync(GalleryItem queueItem, bool showMessageBox = true)
         {
             if (queueItem == null || queueItem.Errors == null || queueItem.Errors.Count == 0)
                 return;
@@ -348,8 +348,11 @@ namespace get_link_manga
             UpdateQueueErrorLabel();
 
             Log($"[Retry] Hoàn tất thử tải lại cho '{queueItem.Name}'. Thành công: {successfulRetries}/{errorsToRetry.Count}.");
-            MessageBox.Show($"Thử tải lại hoàn tất!\nThành công: {successfulRetries}\nThất bại: {failedRetries}", 
-                "Retry Completed", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (showMessageBox)
+            {
+                MessageBox.Show($"Thử tải lại hoàn tất!\nThành công: {successfulRetries}\nThất bại: {failedRetries}", 
+                    "Retry Completed", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
     }
 }

@@ -20,7 +20,9 @@ namespace get_link_manga
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                txtViHentaiLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\r\n");
+                string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
+                bool isError = IsErrorMessage(message);
+                AppendLogLine(txtViHentaiLog, logLine, isError);
                 if (chkAutoScrollViHentaiLog?.IsChecked == true)
                     ScrollTextBoxToEnd(txtViHentaiLog);
             }), System.Windows.Threading.DispatcherPriority.Background);

@@ -200,6 +200,8 @@ namespace get_link_manga
             if (btnViHentaiFetchInfo != null) btnViHentaiFetchInfo.IsEnabled = false;
             if (btnTruyenqqScrape != null) btnTruyenqqScrape.IsEnabled = false;
             if (btnTruyenqqFetchInfo != null) btnTruyenqqFetchInfo.IsEnabled = false;
+            if (btnNettruyenScrape != null) btnNettruyenScrape.IsEnabled = false;
+            if (btnNettruyenFetchInfo != null) btnNettruyenFetchInfo.IsEnabled = false;
             if (btnHentaieraScrape != null) btnHentaieraScrape.IsEnabled = false;
             if (btnHentaieraFetchInfo != null) btnHentaieraFetchInfo.IsEnabled = false;
             // cmbConnections.IsEnabled = false;
@@ -248,7 +250,8 @@ namespace get_link_manga
                     .GroupBy(item => GetBookIdentifier(item.Link))
                     .ToList();
 
-                using (var bookSemaphore = new DynamicSemaphore(maxParallelBooks, () => _currentMaxParallelBooks))
+                _activeBookSemaphore = new DynamicSemaphore(maxParallelBooks, () => _currentMaxParallelBooks);
+                using (_activeBookSemaphore)
                 {
                     var tasks = new System.Collections.Generic.List<Task>();
                     object lockObj = new object();
@@ -258,7 +261,7 @@ namespace get_link_manga
                         var bookGroup = group;
                         
                         // Wait for semaphore sequentially in the main loop to enforce visual grid order
-                        await bookSemaphore.WaitAsync(token);
+                        await _activeBookSemaphore.WaitAsync(token);
 
                         tasks.Add(Task.Run(async () =>
                         {
@@ -348,7 +351,7 @@ namespace get_link_manga
                             }
                             finally
                             {
-                                bookSemaphore.Release();
+                                _activeBookSemaphore?.Release();
                             }
                         }, token));
                     }
@@ -372,6 +375,7 @@ namespace get_link_manga
             }
             finally
             {
+                _activeBookSemaphore = null;
                 _downloadCts.Dispose();
                 _downloadCts = null;
                 _isDownloadPaused = false;
@@ -392,6 +396,8 @@ namespace get_link_manga
                 if (btnViHentaiFetchInfo != null) btnViHentaiFetchInfo.IsEnabled = true;
                 if (btnTruyenqqScrape != null) btnTruyenqqScrape.IsEnabled = true;
                 if (btnTruyenqqFetchInfo != null) btnTruyenqqFetchInfo.IsEnabled = true;
+                if (btnNettruyenScrape != null) btnNettruyenScrape.IsEnabled = true;
+                if (btnNettruyenFetchInfo != null) btnNettruyenFetchInfo.IsEnabled = true;
                 if (btnHentaieraScrape != null) btnHentaieraScrape.IsEnabled = true;
                 if (btnHentaieraFetchInfo != null) btnHentaieraFetchInfo.IsEnabled = true;
                 cmbConnections.IsEnabled = true;
@@ -431,6 +437,12 @@ namespace get_link_manga
             if (IsTruyenqqUrl(item.Link))
             {
                 await DownloadTruyenqqGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
+                return;
+            }
+
+            if (IsNettruyenUrl(item.Link))
+            {
+                await DownloadNettruyenGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
                 return;
             }
 
@@ -1564,6 +1576,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
             _currentMaxParallelBooks = newVal;
             Log($"[Multi Download] Số luồng tải song song được chỉnh thành {newVal}.");
+            _activeBookSemaphore?.AdjustLimit();
         }
     }
 
@@ -1679,7 +1692,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             AdjustLimit();
         }
 
-        private void AdjustLimit()
+        public void AdjustLimit()
         {
             int target = _limitProvider();
             if (target == _currentLimit) return;

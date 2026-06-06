@@ -14,19 +14,21 @@ namespace get_link_manga
 {
     public partial class MainWindow : Window
     {
-        private void TruyenqqLog(string message)
+        private string _lastCaptchaResolvedHtml = null;
+
+        private void NettruyenLog(string message)
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
                 bool isError = IsErrorMessage(message);
-                AppendLogLine(txtTruyenqqLog, logLine, isError);
-                if (chkAutoScrollTruyenqqLog?.IsChecked == true)
-                    ScrollTextBoxToEnd(txtTruyenqqLog);
+                AppendLogLine(txtNettruyenLog, logLine, isError);
+                if (chkAutoScrollNettruyenLog?.IsChecked == true)
+                    ScrollTextBoxToEnd(txtNettruyenLog);
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
-        internal async Task<bool> CheckIfTruyenqqBlockedAsync(string testUrl)
+        internal async Task<bool> CheckIfNettruyenBlockedAsync(string testUrl)
         {
             try
             {
@@ -66,9 +68,9 @@ namespace get_link_manga
             }
         }
 
-        internal async Task<bool> SolveTruyenqqCaptchaIfNeededAsync(string testUrl)
+        internal async Task<bool> SolveNettruyenCaptchaIfNeededAsync(string testUrl)
         {
-            bool isBlocked = await CheckIfTruyenqqBlockedAsync(testUrl);
+            bool isBlocked = await CheckIfNettruyenBlockedAsync(testUrl);
             if (!isBlocked)
             {
                 return true; // Not blocked
@@ -80,7 +82,7 @@ namespace get_link_manga
                 {
                     await Task.Delay(500);
                 }
-                isBlocked = await CheckIfTruyenqqBlockedAsync(testUrl);
+                isBlocked = await CheckIfNettruyenBlockedAsync(testUrl);
                 if (!isBlocked)
                 {
                     return true;
@@ -91,7 +93,7 @@ namespace get_link_manga
             try
             {
                 // Re-check after acquiring lock
-                isBlocked = await CheckIfTruyenqqBlockedAsync(testUrl);
+                isBlocked = await CheckIfNettruyenBlockedAsync(testUrl);
                 if (!isBlocked)
                 {
                     return true;
@@ -99,7 +101,7 @@ namespace get_link_manga
 
                 _isCaptchaWindowActive = true;
                 _isDownloadPaused = true;
-                TruyenqqLog("Phát hiện thử thách Cloudflare / Captcha. Tạm dừng tải và đang mở trình duyệt giải tự động...");
+                NettruyenLog("Phát hiện thử thách Cloudflare / Captcha. Tạm dừng tải và đang mở trình duyệt giải tự động...");
 
                 bool solved = false;
                 try
@@ -138,6 +140,7 @@ namespace get_link_manga
                                 _httpClient.DefaultRequestHeaders.UserAgent.Clear();
                                 _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
                             }
+                            _lastCaptchaResolvedHtml = captchaWin.ResolvedHtml;
                             solved = true;
                         }
                     });
@@ -149,7 +152,7 @@ namespace get_link_manga
 
                 if (solved)
                 {
-                    TruyenqqLog("Giải captcha thành công. Tiếp tục tải...");
+                    NettruyenLog("Giải captcha thành công. Tiếp tục tải...");
                     _isDownloadPaused = false;
                     return true;
                 }
@@ -161,21 +164,21 @@ namespace get_link_manga
             }
         }
 
-        private bool IsTruyenqqUrl(string url)
+        private bool IsNettruyenUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url)) return false;
             try
             {
                 var uri = new Uri(url);
-                return Regex.IsMatch(uri.Host, @"truyenqq[a-zA-Z0-9-]*\.com", RegexOptions.IgnoreCase);
+                return uri.Host.IndexOf("nettruyen", StringComparison.OrdinalIgnoreCase) >= 0;
             }
             catch
             {
-                return Regex.IsMatch(url, @"truyenqq[a-zA-Z0-9-]*\.com", RegexOptions.IgnoreCase);
+                return url.IndexOf("nettruyen", StringComparison.OrdinalIgnoreCase) >= 0;
             }
         }
 
-        private string ExtractTruyenqqBaseUrl(string url)
+        private string ExtractNettruyenBaseUrl(string url)
         {
             try
             {
@@ -190,40 +193,47 @@ namespace get_link_manga
                     return match.Groups[1].Value;
                 }
             }
-            return "https://truyenqqko.com"; // Default fallback
+            return "https://nettruyen.gg"; // Default fallback
         }
 
-        private string GetTruyenqqPageUrl(string baseUrl, int page)
+        private string GetNettruyenPageUrl(string baseUrl, int page)
         {
             baseUrl = baseUrl.Trim();
             if (page == 1) return baseUrl;
 
-            try
+            // If there's already a query string, append/replace page parameter
+            if (baseUrl.Contains("?"))
             {
-                var uri = new Uri(baseUrl);
-                string path = uri.AbsolutePath;
-                path = Regex.Replace(path, @"/trang-\d+/?", "", RegexOptions.IgnoreCase);
-                path = path.TrimEnd('/');
-                
-                string newPath = $"{path}/trang-{page}";
-                var builder = new UriBuilder(uri)
+                try
                 {
-                    Path = newPath
-                };
-                return builder.Uri.ToString();
+                    var uri = new Uri(baseUrl);
+                    string query = uri.Query;
+                    if (Regex.IsMatch(query, @"[?&]page=\d+", RegexOptions.IgnoreCase))
+                    {
+                        query = Regex.Replace(query, @"([?&]page=)\d+", $"$1{page}", RegexOptions.IgnoreCase);
+                    }
+                    else
+                    {
+                        query += $"&page={page}";
+                    }
+                    var builder = new UriBuilder(uri) { Query = query.TrimStart('?') };
+                    return builder.Uri.ToString();
+                }
+                catch
+                {
+                    string cleanUrl = Regex.Replace(baseUrl, @"[?&]page=\d+", "", RegexOptions.IgnoreCase);
+                    char separator = cleanUrl.Contains("?") ? '&' : '?';
+                    return $"{cleanUrl}{separator}page={page}";
+                }
             }
-            catch
-            {
-                string cleanUrl = baseUrl;
-                cleanUrl = Regex.Replace(cleanUrl, @"/trang-\d+/?", "", RegexOptions.IgnoreCase);
-                cleanUrl = cleanUrl.TrimEnd('/');
-                return $"{cleanUrl}/trang-{page}";
-            }
+
+            // Otherwise, append page query param
+            return $"{baseUrl}?page={page}";
         }
 
-        private async void BtnTruyenqqFetchInfo_Click(object sender, RoutedEventArgs e)
+        private async void BtnNettruyenFetchInfo_Click(object sender, RoutedEventArgs e)
         {
-            string url = txtTruyenqqTagUrl.Text.Trim();
+            string url = txtNettruyenTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(url))
             {
                 MessageBox.Show("Vui lòng nhập URL hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -236,17 +246,17 @@ namespace get_link_manga
                 url = "https://" + url;
             }
 
-            btnTruyenqqFetchInfo.IsEnabled = false;
-            lblStatus.Text = "Đang phân tích trang truyenqq...";
+            btnNettruyenFetchInfo.IsEnabled = false;
+            lblStatus.Text = "Đang phân tích trang Nettruyen...";
             progressBar.IsIndeterminate = true;
-            TruyenqqLog($"Đang phân tích URL: {url}");
+            NettruyenLog($"Đang phân tích URL: {url}");
 
             try
             {
-                bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(url);
+                bool captchaOk = await SolveNettruyenCaptchaIfNeededAsync(url);
                 if (!captchaOk)
                 {
-                    TruyenqqLog("Không thể bypass Cloudflare. Hủy phân tích.");
+                    NettruyenLog("Không thể bypass Cloudflare. Hủy phân tích.");
                     lblStatus.Text = "Analysis failed (Cloudflare).";
                     return;
                 }
@@ -255,8 +265,7 @@ namespace get_link_manga
                 string html = await _httpClient.GetStringAsync(url);
                 
                 int maxPage = 1;
-                // Parse page patterns: /trang-420 or trang-420
-                var pageMatches = Regex.Matches(html, @"trang-(\d+)", RegexOptions.IgnoreCase);
+                var pageMatches = Regex.Matches(html, @"[?&]page=(\d+)", RegexOptions.IgnoreCase);
                 foreach (Match m in pageMatches)
                 {
                     if (int.TryParse(m.Groups[1].Value, out int pageNum))
@@ -264,66 +273,74 @@ namespace get_link_manga
                         if (pageNum > maxPage) maxPage = pageNum;
                     }
                 }
+                var trangMatches = Regex.Matches(html, @"trang-(\d+)", RegexOptions.IgnoreCase);
+                foreach (Match m in trangMatches)
+                {
+                    if (int.TryParse(m.Groups[1].Value, out int pageNum))
+                    {
+                        if (pageNum > maxPage) maxPage = pageNum;
+                    }
+                }
 
-                txtTruyenqqTotalPages.Text = maxPage.ToString();
-                txtTruyenqqPageTo.Text = maxPage.ToString();
+                txtNettruyenTotalPages.Text = maxPage.ToString();
+                txtNettruyenPageTo.Text = maxPage.ToString();
                 
-                TruyenqqLog($"Phân tích hoàn tất. Phát hiện tối đa {maxPage} trang.");
+                NettruyenLog($"Phân tích hoàn tất. Phát hiện tối đa {maxPage} trang.");
                 lblStatus.Text = $"Analysis complete. Found {maxPage} pages.";
             }
             catch (Exception ex)
             {
-                TruyenqqLog($"Lỗi khi phân tích: {ex.Message}");
-                txtTruyenqqTotalPages.Text = "1";
+                NettruyenLog($"Lỗi khi phân tích: {ex.Message}");
+                txtNettruyenTotalPages.Text = "1";
                 lblStatus.Text = "Analysis failed.";
             }
             finally
             {
-                btnTruyenqqFetchInfo.IsEnabled = true;
+                btnNettruyenFetchInfo.IsEnabled = true;
                 progressBar.IsIndeterminate = false;
             }
         }
 
-        private void TxtTruyenqqTotalPages_TextChanged(object sender, TextChangedEventArgs e)
+        private void TxtNettruyenTotalPages_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (txtTruyenqqPageTo != null && txtTruyenqqTotalPages != null)
+            if (txtNettruyenPageTo != null && txtNettruyenTotalPages != null)
             {
-                txtTruyenqqPageTo.Text = txtTruyenqqTotalPages.Text;
+                txtNettruyenPageTo.Text = txtNettruyenTotalPages.Text;
             }
         }
 
-        private async void BtnTruyenqqScrape_Click(object sender, RoutedEventArgs e)
+        private async void BtnNettruyenScrape_Click(object sender, RoutedEventArgs e)
         {
             if (_cts != null)
             {
                 _cts.Cancel();
-                btnTruyenqqScrape.Content = "CANCELLING...";
-                btnTruyenqqScrape.IsEnabled = false;
-                if (btnTruyenqqCrawlMore != null) btnTruyenqqCrawlMore.IsEnabled = false;
+                btnNettruyenScrape.Content = "CANCELLING...";
+                btnNettruyenScrape.IsEnabled = false;
+                if (btnNettruyenCrawlMore != null) btnNettruyenCrawlMore.IsEnabled = false;
                 return;
             }
-            await ScrapeTruyenqqAsync(clearExisting: true);
+            await ScrapeNettruyenAsync(clearExisting: true);
         }
 
-        private async void BtnTruyenqqCrawlMore_Click(object sender, RoutedEventArgs e)
+        private async void BtnNettruyenCrawlMore_Click(object sender, RoutedEventArgs e)
         {
             if (_cts != null)
             {
                 _cts.Cancel();
-                if (btnTruyenqqCrawlMore != null)
+                if (btnNettruyenCrawlMore != null)
                 {
-                    btnTruyenqqCrawlMore.Content = "CANCELLING...";
-                    btnTruyenqqCrawlMore.IsEnabled = false;
+                    btnNettruyenCrawlMore.Content = "CANCELLING...";
+                    btnNettruyenCrawlMore.IsEnabled = false;
                 }
-                btnTruyenqqScrape.IsEnabled = false;
+                btnNettruyenScrape.IsEnabled = false;
                 return;
             }
-            await ScrapeTruyenqqAsync(clearExisting: false);
+            await ScrapeNettruyenAsync(clearExisting: false);
         }
 
-        private async Task ScrapeTruyenqqAsync(bool clearExisting)
+        private async Task ScrapeNettruyenAsync(bool clearExisting)
         {
-            string baseUrl = txtTruyenqqTagUrl.Text.Trim();
+            string baseUrl = txtNettruyenTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(baseUrl))
             {
                 MessageBox.Show("Vui lòng nhập URL hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -336,13 +353,13 @@ namespace get_link_manga
                 baseUrl = "https://" + baseUrl;
             }
 
-            if (!int.TryParse(txtTruyenqqPageFrom.Text, out int pageFrom) || pageFrom < 1)
+            if (!int.TryParse(txtNettruyenPageFrom.Text, out int pageFrom) || pageFrom < 1)
             {
                 MessageBox.Show("Trang bắt đầu không hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            if (!int.TryParse(txtTruyenqqPageTo.Text, out int pageTo) || pageTo < pageFrom)
+            if (!int.TryParse(txtNettruyenPageTo.Text, out int pageTo) || pageTo < pageFrom)
             {
                 MessageBox.Show("Trang kết thúc không hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -351,13 +368,13 @@ namespace get_link_manga
             _cts = new CancellationTokenSource();
             CancellationToken token = _cts.Token;
 
-            btnTruyenqqScrape.Content = "STOP CRAWLER";
-            if (btnTruyenqqCrawlMore != null)
+            btnNettruyenScrape.Content = "STOP CRAWLER";
+            if (btnNettruyenCrawlMore != null)
             {
-                btnTruyenqqCrawlMore.Content = "STOP CRAWLER";
+                btnNettruyenCrawlMore.Content = "STOP CRAWLER";
             }
-            btnTruyenqqFetchInfo.IsEnabled = false;
-            lblStatus.Text = "Đang cào truyenqq...";
+            btnNettruyenFetchInfo.IsEnabled = false;
+            lblStatus.Text = "Đang cào Nettruyen...";
             progressBar.Value = 0;
 
             if (clearExisting)
@@ -370,7 +387,7 @@ namespace get_link_manga
                 lblLinkCount.Text = "0";
             }
 
-            TruyenqqLog($"Bắt đầu cào từ trang {pageFrom} đến {pageTo}...");
+            NettruyenLog($"Bắt đầu cào từ trang {pageFrom} đến {pageTo}...");
 
             try
             {
@@ -381,28 +398,25 @@ namespace get_link_manga
                 {
                     token.ThrowIfCancellationRequested();
 
-                    string pageUrl = GetTruyenqqPageUrl(baseUrl, page);
-                    TruyenqqLog($"Đang tải trang {page}: {pageUrl}");
+                    string pageUrl = GetNettruyenPageUrl(baseUrl, page);
+                    NettruyenLog($"Đang tải trang {page}: {pageUrl}");
 
-                    bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(pageUrl);
+                    bool captchaOk = await SolveNettruyenCaptchaIfNeededAsync(pageUrl);
                     if (!captchaOk)
                     {
-                        TruyenqqLog($"Không thể bypass Cloudflare cho trang {page}. Bỏ qua trang này.");
+                        NettruyenLog($"Không thể bypass Cloudflare cho trang {page}. Bỏ qua trang này.");
                         continue;
                     }
 
                     string html = await _httpClient.GetStringAsync(pageUrl);
                     
-                    // Match all <a> tags containing /truyen-tranh/ links, parent or child (chapter) links
+                    // Match <a> tags containing /truyen-tranh/ links
                     var viewMatches = Regex.Matches(html, @"<a\s+[^>]*?href=[""'](?<link>[^""']*?/truyen-tranh/[^""']+)[""'][^>]*>(?<content>[\s\S]*?)<\/a>", RegexOptions.IgnoreCase);
                     
                     int pageCount = 0;
-                    
-                    // Parse parent links first and find their latest chap from adjacent child links
-                    var pageParents = new System.Collections.Generic.List<GalleryItem>();
-                    var parentLatestChaps = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    var pageParents = new List<GalleryItem>();
+                    var parentLatestChaps = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-                    // First pass: extract all parents and trace adjacent chapter mappings
                     string lastParentUrl = null;
                     foreach (Match match in viewMatches)
                     {
@@ -411,14 +425,15 @@ namespace get_link_manga
                         if (!fullLink.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
                             !fullLink.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                         {
-                            string activeDomain = ExtractTruyenqqBaseUrl(pageUrl);
+                            string activeDomain = ExtractNettruyenBaseUrl(pageUrl);
                             fullLink = activeDomain + (fullLink.StartsWith("/") ? "" : "/") + fullLink;
                         }
                         fullLink = fullLink.TrimEnd('/');
 
-                        if (Regex.IsMatch(relativeLink, @"-chap(?:-|\b)", RegexOptions.IgnoreCase))
+                        // Detect if chapter link
+                        bool isChap = Regex.IsMatch(relativeLink, @"/(?:chuong|chap|chapter|c)-\d+", RegexOptions.IgnoreCase);
+                        if (isChap)
                         {
-                            // It's a chapter link. If we have a preceding parent, associate the chapter text.
                             if (lastParentUrl != null)
                             {
                                 string textVal = Regex.Replace(match.Groups["content"].Value, @"<[^>]+>", "").Trim();
@@ -443,7 +458,19 @@ namespace get_link_manga
                         }
                         else
                         {
-                            // It's a parent link
+                            // Parent Detail Page Link (Verify segment structure to make sure it's indeed the details page)
+                            // Segment 1 is /truyen-tranh/ and segment 2 is slug.
+                            try
+                            {
+                                var tempUri = new Uri(fullLink);
+                                var pathSegments = tempUri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                                if (pathSegments.Length != 2 || !pathSegments[0].Equals("truyen-tranh", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue; // Skip non-manga detail link structures
+                                }
+                            }
+                            catch { }
+
                             lastParentUrl = fullLink;
                             
                             string rawContent = match.Groups["content"].Value;
@@ -476,7 +503,7 @@ namespace get_link_manga
                         }
                     }
 
-                    // Apply the latest chap numbers and add to list
+                    // Apply latest chap numbers and add to list
                     foreach (var item in pageParents)
                     {
                         if (parentLatestChaps.TryGetValue(item.Link, out string latestChap))
@@ -492,7 +519,7 @@ namespace get_link_manga
                     progressBar.Value = progressPct;
                     lblStatus.Text = $"Searching page {page}/{pageTo} ({progressPct:0}%)";
                     lblLinkCount.Text = _scrapedItems.Count.ToString();
-                    TruyenqqLog($"Trang {page} hoàn tất. Tìm thấy {pageCount} liên kết mới.");
+                    NettruyenLog($"Trang {page} hoàn tất. Tìm thấy {pageCount} liên kết mới.");
                 }
 
                 // Sort items deterministically
@@ -504,36 +531,36 @@ namespace get_link_manga
                 foreach (var item in sortedItems) _scrapedItems.Add(item);
 
                 RecalculateDuplicates();
-                TruyenqqLog($"Cào dữ liệu hoàn tất! Tổng cộng thu thập được {_scrapedItems.Count} liên kết độc nhất.");
+                NettruyenLog($"Cào dữ liệu hoàn tất! Tổng cộng thu thập được {_scrapedItems.Count} liên kết độc nhất.");
                 lblStatus.Text = "Crawling completed successfully.";
                 lblLinkCount.Text = _scrapedItems.Count.ToString();
             }
             catch (OperationCanceledException)
             {
-                TruyenqqLog("Đã hủy cào theo yêu cầu người dùng.");
+                NettruyenLog("Đã hủy cào theo yêu cầu người dùng.");
                 lblStatus.Text = "Crawling cancelled.";
             }
             catch (Exception ex)
             {
-                TruyenqqLog($"Lỗi nghiêm trọng khi cào: {ex.Message}");
+                NettruyenLog($"Lỗi nghiêm trọng khi cào: {ex.Message}");
                 lblStatus.Text = "Crawling failed.";
             }
             finally
             {
                 _cts.Dispose();
                 _cts = null;
-                btnTruyenqqScrape.Content = "GET LINK";
-                btnTruyenqqScrape.IsEnabled = true;
-                if (btnTruyenqqCrawlMore != null)
+                btnNettruyenScrape.Content = "GET LINK";
+                btnNettruyenScrape.IsEnabled = true;
+                if (btnNettruyenCrawlMore != null)
                 {
-                    btnTruyenqqCrawlMore.Content = "GET MORE";
-                    btnTruyenqqCrawlMore.IsEnabled = true;
+                    btnNettruyenCrawlMore.Content = "GET MORE";
+                    btnNettruyenCrawlMore.IsEnabled = true;
                 }
-                btnTruyenqqFetchInfo.IsEnabled = true;
+                btnNettruyenFetchInfo.IsEnabled = true;
             }
         }
 
-        private void BtnTruyenqqPasteDirect_Click(object sender, RoutedEventArgs e)
+        private void BtnNettruyenPasteDirect_Click(object sender, RoutedEventArgs e)
         {
             var win = new DirectDownloadWindow(isNhentai: false);
             win.Owner = this;
@@ -541,16 +568,16 @@ namespace get_link_manga
             {
                 if (links != null && links.Any())
                 {
-                    await ImportTruyenqqDirectLinksAsync(links);
+                    await ImportNettruyenDirectLinksAsync(links);
                 }
             };
             win.Show();
         }
 
-        private async Task ImportTruyenqqDirectLinksAsync(System.Collections.Generic.List<string> links)
+        private async Task ImportNettruyenDirectLinksAsync(List<string> links)
         {
-            btnTruyenqqScrape.IsEnabled = false;
-            btnTruyenqqFetchInfo.IsEnabled = false;
+            btnNettruyenScrape.IsEnabled = false;
+            btnNettruyenFetchInfo.IsEnabled = false;
             if (btnStartDownload != null) btnStartDownload.IsEnabled = false;
             
             progressBar.Value = 0;
@@ -560,7 +587,7 @@ namespace get_link_manga
             int imported = 0;
             int failed = 0;
 
-            TruyenqqLog($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
+            NettruyenLog($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
             lblStatus.Text = $"Importing 0/{total} links...";
 
             try
@@ -581,16 +608,15 @@ namespace get_link_manga
                     {
                         if (_scrapedItems.Any(item => item.Link.Equals(link, StringComparison.OrdinalIgnoreCase)))
                         {
-                            TruyenqqLog($"[Import] Bỏ qua liên kết đã tồn tại: {link}");
+                            NettruyenLog($"[Import] Bỏ qua liên kết đã tồn tại: {link}");
                             imported++;
                             continue;
                         }
 
-                        // Try to scrape title from target page
-                        bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(link);
+                        bool captchaOk = await SolveNettruyenCaptchaIfNeededAsync(link);
                         if (!captchaOk)
                         {
-                            TruyenqqLog($"[Import] Không thể bypass Cloudflare cho: {link}");
+                            NettruyenLog($"[Import] Không thể bypass Cloudflare cho: {link}");
                             failed++;
                             continue;
                         }
@@ -618,15 +644,15 @@ namespace get_link_manga
                             });
                         });
 
-                        TruyenqqLog($"[Import {i + 1}/{total}] Thành công: {title}");
+                        NettruyenLog($"[Import {i + 1}/{total}] Thành công: {title}");
                         imported++;
                     }
                     catch (Exception ex)
                     {
-                        TruyenqqLog($"[Import] Lỗi xử lý link '{link}': {ex.Message}");
+                        NettruyenLog($"[Import] Lỗi xử lý link '{link}': {ex.Message}");
                         failed++;
 
-                        string fallbackTitle = "Fallback - Truyenqq - " + link.Split('/').Last();
+                        string fallbackTitle = "Fallback - Nettruyen - " + link.Split('/').Last();
                         Dispatcher.Invoke(() =>
                         {
                             _scrapedItems.Add(new GalleryItem
@@ -642,126 +668,63 @@ namespace get_link_manga
 
                     double pct = ((double)(i + 1) / total) * 100;
                     progressBar.Value = pct;
-                    lblLinkCount.Text = _scrapedItems.Count.ToString(); // real-time update
+                    lblLinkCount.Text = _scrapedItems.Count.ToString();
                 }
 
                 RecalculateDuplicates();
                 lblLinkCount.Text = _scrapedItems.Count.ToString();
-                TruyenqqLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
+                NettruyenLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
                 MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {
-                btnTruyenqqScrape.IsEnabled = true;
-                btnTruyenqqFetchInfo.IsEnabled = true;
+                btnNettruyenScrape.IsEnabled = true;
+                btnNettruyenFetchInfo.IsEnabled = true;
                 if (btnStartDownload != null) btnStartDownload.IsEnabled = true;
                 progressBar.Value = 100;
             }
         }
 
-        private async Task<byte[]> GetTruyenqqByteArrayWithRefererAsync(string url, string referer, CancellationToken token)
-        {
-            int delayMs = 600;
-            for (int attempt = 1; attempt <= 4; attempt++)
-            {
-                token.ThrowIfCancellationRequested();
-                try
-                {
-                    using (var request = new HttpRequestMessage(HttpMethod.Get, url))
-                    {
-                        request.Headers.Referrer = new Uri(referer);
-                        using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token))
-                        {
-                            response.EnsureSuccessStatusCode();
-                            return await response.Content.ReadAsByteArrayAsync();
-                        }
-                    }
-                }
-                catch (HttpRequestException ex) when (attempt < 4)
-                {
-                    Log($"[truyenqq] Thử tải lại ảnh do lỗi mạng: {ex.Message}. Chờ {delayMs}ms.");
-                    await Task.Delay(delayMs, token);
-                    delayMs = Math.Min(delayMs * 2, 6000);
-                }
-                catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < 4)
-                {
-                    Log($"[truyenqq] Thử tải lại ảnh do timeout. Chờ {delayMs}ms.");
-                    await Task.Delay(delayMs, token);
-                    delayMs = Math.Min(delayMs * 2, 6000);
-                }
-            }
-
-            throw new Exception($"Không thể tải ảnh truyenqq: {url}");
-        }
-
-        private string GetSafeChapterHtml(string html)
-        {
-            if (string.IsNullOrEmpty(html)) return html;
-
-            string[] commentIndicators = new[]
-            {
-                "class=\"comment-box\"",
-                "class=\"comment-wrapper\"",
-                "class=\"comment-holder\"",
-                "id=\"comment\"",
-                "id=\"truyenqq-comment\"",
-                "class=\"fb-comments\"",
-                "class=\"list-comment\"",
-                "class=\"list_comment\"",
-                "id=\"disqus_thread\"",
-                "class=\"comments\"",
-                "class=\"comment\"",
-                "id=\"comments\"",
-                "<!-- Bình luận -->",
-                "<!-- Bình luận"
-            };
-
-            int minIndex = html.Length;
-            foreach (var indicator in commentIndicators)
-            {
-                int index = html.IndexOf(indicator, StringComparison.OrdinalIgnoreCase);
-                if (index != -1 && index < minIndex)
-                {
-                    minIndex = index;
-                }
-            }
-
-            if (minIndex < html.Length)
-            {
-                return html.Substring(0, minIndex);
-            }
-            return html;
-        }
-
-        private async Task DownloadTruyenqqGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
+        private async Task DownloadNettruyenGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
         {
             string cleanLink = item.Link.TrimEnd('/');
-            string activeDomain = ExtractTruyenqqBaseUrl(cleanLink);
+            string activeDomain = ExtractNettruyenBaseUrl(cleanLink);
 
-            // Determine if parent link or child link
-            // Parent links contain /truyen-tranh/{slug}
-            // Child link contains /truyen-tranh/{slug}-{chapterSuffix}
             var uri = new Uri(cleanLink);
             var segments = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
-            if (segments.Length >= 2 && segments[0].Equals("truyen-tranh", StringComparison.OrdinalIgnoreCase))
+            // Detail Page segment pattern: /truyen-tranh/{slug}
+            // Chapter Page segment pattern: /truyen-tranh/{slug}/chuong-{num} or similar
+            bool isDetailPage = segments.Length == 2 && segments[0].Equals("truyen-tranh", StringComparison.OrdinalIgnoreCase);
+
+            if (isDetailPage)
             {
-                string slug = segments[1];
-                bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(cleanLink);
+                bool captchaOk = await SolveNettruyenCaptchaIfNeededAsync(cleanLink);
                 if (!captchaOk)
                 {
                     throw new Exception("Không thể vượt qua Cloudflare captcha.");
                 }
-                string html = await _httpClient.GetStringAsync(cleanLink);
+                
+                string html = "";
+                if (!string.IsNullOrEmpty(_lastCaptchaResolvedHtml))
+                {
+                    html = _lastCaptchaResolvedHtml;
+                    _lastCaptchaResolvedHtml = null; // Clear it
+                    Log("[nettruyen] Sử dụng HTML đã nạp đầy đủ từ trình duyệt giải captcha.");
+                }
+                else
+                {
+                    html = await _httpClient.GetStringAsync(cleanLink);
+                }
 
                 // Update manga title from <title> tag if available
                 var titleMatch = Regex.Match(html, @"<title>\s*(.*?)\s*</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
                 if (titleMatch.Success)
                 {
                     string rawTitle = WebUtility.HtmlDecode(titleMatch.Groups[1].Value).Trim();
-                    string[] commonSuffixes = { " - TruyệnQQ", " - TruyenQQ", " | TruyệnQQ", " | TruyenQQ" };
+                    string[] commonSuffixes = { " - NetTruyen", " - Nettruyen", " | NetTruyen", " | Nettruyen" };
                     foreach (var suffix in commonSuffixes)
                     {
                         if (rawTitle.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
@@ -772,18 +735,149 @@ namespace get_link_manga
                     item.Name = FormatGalleryTitle(rawTitle);
                 }
 
-                // Parent path (absolute path of the manga info page)
+                // Try to find story/comic ID to fetch full chapter list from AJAX service
+                string storyId = null;
+                var idMatch = Regex.Match(html, @"id=[""'](?:story_id|storyId|comicId)[""'][^>]*value=[""'\s]?(?<id>\d+)[""'\s]?", RegexOptions.IgnoreCase);
+                if (!idMatch.Success)
+                {
+                    idMatch = Regex.Match(html, @"value=[""'\s]?(?<id>\d+)[""'\s]?[^>]*id=[""'](?:story_id|storyId|comicId)[""']", RegexOptions.IgnoreCase);
+                }
+                if (!idMatch.Success)
+                {
+                    idMatch = Regex.Match(html, @"(?:story_id|storyId|comicId)\s*=\s*(?:[""']?(?<id>\d+)[""']?|\d+)", RegexOptions.IgnoreCase);
+                }
+                if (!idMatch.Success)
+                {
+                    idMatch = Regex.Match(html, @"data-id=[""'](?<id>\d+)[""']", RegexOptions.IgnoreCase);
+                }
+
+                if (idMatch.Success)
+                {
+                    storyId = idMatch.Groups["id"].Value;
+                }
+
+                string chapterListHtml = html;
+
+                if (!string.IsNullOrEmpty(storyId))
+                {
+                    bool loadedChapters = false;
+                    
+                    // Try ProcessChapterList first
+                    try
+                    {
+                        string ajaxUrl = $"{activeDomain}/Comic/Services/ComicService.asmx/ProcessChapterList";
+                        using (var request = new HttpRequestMessage(HttpMethod.Post, ajaxUrl))
+                        {
+                            request.Headers.Referrer = new Uri(cleanLink);
+                            request.Content = new StringContent($"{{\"comicId\":{storyId}}}", System.Text.Encoding.UTF8, "application/json");
+                            
+                            using (var response = await _httpClient.SendAsync(request))
+                            {
+                                if (response.IsSuccessStatusCode)
+                                {
+                                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                                    var dMatch = Regex.Match(jsonResponse, @"""d""\s*:\s*""(?<htmlContent>.*?)""\s*}", RegexOptions.Singleline);
+                                    if (dMatch.Success)
+                                    {
+                                        string unescapedHtml = Regex.Unescape(dMatch.Groups["htmlContent"].Value);
+                                        if (!string.IsNullOrWhiteSpace(unescapedHtml) && unescapedHtml.Length > 100)
+                                        {
+                                            chapterListHtml = unescapedHtml;
+                                            Log($"[nettruyen] Tải thành công danh sách toàn bộ chương qua ProcessChapterList (ID: {storyId}).");
+                                            loadedChapters = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"[nettruyen] Lỗi khi lấy chương qua ProcessChapterList: {ex.Message}. Thử GetListChapter...");
+                    }
+
+                    // Fallback to GetListChapter
+                    if (!loadedChapters)
+                    {
+                        try
+                        {
+                            string ajaxUrl = $"{activeDomain}/Comic/Services/ComicService.asmx/GetListChapter";
+                            using (var request = new HttpRequestMessage(HttpMethod.Post, ajaxUrl))
+                            {
+                                request.Headers.Referrer = new Uri(cleanLink);
+                                request.Content = new StringContent($"{{\"id\":{storyId}}}", System.Text.Encoding.UTF8, "application/json");
+                                
+                                using (var response = await _httpClient.SendAsync(request))
+                                {
+                                    if (response.IsSuccessStatusCode)
+                                    {
+                                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                                        var dMatch = Regex.Match(jsonResponse, @"""d""\s*:\s*""(?<htmlContent>.*?)""\s*}", RegexOptions.Singleline);
+                                        if (dMatch.Success)
+                                        {
+                                            string unescapedHtml = Regex.Unescape(dMatch.Groups["htmlContent"].Value);
+                                            if (!string.IsNullOrWhiteSpace(unescapedHtml))
+                                            {
+                                                chapterListHtml = unescapedHtml;
+                                                Log($"[nettruyen] Tải thành công danh sách toàn bộ chương qua GetListChapter (ID: {storyId}).");
+                                                loadedChapters = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"[nettruyen] Lỗi khi lấy toàn bộ chương qua GetListChapter: {ex.Message}. Sẽ dùng danh sách chương mặc định.");
+                        }
+                    }
+                }
+
+                // If AJAX failed (chapterListHtml is still the original html), use WebView2 to click "Xem thêm" 
+                if (chapterListHtml == html && (html.Contains("Xem thêm") || html.Contains("xem thêm") || html.Contains("show-more")))
+                {
+                    Log("[nettruyen] AJAX không lấy được danh sách chương. Mở trình duyệt để click 'Xem thêm'...");
+                    
+                    string webViewHtml = null;
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        var captchaWin = new CaptchaWindow(cleanLink)
+                        {
+                            Owner = this,
+                            Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ..."
+                        };
+
+                        if (captchaWin.ShowDialog() == true && !string.IsNullOrEmpty(captchaWin.ResolvedHtml))
+                        {
+                            webViewHtml = captchaWin.ResolvedHtml;
+                            
+                            // Also update cookies from the window
+                            var resolvedUri = captchaWin.ResolvedUri ?? new Uri(cleanLink);
+                            var resolvedCookies = captchaWin.ResolvedCookies.GetCookies(resolvedUri);
+                            foreach (Cookie cookie in resolvedCookies)
+                            {
+                                _cookieContainer.Add(resolvedUri, cookie);
+                            }
+                        }
+                    });
+                    
+                    if (!string.IsNullOrEmpty(webViewHtml))
+                    {
+                        chapterListHtml = webViewHtml;
+                        Log("[nettruyen] Đã lấy được HTML đầy đủ từ trình duyệt sau khi click 'Xem thêm'.");
+                    }
+                }
+
                 string parentPath = uri.AbsolutePath.TrimEnd('/');
                 string escapedPath = Regex.Escape(parentPath);
 
-                // Scrape child links: href=".../truyen-tranh/slug-{suffix}"
-                // IMPORTANT: only match links where the suffix starts with "chap"
-                // to avoid matching other non-chapter links that share the same slug prefix.
-                string pattern = @"href=[""'](?<link>[^""']*?" + escapedPath + @"-chap(?:[^""'\s?#]*)?)[""']";
-                var matches = Regex.Matches(html, pattern, RegexOptions.IgnoreCase);
+                // Scrape child links from the full chapter HTML
+                string pattern = @"href=[""'](?<link>[^""']*?" + escapedPath + @"/(?:chuong|chap|chapter|c|chuong-tranh|chuong-doc)-\d+[^""'\s?#]*)[""']";
+                var matches = Regex.Matches(chapterListHtml, pattern, RegexOptions.IgnoreCase);
 
-                var chapterLinks = new System.Collections.Generic.List<string>();
-                var seenChapters = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var chapterLinks = new List<string>();
+                var seenChapters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (Match m in matches)
                 {
@@ -804,20 +898,18 @@ namespace get_link_manga
 
                 if (chapterLinks.Count == 0)
                 {
-                    // Check if it's actually a direct chapter page (was matched as details page but has no chapters inside)
-                    // Some chapters might have similar pattern, but if no sub-chapters are found, let's treat it as a direct chapter page download
-                    Log($"[truyenqq] Không tìm thấy chương nào trong '{item.Name}'. Thử tải trực tiếp trang này như một chapter...");
-                    await DownloadTruyenqqChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
+                    Log($"[nettruyen] Không tìm thấy chương nào trong '{item.Name}'. Thử tải trực tiếp trang này như một chapter...");
+                    await DownloadNettruyenChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
                     return;
                 }
 
-                // Sort chapters in ascending order so that oldest chapters (like Chap 1) are downloaded first.
+                // Sort chapters in ascending order
                 chapterLinks = chapterLinks.OrderBy(ParseChapterNumber).ToList();
 
                 var totalFoundChapters = chapterLinks.Count;
                 if (chapterFilter != null)
                 {
-                    var filtered = new System.Collections.Generic.List<string>();
+                    var filtered = new List<string>();
                     foreach (var link in chapterLinks)
                     {
                         double chapNum = ParseChapterNumber(link);
@@ -829,7 +921,7 @@ namespace get_link_manga
                     chapterLinks = filtered;
                     if (chapterLinks.Count == 0)
                     {
-                        Log($"[truyenqq] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
+                        Log($"[nettruyen] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
                         if (queueItem != null)
                         {
                             Dispatcher.Invoke(() => {
@@ -841,7 +933,7 @@ namespace get_link_manga
                     }
                 }
 
-                Log($"[truyenqq] Phát hiện {chapterLinks.Count} chương cho truyện '{item.Name}'. Bắt đầu tải lần lượt...");
+                Log($"[nettruyen] Phát hiện {chapterLinks.Count} chương cho truyện '{item.Name}'. Bắt đầu tải lần lượt...");
 
                 if (queueItem != null)
                 {
@@ -856,10 +948,10 @@ namespace get_link_manga
                 {
                     token.ThrowIfCancellationRequested();
                     string chapLink = chapterLinks[idx];
-                    Log($"[truyenqq] Đang tải chương {idx + 1}/{chapterLinks.Count}: {chapLink}");
+                    Log($"[nettruyen] Đang tải chương {idx + 1}/{chapterLinks.Count}: {chapLink}");
 
                     var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
-                    await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
+                    await DownloadNettruyenChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
 
                     if (queueItem != null)
                     {
@@ -879,13 +971,13 @@ namespace get_link_manga
             else
             {
                 // Direct Chapter page
-                await DownloadTruyenqqChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
+                await DownloadNettruyenChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
             }
         }
 
-        private async Task DownloadTruyenqqChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
+        private async Task DownloadNettruyenChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
         {
-            bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(item.Link);
+            bool captchaOk = await SolveNettruyenCaptchaIfNeededAsync(item.Link);
             if (!captchaOk)
             {
                 throw new Exception("Không thể vượt qua Cloudflare captcha.");
@@ -900,7 +992,7 @@ namespace get_link_manga
             if (titleMatch.Success)
             {
                 string rawTitle = WebUtility.HtmlDecode(titleMatch.Groups[1].Value).Trim();
-                string[] commonSuffixes = { " - TruyệnQQ", " - TruyenQQ", " | TruyệnQQ", " | TruyenQQ" };
+                string[] commonSuffixes = { " - NetTruyen", " - Nettruyen", " | NetTruyen", " | Nettruyen" };
                 foreach (var suffix in commonSuffixes)
                 {
                     if (rawTitle.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
@@ -909,17 +1001,13 @@ namespace get_link_manga
                     }
                 }
 
-                // TruyenQQ formats title: "Tên Truyện - Tên Chương"
-                // Some manga names have " - " in them so we must find the RIGHTMOST
-                // chapter-like part (containing chap/chương/chapter keyword) as the separator.
                 string[] parts = rawTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length >= 2)
                 {
-                    // Find the rightmost part that looks like a chapter label
                     int chapPartIdx = -1;
                     for (int i = parts.Length - 1; i >= 1; i--)
                     {
-                        if (Regex.IsMatch(parts[i], @"\b(chap|chương|chapter)\b", RegexOptions.IgnoreCase))
+                        if (Regex.IsMatch(parts[i], @"\b(chap|chương|chapter|chuong)\b", RegexOptions.IgnoreCase))
                         {
                             chapPartIdx = i;
                             break;
@@ -927,13 +1015,11 @@ namespace get_link_manga
                     }
                     if (chapPartIdx > 0)
                     {
-                        // Join everything before the chapter part as manga title
                         mangaTitle = string.Join(" - ", parts, 0, chapPartIdx).Trim();
                         chapterTitle = string.Join(" - ", parts, chapPartIdx, parts.Length - chapPartIdx).Trim();
                     }
                     else
                     {
-                        // Fallback: last part is chapter
                         mangaTitle = string.Join(" - ", parts, 0, parts.Length - 1).Trim();
                         chapterTitle = parts[parts.Length - 1].Trim();
                     }
@@ -944,53 +1030,50 @@ namespace get_link_manga
                 }
             }
 
-            // Clean Manga Title: remove "chương mới nhất \d+" suffix
+            // Clean Manga Title
             string cleanManga = mangaTitle;
-            cleanManga = Regex.Replace(cleanManga, @"\s+(?:chương|Chương)\s+mới\s+nhất\s+\d+.*", "", RegexOptions.IgnoreCase);
+            cleanManga = Regex.Replace(cleanManga, @"\s+(?:chương|Chương|chap|Chap)\s+mới\s+nhất\s+\d+.*", "", RegexOptions.IgnoreCase);
             cleanManga = cleanManga.Trim();
             if (string.IsNullOrEmpty(cleanManga))
             {
-                cleanManga = "Unknown Manga";
+                cleanManga = "Unknown Nettruyen Manga";
             }
 
-            // Clean Chapter Title: extract the exact chapter string (e.g. chap 2)
+            // Clean Chapter Title
             string cleanChapter = chapterTitle;
-            var chapMatch = Regex.Match(chapterTitle, @"(chap|chương|chapter)\s*(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
+            var chapMatch = Regex.Match(chapterTitle, @"(chap|chương|chapter|chuong)\s*(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
             if (chapMatch.Success)
             {
                 string type = chapMatch.Groups[1].Value.ToLower();
-                if (type == "chapter") type = "chap";
+                if (type == "chapter" || type == "chuong") type = "chap";
                 string num = chapMatch.Groups["num"].Value;
                 cleanChapter = $"{type} {num}";
             }
             else
             {
-                cleanChapter = Regex.Replace(cleanChapter, @"\s+Tiếng\s+Việt\s+TruyenQQ.*", "", RegexOptions.IgnoreCase);
+                cleanChapter = Regex.Replace(cleanChapter, @"\s+Tiếng\s+Việt\s+NetTruyen.*", "", RegexOptions.IgnoreCase);
                 cleanChapter = cleanChapter.Trim();
             }
 
             string safeManga = GetSafePathName(cleanManga);
             string safeChapter = GetSafePathName(cleanChapter);
             
-            // Save inside "truyenqq" root directory
-            string unmergedPath = Path.Combine(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}");
-            string mergedPath = Path.Combine(rootFolder, "truyenqq", safeManga, safeChapter);
+            string unmergedPath = Path.Combine(rootFolder, "nettruyen", $"{safeManga}-{safeChapter}");
+            string mergedPath = Path.Combine(rootFolder, "nettruyen", safeManga, safeChapter);
             string targetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-            string tempFolder = Path.Combine(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}-tmp");
+            string tempFolder = Path.Combine(rootFolder, "nettruyen", $"{safeManga}-{safeChapter}-tmp");
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
-            // Isolate images using Safe Chapter HTML (no comments section)
+            // Isolate images inside reading area
             string safeHtml = GetSafeChapterHtml(html);
-
-            // Isolate reading container contents to avoid ads/logo/header images
             int startIndex = -1;
             string[] containerMarkers = new[]
             {
-                "class=\"story-see-content\"",
-                "class=\"chapter_content\"",
-                "class=\"chapter-content\"",
+                "class=\"page-chapter\"",
                 "class=\"reading-detail\"",
+                "class=\"chapter-content\"",
+                "class=\"box-chap\"",
                 "id=\"chapter_content\""
             };
 
@@ -1011,7 +1094,7 @@ namespace get_link_manga
             }
 
             // Extract all image URLs from isolated reading area
-            var imageUrls = new System.Collections.Generic.List<string>();
+            var imageUrls = new List<string>();
             var imgTags = Regex.Matches(contentArea, @"<img\s+[^>]*>", RegexOptions.IgnoreCase);
             
             foreach (Match imgTag in imgTags)
@@ -1045,7 +1128,7 @@ namespace get_link_manga
                 {
                     imgUrl = imgUrl.Trim();
                     
-                    // Filter out header, menu, ads, UI and avatar images
+                    // Filter out UI and advertisement images
                     if (imgUrl.EndsWith("logo.png", StringComparison.OrdinalIgnoreCase) ||
                         imgUrl.EndsWith("avatar.jpg", StringComparison.OrdinalIgnoreCase) ||
                         imgUrl.Contains("avatar") ||
@@ -1061,11 +1144,14 @@ namespace get_link_manga
                         continue;
                     }
 
-                    // Normalize relative links
-                    if (!imgUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
-                        !imgUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                    if (imgUrl.StartsWith("//"))
                     {
-                        string activeDomain = ExtractTruyenqqBaseUrl(item.Link);
+                        imgUrl = "https:" + imgUrl;
+                    }
+                    else if (!imgUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
+                             !imgUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string activeDomain = ExtractNettruyenBaseUrl(item.Link);
                         imgUrl = activeDomain + (imgUrl.StartsWith("/") ? "" : "/") + imgUrl;
                     }
 
@@ -1081,17 +1167,17 @@ namespace get_link_manga
                 throw new Exception($"Không thể tìm thấy hình ảnh nào của chương truyện '{chapterTitle}' để tải xuống.");
             }
 
-            // Connection count settings
+            // Connection settings
             int maxThreads = 4;
             Dispatcher.Invoke(() =>
             {
-                if (cmbConnections.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem && int.TryParse(selectedItem.Content.ToString(), out int val))
+                if (cmbConnections.SelectedItem is ComboBoxItem selectedItem && int.TryParse(selectedItem.Content.ToString(), out int val))
                 {
                     maxThreads = val;
                 }
             });
 
-            Log($"[truyenqq] Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
+            Log($"[nettruyen] Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
             if (queueItem != null && !isParentQueue)
             {
@@ -1104,7 +1190,7 @@ namespace get_link_manga
 
             using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
-                var tasks = new System.Collections.Generic.List<Task>();
+                var tasks = new List<Task>();
                 int completedPages = 0;
                 object lockObj = new object();
 
@@ -1168,6 +1254,7 @@ namespace get_link_manga
 
                             try
                             {
+                                // Pass item.Link (which is the chapter page URL) as the Referer to bypass hotlinking protection
                                 await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isTruyenqq: true);
                             }
                             catch (Exception ex)
@@ -1178,7 +1265,7 @@ namespace get_link_manga
                                     {
                                         queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl);
                                     }
-                                    Log($"[truyenqq] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");
+                                    Log($"[nettruyen] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");
                                 }
                             }
 
@@ -1226,11 +1313,11 @@ namespace get_link_manga
                         Directory.Move(tempFolder, currentTargetFolder);
                     }
                 }
-                Log($"[truyenqq] Tải xong chapter '{cleanChapter}' của truyện '{cleanManga}'.");
+                Log($"[nettruyen] Tải xong chapter '{cleanChapter}' của truyện '{cleanManga}'.");
             }
             catch (Exception ex)
             {
-                Log($"[truyenqq] [Lỗi] Không thể di chuyển thư mục tạm: {ex.Message}");
+                Log($"[nettruyen] [Lỗi] Không thể di chuyển thư mục tạm: {ex.Message}");
             }
             finally
             {
@@ -1239,46 +1326,6 @@ namespace get_link_manga
 
             // Check for missing files
             ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem, cleanChapter);
-        }
-
-        private double ParseChapterNumber(string url)
-        {
-            if (string.IsNullOrEmpty(url)) return 0.0;
-            var match = Regex.Match(url, @"(?:chap|chapter|chuong|trang)[^\d]*(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
-            if (match.Success && double.TryParse(match.Groups["num"].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double num))
-            {
-                return num;
-            }
-            return 0.0;
-        }
-
-        private static void ParseMangaNameAndLatestChap(string rawTitle, out string mangaName, out string latestChap)
-        {
-            mangaName = rawTitle;
-            latestChap = "";
-            string[] commonSuffixes = { " - TruyệnQQ", " - TruyenQQ", " | TruyệnQQ", " | TruyenQQ" };
-            foreach (var suffix in commonSuffixes)
-            {
-                if (mangaName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                    mangaName = mangaName.Substring(0, mangaName.Length - suffix.Length).Trim();
-            }
-            var match = Regex.Match(mangaName, @"^(?<manga>.*?)\s+(?<indicator>chương mới nhất|chap mới nhất|chương|chap|chapter)\s+(?<val>[\d\w\.-]+(?:[\s\S]*?))$", RegexOptions.IgnoreCase);
-            if (match.Success)
-            {
-                mangaName = match.Groups["manga"].Value.Trim();
-                latestChap = match.Groups["indicator"].Value.Trim() + " " + match.Groups["val"].Value.Trim();
-            }
-        }
-
-        private double ParseChapterNumberFromText(string text)
-        {
-            if (string.IsNullOrEmpty(text)) return 0.0;
-            var match = Regex.Match(text, @"(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
-            if (match.Success && double.TryParse(match.Groups["num"].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double num))
-            {
-                return num;
-            }
-            return 0.0;
         }
     }
 }

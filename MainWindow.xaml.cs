@@ -87,10 +87,8 @@ public MainWindow()
             }
         }
 
-        // Scroll a TextBox to the end WITHOUT needing keyboard focus.
-        // WPF TextBox.ScrollToEnd() only works when the TextBox has focus;
-        // accessing the inner ScrollViewer directly bypasses that restriction.
-        private static void ScrollTextBoxToEnd(System.Windows.Controls.TextBox textBox)
+        // Scroll a TextBox/RichTextBox to the end WITHOUT needing keyboard focus.
+        private static void ScrollTextBoxToEnd(TextBoxBase textBox)
         {
             if (textBox == null) return;
             // Walk visual tree to find the embedded ScrollViewer
@@ -101,8 +99,6 @@ public MainWindow()
             }
             else
             {
-                // Fallback: move caret then call ScrollToEnd
-                textBox.CaretIndex = textBox.Text.Length;
                 textBox.ScrollToEnd();
             }
         }
@@ -135,32 +131,77 @@ public MainWindow()
             return null;
         }
 
+        private bool IsErrorMessage(string message)
+        {
+            if (string.IsNullOrEmpty(message)) return false;
+            string lower = message.ToLower();
+            return lower.Contains("lỗi") ||
+                   lower.Contains("error") ||
+                   lower.Contains("exception") ||
+                   lower.Contains("failed") ||
+                   lower.Contains("timeout") ||
+                   lower.Contains("forbidden") ||
+                   lower.Contains("too many request") ||
+                   lower.Contains("thất bại") ||
+                   lower.Contains("không thể") ||
+                   lower.Contains("403") ||
+                   lower.Contains("503") ||
+                   lower.Contains("429");
+        }
+
+        private void AppendLogLine(System.Windows.Controls.RichTextBox rtb, string text, bool isError)
+        {
+            if (rtb == null) return;
+            var brush = isError ? System.Windows.Media.Brushes.Red : null;
+            
+            var paragraph = rtb.Document.Blocks.LastBlock as System.Windows.Documents.Paragraph;
+            if (paragraph == null)
+            {
+                paragraph = new System.Windows.Documents.Paragraph { Margin = new Thickness(0) };
+                rtb.Document.Blocks.Add(paragraph);
+            }
+            
+            var run = new System.Windows.Documents.Run(text);
+            if (brush != null)
+            {
+                run.Foreground = brush;
+            }
+            paragraph.Inlines.Add(run);
+        }
+
         internal void Log(string message)
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
+                bool isError = IsErrorMessage(message);
                 if (txtLog != null)
                 {
-                    txtLog.AppendText(logLine);
+                    AppendLogLine(txtLog, logLine, isError);
                     if (chkAutoScrollLog?.IsChecked == true)
                         ScrollTextBoxToEnd(txtLog);
                 }
                 if (txtNhentaiLog != null)
                 {
-                    txtNhentaiLog.AppendText(logLine);
+                    AppendLogLine(txtNhentaiLog, logLine, isError);
                     if (chkAutoScrollNhentaiLog?.IsChecked == true)
                         ScrollTextBoxToEnd(txtNhentaiLog);
                 }
                 if (txtTruyenqqLog != null)
                 {
-                    txtTruyenqqLog.AppendText(logLine);
+                    AppendLogLine(txtTruyenqqLog, logLine, isError);
                     if (chkAutoScrollTruyenqqLog?.IsChecked == true)
                         ScrollTextBoxToEnd(txtTruyenqqLog);
                 }
+                if (txtNettruyenLog != null)
+                {
+                    AppendLogLine(txtNettruyenLog, logLine, isError);
+                    if (chkAutoScrollNettruyenLog?.IsChecked == true)
+                        ScrollTextBoxToEnd(txtNettruyenLog);
+                }
                 if (txtHentaieraLog != null)
                 {
-                    txtHentaieraLog.AppendText(logLine);
+                    AppendLogLine(txtHentaieraLog, logLine, isError);
                     if (chkAutoScrollHentaieraLog?.IsChecked == true)
                         ScrollTextBoxToEnd(txtHentaieraLog);
                 }
@@ -217,8 +258,9 @@ public MainWindow()
             {
                 foreach (var item in targetItems)
                 {
-                    await RetryDownloadQueueItemErrorsAsync(item);
+                    await RetryDownloadQueueItemErrorsAsync(item, showMessageBox: false);
                 }
+                MessageBox.Show($"Hoàn tất tải lại lỗi cho {targetItems.Count} truyện!", "Retry Completed", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -232,27 +274,32 @@ public MainWindow()
 
         private void BtnClearLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtLog != null) txtLog.Clear();
+            if (txtLog != null) txtLog.Document.Blocks.Clear();
         }
 
         private void BtnClearNhentaiLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtNhentaiLog != null) txtNhentaiLog.Clear();
+            if (txtNhentaiLog != null) txtNhentaiLog.Document.Blocks.Clear();
         }
 
         private void BtnClearViHentaiLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtViHentaiLog != null) txtViHentaiLog.Clear();
+            if (txtViHentaiLog != null) txtViHentaiLog.Document.Blocks.Clear();
         }
 
         private void BtnClearTruyenqqLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtTruyenqqLog != null) txtTruyenqqLog.Clear();
+            if (txtTruyenqqLog != null) txtTruyenqqLog.Document.Blocks.Clear();
+        }
+
+        private void BtnClearNettruyenLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (txtNettruyenLog != null) txtNettruyenLog.Document.Blocks.Clear();
         }
 
         private void BtnClearHentaieraLog_Click(object sender, RoutedEventArgs e)
         {
-            if (txtHentaieraLog != null) txtHentaieraLog.Clear();
+            if (txtHentaieraLog != null) txtHentaieraLog.Document.Blocks.Clear();
         }
 
         private void BtnCaptcha_Click(object sender, RoutedEventArgs e)
@@ -263,6 +310,7 @@ public MainWindow()
             else if (btn == btnNhentaiFetchCaptcha) url = txtNhentaiTagUrl.Text;
             else if (btn == btnViHentaiFetchCaptcha) url = txtViHentaiTagUrl.Text;
             else if (btn == btnTruyenqqFetchCaptcha) url = txtTruyenqqTagUrl.Text;
+            else if (btn == btnNettruyenFetchCaptcha) url = txtNettruyenTagUrl.Text;
             else if (btnHentaieraFetchCaptcha != null && btn == btnHentaieraFetchCaptcha) url = txtHentaieraTagUrl.Text;
 
             if (string.IsNullOrWhiteSpace(url))
@@ -339,6 +387,7 @@ public MainWindow()
 
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _activeTempFolders = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         private int _currentMaxParallelBooks = 2;
+        private DynamicSemaphore _activeBookSemaphore;
 
         internal void RegisterTempFolder(string path)
         {

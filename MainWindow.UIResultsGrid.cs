@@ -30,8 +30,12 @@ namespace get_link_manga
                     {
                         if (item is GalleryItem galleryItem)
                         {
-                            return galleryItem.Name.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                   galleryItem.Link.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0;
+                            return (galleryItem.Name != null && galleryItem.Name.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                   (galleryItem.Link != null && galleryItem.Link.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                   (galleryItem.Status != null && galleryItem.Status.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                   (galleryItem.CurrentProcess != null && galleryItem.CurrentProcess.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                   (galleryItem.DownloadingChapter != null && galleryItem.DownloadingChapter.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                   (galleryItem.DownloadingPageProgress != null && galleryItem.DownloadingPageProgress.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0);
                         }
                         return false;
                     };
@@ -362,6 +366,32 @@ namespace get_link_manga
                 return;
             }
             await StartDownloadProcessAsync(items);
+        }
+
+        private void StatusCell_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is GalleryItem item)
+            {
+                if (!string.IsNullOrEmpty(item.Status))
+                {
+                    txtFilter.Text = item.Status;
+                }
+            }
+        }
+
+        private void ProcessCell_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is GalleryItem item)
+            {
+                if (!string.IsNullOrEmpty(item.CurrentProcess))
+                {
+                    txtFilter.Text = item.CurrentProcess;
+                }
+                else if (!string.IsNullOrEmpty(item.DownloadingChapter))
+                {
+                    txtFilter.Text = item.DownloadingChapter;
+                }
+            }
         }
     }
 }
