@@ -47,8 +47,8 @@ namespace get_link_manga
                                 html.Contains("cf-turnstile") || 
                                 html.Contains("Turnstile") || 
                                 html.Contains("Just a moment...") ||
-                                html.Contains("thá»±c hiá»‡n xÃ¡c minh báº£o máº­t") ||
-                                html.Contains("xÃ¡c minh báº¡n khÃ´ng pháº£i lÃ  bot"))
+                                html.Contains("thực hiện xác minh bảo mật") ||
+                                html.Contains("xác minh bạn không phải là bot"))
                             {
                                 return true;
                             }
@@ -135,7 +135,7 @@ namespace get_link_manga
 
                 _isCaptchaWindowActive = true;
                 _isDownloadPaused = true;
-                TruyenqqLog("PhÃ¡t hiá»‡n thá»­ thÃ¡ch Cloudflare / Captcha. Táº¡m dá»«ng táº£i vÃ  Ä‘ang má»Ÿ trÃ¬nh duyá»‡t giáº£i tá»± Ä‘á»™ng...");
+                TruyenqqLog("Phát hiện thử thách Cloudflare / Captcha. Tạm dừng tải và đang mở trình duyệt giải tự động...");
 
                 bool solved = false;
                 try
@@ -186,7 +186,7 @@ namespace get_link_manga
 
                 if (solved)
                 {
-                    TruyenqqLog("Giáº£i captcha thÃ nh cÃ´ng. Tiáº¿p tá»¥c táº£i...");
+                    TruyenqqLog("Giải captcha thành công. Tiếp tục tải...");
                     _isDownloadPaused = false;
                     return true;
                 }
@@ -234,7 +234,7 @@ namespace get_link_manga
 
             if (!Uri.TryCreate(normalized, UriKind.Absolute, out Uri uri) || !IsTruyenqqHost(uri.Host))
             {
-                throw new ArgumentException("URL pháº£i thuá»™c domain truyenqq*.com.");
+                throw new ArgumentException("URL phải thuộc domain truyenqq*.com.");
             }
 
             var builder = new UriBuilder(uri)
@@ -270,7 +270,7 @@ namespace get_link_manga
 
             return Regex.Replace(
                 rawTitle.Trim(),
-                @"\s*[\-\|]\s*truy[eá»‡]nqq[a-zA-Z0-9-]*.*$",
+                @"\s*[\-\|]\s*truy[eệ]nqq[a-zA-Z0-9-]*.*$",
                 "",
                 RegexOptions.IgnoreCase).Trim();
         }
@@ -331,12 +331,12 @@ namespace get_link_manga
             string rawUrl = txtTruyenqqTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(rawUrl))
             {
-                MessageBox.Show("Vui lÃ²ng nháº­p URL há»£p lá»‡.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Vui lòng nhập URL hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             btnTruyenqqFetchInfo.IsEnabled = false;
-            lblStatus.Text = "Äang phÃ¢n tÃ­ch trang truyenqq...";
+            lblStatus.Text = "Đang phân tích trang truyenqq...";
             progressBar.IsIndeterminate = true;
 
 
@@ -348,7 +348,7 @@ namespace get_link_manga
                 bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(normalizedUrl);
                 if (!captchaOk)
                 {
-                    TruyenqqLog("KhÃ´ng thá»ƒ bypass Cloudflare. Há»§y phÃ¢n tÃ­ch.");
+                    TruyenqqLog("Không thể bypass Cloudflare. Hủy phân tích.");
                     lblStatus.Text = "Analysis failed (Cloudflare).";
                     return;
                 }
@@ -373,12 +373,12 @@ namespace get_link_manga
                 txtTruyenqqTotalPages.Text = maxPage.ToString();
                 txtTruyenqqPageTo.Text = maxPage.ToString();
                 
-                TruyenqqLog($"PhÃ¢n tÃ­ch hoÃ n táº¥t. PhÃ¡t hiá»‡n tá»‘i Ä‘a {maxPage} trang.");
+                TruyenqqLog($"Phân tích hoàn tất. Phát hiện tối đa {maxPage} trang.");
                 lblStatus.Text = $"Analysis complete. Found {maxPage} pages.";
             }
             catch (Exception ex)
             {
-                TruyenqqLog($"Lá»—i khi phÃ¢n tÃ­ch: {ex.Message}");
+                TruyenqqLog($"Lỗi khi phân tích: {ex.Message}");
                 txtTruyenqqTotalPages.Text = "1";
                 lblStatus.Text = "Analysis failed.";
             }
@@ -431,19 +431,19 @@ namespace get_link_manga
             string rawBaseUrl = txtTruyenqqTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(rawBaseUrl))
             {
-                MessageBox.Show("Vui lÃ²ng nháº­p URL há»£p lá»‡.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Vui lòng nhập URL hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             if (!int.TryParse(txtTruyenqqPageFrom.Text, out int pageFrom) || pageFrom < 1)
             {
-                MessageBox.Show("Trang báº¯t Ä‘áº§u khÃ´ng há»£p lá»‡.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Trang bắt đầu không hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             if (!int.TryParse(txtTruyenqqPageTo.Text, out int pageTo) || pageTo < pageFrom)
             {
-                MessageBox.Show("Trang káº¿t thÃºc khÃ´ng há»£p lá»‡.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Trang kết thúc không hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -456,7 +456,7 @@ namespace get_link_manga
                 btnTruyenqqCrawlMore.Content = "STOP CRAWLER";
             }
             btnTruyenqqFetchInfo.IsEnabled = false;
-            lblStatus.Text = "Äang cÃ o truyenqq...";
+            lblStatus.Text = "Đang cào truyenqq...";
             progressBar.Value = 0;
 
             if (clearExisting)
@@ -469,7 +469,7 @@ namespace get_link_manga
                 lblLinkCount.Text = "0";
             }
 
-            TruyenqqLog($"Báº¯t Ä‘áº§u cÃ o tá»« trang {pageFrom} Ä‘áº¿n {pageTo}...");
+            TruyenqqLog($"Bắt đầu cào từ trang {pageFrom} đến {pageTo}...");
 
             try
             {
@@ -483,12 +483,12 @@ namespace get_link_manga
                     token.ThrowIfCancellationRequested();
 
                     string pageUrl = GetTruyenqqPageUrl(baseUrl, page);
-                    TruyenqqLog($"Äang táº£i trang {page}: {pageUrl}");
+                    TruyenqqLog($"Đang tải trang {page}: {pageUrl}");
 
                     bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(pageUrl);
                     if (!captchaOk)
                     {
-                        TruyenqqLog($"KhÃ´ng thá»ƒ bypass Cloudflare cho trang {page}. Bá» qua trang nÃ y.");
+                        TruyenqqLog($"Không thể bypass Cloudflare cho trang {page}. Bỏ qua trang này.");
                         continue;
                     }
 
@@ -594,7 +594,7 @@ namespace get_link_manga
                     progressBar.Value = progressPct;
                     lblStatus.Text = $"Searching page {page}/{pageTo} ({progressPct:0}%)";
                     lblLinkCount.Text = _scrapedItems.Count.ToString();
-                    TruyenqqLog($"Trang {page} hoÃ n táº¥t. TÃ¬m tháº¥y {pageCount} liÃªn káº¿t má»›i.");
+                    TruyenqqLog($"Trang {page} hoàn tất. Tìm thấy {pageCount} liên kết mới.");
                 }
 
                 // Sort items deterministically
@@ -606,18 +606,18 @@ namespace get_link_manga
                 foreach (var item in sortedItems) _scrapedItems.Add(item);
 
                 RecalculateDuplicates();
-                TruyenqqLog($"CÃ o dá»¯ liá»‡u hoÃ n táº¥t! Tá»•ng cá»™ng thu tháº­p Ä‘Æ°á»£c {_scrapedItems.Count} liÃªn káº¿t Ä‘á»™c nháº¥t.");
+                TruyenqqLog($"Cào dữ liệu hoàn tất! Tổng cộng thu thập được {_scrapedItems.Count} liên kết độc nhất.");
                 lblStatus.Text = "Crawling completed successfully.";
                 lblLinkCount.Text = _scrapedItems.Count.ToString();
             }
             catch (OperationCanceledException)
             {
-                TruyenqqLog("ÄÃ£ há»§y cÃ o theo yÃªu cáº§u ngÆ°á»i dÃ¹ng.");
+                TruyenqqLog("Đã hủy cào theo yêu cầu người dùng.");
                 lblStatus.Text = "Crawling cancelled.";
             }
             catch (Exception ex)
             {
-                TruyenqqLog($"Lá»—i nghiÃªm trá»ng khi cÃ o: {ex.Message}");
+                TruyenqqLog($"Lỗi nghiêm trọng khi cào: {ex.Message}");
                 lblStatus.Text = "Crawling failed.";
             }
             finally
@@ -662,7 +662,7 @@ namespace get_link_manga
             int imported = 0;
             int failed = 0;
 
-            TruyenqqLog($"[Import] Báº¯t Ä‘áº§u phÃ¢n tÃ­ch vÃ  nháº­p {total} liÃªn káº¿t trá»±c tiáº¿p...");
+            TruyenqqLog($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
             lblStatus.Text = $"Importing 0/{total} links...";
 
             try
@@ -677,7 +677,7 @@ namespace get_link_manga
                         link = NormalizeTruyenqqUrl(link);
                     }
 
-                    lblStatus.Text = $"[{i + 1}/{total}] Äang phÃ¢n tÃ­ch: {link}";
+                    lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
 
                     try
                     {
@@ -685,7 +685,7 @@ namespace get_link_manga
                         lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
                         if (_scrapedItems.Any(item => item.Link.Equals(link, StringComparison.OrdinalIgnoreCase)))
                         {
-                            TruyenqqLog($"[Import] Bá» qua liÃªn káº¿t Ä‘Ã£ tá»“n táº¡i: {link}");
+                            TruyenqqLog($"[Import] Bỏ qua liên kết đã tồn tại: {link}");
                             imported++;
                             continue;
                         }
@@ -694,7 +694,7 @@ namespace get_link_manga
                         bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(link);
                         if (!captchaOk)
                         {
-                            TruyenqqLog($"[Import] KhÃ´ng thá»ƒ bypass Cloudflare cho: {link}");
+                            TruyenqqLog($"[Import] Không thể bypass Cloudflare cho: {link}");
                             failed++;
                             continue;
                         }
@@ -723,12 +723,12 @@ namespace get_link_manga
                             });
                         });
 
-                        TruyenqqLog($"[Import {i + 1}/{total}] ThÃ nh cÃ´ng: {title}");
+                        TruyenqqLog($"[Import {i + 1}/{total}] Thành công: {title}");
                         imported++;
                     }
                     catch (Exception ex)
                     {
-                        TruyenqqLog($"[Import] Lá»—i xá»­ lÃ½ link '{link}': {ex.Message}");
+                        TruyenqqLog($"[Import] Lỗi xử lý link '{link}': {ex.Message}");
                         failed++;
 
                         string fallbackTitle = "Fallback - Truyenqq - " + link.Split('/').Last();
@@ -752,10 +752,10 @@ namespace get_link_manga
 
                 RecalculateDuplicates();
                 lblLinkCount.Text = _scrapedItems.Count.ToString();
-                TruyenqqLog($"[Import] Nháº­p hoÃ n táº¥t! ThÃ nh cÃ´ng: {imported}, Lá»—i/Fallback: {failed}.");
+                TruyenqqLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"ÄÃ£ nháº­p thÃ nh cÃ´ng {total} Ä‘Æ°á»ng dáº«n!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {
@@ -786,19 +786,19 @@ namespace get_link_manga
                 }
                 catch (HttpRequestException ex) when (attempt < 4)
                 {
-                    Log($"[truyenqq] Thá»­ táº£i láº¡i áº£nh do lá»—i máº¡ng: {ex.Message}. Chá» {delayMs}ms.");
+                    Log($"[truyenqq] Thử tải lại ảnh do lỗi mạng: {ex.Message}. Chờ {delayMs}ms.");
                     await Task.Delay(delayMs, token);
                     delayMs = Math.Min(delayMs * 2, 6000);
                 }
                 catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < 4)
                 {
-                    Log($"[truyenqq] Thá»­ táº£i láº¡i áº£nh do timeout. Chá» {delayMs}ms.");
+                    Log($"[truyenqq] Thử tải lại ảnh do timeout. Chờ {delayMs}ms.");
                     await Task.Delay(delayMs, token);
                     delayMs = Math.Min(delayMs * 2, 6000);
                 }
             }
 
-            throw new Exception($"KhÃ´ng thá»ƒ táº£i áº£nh truyenqq: {url}");
+            throw new Exception($"Không thể tải ảnh truyenqq: {url}");
         }
 
         private string GetSafeChapterHtml(string html)
@@ -819,8 +819,8 @@ namespace get_link_manga
                 "class=\"comments\"",
                 "class=\"comment\"",
                 "id=\"comments\"",
-                "<!-- BÃ¬nh luáº­n -->",
-                "<!-- BÃ¬nh luáº­n"
+                "<!-- Bình luận -->",
+                "<!-- Bình luận"
             };
 
             int minIndex = html.Length;
@@ -857,7 +857,7 @@ namespace get_link_manga
                 bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(cleanLink);
                 if (!captchaOk)
                 {
-                    throw new Exception("KhÃ´ng thá»ƒ vÆ°á»£t qua Cloudflare captcha.");
+                    throw new Exception("Không thể vượt qua Cloudflare captcha.");
                 }
                 cleanLink = ResolveTruyenqqRequestUrl(cleanLink);
                 string html = await _httpClient.GetStringAsync(cleanLink);
@@ -867,7 +867,7 @@ namespace get_link_manga
                 if (titleMatch.Success)
                 {
                     string rawTitle = WebUtility.HtmlDecode(titleMatch.Groups[1].Value).Trim();
-                    string[] commonSuffixes = { " - Truyá»‡nQQ", " - TruyenQQ", " | Truyá»‡nQQ", " | TruyenQQ" };
+                    string[] commonSuffixes = { " - TruyenQQ", " - TruyenQQ", " | TruyenQQ", " | TruyenQQ" };
                     foreach (var suffix in commonSuffixes)
                     {
                         if (rawTitle.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
@@ -913,7 +913,7 @@ namespace get_link_manga
                 {
                     // Check if it's actually a direct chapter page (was matched as details page but has no chapters inside)
                     // Some chapters might have similar pattern, but if no sub-chapters are found, let's treat it as a direct chapter page download
-                    Log($"[truyenqq] KhÃ´ng tÃ¬m tháº¥y chÆ°Æ¡ng nÃ o trong '{item.Name}'. Thá»­ táº£i trá»±c tiáº¿p trang nÃ y nhÆ° má»™t chapter...");
+                    Log($"[truyenqq] Không tìm thấy chương nào trong '{item.Name}'. Thử tải trực tiếp trang này như một chapter...");
                     await DownloadTruyenqqChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
                     return;
                 }
@@ -936,19 +936,19 @@ namespace get_link_manga
                     chapterLinks = filtered;
                     if (chapterLinks.Count == 0)
                     {
-                        Log($"[truyenqq] KhÃ´ng cÃ³ chÆ°Æ¡ng nÃ o trÃ¹ng khá»›p vá»›i bá»™ lá»c Ä‘Ã£ chá»n trong tá»•ng sá»‘ {totalFoundChapters} chÆ°Æ¡ng cá»§a '{item.Name}'.");
+                        Log($"[truyenqq] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
                         if (queueItem != null)
                         {
                             Dispatcher.Invoke(() => {
                                 queueItem.Status = "Completed";
-                                queueItem.CurrentProcess = "KhÃ´ng cÃ³ chÆ°Æ¡ng trÃ¹ng khá»›p bá»™ lá»c";
+                                queueItem.CurrentProcess = "Không có chương trùng khớp bộ lọc";
                             });
                         }
                         return;
                     }
                 }
 
-                Log($"[truyenqq] PhÃ¡t hiá»‡n {chapterLinks.Count} chÆ°Æ¡ng cho truyá»‡n '{item.Name}'. Báº¯t Ä‘áº§u táº£i láº§n lÆ°á»£t...");
+                Log($"[truyenqq] Phát hiện {chapterLinks.Count} chương cho truyện '{item.Name}'. Bắt đầu tải lần lượt...");
 
                 if (queueItem != null)
                 {
@@ -963,7 +963,7 @@ namespace get_link_manga
                 {
                     token.ThrowIfCancellationRequested();
                     string chapLink = chapterLinks[idx];
-                    Log($"[truyenqq] Äang táº£i chÆ°Æ¡ng {idx + 1}/{chapterLinks.Count}: {chapLink}");
+                    Log($"[truyenqq] Đang tải chương {idx + 1}/{chapterLinks.Count}: {chapLink}");
 
                     var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
                     await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
@@ -997,7 +997,7 @@ namespace get_link_manga
             bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(item.Link);
             if (!captchaOk)
             {
-                throw new Exception("KhÃ´ng thá»ƒ vÆ°á»£t qua Cloudflare captcha.");
+                throw new Exception("Không thể vượt qua Cloudflare captcha.");
             }
             item.Link = ResolveTruyenqqRequestUrl(item.Link);
             string html = await _httpClient.GetStringAsync(item.Link);
@@ -1010,7 +1010,7 @@ namespace get_link_manga
             if (titleMatch.Success)
             {
                 string rawTitle = WebUtility.HtmlDecode(titleMatch.Groups[1].Value).Trim();
-                string[] commonSuffixes = { " - Truyá»‡nQQ", " - TruyenQQ", " | Truyá»‡nQQ", " | TruyenQQ" };
+                string[] commonSuffixes = { " - TruyenQQ", " - TruyenQQ", " | TruyenQQ", " | TruyenQQ" };
                 foreach (var suffix in commonSuffixes)
                 {
                     if (rawTitle.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
@@ -1019,7 +1019,7 @@ namespace get_link_manga
                     }
                 }
 
-                // TruyenQQ formats title: "TÃªn Truyá»‡n - TÃªn ChÆ°Æ¡ng"
+                // TruyenQQ formats title: "Tên Truyện - Tên Chương"
                 // Some manga names have " - " in them so we must find the RIGHTMOST
                 // chapter-like part (containing chap/chÆ°Æ¡ng/chapter keyword) as the separator.
                 string[] parts = rawTitle.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
@@ -1054,9 +1054,9 @@ namespace get_link_manga
                 }
             }
 
-            // Clean Manga Title: remove "chÆ°Æ¡ng má»›i nháº¥t \d+" suffix
+            // Clean Manga Title: remove "chương mới nhất \d+" suffix
             string cleanManga = mangaTitle;
-            cleanManga = Regex.Replace(cleanManga, @"\s+(?:chÆ°Æ¡ng|ChÆ°Æ¡ng)\s+má»›i\s+nháº¥t\s+\d+.*", "", RegexOptions.IgnoreCase);
+            cleanManga = Regex.Replace(cleanManga, @"\s+(?:chương|Chương)\s+mới\s+nhất\s+\d+.*", "", RegexOptions.IgnoreCase);
             cleanManga = cleanManga.Trim();
             if (string.IsNullOrEmpty(cleanManga))
             {
@@ -1075,7 +1075,7 @@ namespace get_link_manga
             }
             else
             {
-                cleanChapter = Regex.Replace(cleanChapter, @"\s+Tiáº¿ng\s+Viá»‡t\s+TruyenQQ.*", "", RegexOptions.IgnoreCase);
+                cleanChapter = Regex.Replace(cleanChapter, @"\s+Tiếng\s+Việt\s+TruyenQQ.*", "", RegexOptions.IgnoreCase);
                 cleanChapter = cleanChapter.Trim();
             }
 
@@ -1187,7 +1187,7 @@ namespace get_link_manga
 
             if (imageUrls.Count == 0)
             {
-                throw new Exception($"KhÃ´ng thá»ƒ tÃ¬m tháº¥y hÃ¬nh áº£nh nÃ o cá»§a chÆ°Æ¡ng truyá»‡n '{chapterTitle}' Ä‘á»ƒ táº£i xuá»‘ng.");
+                throw new Exception($"Không thể tìm thấy hình ảnh nào của chương truyện '{chapterTitle}' để tải xuống.");
             }
 
             // Connection count settings
@@ -1200,7 +1200,7 @@ namespace get_link_manga
                 }
             });
 
-            Log($"[truyenqq] Báº¯t Ä‘áº§u táº£i {imageUrls.Count} trang cá»§a chapter '{chapterTitle}' vá»›i {maxThreads} káº¿t ná»‘i song song...");
+            Log($"[truyenqq] Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
             if (queueItem != null && !isParentQueue)
             {
@@ -1287,7 +1287,7 @@ namespace get_link_manga
                                     {
                                         queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl);
                                     }
-                                    Log($"[truyenqq] Lá»—i táº£i trang {index + 1} cá»§a chapter '{cleanChapter}': {ex.Message}");
+                                    Log($"[truyenqq] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");
                                 }
                             }
 
@@ -1337,11 +1337,11 @@ namespace get_link_manga
                 }
 
                 await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
-                Log($"[truyenqq] Táº£i xong chapter '{cleanChapter}' cá»§a truyá»‡n '{cleanManga}'.");
+                Log($"[truyenqq] Tải xong chapter '{cleanChapter}' của truyện '{cleanManga}'.");
             }
             catch (Exception ex)
             {
-                Log($"[truyenqq] [Lá»—i] KhÃ´ng thá»ƒ di chuyá»ƒn thÆ° má»¥c táº¡m: {ex.Message}");
+                Log($"[truyenqq] [Lỗi] Không thể di chuyển thư mục tạm: {ex.Message}");
             }
             finally
             {
@@ -1370,16 +1370,16 @@ namespace get_link_manga
             latestChap = "";
             mangaName = Regex.Replace(
                 mangaName,
-                @"\s*[\-\|]\s*truy[eá»‡]nqq[a-zA-Z0-9-]*.*$",
+                @"\s*[\-\|]\s*truy[eệ]nqq[a-zA-Z0-9-]*.*$",
                 "",
                 RegexOptions.IgnoreCase).Trim();
-            string[] commonSuffixes = { " - Truyá»‡nQQ", " - TruyenQQ", " | Truyá»‡nQQ", " | TruyenQQ" };
+            string[] commonSuffixes = { " - TruyenQQ", " - TruyenQQ", " | TruyenQQ", " | TruyenQQ" };
             foreach (var suffix in commonSuffixes)
             {
                 if (mangaName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
                     mangaName = mangaName.Substring(0, mangaName.Length - suffix.Length).Trim();
             }
-            var match = Regex.Match(mangaName, @"^(?<manga>.*?)\s+(?<indicator>chÆ°Æ¡ng má»›i nháº¥t|chap má»›i nháº¥t|chÆ°Æ¡ng|chap|chapter)\s+(?<val>[\d\w\.-]+(?:[\s\S]*?))$", RegexOptions.IgnoreCase);
+            var match = Regex.Match(mangaName, @"^(?<manga>.*?)\s+(?<indicator>chương mới nhất|chap mới nhất|chương|chap|chapter)\s+(?<val>[\d\w\.-]+(?:[\s\S]*?))$", RegexOptions.IgnoreCase);
             if (match.Success)
             {
                 mangaName = match.Groups["manga"].Value.Trim();
