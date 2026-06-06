@@ -266,8 +266,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -398,8 +398,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -537,8 +537,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -672,8 +672,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -756,7 +756,7 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                                <Button Grid.Column="1" Name="btnLogFilter" Content="ðŸ”Ž" Click="BtnLogFilter_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="28" FontSize="10" Padding="0" ToolTip="FILTER" Tag="main">
+                                                <Button Grid.Column="1" Name="btnLogFilter" Content="🔎" Click="BtnLogFilter_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="28" FontSize="10" Padding="0" ToolTip="FILTER" Tag="main">
                                                     <Button.ContextMenu>
                                                         <ContextMenu>
                                                             <MenuItem Header="ALL" Tag="All" IsCheckable="True" IsChecked="True" Click="LogFilterMenuItem_Click"/>
@@ -815,8 +815,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -974,8 +974,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="ðŸ“œ HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="3" Content="ðŸ“Œ BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="25" FontSize="10" Padding="8,0" VerticalAlignment="Center"/>
                                         </Grid>
 
                                         <!-- Target URL -->
@@ -1443,7 +1443,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <Button Content="ðŸŒ" 
+                                            <Button Content="🌐" 
                                                     Tag="{Binding Link}" 
                                                     Click="BtnOpenLinkInRow_Click"
                                                     Width="30" Height="28" Margin="2,0"

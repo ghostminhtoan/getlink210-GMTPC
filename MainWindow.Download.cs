@@ -58,7 +58,7 @@ namespace get_link_manga
 
             if (!ShellFolderLauncher.TryOpenFolder(path, out string openError))
             {
-                MessageBox.Show($"KhÃ´ng thá»ƒ má»Ÿ thÆ° má»¥c: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Không thể mở thư mục: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
