@@ -367,7 +367,7 @@ namespace get_link_manga
                 {
                     _truyenqqPreferredBaseUrl = null;
                 }
-                Log("�� x�a cookie v� kh?i t?o l?i phi�n captcha.");
+                Log("Đã xóa cookie và khởi tạo lại phiên captcha.");
             }
             catch (Exception ex)
             {
@@ -393,7 +393,7 @@ namespace get_link_manga
             {
                 _scrapedItems.Remove(item);
             }
-            Log($"�� x�a {toRemove.Count} truy?n ho�n th�nh kh?i danh s�ch.");
+            Log($"Đã xóa {toRemove.Count} truyện hoàn thành khỏi danh sách.");
             lblLinkCount.Text = _scrapedItems.Count.ToString();
         }
 
