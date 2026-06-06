@@ -21,6 +21,7 @@ namespace get_link_manga
         private static readonly HttpClient _httpClient;
         private static readonly SemaphoreSlim _captchaSemaphore = new SemaphoreSlim(1, 1);
         private static volatile bool _isCaptchaWindowActive = false;
+        internal string _truyenqqPreferredBaseUrl;
         private CancellationTokenSource _cts;
         private int _detectedMaxPage = 1;
         private bool _usePagePathSegment = false;

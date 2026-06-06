@@ -69,9 +69,15 @@ namespace get_link_manga
         internal async Task<bool> SolveTruyenqqCaptchaIfNeededAsync(string testUrl)
         {
             bool isBlocked = await CheckIfTruyenqqBlockedAsync(testUrl);
-            if (!isBlocked)
+            if (!isBlocked && !string.IsNullOrWhiteSpace(_truyenqqPreferredBaseUrl))
             {
                 return true; // Not blocked
+            }
+
+            if (!isBlocked && string.IsNullOrWhiteSpace(_truyenqqPreferredBaseUrl))
+            {
+                // First-time setup: force one captcha pass so we can learn the active domain.
+                isBlocked = true;
             }
 
             if (_isCaptchaWindowActive)
@@ -115,6 +121,7 @@ namespace get_link_manga
                         {
                             var originalUri = new Uri(testUrl);
                             var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
+                            _truyenqqPreferredBaseUrl = $"{resolvedUri.Scheme}://{resolvedUri.Host}";
 
                             // Add cookies for resolvedUri
                             var resolvedCookies = captchaWin.ResolvedCookies.GetCookies(resolvedUri);
@@ -205,6 +212,14 @@ namespace get_link_manga
                 Fragment = ""
             };
 
+            if (!string.IsNullOrWhiteSpace(_truyenqqPreferredBaseUrl) &&
+                Uri.TryCreate(_truyenqqPreferredBaseUrl, UriKind.Absolute, out Uri preferredBase))
+            {
+                builder.Scheme = preferredBase.Scheme;
+                builder.Host = preferredBase.Host;
+                builder.Port = preferredBase.Port;
+            }
+
             string path = builder.Path ?? "/";
             path = Regex.Replace(path, @"/{2,}", "/");
             if (path.Length > 1)
@@ -232,6 +247,11 @@ namespace get_link_manga
 
         private string ExtractTruyenqqBaseUrl(string url)
         {
+            if (!string.IsNullOrWhiteSpace(_truyenqqPreferredBaseUrl))
+            {
+                return _truyenqqPreferredBaseUrl.TrimEnd('/');
+            }
+
             try
             {
                 var uri = new Uri(NormalizeTruyenqqUrl(url));
@@ -279,8 +299,6 @@ namespace get_link_manga
         private async void BtnTruyenqqFetchInfo_Click(object sender, RoutedEventArgs e)
         {
             string rawUrl = txtTruyenqqTagUrl.Text.Trim();
-            string previewUrl = rawUrl;
-            string url = previewUrl;
             if (string.IsNullOrEmpty(rawUrl))
             {
                 MessageBox.Show("Vui lòng nhập URL hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -290,13 +308,13 @@ namespace get_link_manga
             btnTruyenqqFetchInfo.IsEnabled = false;
             lblStatus.Text = "Đang phân tích trang truyenqq...";
             progressBar.IsIndeterminate = true;
-            TruyenqqLog($"Đang phân tích URL: {url}");
+
 
             try
             {
                 string normalizedUrl = NormalizeTruyenqqUrl(rawUrl);
                 txtTruyenqqTagUrl.Text = normalizedUrl;
-            TruyenqqLog($"Äang phÃ¢n tÃ­ch URL: {previewUrl}");
+                TruyenqqLog($"�ang ph�n t�ch URL: {normalizedUrl}");
                 bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(normalizedUrl);
                 if (!captchaOk)
                 {
@@ -789,7 +807,7 @@ namespace get_link_manga
 
         private async Task DownloadTruyenqqGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
         {
-            string cleanLink = item.Link.TrimEnd('/');
+            string cleanLink = NormalizeTruyenqqUrl(item.Link);
             string activeDomain = ExtractTruyenqqBaseUrl(cleanLink);
 
             // Determine if parent link or child link
@@ -938,6 +956,8 @@ namespace get_link_manga
 
         private async Task DownloadTruyenqqChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
         {
+            item.Link = NormalizeTruyenqqUrl(item.Link);
+
             bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(item.Link);
             if (!captchaOk)
             {
@@ -1342,3 +1362,4 @@ namespace get_link_manga
         }
     }
 }
+
