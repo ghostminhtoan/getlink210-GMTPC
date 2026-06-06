@@ -9,7 +9,7 @@
             <Color x:Key="CyberpunkDarkColor">#0a0d14</Color>
             <Color x:Key="CyberpunkCardColor">#121622</Color>
             <Color x:Key="CyberpunkCyanColor">#00f0ff</Color>
-            <Color x:Key="CyberpunkPinkColor">#ff007f</Color>
+            <Color x:Key="CyberpunkPinkColor">#ff00ea</Color>
             <Color x:Key="CyberpunkYellowColor">#ffe600</Color>
             <Color x:Key="CyberpunkBorderColor">#1f293d</Color>
 
