@@ -208,33 +208,19 @@ namespace get_link_manga
             }
         }
 
-        private void BtnLogFilter_Click(object sender, RoutedEventArgs e)
+        internal void SetMainLogErrorOnly(bool errorOnly)
         {
-            if (sender is Button button && button.ContextMenu != null)
-            {
-                string key = button.Tag as string;
-                SyncLogFilterMenu(button.ContextMenu, key);
-                button.ContextMenu.PlacementTarget = button;
-                button.ContextMenu.IsOpen = true;
-            }
+            SetLogFilter("main", errorOnly ? LogFilterMode.Error : LogFilterMode.All);
         }
 
-        private void LogFilterMenuItem_Click(object sender, RoutedEventArgs e)
+        private void ChkErrorOnlyLog_Checked(object sender, RoutedEventArgs e)
         {
-            if (!(sender is MenuItem menuItem))
-            {
-                return;
-            }
+            SetMainLogErrorOnly(true);
+        }
 
-            if (!(menuItem.Parent is ContextMenu menu) || !(menu.PlacementTarget is Button button))
-            {
-                return;
-            }
-
-            string key = button.Tag as string;
-            string selectedMode = menuItem.Tag as string;
-            SetLogFilter(key, string.Equals(selectedMode, "Error", StringComparison.OrdinalIgnoreCase) ? LogFilterMode.Error : LogFilterMode.All);
-            SyncLogFilterMenu(menu, key);
+        private void ChkErrorOnlyLog_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SetMainLogErrorOnly(false);
         }
     }
 }

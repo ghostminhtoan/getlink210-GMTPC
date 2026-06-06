@@ -155,10 +155,17 @@ namespace get_link_manga
             }
         }
 
-        private void BtnRowResume_Click(object sender, RoutedEventArgs e)
+        private async void BtnRowResume_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is GalleryItem item)
             {
+                if (_downloadCts == null && (item.IsPaused || string.Equals(item.Status, "Paused", StringComparison.OrdinalIgnoreCase) || string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Log($"[Local Actions] Restarting saved download for '{item.Name}'");
+                    await StartDownloadProcessAsync(new System.Collections.Generic.List<GalleryItem> { item }, preserveExistingState: true);
+                    return;
+                }
+
                 item.IsPaused = false;
                 item.Status = "Downloading";
                 Log($"[Local Actions] Resumed download for '{item.Name}'");

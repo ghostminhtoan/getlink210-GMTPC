@@ -87,9 +87,23 @@ namespace get_link_manga
             await StartDownloadProcessAsync(itemsToDownload);
         }
 
-        private void BtnPauseDownload_Click(object sender, RoutedEventArgs e)
+        private async void BtnPauseDownload_Click(object sender, RoutedEventArgs e)
         {
-            if (_downloadCts == null) return;
+            if (_downloadCts == null)
+            {
+                var itemsToResume = _scrapedItems
+                    .Where(item => item.IsPaused || string.Equals(item.Status, "Paused", StringComparison.OrdinalIgnoreCase) || string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (!itemsToResume.Any())
+                {
+                    return;
+                }
+
+                Log($"[Local Actions] Resuming {itemsToResume.Count} saved paused item(s)...");
+                await StartDownloadProcessAsync(itemsToResume, preserveExistingState: true);
+                return;
+            }
 
             if (_isDownloadPaused)
             {
@@ -147,7 +161,7 @@ namespace get_link_manga
             }
         }
 
-        internal async Task StartDownloadProcessAsync(System.Collections.Generic.List<GalleryItem> itemsToDownload)
+        internal async Task StartDownloadProcessAsync(System.Collections.Generic.List<GalleryItem> itemsToDownload, bool preserveExistingState = false)
         {
             if (_downloadCts != null)
             {
@@ -227,15 +241,29 @@ namespace get_link_manga
                     item.SourceDomain = domain;
                     double num = ExtractNumber(item.LinkCount);
                     item.TotalChapters = num > 0 ? (int)Math.Ceiling(num) : 1;
-                    item.CompletedChapters = 0;
-                    item.Status = "Queued";
-                    item.CurrentProcess = "Waiting...";
-                    item.ErrorCount = 0;
                     item.DownloadPath = downloadRoot;
-                    item.ProgressPercent = 0;
-                    item.IsPaused = false;
-                    item.IsStopped = false;
-                    item.Errors.Clear();
+
+                    if (!preserveExistingState)
+                    {
+                        item.CompletedChapters = 0;
+                        item.Status = "Queued";
+                        item.CurrentProcess = "Waiting...";
+                        item.ErrorCount = 0;
+                        item.ProgressPercent = 0;
+                        item.IsPaused = false;
+                        item.IsStopped = false;
+                        item.Errors.Clear();
+                    }
+                    else
+                    {
+                        item.Status = "Downloading";
+                        item.IsPaused = false;
+                        item.IsStopped = false;
+                        if (string.IsNullOrWhiteSpace(item.CurrentProcess))
+                        {
+                            item.CurrentProcess = "Resuming...";
+                        }
+                    }
                 });
             }
 

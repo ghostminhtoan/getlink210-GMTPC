@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.ComponentModel;
+using System.Windows.Input;
 
 namespace get_link_manga
 {
@@ -70,6 +71,11 @@ namespace get_link_manga
                 StyleComboBoxPopup(cmbNhentaiSort);
                 StyleComboBoxPopup(cmbConnections);
                 StyleComboBoxPopup(cmbMultiDownload);
+
+                CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, WindowSave_Executed));
+                CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, WindowOpen_Executed));
+                InputBindings.Add(new KeyBinding(ApplicationCommands.Save, new KeyGesture(Key.S, ModifierKeys.Control)));
+                InputBindings.Add(new KeyBinding(ApplicationCommands.Open, new KeyGesture(Key.O, ModifierKeys.Control)));
 
                 var view = ResultsView;
                 if (view != null && view.SortDescriptions.Count == 0)
@@ -421,6 +427,16 @@ namespace get_link_manga
         {
             // Bỏ việc tự động xóa thư mục tạm khi dừng/huỷ tải để hỗ trợ tải tiếp phần còn dở dang
             Log("[Cleanup] Giữ lại các thư mục tạm chứa dữ liệu tải dở để hỗ trợ resume tải tiếp.");
+        }
+
+        private void WindowSave_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            BtnSave_Click(sender, new RoutedEventArgs());
+        }
+
+        private void WindowOpen_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            BtnLoad_Click(sender, new RoutedEventArgs());
         }
     }
 }
