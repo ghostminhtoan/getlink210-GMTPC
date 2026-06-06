@@ -336,7 +336,7 @@ namespace get_link_manga
             }
 
             btnTruyenqqFetchInfo.IsEnabled = false;
-            lblStatus.Text = "�ang ph�n t�ch trang truyenqq...";
+            lblStatus.Text = "Đang phân tích trang truyenqq...";
             progressBar.IsIndeterminate = true;
 
 
@@ -344,11 +344,11 @@ namespace get_link_manga
             {
                 string normalizedUrl = ResolveTruyenqqRequestUrl(rawUrl);
                 txtTruyenqqTagUrl.Text = normalizedUrl;
-                TruyenqqLog($"�ang ph�n t�ch URL: {normalizedUrl}");
+                TruyenqqLog($"Đang phân tích URL: {normalizedUrl}");
                 bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(normalizedUrl);
                 if (!captchaOk)
                 {
-                    TruyenqqLog("Kh�ng th? bypass Cloudflare. H?y ph�n t�ch.");
+                    TruyenqqLog("Không thể bypass Cloudflare. Hủy phân tích.");
                     lblStatus.Text = "Analysis failed (Cloudflare).";
                     return;
                 }
@@ -373,12 +373,12 @@ namespace get_link_manga
                 txtTruyenqqTotalPages.Text = maxPage.ToString();
                 txtTruyenqqPageTo.Text = maxPage.ToString();
                 
-                TruyenqqLog($"Ph�n t�ch ho�n t?t. Ph�t hi?n t?i da {maxPage} trang.");
+                TruyenqqLog($"Phân tích hoàn tất. Phát hiện tối đa {maxPage} trang.");
                 lblStatus.Text = $"Analysis complete. Found {maxPage} pages.";
             }
             catch (Exception ex)
             {
-                TruyenqqLog($"L?i khi ph�n t�ch: {ex.Message}");
+                TruyenqqLog($"Lỗi khi phân tích: {ex.Message}");
                 txtTruyenqqTotalPages.Text = "1";
                 lblStatus.Text = "Analysis failed.";
             }
@@ -612,7 +612,7 @@ namespace get_link_manga
             }
             catch (OperationCanceledException)
             {
-                TruyenqqLog("�� h?y c�o theo y�u c?u ngu?i d�ng.");
+                TruyenqqLog("Đã hủy cào theo yêu cầu người dùng.");
                 lblStatus.Text = "Crawling cancelled.";
             }
             catch (Exception ex)
@@ -661,7 +661,7 @@ namespace get_link_manga
             int imported = 0;
             int failed = 0;
 
-            TruyenqqLog($"[Import] B?t d?u ph�n t�ch v� nh?p {total} li�n k?t tr?c ti?p...");
+            TruyenqqLog($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
             lblStatus.Text = $"Importing 0/{total} links...";
 
             try
@@ -676,15 +676,15 @@ namespace get_link_manga
                         link = NormalizeTruyenqqUrl(link);
                     }
 
-                    lblStatus.Text = $"[{i + 1}/{total}] �ang ph�n t�ch: {link}";
+                    lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
 
                     try
                     {
                         link = ResolveTruyenqqRequestUrl(link);
-                        lblStatus.Text = $"[{i + 1}/{total}] �ang ph�n t�ch: {link}";
+                        lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
                         if (_scrapedItems.Any(item => item.Link.Equals(link, StringComparison.OrdinalIgnoreCase)))
                         {
-                            TruyenqqLog($"[Import] B? qua li�n k?t d� t?n t?i: {link}");
+                            TruyenqqLog($"[Import] Bỏ qua liên kết đã tồn tại: {link}");
                             imported++;
                             continue;
                         }
@@ -754,7 +754,7 @@ namespace get_link_manga
                 TruyenqqLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"�� nh?p th�nh c�ng {total} du?ng d?n!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {
@@ -935,7 +935,7 @@ namespace get_link_manga
                     chapterLinks = filtered;
                     if (chapterLinks.Count == 0)
                     {
-                        Log($"[truyenqq] Kh�ng c� chuong n�o tr�ng kh?p v?i b? l?c d� ch?n trong t?ng s? {totalFoundChapters} chuong c?a '{item.Name}'.");
+                        Log($"[truyenqq] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
                         if (queueItem != null)
                         {
                             Dispatcher.Invoke(() => {

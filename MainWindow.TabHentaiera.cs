@@ -54,9 +54,9 @@ namespace get_link_manga
             txtHentaieraTagUrl.Text = url;
 
             btnHentaieraFetchInfo.IsEnabled = false;
-            lblStatus.Text = "�ang ph�n t�ch trang hentaiera.com...";
+            lblStatus.Text = "Đang phân tích trang hentaiera.com...";
             progressBar.IsIndeterminate = true;
-            HentaieraLog($"�ang ph�n t�ch URL: {url}");
+            HentaieraLog($"Đang phân tích URL: {url}");
 
             try
             {
@@ -105,12 +105,12 @@ namespace get_link_manga
                 txtHentaieraTotalPages.Text = maxPage.ToString();
                 txtHentaieraPageTo.Text = maxPage.ToString();
                 
-                HentaieraLog($"Ph�n t�ch ho�n t?t. Ph�t hi?n t?i da {maxPage} trang.");
+                HentaieraLog($"Phân tích hoàn tất. Phát hiện tối đa {maxPage} trang.");
                 lblStatus.Text = $"Analysis complete. Found {maxPage} pages.";
             }
             catch (Exception ex)
             {
-                HentaieraLog($"L?i khi ph�n t�ch: {ex.Message}");
+                HentaieraLog($"Lỗi khi phân tích: {ex.Message}");
                 txtHentaieraTotalPages.Text = "1";
                 lblStatus.Text = "Analysis failed.";
             }
@@ -308,7 +308,7 @@ namespace get_link_manga
             }
             catch (OperationCanceledException)
             {
-                HentaieraLog("�� h?y c�o theo y�u c?u ngu?i d�ng.");
+                HentaieraLog("Đã hủy cào theo yêu cầu người dùng.");
                 lblStatus.Text = "Crawling cancelled.";
             }
             catch (Exception ex)
@@ -356,7 +356,7 @@ namespace get_link_manga
             int imported = 0;
             int failed = 0;
 
-            HentaieraLog($"[Import] B?t d?u ph�n t�ch v� nh?p {total} li�n k?t tr?c ti?p...");
+            HentaieraLog($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
             lblStatus.Text = $"Importing 0/{total} links...";
 
             try
@@ -374,13 +374,13 @@ namespace get_link_manga
                         }
                         link = NormalizeHentaieraUrl(link);
                     }
-                    lblStatus.Text = $"[{i + 1}/{total}] �ang ph�n t�ch: {link}";
+                    lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {link}";
 
                     try
                     {
                         if (_scrapedItems.Any(item => item.Link.Equals(link, StringComparison.OrdinalIgnoreCase)))
                         {
-                            HentaieraLog($"[Import] B? qua li�n k?t d� t?n t?i: {link}");
+                            HentaieraLog($"[Import] Bỏ qua liên kết đã tồn tại: {link}");
                             imported++;
                             continue;
                         }
@@ -468,7 +468,7 @@ namespace get_link_manga
                 HentaieraLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"�� nh?p th�nh c�ng {total} du?ng d?n!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {

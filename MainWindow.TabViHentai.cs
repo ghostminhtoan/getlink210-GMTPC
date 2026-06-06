@@ -55,9 +55,9 @@ namespace get_link_manga
             }
 
             btnViHentaiFetchInfo.IsEnabled = false;
-            lblStatus.Text = "�ang ph�n t�ch trang vi-hentai.pro...";
+            lblStatus.Text = "Đang phân tích trang vi-hentai.pro...";
             progressBar.IsIndeterminate = true;
-            ViHentaiLog($"�ang ph�n t�ch URL: {url}");
+            ViHentaiLog($"Đang phân tích URL: {url}");
 
             try
             {
@@ -87,12 +87,12 @@ namespace get_link_manga
                 txtViHentaiTotalPages.Text = maxPage.ToString();
                 txtViHentaiPageTo.Text = maxPage.ToString();
                 
-                ViHentaiLog($"Ph�n t�ch ho�n t?t. Ph�t hi?n t?i da {maxPage} trang.");
+                ViHentaiLog($"Phân tích hoàn tất. Phát hiện tối đa {maxPage} trang.");
                 lblStatus.Text = $"Analysis complete. Found {maxPage} pages.";
             }
             catch (Exception ex)
             {
-                ViHentaiLog($"L?i khi ph�n t�ch: {ex.Message}");
+                ViHentaiLog($"Lỗi khi phân tích: {ex.Message}");
                 txtViHentaiTotalPages.Text = "1";
                 lblStatus.Text = "Analysis failed.";
             }
@@ -268,7 +268,7 @@ namespace get_link_manga
             }
             catch (OperationCanceledException)
             {
-                ViHentaiLog("�� h?y c�o theo y�u c?u ngu?i d�ng.");
+                ViHentaiLog("Đã hủy cào theo yêu cầu người dùng.");
                 lblStatus.Text = "Crawling cancelled.";
             }
             catch (Exception ex)
@@ -317,7 +317,7 @@ namespace get_link_manga
             int imported = 0;
             int failed = 0;
 
-            ViHentaiLog($"[Import] B?t d?u ph�n t�ch v� nh?p {total} li�n k?t tr?c ti?p...");
+            ViHentaiLog($"[Import] Bắt đầu phân tích và nhập {total} liên kết trực tiếp...");
             lblStatus.Text = $"Importing 0/{total} links...";
 
             try
@@ -326,13 +326,13 @@ namespace get_link_manga
                 {
                     string link = links[i];
                     string normalizedLink = NormalizeViHentaiLink(link);
-                    lblStatus.Text = $"[{i + 1}/{total}] �ang ph�n t�ch: {normalizedLink}";
+                    lblStatus.Text = $"[{i + 1}/{total}] Đang phân tích: {normalizedLink}";
 
                     try
                     {
                         if (_scrapedItems.Any(item => item.Link.Equals(normalizedLink, StringComparison.OrdinalIgnoreCase)))
                         {
-                            ViHentaiLog($"[Import] B? qua li�n k?t d� t?n t?i: {normalizedLink}");
+                            ViHentaiLog($"[Import] Bỏ qua liên kết đã tồn tại: {normalizedLink}");
                             imported++;
                             continue;
                         }
@@ -386,7 +386,7 @@ namespace get_link_manga
                 ViHentaiLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"�� nh?p th�nh c�ng {total} du?ng d?n!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {
@@ -523,7 +523,7 @@ namespace get_link_manga
                                 bool solved = await SolveViHentaiCaptchaIfNeededAsync(url);
                                 if (solved)
                                 {
-                                    ViHentaiLog("[Throttle] �� gi?i captcha th�nh c�ng, th? l?i ngay l?p t?c.");
+                                    ViHentaiLog("[Throttle] Đã giải captcha thành công, thử lại ngay lập tức.");
                                     continue;
                                 }
 
@@ -761,7 +761,7 @@ namespace get_link_manga
                     }
                     Directory.CreateDirectory(targetFolder);
                     File.WriteAllText(Path.Combine(targetFolder, "info.txt"), $"Truyện '{item.Name}' ({item.Link}) không có chương nào.");
-                    Log($"[vi-hentai.pro] Truy?n '{item.Name}' kh�ng c� chuong n�o. �� ph�n lo?i v�o thu m?c .missing.");
+                    Log($"[vi-hentai.pro] Truyện '{item.Name}' không có chương nào. Đã phân loại vào thư mục .missing.");
                     return;
                 }
 
@@ -780,7 +780,7 @@ namespace get_link_manga
                     chapterLinks = filtered;
                     if (chapterLinks.Count == 0)
                     {
-                        Log($"[vi-hentai.pro] Kh�ng c� chuong n�o tr�ng kh?p v?i b? l?c d� ch?n trong t?ng s? {totalFoundChapters} chuong c?a '{item.Name}'.");
+                        Log($"[vi-hentai.pro] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
                         if (queueItem != null)
                         {
                             Dispatcher.Invoke(() => {
@@ -901,14 +901,14 @@ namespace get_link_manga
             var evalIndex = html.IndexOf("eval(function(h,u,n,t,e,r)");
             if (evalIndex == -1)
             {
-                throw new Exception("Kh�ng t�m th?y kh?i m� h�a ?nh trong trang (Obfuscated JS block not found).");
+                throw new Exception("Không tìm thấy khối mã hóa ảnh trong trang (Obfuscated JS block not found).");
             }
 
             string sub = html.Substring(evalIndex);
             var matchParams = Regex.Match(sub, @"}\s*\(\s*""(?<h>[^""]+)""\s*,\s*(?<u>\d+)\s*,\s*""(?<n>[^""]+)""\s*,\s*(?<t>\d+)\s*,\s*(?<e>\d+)\s*,\s*(?<r>\d+)\s*\)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             if (!matchParams.Success)
             {
-                throw new Exception("Kh�ng th? ph�n t�ch tham s? gi?i m� (Could not parse decoding parameters).");
+                throw new Exception("Không thể phân tích tham số giải mã (Could not parse decoding parameters).");
             }
 
             string h = matchParams.Groups["h"].Value;
@@ -933,7 +933,7 @@ namespace get_link_manga
 
             if (imageUrls.Count == 0)
             {
-                throw new Exception("Kh�ng t�m th?y URL ?nh sau khi gi?i m�.");
+                throw new Exception("Không tìm thấy URL ảnh sau khi giải mã.");
             }
 
             int maxThreads = 2;
