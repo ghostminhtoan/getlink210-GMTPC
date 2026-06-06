@@ -265,8 +265,16 @@ namespace get_link_manga
                     return;
                 }
 
-                // Expose current redirected URI
-                ResolvedUri = webView.Source;
+                // Expose current redirected URI from the final WebView navigation if possible
+                if (webView.Source != null)
+                {
+                    ResolvedUri = webView.Source;
+                }
+                else if (webView.CoreWebView2 != null &&
+                         Uri.TryCreate(webView.CoreWebView2.Source, UriKind.Absolute, out Uri finalUri))
+                {
+                    ResolvedUri = finalUri;
+                }
 
                 // Get cookies from WebView2 CookieManager for the final redirected URL
                 string fetchUrl = ResolvedUri?.ToString() ?? _targetUrl;
