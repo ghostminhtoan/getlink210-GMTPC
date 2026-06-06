@@ -74,3 +74,40 @@ Tài liệu này chứa toàn bộ quy tắc code, cấu trúc dự án, hướn
 - **Sau khi build file exe ra release thành công, luôn luôn thực hiện git commit & git push lên repo github.**
 - **Mỗi khi tạo commit mới, bắt buộc phải cập nhật lịch sử (Mã commit, Thời gian, Nội dung) vào file [log git commit.md](file:///r:/HDD R/ZC SYMLINK/USERS/source/repos/ghostminhtoan/get link manga/log git commit.md) với quy tắc: Commit mới nhất luôn nằm ở trên cùng (dưới phần tiêu đề).**
 
+---
+
+## 7. Hướng Dẫn Tự Động Hóa Tạo Tab Cào Truyện Mới (Cho AI Agent)
+Khi người dùng yêu cầu thêm một trang web cào truyện mới với các thông tin đầu vào sau:
+- **Link domain:** Tên miền của trang web cần cào (ví dụ: `https://example.com`)
+- **Link book:** Định dạng link của trang chi tiết truyện/danh sách chương (ví dụ: `https://example.com/manga/ten-truyen`)
+- **Link chapter:** Định dạng link của trang đọc chương/ảnh (ví dụ: `https://example.com/chapter/123`)
+- **Image redirect:** `yes` hoặc `no` (có cần chuyển hướng/cào tiếp trang con để lấy link ảnh trực tiếp hay không)
+
+**AI Agent cần tự động thực hiện các bước sau:**
+
+### Bước 1: Thiết kế giao diện (UI) trong [MainWindow.xaml](file:///r:/HDD R/ZC SYMLINK/USERS/source/repos/ghostminhtoan/get link manga/MainWindow.xaml)
+1. Xác định trang web thuộc nhóm **MANGA** hay **HENTAI** để thêm thẻ `<TabItem>` vào đúng `TabControl` (`tabManga` hoặc `tabHentai`).
+2. Sử dụng `Style="{StaticResource CyberpunkTabItem}"` và chọn một màu sáng độc nhất cho `<TabItem.Tag>` (ví dụ: `#00ff66` cho Green, `#ffe600` cho Yellow, `#00ffff` cho Cyan...).
+3. Sao chép cấu trúc giao diện điều khiển cấu hình (Parameters Config) từ các tab có sẵn, đổi tên toàn bộ các Control (TextBox, Button, ToggleButton...) theo đúng tiền tố và tên miền mới (ví dụ: `txtExampleTagUrl`, `btnExampleFetchInfo`, `txtExampleLog`...).
+
+### Bước 2: Tạo File Code Logic Mới `MainWindow.Tab[SiteName].cs`
+Tạo một file partial class mới (ví dụ: `MainWindow.TabExample.cs`) để chứa toàn bộ logic xử lý cho trang web đó.
+1. **Hàm Phân Tích (Analyze Target Page):** 
+   - Dùng `_httpClient` tải trang chi tiết (`link book`).
+   - Sử dụng Regex hoặc HTML parser để lấy tổng số trang/chương, tiêu đề truyện.
+   - Cập nhật thông tin lên giao diện thông qua `Dispatcher.Invoke()`.
+2. **Hàm Cào (Start Crawling / Get Link):**
+   - Hỗ trợ dừng cào bằng `CancellationToken` (`_cts.Token`).
+   - Lặp qua các chương cần tải từ `txtExamplePageFrom` đến `txtExamplePageTo`.
+   - Nếu **Image redirect = yes**: Cần cào tiếp trang con (`link chapter`) để tìm thẻ ảnh chứa link ảnh thực tế.
+   - Nếu **Image redirect = no**: Lấy trực tiếp link ảnh hiển thị trên trang hiện tại.
+   - Add danh sách link cào được vào DataGrid thông qua `GalleryItem`.
+
+### Bước 3: Đăng ký Sự Kiện trong Code-behind
+1. Gán các hàm sự kiện Click của Button (`BtnExampleFetchInfo_Click`, `BtnExampleScrape_Click`...) tương ứng vào file code logic.
+2. Đảm bảo xử lý lỗi bằng khối `try-catch` và ghi log chi tiết ra ô cấu hình log tương ứng (`txtExampleLog`).
+
+### Bước 4: Kiểm thử & Biên dịch (Build)
+1. Chạy lệnh build để đảm bảo dự án biên dịch thành công mà không có lỗi hay cảnh báo.
+2. Commit và push thay đổi lên Git theo đúng quy trình.
+
