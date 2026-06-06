@@ -895,8 +895,7 @@ namespace get_link_manga
             string safeChapter = GetSafePathName(chapterTitle);
             string unmergedPath = Path.Combine(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(rootFolder, "vi-hentai.pro", safeManga, safeChapter);
-            string targetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-            string tempFolder = Path.Combine(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}-tmp");
+            string tempFolder = Path.Combine(rootFolder, "vi-hentai.pro", ".tmp", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
@@ -1081,6 +1080,8 @@ namespace get_link_manga
                             Directory.Move(tempFolder, currentTargetFolder);
                         }
                     }
+
+                    await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
                 }
                 catch (Exception ex)
                 {

@@ -1060,8 +1060,7 @@ namespace get_link_manga
             
             string unmergedPath = Path.Combine(rootFolder, "nettruyen", $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(rootFolder, "nettruyen", safeManga, safeChapter);
-            string targetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-            string tempFolder = Path.Combine(rootFolder, "nettruyen", $"{safeManga}-{safeChapter}-tmp");
+            string tempFolder = Path.Combine(rootFolder, "nettruyen", ".tmp", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
@@ -1313,6 +1312,8 @@ namespace get_link_manga
                         Directory.Move(tempFolder, currentTargetFolder);
                     }
                 }
+
+                await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
                 Log($"[nettruyen] Tải xong chapter '{cleanChapter}' của truyện '{cleanManga}'.");
             }
             catch (Exception ex)
@@ -1325,7 +1326,8 @@ namespace get_link_manga
             }
 
             // Check for missing files
-            ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem, cleanChapter);
+            string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
+            ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter);
         }
     }
 }
