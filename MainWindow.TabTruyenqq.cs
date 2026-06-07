@@ -1020,7 +1020,6 @@ namespace get_link_manga
             {
                 token.ThrowIfCancellationRequested();
                 string chapLink = chapterLinks[idx];
-                Log($"[truyenqq] Đang tải chương {idx + 1}/{chapterLinks.Count}: {chapLink}");
 
                 var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
                 await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
@@ -1128,6 +1127,10 @@ namespace get_link_manga
 
             string safeManga = GetSafePathName(cleanManga);
             string safeChapter = GetSafePathName(cleanChapter);
+            string progressKey = $"truyenqq|{queueItem?.Link ?? item.Link ?? cleanManga}";
+            int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
+            int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
+            UpsertMainLogLine(progressKey, $"[truyenqq] Đang tải {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
             
             // Save inside "truyenqq" root directory
             string unmergedPath = Path.Combine(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}");
@@ -1185,7 +1188,7 @@ namespace get_link_manga
                 }
             });
 
-            Log($"[truyenqq] Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
+            TruyenqqLog($"Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
             if (queueItem != null && !isParentQueue)
             {
@@ -1318,7 +1321,7 @@ namespace get_link_manga
                 }
 
                 await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
-                Log($"[truyenqq] Tải xong chapter '{cleanChapter}' của truyện '{cleanManga}'.");
+                UpsertMainLogLine(progressKey, $"[truyenqq] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
             }
             catch (Exception ex)
             {

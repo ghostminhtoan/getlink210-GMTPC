@@ -871,7 +871,6 @@ namespace get_link_manga
             {
                 token.ThrowIfCancellationRequested();
                 string chapLink = chapterLinks[idx];
-                Log($"[vi-hentai.pro] Đang tải chapter {idx + 1}/{chapterLinks.Count}: {chapLink}");
 
                 var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
                 await DownloadViHentaiChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
@@ -942,6 +941,10 @@ namespace get_link_manga
 
             string safeManga = GetSafePathName(mangaTitle);
             string safeChapter = GetSafePathName(chapterTitle);
+            string progressKey = $"vi-hentai.pro|{queueItem?.Link ?? item.Link ?? mangaTitle}";
+            int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
+            int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
+            UpsertMainLogLine(progressKey, $"[vi-hentai.pro] Đang tải {mangaTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
             string unmergedPath = Path.Combine(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(rootFolder, "vi-hentai.pro", safeManga, safeChapter);
             string tempFolder = BuildStableTempFolderPath(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}", item.Link, item.Name, safeManga, safeChapter);
@@ -997,7 +1000,7 @@ namespace get_link_manga
                 }
             });
 
-            Log($"[vi-hentai.pro] Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
+            ViHentaiLog($"Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
             if (queueItem != null && !isParentQueue)
             {
@@ -1129,6 +1132,7 @@ namespace get_link_manga
                     }
 
                     await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                    UpsertMainLogLine(progressKey, $"[vi-hentai.pro] Đã tải xong {mangaTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
                 }
                 catch (Exception ex)
                 {

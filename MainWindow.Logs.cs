@@ -29,6 +29,7 @@ namespace get_link_manga
             public ToggleButton AutoScrollToggle { get; set; }
             public LogFilterMode Mode { get; set; } = LogFilterMode.All;
             public List<LogEntry> Entries { get; } = new List<LogEntry>();
+            public Dictionary<string, int> KeyedEntries { get; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         }
 
         private readonly Dictionary<string, LogPanelState> _logPanels = new Dictionary<string, LogPanelState>(StringComparer.OrdinalIgnoreCase);
@@ -152,12 +153,58 @@ namespace get_link_manga
             }
         }
 
+        internal void UpsertMainLogLine(string entryKey, string message, bool isError = false)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (txtLog == null)
+                {
+                    return;
+                }
+
+                var state = GetLogPanelState(txtLog);
+                if (state == null || string.IsNullOrWhiteSpace(entryKey))
+                {
+                    AppendLogLineToDocument(txtLog, $"[{DateTime.Now:HH:mm:ss}] {message}\r\n", isError);
+                    if (chkAutoScrollLog?.IsChecked == true)
+                    {
+                        ScrollTextBoxToEnd(txtLog);
+                    }
+                    return;
+                }
+
+                string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
+
+                if (state.KeyedEntries.TryGetValue(entryKey, out int entryIndex) &&
+                    entryIndex >= 0 &&
+                    entryIndex < state.Entries.Count)
+                {
+                    state.Entries[entryIndex].Text = logLine;
+                    state.Entries[entryIndex].IsError = isError;
+                }
+                else
+                {
+                    entryIndex = state.Entries.Count;
+                    state.Entries.Add(new LogEntry { Text = logLine, IsError = isError });
+                    state.KeyedEntries[entryKey] = entryIndex;
+                }
+
+                RenderLogPanel(state);
+            }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
         internal void ClearLogPanel(RichTextBox rtb)
         {
             var state = GetLogPanelState(rtb);
             if (state != null)
             {
                 state.Entries.Clear();
+                state.KeyedEntries.Clear();
             }
 
             if (rtb != null)
