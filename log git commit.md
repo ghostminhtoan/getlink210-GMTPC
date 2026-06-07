@@ -3,6 +3,7 @@
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
 - **Commit**: `eb40a4f` | **Build Time**: 2026-06-07 03.22.13 PM Sunday | **Message**: feat: make app portable with embedded runtime loader
+- **Commit**: `6618a7a` | **Build Time**: 2026-06-07 08.41.22 PM Sunday | **Message**: fix: make designer references build reliably
 - **Commit**: `9f715a7` | **Build Time**: 2026-06-07 06.37.54 PM Sunday | **Message**: fix: simplify check error table layout
 - **Commit**: `f24e3f4` | **Build Time**: 2026-06-07 06.21.00 PM Sunday | **Message**: feat: add portable archive tools and error panels
 - **Commit**: `e7070fb` | **Build Time**: 2026-06-07 06.01.23 PM Sunday | **Message**: fix: replace remaining logs with check error grids
