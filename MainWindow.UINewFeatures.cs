@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -67,7 +68,7 @@ namespace get_link_manga
                 count++;
             }
 
-            Log($"?? �� bookmark {count} truy?n.");
+            Log($"Đã bookmark {count} truyện.");
 
             // Refresh bookmark window if open
             if (_bookmarkHistoryWindowInstance != null)
@@ -281,20 +282,22 @@ namespace get_link_manga
 
             foreach (var err in errorsToRetry)
             {
-                if (string.IsNullOrEmpty(err.ImageUrl))
-                {
-                    failedRetries++;
-                    Dispatcher.Invoke(() => {
-                        queueItem.AddError(err.ChapterName, err.PageNumber, "No image URL available", null);
-                    });
-                    continue;
-                }
-
                 try
                 {
                     string targetFolder;
                     bool isViHentai = queueItem.SourceDomain != null && queueItem.SourceDomain.Contains("vi-hentai.pro");
                     bool isTruyenqq = queueItem.SourceDomain != null && queueItem.SourceDomain.Contains("truyenqq");
+                    string imageUrl = err.ImageUrl;
+
+                    if (string.IsNullOrEmpty(imageUrl) && isTruyenqq)
+                    {
+                        imageUrl = await ResolveTruyenqqRetryImageUrlAsync(queueItem, err);
+                    }
+
+                    if (string.IsNullOrEmpty(imageUrl))
+                    {
+                        throw new Exception("No image URL available");
+                    }
 
                     string safeManga = GetSafePathName(queueItem.Name);
                     
@@ -315,7 +318,7 @@ namespace get_link_manga
 
                     Directory.CreateDirectory(targetFolder);
 
-                    string ext = Path.GetExtension(err.ImageUrl.Split('?')[0]);
+                    string ext = Path.GetExtension(imageUrl.Split('?')[0]);
                     if (string.IsNullOrEmpty(ext)) ext = ".jpg";
                     string fileName = $"{err.PageNumber:D3}{ext}";
                     string finalFilePath = Path.Combine(targetFolder, fileName);
@@ -323,7 +326,7 @@ namespace get_link_manga
                     var token = _downloadCts?.Token ?? System.Threading.CancellationToken.None;
 
                     await DownloadUrlToFileWithRefererAsync(
-                        err.ImageUrl, 
+                        imageUrl,
                         queueItem.Link, 
                         finalFilePath, 
                         token, 
@@ -332,7 +335,7 @@ namespace get_link_manga
                     );
 
                     successfulRetries++;
-                    Log($"[Retry] �� t?i th�nh c�ng: {err.ChapterName}, Trang {err.PageNumber}");
+                    Log($"[Retry] Đã tải thành công: {err.ChapterName}, Trang {err.PageNumber}");
                 }
                 catch (Exception ex)
                 {
@@ -361,6 +364,73 @@ namespace get_link_manga
                 MessageBox.Show($"Thử tải lại hoàn tất!\nThành công: {successfulRetries}\nThất bại: {failedRetries}", 
                     "Retry Completed", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        private async Task<string> ResolveTruyenqqRetryImageUrlAsync(GalleryItem queueItem, ErrorDetail err)
+        {
+            string chapterLink = FindTruyenqqChapterLinkForRetry(queueItem, err.ChapterName);
+            if (string.IsNullOrWhiteSpace(chapterLink) || err.PageNumber <= 0)
+            {
+                return null;
+            }
+
+            string html = await _httpClient.GetStringAsync(chapterLink);
+            string safeHtml = GetSafeChapterHtml(html);
+            var imageUrls = ExtractTruyenqqImageUrls(safeHtml, chapterLink);
+            int index = err.PageNumber - 1;
+            if (index < 0 || index >= imageUrls.Count)
+            {
+                return null;
+            }
+
+            return imageUrls[index];
+        }
+
+        private string FindTruyenqqChapterLinkForRetry(GalleryItem queueItem, string chapterName)
+        {
+            if (queueItem == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(queueItem.Link) && Regex.IsMatch(queueItem.Link, @"(?:chap|chapter|chuong)", RegexOptions.IgnoreCase))
+            {
+                return queueItem.Link;
+            }
+
+            string processPath = GetDownloadProcessFilePath(queueItem.DownloadPath, "truyenqq", queueItem);
+            if (!File.Exists(processPath))
+            {
+                return null;
+            }
+
+            string normalizedChapter = NormalizeRetryChapterKey(chapterName);
+            foreach (string line in File.ReadAllLines(processPath, System.Text.Encoding.UTF8))
+            {
+                string[] cells = line.Split('|');
+                if (cells.Length < 5)
+                {
+                    continue;
+                }
+
+                string chapterCell = NormalizeRetryChapterKey(cells[3]);
+                string link = cells[4].Trim();
+                string linkCell = NormalizeRetryChapterKey(link);
+                if (link.StartsWith("http", StringComparison.OrdinalIgnoreCase) &&
+                    (chapterCell.Contains(normalizedChapter) || linkCell.Contains(normalizedChapter)))
+                {
+                    return link;
+                }
+            }
+
+            return null;
+        }
+
+        private string NormalizeRetryChapterKey(string value)
+        {
+            string normalized = (value ?? string.Empty).ToLowerInvariant();
+            normalized = Regex.Replace(normalized, @"[^a-z0-9]+", " ").Trim();
+            return normalized;
         }
     }
 }

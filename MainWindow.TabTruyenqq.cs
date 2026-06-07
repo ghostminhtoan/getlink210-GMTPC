@@ -1166,71 +1166,7 @@ namespace get_link_manga
                 contentArea = safeHtml.Substring(startIndex);
             }
 
-            // Extract all image URLs from isolated reading area
-            var imageUrls = new System.Collections.Generic.List<string>();
-            var imgTags = Regex.Matches(contentArea, @"<img\s+[^>]*>", RegexOptions.IgnoreCase);
-            
-            foreach (Match imgTag in imgTags)
-            {
-                string tag = imgTag.Value;
-                string imgUrl = null;
-
-                var dataOriginalMatch = Regex.Match(tag, @"data-original=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
-                if (dataOriginalMatch.Success)
-                {
-                    imgUrl = dataOriginalMatch.Groups["url"].Value;
-                }
-                else
-                {
-                    var dataSrcMatch = Regex.Match(tag, @"data-src=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
-                    if (dataSrcMatch.Success)
-                    {
-                        imgUrl = dataSrcMatch.Groups["url"].Value;
-                    }
-                    else
-                    {
-                        var srcMatch = Regex.Match(tag, @"src=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
-                        if (srcMatch.Success)
-                        {
-                            imgUrl = srcMatch.Groups["url"].Value;
-                        }
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(imgUrl))
-                {
-                    imgUrl = imgUrl.Trim();
-                    
-                    // Filter out header, menu, ads, UI and avatar images
-                    if (imgUrl.EndsWith("logo.png", StringComparison.OrdinalIgnoreCase) ||
-                        imgUrl.EndsWith("avatar.jpg", StringComparison.OrdinalIgnoreCase) ||
-                        imgUrl.Contains("avatar") ||
-                        imgUrl.Contains("loading") ||
-                        imgUrl.Contains("spacer.gif") ||
-                        imgUrl.Contains("transparent.gif") ||
-                        imgUrl.Contains("/images/logo") ||
-                        imgUrl.Contains("/images/favicon") ||
-                        imgUrl.Contains("facebook.com") ||
-                        imgUrl.Contains("banner") ||
-                        imgUrl.Contains("advertisement"))
-                    {
-                        continue;
-                    }
-
-                    // Normalize relative links
-                    if (!imgUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
-                        !imgUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string activeDomain = ExtractTruyenqqBaseUrl(item.Link);
-                        imgUrl = activeDomain + (imgUrl.StartsWith("/") ? "" : "/") + imgUrl;
-                    }
-
-                    if (!imageUrls.Contains(imgUrl))
-                    {
-                        imageUrls.Add(imgUrl);
-                    }
-                }
-            }
+            var imageUrls = ExtractTruyenqqImageUrls(contentArea, item.Link);
 
             if (imageUrls.Count == 0)
             {
@@ -1395,7 +1331,80 @@ namespace get_link_manga
 
             // Check for missing files
             string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-            ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter);
+            var pageImageUrls = imageUrls
+                .Select((url, index) => new { Page = index + 1, Url = url })
+                .ToDictionary(x => x.Page, x => x.Url);
+            ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageImageUrls);
+        }
+
+        private List<string> ExtractTruyenqqImageUrls(string contentArea, string pageUrl)
+        {
+            var imageUrls = new List<string>();
+            var imgTags = Regex.Matches(contentArea ?? string.Empty, @"<img\s+[^>]*>", RegexOptions.IgnoreCase);
+
+            foreach (Match imgTag in imgTags)
+            {
+                string tag = imgTag.Value;
+                string imgUrl = null;
+
+                var dataOriginalMatch = Regex.Match(tag, @"data-original=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
+                if (dataOriginalMatch.Success)
+                {
+                    imgUrl = dataOriginalMatch.Groups["url"].Value;
+                }
+                else
+                {
+                    var dataSrcMatch = Regex.Match(tag, @"data-src=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
+                    if (dataSrcMatch.Success)
+                    {
+                        imgUrl = dataSrcMatch.Groups["url"].Value;
+                    }
+                    else
+                    {
+                        var srcMatch = Regex.Match(tag, @"src=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
+                        if (srcMatch.Success)
+                        {
+                            imgUrl = srcMatch.Groups["url"].Value;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(imgUrl))
+                {
+                    continue;
+                }
+
+                imgUrl = imgUrl.Trim();
+                if (imgUrl.EndsWith("logo.png", StringComparison.OrdinalIgnoreCase) ||
+                    imgUrl.EndsWith("avatar.jpg", StringComparison.OrdinalIgnoreCase) ||
+                    imgUrl.Contains("avatar") ||
+                    imgUrl.Contains("loading") ||
+                    imgUrl.Contains("spacer.gif") ||
+                    imgUrl.Contains("transparent.gif") ||
+                    imgUrl.Contains("/images/logo") ||
+                    imgUrl.Contains("/images/favicon") ||
+                    imgUrl.Contains("facebook.com") ||
+                    imgUrl.Contains("banner") ||
+                    imgUrl.Contains("advertisement") ||
+                    imgUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!imgUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                    !imgUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                {
+                    string activeDomain = ExtractTruyenqqBaseUrl(pageUrl);
+                    imgUrl = activeDomain + (imgUrl.StartsWith("/") ? string.Empty : "/") + imgUrl;
+                }
+
+                if (!imageUrls.Contains(imgUrl))
+                {
+                    imageUrls.Add(imgUrl);
+                }
+            }
+
+            return imageUrls;
         }
 
         private double ParseChapterNumber(string url)
