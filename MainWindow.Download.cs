@@ -510,6 +510,9 @@ namespace get_link_manga
                         item.Status = "Cancelled";
                     }
                 }
+
+                // Best-effort cleanup so a new Start doesn't inherit leftover temp folders.
+                CleanupActiveTempFolders();
             }
         }
 
@@ -520,6 +523,9 @@ namespace get_link_manga
                 MessageBox.Show("Một tiến trình tải đang chạy. Vui lòng dừng lại trước khi bắt đầu tải mới (A download process is already running).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
+
+            // If the previous run was stopped, clear any leftover temp folders before starting over.
+            CleanupActiveTempFolders();
 
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
@@ -743,8 +749,9 @@ namespace get_link_manga
             }
             finally
             {
+                bool wasCancelled = _downloadCts != null && _downloadCts.IsCancellationRequested;
                 _activeBookSemaphore = null;
-                _downloadCts.Dispose();
+                _downloadCts?.Dispose();
                 _downloadCts = null;
                 _isDownloadPaused = false;
 
@@ -769,7 +776,7 @@ namespace get_link_manga
                 cmbConnections.IsEnabled = true;
 
                 UpdateQueueErrorLabel();
-                if (_downloadCts != null && _downloadCts.IsCancellationRequested)
+                if (wasCancelled)
                 {
                     CleanupActiveTempFolders();
                 }
