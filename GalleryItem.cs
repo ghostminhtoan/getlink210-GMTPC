@@ -52,19 +52,44 @@ namespace get_link_manga
         public string BookName
         {
             get => _bookName;
-            set { if (_bookName != value) { _bookName = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_bookName != value)
+                {
+                    _bookName = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DisplayBook));
+                }
+            }
         }
 
         public string ChapterName
         {
             get => _chapterName;
-            set { if (_chapterName != value) { _chapterName = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_chapterName != value)
+                {
+                    _chapterName = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DisplayBook));
+                }
+            }
         }
 
         public int PageNumber
         {
             get => _pageNumber;
-            set { if (_pageNumber != value) { _pageNumber = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_pageNumber != value)
+                {
+                    _pageNumber = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(PageDisplay));
+                    OnPropertyChanged(nameof(DisplayBook));
+                }
+            }
         }
 
         public string ErrorMessage
@@ -86,6 +111,31 @@ namespace get_link_manga
         }
 
         public string PageDisplay => PageNumber > 0 ? PageNumber.ToString() : "-";
+
+        public string DisplayBook
+        {
+            get
+            {
+                var parts = new List<string>();
+
+                if (!string.IsNullOrWhiteSpace(BookName) && BookName != "-")
+                {
+                    parts.Add(BookName.Trim());
+                }
+
+                if (!string.IsNullOrWhiteSpace(ChapterName) && ChapterName != "-")
+                {
+                    parts.Add(ChapterName.Trim());
+                }
+
+                if (PageNumber > 0)
+                {
+                    parts.Add($"trang {PageNumber}");
+                }
+
+                return parts.Count == 0 ? "-" : string.Join(" - ", parts);
+            }
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
 

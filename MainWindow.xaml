@@ -128,6 +128,11 @@
             </Setter>
         </Style>
 
+        <Style x:Key="CheckErrorWrapTextStyle" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+
         <!-- ComboBox Style -->
         <Style x:Key="CyberpunkComboBox" TargetType="ComboBox">
             <Setter Property="Background" Value="#0e121a"/>
@@ -357,6 +362,8 @@
                                                           ItemsSource="{Binding CheckErrors, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           AutoGenerateColumns="False"
                                                           IsReadOnly="True"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                           Background="Transparent"
                                                           BorderThickness="0"
                                                           Foreground="{StaticResource CyberpunkTextBrush}"
@@ -369,13 +376,9 @@
                                                           RowStyle="{StaticResource CyberpunkDataGridRow}"
                                                           CellStyle="{StaticResource CyberpunkDataGridCell}">
                                                     <DataGrid.Columns>
-                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85"/>
-                                                        <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="90"/>
-                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding BookName}" Width="180"/>
-                                                        <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="110"/>
-                                                        <DataGridTextColumn Header="PAGE" Binding="{Binding PageDisplay}" Width="60"/>
-                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*"/>
-                                                        <DataGridTextColumn Header="COUNT" Binding="{Binding OccurrenceCount}" Width="60"/>
+                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding DisplayBook}" Width="260" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="300" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                             </Border>
@@ -506,6 +509,8 @@
                                                           ItemsSource="{Binding CheckErrors, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           AutoGenerateColumns="False"
                                                           IsReadOnly="True"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                           Background="Transparent"
                                                           BorderThickness="0"
                                                           Foreground="{StaticResource CyberpunkTextBrush}"
@@ -518,13 +523,9 @@
                                                           RowStyle="{StaticResource CyberpunkDataGridRow}"
                                                           CellStyle="{StaticResource CyberpunkDataGridCell}">
                                                     <DataGrid.Columns>
-                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85"/>
-                                                        <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="90"/>
-                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding BookName}" Width="180"/>
-                                                        <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="110"/>
-                                                        <DataGridTextColumn Header="PAGE" Binding="{Binding PageDisplay}" Width="60"/>
-                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*"/>
-                                                        <DataGridTextColumn Header="COUNT" Binding="{Binding OccurrenceCount}" Width="60"/>
+                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding DisplayBook}" Width="260" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="300" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                             </Border>
@@ -662,6 +663,8 @@
                                                           ItemsSource="{Binding CheckErrors, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           AutoGenerateColumns="False"
                                                           IsReadOnly="True"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                           Background="Transparent"
                                                           BorderThickness="0"
                                                           Foreground="{StaticResource CyberpunkTextBrush}"
@@ -674,13 +677,9 @@
                                                           RowStyle="{StaticResource CyberpunkDataGridRow}"
                                                           CellStyle="{StaticResource CyberpunkDataGridCell}">
                                                     <DataGrid.Columns>
-                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85"/>
-                                                        <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="90"/>
-                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding BookName}" Width="180"/>
-                                                        <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="110"/>
-                                                        <DataGridTextColumn Header="PAGE" Binding="{Binding PageDisplay}" Width="60"/>
-                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*"/>
-                                                        <DataGridTextColumn Header="COUNT" Binding="{Binding OccurrenceCount}" Width="60"/>
+                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding DisplayBook}" Width="260" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="300" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                             </Border>
@@ -814,6 +813,8 @@
                                                           ItemsSource="{Binding CheckErrors, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           AutoGenerateColumns="False"
                                                           IsReadOnly="True"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                           Background="Transparent"
                                                           BorderThickness="0"
                                                           Foreground="{StaticResource CyberpunkTextBrush}"
@@ -826,13 +827,9 @@
                                                           RowStyle="{StaticResource CyberpunkDataGridRow}"
                                                           CellStyle="{StaticResource CyberpunkDataGridCell}">
                                                     <DataGrid.Columns>
-                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85"/>
-                                                        <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="90"/>
-                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding BookName}" Width="180"/>
-                                                        <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="110"/>
-                                                        <DataGridTextColumn Header="PAGE" Binding="{Binding PageDisplay}" Width="60"/>
-                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*"/>
-                                                        <DataGridTextColumn Header="COUNT" Binding="{Binding OccurrenceCount}" Width="60"/>
+                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding DisplayBook}" Width="260" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="300" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                             </Border>
@@ -1000,6 +997,8 @@
                                                           ItemsSource="{Binding CheckErrors, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           AutoGenerateColumns="False"
                                                           IsReadOnly="True"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                           Background="Transparent"
                                                           BorderThickness="0"
                                                           Foreground="{StaticResource CyberpunkTextBrush}"
@@ -1012,13 +1011,9 @@
                                                           RowStyle="{StaticResource CyberpunkDataGridRow}"
                                                           CellStyle="{StaticResource CyberpunkDataGridCell}">
                                                     <DataGrid.Columns>
-                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85"/>
-                                                        <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="90"/>
-                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding BookName}" Width="180"/>
-                                                        <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="110"/>
-                                                        <DataGridTextColumn Header="PAGE" Binding="{Binding PageDisplay}" Width="60"/>
-                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*"/>
-                                                        <DataGridTextColumn Header="COUNT" Binding="{Binding OccurrenceCount}" Width="60"/>
+                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding DisplayBook}" Width="260" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="300" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                             </Border>
@@ -1151,6 +1146,8 @@
                                                           ItemsSource="{Binding CheckErrors, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           AutoGenerateColumns="False"
                                                           IsReadOnly="True"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                           Background="Transparent"
                                                           BorderThickness="0"
                                                           Foreground="{StaticResource CyberpunkTextBrush}"
@@ -1163,13 +1160,9 @@
                                                           RowStyle="{StaticResource CyberpunkDataGridRow}"
                                                           CellStyle="{StaticResource CyberpunkDataGridCell}">
                                                     <DataGrid.Columns>
-                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85"/>
-                                                        <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="90"/>
-                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding BookName}" Width="180"/>
-                                                        <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="110"/>
-                                                        <DataGridTextColumn Header="PAGE" Binding="{Binding PageDisplay}" Width="60"/>
-                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*"/>
-                                                        <DataGridTextColumn Header="COUNT" Binding="{Binding OccurrenceCount}" Width="60"/>
+                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding DisplayBook}" Width="260" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
+                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="300" ElementStyle="{StaticResource CheckErrorWrapTextStyle}"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                             </Border>
@@ -1194,6 +1187,7 @@
                         <RowDefinition Height="Auto"/> <!-- Action Buttons -->
                         <RowDefinition Height="Auto"/> <!-- Header -->
                         <RowDefinition Height="Auto"/> <!-- Filter & Sort Toolbar -->
+                        <RowDefinition Height="Auto"/> <!-- Top Status -->
                         <RowDefinition Height="*"/>    <!-- DataGrid -->
                         <RowDefinition Height="Auto"/> <!-- Download Section -->
                     </Grid.RowDefinitions>
@@ -1240,8 +1234,16 @@
                         <Button Name="btnClearComplete" Content="CLEAR COMPLETE BOOKS" Click="BtnClearComplete_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="180" FontSize="11" Margin="0,0,8,8"/>
                     </WrapPanel>
 
+                    <TextBlock Grid.Row="3"
+                               Text="{Binding Text, ElementName=lblStatus}"
+                               Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Margin="2,0,0,8"
+                               TextWrapping="Wrap"/>
+
                     <!-- Scraped links DataGrid -->
-                    <DataGrid Grid.Row="3" 
+                    <DataGrid Grid.Row="4" 
                               Name="dgResults"
                               Style="{StaticResource CyberpunkDataGrid}"
                               ColumnHeaderStyle="{StaticResource CyberpunkDataGridColumnHeader}"
@@ -1259,7 +1261,7 @@
                               VirtualizingPanel.VirtualizationMode="Recycling"
                               VirtualizingPanel.ScrollUnit="Item"
                               EnableRowVirtualization="True"
-                              Margin="0,10,0,15">
+                              Margin="0,0,0,15">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Tích chọn dòng đang bôi đen (Check Selected)" Click="MenuCheckSelected_Click"/>
@@ -1612,7 +1614,7 @@
                             </Grid>
 
                             <!-- Row 4: Chapter Selection -->
-                            <Grid Grid.Row="4">
+                        <Grid Grid.Row="5">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="10"/>
