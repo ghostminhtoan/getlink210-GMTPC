@@ -1704,7 +1704,7 @@
                                     <ComboBoxItem Content="10"/>
                                 </ComboBox>
 
-                                <TextBlock Grid.Column="7" Text="{x:Static local:BuildInfo.DisplayText}"
+                                <TextBlock Grid.Column="7" Name="txtBuildInfo"
                                            Foreground="{StaticResource CyberpunkYellowBrush}"
                                            FontSize="11"
                                            FontWeight="Bold"

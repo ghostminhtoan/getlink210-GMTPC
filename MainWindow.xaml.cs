@@ -55,6 +55,10 @@ namespace get_link_manga
         public MainWindow()
         {
             InitializeComponent();
+            if (txtBuildInfo != null)
+            {
+                txtBuildInfo.Text = BuildInfo.DisplayText;
+            }
             void TogglePauseResume(System.Windows.Controls.Button button)
             {
                 _isDownloadPaused = !_isDownloadPaused;

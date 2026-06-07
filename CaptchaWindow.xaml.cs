@@ -2,13 +2,15 @@
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
-using Microsoft.Web.WebView2.Core;
 using System.Text.RegularExpressions;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
 
 namespace get_link_manga
 {
     public partial class CaptchaWindow : Window
     {
+        private readonly WebView2 webView = new WebView2();
         public CookieContainer ResolvedCookies { get; private set; } = new CookieContainer();
         public Uri ResolvedUri { get; private set; }
         public string UserAgent { get; private set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -20,6 +22,10 @@ namespace get_link_manga
         public CaptchaWindow(string targetUrl)
         {
             InitializeComponent();
+            if (webViewHost != null)
+            {
+                webViewHost.Children.Add(webView);
+            }
             _targetUrl = targetUrl;
             try
             {
