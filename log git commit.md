@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `788a1e9` | **Build Time**: 2026-06-07 02.47.53 PM Sunday | **Message**: fix: clear temp folders after stop
 - **Commit**: `43b84cd` | **Build Time**: 2026-06-07 02.15.32 PM Sunday | **Message**: fix: clean retry chapter folders
 - **Commit**: `c964a94` | **Build Time**: 2026-06-07 01.32.36 PM Sunday | **Message**: fix: include build info in project
 - **Commit**: `9849e83` | **Build Time**: 2026-06-07 01.32.36 PM Sunday | **Message**: fix: make build info visible in xaml
