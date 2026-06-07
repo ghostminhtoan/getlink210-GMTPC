@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `1c74985` | **Date**: 2026-06-07 10:31:33 | **Message**: fix: keep chapter process files in tmp
 - **Commit**: `1f49230` | **Date**: 2026-06-07 10:07:08 | **Message**: fix: resolve truyenqq retry image urls
 - **Commit**: `ee034b4` | **Date**: 2026-06-07 09:39:03 | **Message**: feat: resume downloads from process manifest
 - **Commit**: `17c23a0` | **Date**: 2026-06-07 07:37:33 | **Message**: feat: stabilize temp resume and log progress
