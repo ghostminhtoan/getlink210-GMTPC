@@ -752,23 +752,24 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="8"/>
                                                     <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="8"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="FILTER" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                                <ToggleButton Grid.Column="2" Name="chkErrorOnlyLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="False" Height="16" Width="32" ToolTip="Show error only" Checked="ChkErrorOnlyLog_Checked" Unchecked="ChkErrorOnlyLog_Unchecked">
-                                                    <ToggleButton.Content>
-                                                        <TextBlock Text="!" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                                    </ToggleButton.Content>
-                                                </ToggleButton>
-                                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <TextBlock Text="AUTO SCROLL" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
                                                     <ToggleButton Name="chkAutoScrollLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="5" Name="btnClearLog" Content="CLEAR" Click="BtnClearLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                                <Button Grid.Column="2" Name="btnClearLog" Content="CLEAR" Click="BtnClearLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="FILTER" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                    <ToggleButton Name="chkErrorOnlyLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="False" Height="16" Width="32" ToolTip="Show error only" Checked="ChkErrorOnlyLog_Checked" Unchecked="ChkErrorOnlyLog_Unchecked">
+                                                        <ToggleButton.Content>
+                                                            <TextBlock Text="!" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                        </ToggleButton.Content>
+                                                    </ToggleButton>
+                                                </StackPanel>
                                             </Grid>
                                             <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
                                                 <RichTextBox Name="txtLog" 

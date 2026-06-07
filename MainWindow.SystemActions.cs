@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
 
 namespace get_link_manga
@@ -77,6 +78,12 @@ namespace get_link_manga
 
             [DataMember(Order = 20)]
             public List<ErrorState> Errors { get; set; } = new List<ErrorState>();
+
+            [DataMember(Order = 21)]
+            public int ConnectionCount { get; set; }
+
+            [DataMember(Order = 22)]
+            public int MultiDownloadCount { get; set; }
         }
 
         [DataContract]
@@ -228,6 +235,19 @@ namespace get_link_manga
 
                         RecalculateDuplicates();
                         lblLinkCount.Text = _scrapedItems.Count.ToString();
+                        bool hasResumeableItems = _scrapedItems.Any(item =>
+                            item.IsPaused ||
+                            string.Equals(item.Status, "Paused", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(item.Status, "Queued", StringComparison.OrdinalIgnoreCase));
+                        if (btnPauseDownload != null)
+                        {
+                            btnPauseDownload.IsEnabled = hasResumeableItems;
+                            btnPauseDownload.Tag = hasResumeableItems ? "Resume" : "Pause";
+                            btnPauseDownload.Content = hasResumeableItems ? "▶️" : "⏸️";
+                        }
+
+                        ApplySavedDownloadSettings(loadedItems.FirstOrDefault());
                         Log($"Successfully loaded {_scrapedItems.Count} items from: {openFileDialog.FileName}");
                         lblStatus.Text = "Markdown file loaded successfully.";
                     }
@@ -414,6 +434,8 @@ namespace get_link_manga
                 IsStopped = item.IsStopped,
                 DownloadingChapter = item.DownloadingChapter,
                 DownloadingPageProgress = item.DownloadingPageProgress,
+                ConnectionCount = GetComboBoxSelectedInt(cmbConnections, 1),
+                MultiDownloadCount = GetComboBoxSelectedInt(cmbMultiDownload, 2),
                 Errors = item.GetUniqueErrors().Select(error => new ErrorState
                 {
                     ChapterName = error.ChapterName,
@@ -431,6 +453,14 @@ namespace get_link_manga
                 return null;
             }
 
+            string restoredProcess = NormalizeSavedProcess(state.CurrentProcess);
+            if (string.IsNullOrWhiteSpace(restoredProcess) &&
+                !string.IsNullOrWhiteSpace(state.DownloadingChapter) &&
+                !string.IsNullOrWhiteSpace(state.DownloadingPageProgress))
+            {
+                restoredProcess = $"{state.DownloadingChapter} ({state.DownloadingPageProgress.ToLowerInvariant()})";
+            }
+
             var item = new GalleryItem
             {
                 OriginalIndex = state.OriginalIndex,
@@ -444,9 +474,11 @@ namespace get_link_manga
                 TotalChapters = state.TotalChapters,
                 CompletedChapters = state.CompletedChapters,
                 Status = state.Status,
-                CurrentProcess = state.CurrentProcess,
+                CurrentProcess = restoredProcess,
                 DownloadPath = state.DownloadPath,
                 ProgressPercent = state.ProgressPercent,
+                ConnectionCount = state.ConnectionCount,
+                MultiDownloadCount = state.MultiDownloadCount,
                 IsPaused = state.IsPaused,
                 IsStopped = state.IsStopped,
                 DownloadingChapter = state.DownloadingChapter,
@@ -464,6 +496,80 @@ namespace get_link_manga
 
             item.ErrorCount = item.GetUniqueErrorCount();
             return item;
+        }
+
+        private string NormalizeSavedProcess(string process)
+        {
+            if (string.IsNullOrWhiteSpace(process))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = process.Trim();
+            if (trimmed.Equals("Waiting...", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Equals("Starting...", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Equals("Failed", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Equals("Done", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Equals("Done with errors", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Equals("Queued", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Equals("Paused", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Equals("Downloading", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            return process;
+        }
+
+        private int GetComboBoxSelectedInt(ComboBox comboBox, int defaultValue)
+        {
+            if (comboBox == null)
+            {
+                return defaultValue;
+            }
+
+            if (comboBox.SelectedItem is ComboBoxItem selectedItem && int.TryParse(selectedItem.Content?.ToString(), out int value))
+            {
+                return value;
+            }
+
+            return defaultValue;
+        }
+
+        private void SetComboBoxSelectedInt(ComboBox comboBox, int value)
+        {
+            if (comboBox == null)
+            {
+                return;
+            }
+
+            foreach (var item in comboBox.Items.OfType<ComboBoxItem>())
+            {
+                if (int.TryParse(item.Content?.ToString(), out int parsed) && parsed == value)
+                {
+                    comboBox.SelectedItem = item;
+                    return;
+                }
+            }
+        }
+
+        private void ApplySavedDownloadSettings(GalleryItem stateSource)
+        {
+            if (stateSource == null)
+            {
+                return;
+            }
+
+            if (stateSource.ConnectionCount > 0)
+            {
+                SetComboBoxSelectedInt(cmbConnections, stateSource.ConnectionCount);
+            }
+
+            if (stateSource.MultiDownloadCount > 0)
+            {
+                SetComboBoxSelectedInt(cmbMultiDownload, stateSource.MultiDownloadCount);
+            }
         }
 
         private string EscapeMarkdownCell(string value)

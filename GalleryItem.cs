@@ -38,6 +38,8 @@ namespace get_link_manga
         private int _errorCount;
         private string _downloadPath;
         private double _progressPercent;
+        private int _connectionCount = 1;
+        private int _multiDownloadCount = 2;
         private List<ErrorDetail> _errors = new List<ErrorDetail>();
         private bool _isPaused;
         private bool _isStopped;
@@ -235,6 +237,18 @@ namespace get_link_manga
         {
             get => _progressPercent;
             set { if (_progressPercent != value) { _progressPercent = value; OnPropertyChanged(); } }
+        }
+
+        public int ConnectionCount
+        {
+            get => _connectionCount;
+            set { if (_connectionCount != value) { _connectionCount = value; OnPropertyChanged(); } }
+        }
+
+        public int MultiDownloadCount
+        {
+            get => _multiDownloadCount;
+            set { if (_multiDownloadCount != value) { _multiDownloadCount = value; OnPropertyChanged(); } }
         }
 
         public List<ErrorDetail> Errors

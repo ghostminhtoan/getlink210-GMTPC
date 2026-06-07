@@ -247,7 +247,7 @@ namespace get_link_manga
                     {
                         item.CompletedChapters = 0;
                         item.Status = "Queued";
-                        item.CurrentProcess = "Waiting...";
+                        item.CurrentProcess = string.Empty;
                         item.ErrorCount = 0;
                         item.ProgressPercent = 0;
                         item.IsPaused = false;
@@ -259,10 +259,6 @@ namespace get_link_manga
                         item.Status = "Downloading";
                         item.IsPaused = false;
                         item.IsStopped = false;
-                        if (string.IsNullOrWhiteSpace(item.CurrentProcess))
-                        {
-                            item.CurrentProcess = "Resuming...";
-                        }
                     }
                 });
             }
@@ -314,7 +310,6 @@ namespace get_link_manga
                                     Dispatcher.Invoke(() =>
                                     {
                                         item.Status = "Downloading";
-                                        item.CurrentProcess = "Starting...";
                                     });
 
                                     Log($"[Download] Đang tải: {item.Name} ({item.Link})");
@@ -330,7 +325,6 @@ namespace get_link_manga
                                         Dispatcher.Invoke(() =>
                                         {
                                             item.Status = item.ErrorCount > 0 ? "Error" : "Completed";
-                                            item.CurrentProcess = "Done";
                                         });
 
                                         Log($"[Download] Hoàn thành truyện: {item.Name}");
@@ -350,7 +344,7 @@ namespace get_link_manga
                                     }
                                     catch (OperationCanceledException)
                                     {
-                                        Dispatcher.Invoke(() => { item.Status = "Paused"; item.CurrentProcess = "Cancelled"; });
+                                        Dispatcher.Invoke(() => { item.Status = "Paused"; });
                                         throw;
                                     }
                                     catch (Exception ex)
@@ -359,7 +353,6 @@ namespace get_link_manga
                                         Dispatcher.Invoke(() =>
                                         {
                                             item.Status = "Error";
-                                            item.CurrentProcess = "Failed";
                                             item.AddError("General", 0, ex.Message);
                                         });
                                     }
