@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -23,40 +22,23 @@ namespace get_link_manga
 
         internal string BuildStableTempFolderPath(string rootFolder, string siteFolder, params string[] identityParts)
         {
-            string safeSite = GetSafePathName(siteFolder ?? "site");
-            string key = string.Join("|", (identityParts ?? Array.Empty<string>()).Where(part => !string.IsNullOrWhiteSpace(part)).Select(part => part.Trim()));
             string prefixSource = identityParts != null && identityParts.Length > 0 ? identityParts[0] : "item";
             string prefix = GetSafePathName(prefixSource);
             if (string.IsNullOrWhiteSpace(prefix))
             {
                 prefix = "item";
             }
-            if (prefix.Length > 36)
+            if (prefix.Length > 120)
             {
-                prefix = prefix.Substring(0, 36);
+                prefix = prefix.Substring(0, 120).Trim();
             }
 
-            string hash = GetStableShortHash(key);
-            return Path.Combine(rootFolder, safeSite, ".tmp", $".tmp_{prefix}_{hash}");
-        }
-
-        private string GetStableShortHash(string input)
-        {
-            using (var sha = SHA256.Create())
-            {
-                byte[] bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(input ?? string.Empty));
-                var sb = new StringBuilder(16);
-                for (int i = 0; i < 8; i++)
-                {
-                    sb.Append(bytes[i].ToString("x2"));
-                }
-                return sb.ToString();
-            }
+            return Path.Combine(rootFolder, ".tmp", $"{prefix}-tmp");
         }
 
         private string GetTempProgressLogPath(string tempFolder)
         {
-            return Path.Combine(tempFolder, "progress.log");
+            return Path.Combine(tempFolder, "log.md");
         }
 
         private void WriteTempProgressLog(string tempFolder, GalleryItem item, string status, int completedPages, int totalPages, string currentProcess, string note = null)
@@ -71,16 +53,20 @@ namespace get_link_manga
                 Directory.CreateDirectory(tempFolder);
 
                 var sb = new StringBuilder();
-                sb.AppendLine($"UpdatedAt={DateTime.Now:O}");
-                sb.AppendLine($"Name={item?.Name ?? string.Empty}");
-                sb.AppendLine($"Link={item?.Link ?? string.Empty}");
-                sb.AppendLine($"Status={status ?? string.Empty}");
-                sb.AppendLine($"CurrentProcess={currentProcess ?? string.Empty}");
-                sb.AppendLine($"CompletedPages={completedPages}");
-                sb.AppendLine($"TotalPages={totalPages}");
+                sb.AppendLine("# Download Trace");
+                sb.AppendLine();
+                sb.AppendLine("| Field | Value |");
+                sb.AppendLine("| :--- | :--- |");
+                sb.AppendLine($"| UpdatedAt | {EscapeMarkdownTableValue(DateTime.Now.ToString("O"))} |");
+                sb.AppendLine($"| Name | {EscapeMarkdownTableValue(item?.Name ?? string.Empty)} |");
+                sb.AppendLine($"| Link | {EscapeMarkdownTableValue(item?.Link ?? string.Empty)} |");
+                sb.AppendLine($"| Status | {EscapeMarkdownTableValue(status ?? string.Empty)} |");
+                sb.AppendLine($"| CurrentProcess | {EscapeMarkdownTableValue(currentProcess ?? string.Empty)} |");
+                sb.AppendLine($"| CompletedPages | {completedPages} |");
+                sb.AppendLine($"| TotalPages | {totalPages} |");
                 if (!string.IsNullOrWhiteSpace(note))
                 {
-                    sb.AppendLine($"Note={note}");
+                    sb.AppendLine($"| Note | {EscapeMarkdownTableValue(note)} |");
                 }
 
                 File.WriteAllText(GetTempProgressLogPath(tempFolder), sb.ToString(), new UTF8Encoding(true));
@@ -88,6 +74,187 @@ namespace get_link_manga
             catch
             {
                 // Temp log is best-effort only.
+            }
+        }
+
+        private string EscapeMarkdownTableValue(string value)
+        {
+            return (value ?? string.Empty)
+                .Replace("\\", "\\\\")
+                .Replace("|", "\\|")
+                .Replace("\r", " ")
+                .Replace("\n", " ");
+        }
+
+        private void MoveTempFolderToTarget(string tempFolder, string targetFolder, string errorLabel)
+        {
+            try
+            {
+                if (!Directory.Exists(tempFolder))
+                {
+                    return;
+                }
+
+                string targetParent = Path.GetDirectoryName(targetFolder);
+                if (!string.IsNullOrWhiteSpace(targetParent))
+                {
+                    Directory.CreateDirectory(targetParent);
+                }
+
+                if (Directory.Exists(targetFolder))
+                {
+                    MergeDirectoryContents(tempFolder, targetFolder);
+                }
+                else
+                {
+                    Directory.Move(tempFolder, targetFolder);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[Lỗi] Không thể di chuyển thư mục tạm {errorLabel}: {ex.Message}");
+            }
+            finally
+            {
+                UnregisterTempFolder(tempFolder);
+            }
+        }
+
+        private string GetDownloadProcessFilePath(string rootFolder, string siteFolder, GalleryItem item)
+        {
+            string safeSite = GetSafePathName(siteFolder ?? "site");
+            string bookKey = GetBookIdentifier(item?.Link) ?? item?.Name ?? "item";
+            string safeBookKey = GetSafePathName(bookKey.Replace("|", "-"));
+            if (safeBookKey.Length > 120)
+            {
+                safeBookKey = safeBookKey.Substring(0, 120).Trim();
+            }
+
+            return Path.Combine(rootFolder, safeSite, ".process", $"{safeBookKey}.md");
+        }
+
+        private List<string> LoadPendingChapterLinksFromProcess(string rootFolder, string siteFolder, GalleryItem item)
+        {
+            string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
+            if (!File.Exists(processPath))
+            {
+                return null;
+            }
+
+            var links = new List<string>();
+            foreach (string line in File.ReadAllLines(processPath, Encoding.UTF8))
+            {
+                if (!line.StartsWith("|", StringComparison.Ordinal) ||
+                    line.StartsWith("| No.", StringComparison.OrdinalIgnoreCase) ||
+                    line.StartsWith("| :---", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                string[] cells = line.Split('|');
+                if (cells.Length < 5)
+                {
+                    continue;
+                }
+
+                string status = cells[2].Trim();
+                string link = cells[4].Trim();
+                if (!string.Equals(status, "Done", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(link) &&
+                    link.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    links.Add(link);
+                }
+            }
+
+            return links;
+        }
+
+        private void InitializeChapterProcess(string rootFolder, string siteFolder, GalleryItem item, IList<string> chapterLinks, bool preserveExistingDone = true)
+        {
+            string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
+            Directory.CreateDirectory(Path.GetDirectoryName(processPath));
+
+            var doneLinks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (preserveExistingDone && File.Exists(processPath))
+            {
+                foreach (string line in File.ReadAllLines(processPath, Encoding.UTF8))
+                {
+                    string[] cells = line.Split('|');
+                    if (cells.Length >= 5 && string.Equals(cells[2].Trim(), "Done", StringComparison.OrdinalIgnoreCase))
+                    {
+                        doneLinks.Add(cells[4].Trim());
+                    }
+                }
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("# Download Process");
+            sb.AppendLine();
+            sb.AppendLine($"Book: {item?.Name ?? string.Empty}");
+            sb.AppendLine($"Source: {item?.Link ?? string.Empty}");
+            sb.AppendLine($"Updated: {DateTime.Now:O}");
+            sb.AppendLine();
+            sb.AppendLine("| No. | Status | Chapter | Link |");
+            sb.AppendLine("| :--- | :--- | :--- | :--- |");
+
+            for (int i = 0; i < chapterLinks.Count; i++)
+            {
+                string link = chapterLinks[i];
+                string status = doneLinks.Contains(link) ? "Done" : "Pending";
+                sb.AppendLine($"| {i + 1} | {status} | {EscapeMarkdownTableValue(GuessChapterNameFromLink(link))} | {EscapeMarkdownTableValue(link)} |");
+            }
+
+            File.WriteAllText(processPath, sb.ToString(), new UTF8Encoding(true));
+        }
+
+        private void MarkChapterProcessDone(string rootFolder, string siteFolder, GalleryItem item, string chapterLink)
+        {
+            string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
+            if (!File.Exists(processPath) || string.IsNullOrWhiteSpace(chapterLink))
+            {
+                return;
+            }
+
+            string[] lines = File.ReadAllLines(processPath, Encoding.UTF8);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                if (!line.Contains(chapterLink))
+                {
+                    continue;
+                }
+
+                string[] cells = line.Split('|');
+                if (cells.Length >= 5)
+                {
+                    cells[2] = " Done ";
+                    lines[i] = string.Join("|", cells);
+                }
+            }
+
+            File.WriteAllLines(processPath, lines, new UTF8Encoding(true));
+        }
+
+        private List<string> FilterPendingChapterLinksFromProcess(string rootFolder, string siteFolder, GalleryItem item, IList<string> chapterLinks)
+        {
+            InitializeChapterProcess(rootFolder, siteFolder, item, chapterLinks);
+            var pending = LoadPendingChapterLinksFromProcess(rootFolder, siteFolder, item);
+            return pending ?? chapterLinks.ToList();
+        }
+
+        private string GuessChapterNameFromLink(string link)
+        {
+            try
+            {
+                var uri = new Uri(link);
+                string slug = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? link;
+                slug = WebUtility.UrlDecode(slug).Replace("-", " ");
+                return slug.Trim();
+            }
+            catch
+            {
+                return link ?? string.Empty;
             }
         }
 
@@ -228,8 +395,6 @@ namespace get_link_manga
                         item.Status = "Cancelled";
                     }
                 }
-                
-                CleanupActiveTempFolders();
             }
         }
 
@@ -706,30 +871,8 @@ namespace get_link_manga
 
                 await Task.WhenAll(tasks);
 
-                try
-                {
-                    if (Directory.Exists(tempFolder))
-                    {
-                        if (Directory.Exists(targetFolder))
-                        {
-                            MergeDirectoryContents(tempFolder, targetFolder);
-                        }
-                        else
-                        {
-                            Directory.Move(tempFolder, targetFolder);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"[Lỗi] Không thể di chuyển thư mục tạm HentaiForce: {ex.Message}");
-                }
-                finally
-                {
-                    UnregisterTempFolder(tempFolder);
-                }
-
                 WriteTempProgressLog(tempFolder, item, "Done", totalPages, totalPages, $"{totalPages}/{totalPages} pages", "Download completed");
+                MoveTempFolderToTarget(tempFolder, targetFolder, "HentaiForce");
 
                 // Check for missing files
                 ValidateDownloadedFiles(targetFolder, totalPages, queueItem, "Pages");
@@ -1076,30 +1219,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                 await Task.WhenAll(tasks);
 
-                try
-                {
-                    if (Directory.Exists(tempFolder))
-                    {
-                        if (Directory.Exists(targetFolder))
-                        {
-                            MergeDirectoryContents(tempFolder, targetFolder);
-                        }
-                        else
-                        {
-                            Directory.Move(tempFolder, targetFolder);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"[Lỗi] Không thể di chuyển thư mục tạm nhentai: {ex.Message}");
-                }
-                finally
-                {
-                    UnregisterTempFolder(tempFolder);
-                }
-
                 WriteTempProgressLog(tempFolder, item, "Done", totalPages, totalPages, $"{totalPages}/{totalPages} pages", "Download completed");
+                MoveTempFolderToTarget(tempFolder, targetFolder, "nhentai");
             }
         }
 
@@ -2015,33 +2136,28 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                     await Task.WhenAll(tasks);
 
-                    try
-                    {
-                        if (Directory.Exists(tempFolder))
-                        {
-                            if (Directory.Exists(targetFolder))
-                            {
-                                MergeDirectoryContents(tempFolder, targetFolder);
-                            }
-                            else
-                            {
-                                Directory.Move(tempFolder, targetFolder);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"[Lỗi] Không thể di chuyển thư mục tạm Hentaiera: {ex.Message}");
-                    }
+                    WriteTempProgressLog(tempFolder, item, "Done", totalPages, totalPages, $"{totalPages}/{totalPages} pages", "Download completed");
+                    MoveTempFolderToTarget(tempFolder, targetFolder, "Hentaiera");
                 }
-
-                WriteTempProgressLog(tempFolder, item, "Done", totalPages, totalPages, $"{totalPages}/{totalPages} pages", "Download completed");
 
                 // Check for missing files
                 ValidateDownloadedFiles(targetFolder, totalPages, queueItem, "Pages");
             }
             finally
             {
+                if (token.IsCancellationRequested && Directory.Exists(tempFolder))
+                {
+                    try
+                    {
+                        Directory.Delete(tempFolder, true);
+                        Log($"[Cleanup] Đã xóa thư mục tạm tải dở: {tempFolder}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"[Cleanup Warning] Không thể xóa thư mục tạm '{tempFolder}': {ex.Message}");
+                    }
+                }
+
                 UnregisterTempFolder(tempFolder);
             }
         }

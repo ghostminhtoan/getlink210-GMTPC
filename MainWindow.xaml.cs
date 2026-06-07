@@ -403,31 +403,8 @@ namespace get_link_manga
             lblLinkCount.Text = _scrapedItems.Count.ToString();
         }
 
-        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _activeTempFolders = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         private int _currentMaxParallelBooks = 2;
         private DynamicSemaphore _activeBookSemaphore;
-
-        internal void RegisterTempFolder(string path)
-        {
-            if (!string.IsNullOrEmpty(path))
-            {
-                _activeTempFolders.TryAdd(path, 0);
-            }
-        }
-
-        internal void UnregisterTempFolder(string path)
-        {
-            if (!string.IsNullOrEmpty(path))
-            {
-                _activeTempFolders.TryRemove(path, out _);
-            }
-        }
-
-        internal void CleanupActiveTempFolders()
-        {
-            // Bỏ việc tự động xóa thư mục tạm khi dừng/huỷ tải để hỗ trợ tải tiếp phần còn dở dang
-            Log("[Cleanup] Giữ lại các thư mục tạm chứa dữ liệu tải dở để hỗ trợ resume tải tiếp.");
-        }
 
         private void WindowSave_Executed(object sender, ExecutedRoutedEventArgs e)
         {

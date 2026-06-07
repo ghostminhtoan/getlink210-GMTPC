@@ -852,6 +852,31 @@ namespace get_link_manga
 
             if (segments.Length >= 2 && segments[0].Equals("truyen-tranh", StringComparison.OrdinalIgnoreCase))
             {
+                if (chapterFilter == null)
+                {
+                    var pendingFromProcess = LoadPendingChapterLinksFromProcess(rootFolder, "truyenqq", item);
+                    if (pendingFromProcess != null)
+                    {
+                        if (pendingFromProcess.Count == 0)
+                        {
+                            Log($"[truyenqq] Process cho '{item.Name}' đã hoàn tất, bỏ qua Download All.");
+                            if (queueItem != null)
+                            {
+                                Dispatcher.Invoke(() =>
+                                {
+                                    queueItem.Status = "Completed";
+                                    queueItem.CurrentProcess = "Đã hoàn tất theo process";
+                                });
+                            }
+                            return;
+                        }
+
+                        Log($"[truyenqq] Resume từ process: còn {pendingFromProcess.Count} chapter cần tải cho '{item.Name}'.");
+                        await DownloadTruyenqqPendingChaptersAsync(item, rootFolder, token, queueItem, pendingFromProcess);
+                        return;
+                    }
+                }
+
                 string slug = segments[1];
                 bool captchaOk = await SolveTruyenqqCaptchaIfNeededAsync(cleanLink);
                 if (!captchaOk)
@@ -946,36 +971,27 @@ namespace get_link_manga
                         return;
                     }
                 }
+                else
+                {
+                    chapterLinks = FilterPendingChapterLinksFromProcess(rootFolder, "truyenqq", item, chapterLinks);
+                    if (chapterLinks.Count == 0)
+                    {
+                        Log($"[truyenqq] Tất cả chapter của '{item.Name}' đã Done theo process.");
+                        if (queueItem != null)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                queueItem.Status = "Completed";
+                                queueItem.CurrentProcess = "Đã hoàn tất theo process";
+                            });
+                        }
+                        return;
+                    }
+                }
 
                 Log($"[truyenqq] Phát hiện {chapterLinks.Count} chương cho truyện '{item.Name}'. Bắt đầu tải lần lượt...");
 
-                if (queueItem != null)
-                {
-                    Dispatcher.Invoke(() =>
-                    {
-                        queueItem.TotalChapters = chapterLinks.Count;
-                        queueItem.CompletedChapters = 0;
-                    });
-                }
-
-                for (int idx = 0; idx < chapterLinks.Count; idx++)
-                {
-                    token.ThrowIfCancellationRequested();
-                    string chapLink = chapterLinks[idx];
-                    Log($"[truyenqq] Đang tải chương {idx + 1}/{chapterLinks.Count}: {chapLink}");
-
-                    var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
-                    await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
-
-                    if (queueItem != null)
-                    {
-                        int currentIdx = idx + 1;
-                        Dispatcher.Invoke(() =>
-                        {
-                            queueItem.CompletedChapters = currentIdx;
-                        });
-                    }
-                }
+                await DownloadTruyenqqPendingChaptersAsync(item, rootFolder, token, queueItem, chapterLinks);
 
                 Dispatcher.Invoke(() =>
                 {
@@ -986,6 +1002,38 @@ namespace get_link_manga
             {
                 // Direct Chapter page
                 await DownloadTruyenqqChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
+            }
+        }
+
+        private async Task DownloadTruyenqqPendingChaptersAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, IList<string> chapterLinks)
+        {
+            if (queueItem != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    queueItem.TotalChapters = chapterLinks.Count;
+                    queueItem.CompletedChapters = 0;
+                });
+            }
+
+            for (int idx = 0; idx < chapterLinks.Count; idx++)
+            {
+                token.ThrowIfCancellationRequested();
+                string chapLink = chapterLinks[idx];
+                Log($"[truyenqq] Đang tải chương {idx + 1}/{chapterLinks.Count}: {chapLink}");
+
+                var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
+                await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
+                MarkChapterProcessDone(rootFolder, "truyenqq", item, chapLink);
+
+                if (queueItem != null)
+                {
+                    int currentIdx = idx + 1;
+                    Dispatcher.Invoke(() =>
+                    {
+                        queueItem.CompletedChapters = currentIdx;
+                    });
+                }
             }
         }
 
@@ -1329,14 +1377,8 @@ namespace get_link_manga
                 if (Directory.Exists(tempFolder))
                 {
                     string currentTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-                    if (Directory.Exists(currentTargetFolder))
-                    {
-                        MergeDirectoryContents(tempFolder, currentTargetFolder);
-                    }
-                    else
-                    {
-                        Directory.Move(tempFolder, currentTargetFolder);
-                    }
+                    WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
+                    MoveTempFolderToTarget(tempFolder, currentTargetFolder, "truyenqq");
                 }
 
                 await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
@@ -1350,8 +1392,6 @@ namespace get_link_manga
             {
                 UnregisterTempFolder(tempFolder);
             }
-
-            WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
 
             // Check for missing files
             string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
