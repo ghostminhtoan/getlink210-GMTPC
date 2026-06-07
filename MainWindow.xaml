@@ -336,37 +336,54 @@
                                             <Button Grid.Column="4" Name="btnTruyenqqPasteDirect" Content="PASTE DIRECT LINK" Click="BtnTruyenqqPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
                                         </Grid>
 
-                                        <!-- Progress Logging Panel -->
+                                        <!-- Check Error Panel -->
                                         <Grid Grid.Row="6">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="*"/>
                                             </Grid.RowDefinitions>
                                             <Grid Grid.Row="0" Margin="0,0,0,6">
-                                                 <Grid.ColumnDefinitions>
-                                                     <ColumnDefinition Width="*"/>
-                                                     <ColumnDefinition Width="Auto"/>
-                                                     <ColumnDefinition Width="10"/>
-                                                     <ColumnDefinition Width="Auto"/>
-                                                 </Grid.ColumnDefinitions>
-                                                 <TextBlock Text="LOG" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                     <TextBlock Text="AUTO SCROLL" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                                     <ToggleButton Name="chkAutoScrollTruyenqqLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
-                                                 </StackPanel>
-                                                 <Button Grid.Column="3" Name="btnClearTruyenqqLog" Content="CLEAR" Click="BtnClearTruyenqqLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
-                                             </Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="CHECK ERROR" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding CheckErrors.Count, RelativeSource={RelativeSource AncestorType=Window}, StringFormat=TOTAL: {0}}" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <Button Grid.Column="2" Name="btnClearCheckErrorsTruyenqq" Content="CLEAR" Click="BtnClearCheckErrors_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                            </Grid>
                                             <Border Grid.Row="1" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3">
-                                                <RichTextBox Name="txtTruyenqqLog" 
-                                                          VerticalScrollBarVisibility="Auto"
-                                                          Background="Transparent" 
-                                                          BorderThickness="0" 
-                                                          Foreground="#a8ffb2" 
-                                                          FontFamily="Consolas, Courier New" 
-                                                          FontSize="11" 
-                                                          IsReadOnly="True" 
-                                                          Padding="10"/>
+                                                <DataGrid Name="dgCheckErrorsTruyenqq"
+                                                          ItemsSource="{Binding CheckErrors, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          AutoGenerateColumns="False"
+                                                          IsReadOnly="True"
+                                                          Background="Transparent"
+                                                          BorderThickness="0"
+                                                          Foreground="{StaticResource CyberpunkTextBrush}"
+                                                          HeadersVisibility="Column"
+                                                          RowHeaderWidth="0"
+                                                          GridLinesVisibility="Horizontal"
+                                                          HorizontalGridLinesBrush="#1f293d"
+                                                          VerticalGridLinesBrush="#1f293d"
+                                                          ColumnHeaderStyle="{StaticResource CyberpunkDataGridColumnHeader}"
+                                                          RowStyle="{StaticResource CyberpunkDataGridRow}"
+                                                          CellStyle="{StaticResource CyberpunkDataGridCell}">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Header="TIME" Binding="{Binding LastSeen, StringFormat=HH:mm:ss}" Width="85"/>
+                                                        <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="90"/>
+                                                        <DataGridTextColumn Header="BOOK" Binding="{Binding BookName}" Width="180"/>
+                                                        <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="110"/>
+                                                        <DataGridTextColumn Header="PAGE" Binding="{Binding PageDisplay}" Width="60"/>
+                                                        <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*"/>
+                                                        <DataGridTextColumn Header="COUNT" Binding="{Binding OccurrenceCount}" Width="60"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
                                             </Border>
+                                            <Grid Visibility="Collapsed">
+                                                <RichTextBox Name="txtTruyenqqLog" VerticalScrollBarVisibility="Auto" Background="Transparent" BorderThickness="0" Foreground="#a8ffb2" FontFamily="Consolas, Courier New" FontSize="11" IsReadOnly="True" Padding="10"/>
+                                                <ToggleButton Name="chkAutoScrollTruyenqqLog" Style="{StaticResource ToggleButtonSwitch}" IsChecked="True" Height="16" Width="32"/>
+                                                <Button Name="btnClearTruyenqqLog" Content="CLEAR" Click="BtnClearTruyenqqLog_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="20" Width="60" FontSize="9" Padding="0"/>
+                                            </Grid>
                                         </Grid>
                                     </Grid>
                                 </Border>
@@ -1214,7 +1231,7 @@
                     </Grid>
 
                     <!-- Toolbar for Filtering and Sorting -->
-                    <WrapPanel Grid.Row="2" Margin="0,0,0,16" Orientation="Horizontal">
+                    <WrapPanel Grid.Row="2" Margin="0,0,0,20" Orientation="Horizontal">
                         <Button Name="btnSortByName" Content="SORT BY NAME" Click="BtnSortByName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11" Margin="0,0,8,8"/>
                         <Button Name="btnRestoreOrder" Content="RESTORE ORDER" Click="BtnRestoreOrder_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="120" FontSize="11" Margin="0,0,8,8"/>
                         <Button Name="btnDuplicateName" Content="DUPLICATE NAME" Click="BtnDuplicateName_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="120" FontSize="11" Margin="0,0,8,8"/>
@@ -1242,7 +1259,7 @@
                               VirtualizingPanel.VirtualizationMode="Recycling"
                               VirtualizingPanel.ScrollUnit="Item"
                               EnableRowVirtualization="True"
-                              Margin="0,4,0,15">
+                              Margin="0,10,0,15">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Tích chọn dòng đang bôi đen (Check Selected)" Click="MenuCheckSelected_Click"/>
@@ -1566,7 +1583,11 @@
                                     <ColumnDefinition Width="Auto"/> <!-- MERGE FOLDERS button -->
                                     <ColumnDefinition Width="10"/>
                                     <ColumnDefinition Width="Auto"/> <!-- SPLIT FOLDERS button -->
-                                    <ColumnDefinition Width="30"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="Auto"/> <!-- COMPRESS BOOKS button -->
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="Auto"/> <!-- EXTRACT BOOKS button -->
+                                    <ColumnDefinition Width="20"/>
                                     <ColumnDefinition Width="Auto"/> <!-- SEARCH Label -->
                                     <ColumnDefinition Width="10"/>
                                     <ColumnDefinition Width="*"/>    <!-- Search Textbox -->
@@ -1575,9 +1596,11 @@
                                 <TextBlock Grid.Column="0" Text="FOLDER ACTIONS" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <Button Grid.Column="2" Name="btnMergeFolders" Content="MERGE FOLDERS" Click="BtnMergeFolders_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="130" FontSize="11"/>
                                 <Button Grid.Column="4" Name="btnSplitFolders" Content="SPLIT FOLDERS" Click="BtnSplitFolders_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
+                                <Button Grid.Column="6" Name="btnCompressBooks" Content="COMPRESS BOOKS" Click="BtnCompressBooks_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="135" FontSize="11"/>
+                                <Button Grid.Column="8" Name="btnExtractBooks" Content="EXTRACT BOOKS" Click="BtnExtractBooks_Click" Style="{StaticResource CyberpunkButtonPink}" Height="30" Width="130" FontSize="11"/>
 
-                                <TextBlock Grid.Column="6" Text="SEARCH" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="8" Name="txtFilter" 
+                                <TextBlock Grid.Column="10" Text="SEARCH" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="12" Name="txtFilter" 
                                          TextChanged="TxtFilter_TextChanged"
                                          Background="#0e121a" 
                                          BorderBrush="{StaticResource CyberpunkBorderBrush}" 

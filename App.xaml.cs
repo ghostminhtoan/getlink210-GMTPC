@@ -7,6 +7,7 @@ namespace get_link_manga
         protected override void OnStartup(StartupEventArgs e)
         {
             PortableRuntimeBootstrap.EnsurePortableRuntime();
+            PortableArchiveBootstrap.EnsurePortableSevenZip();
             try
             {
                 System.IO.Directory.SetCurrentDirectory(PortablePaths.AppRoot);

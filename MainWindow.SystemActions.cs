@@ -7,8 +7,6 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Win32;
-
 namespace get_link_manga
 {
     public partial class MainWindow : Window
@@ -153,104 +151,93 @@ namespace get_link_manga
                 return;
             }
 
-            SaveFileDialog saveFileDialog = new SaveFileDialog
+            try
             {
-                Filter = "Markdown Files (*.md)|*.md|Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
-                FileName = "save gallery.md"
-            };
+                var states = items.Select((item, index) => CreateGalleryItemState(item, index)).ToList();
 
-            if (saveFileDialog.ShowDialog() == true)
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("# Scraped HentaiForce Galleries");
+                sb.AppendLine();
+                sb.AppendLine("## Summary");
+                sb.AppendLine("| No. | Checked | Name | Link | Chapter | Page | Status | Process | Error Count |");
+                sb.AppendLine("| :--- | :---: | :--- | :--- | :--- | :--- | :--- | :--- | :---: |");
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    string checkedStr = item.IsChecked ? "[x]" : "[ ]";
+                    string status = EscapeMarkdownCell(item.Status);
+                    string process = EscapeMarkdownCell(item.CurrentProcess);
+                    string safeName = EscapeMarkdownCell(item.Name);
+                    string safeLink = EscapeMarkdownCell(item.Link);
+                    string chapter = EscapeMarkdownCell(item.DownloadingChapter);
+                    string page = EscapeMarkdownCell(item.DownloadingPageProgress);
+                    sb.AppendLine($"| {i + 1} | {checkedStr} | {safeName} | {safeLink} | {chapter} | {page} | {status} | {process} | {item.GetUniqueErrorCount()} |");
+                }
+
+                sb.AppendLine();
+                sb.AppendLine("## Full State");
+                sb.AppendLine(GalleryStateBeginMarker);
+                sb.AppendLine("```json");
+                sb.AppendLine(SerializeGalleryStates(states));
+                sb.AppendLine("```");
+                sb.AppendLine(GalleryStateEndMarker);
+
+                File.WriteAllText(PortablePaths.PortableGalleryListPath, sb.ToString(), new UTF8Encoding(true));
+
+                Log($"All content successfully saved to portable Markdown file: {PortablePaths.PortableGalleryListPath}");
+                lblStatus.Text = "Saved portable MD file.";
+            }
+            catch (Exception ex)
             {
-                try
-                {
-                    var states = items.Select((item, index) => CreateGalleryItemState(item, index)).ToList();
-
-                    StringBuilder sb = new StringBuilder();
-                    sb.AppendLine("# Scraped HentaiForce Galleries");
-                    sb.AppendLine();
-                    sb.AppendLine("## Summary");
-                    sb.AppendLine("| No. | Checked | Name | Link | Chapter | Page | Status | Process | Error Count |");
-                    sb.AppendLine("| :--- | :---: | :--- | :--- | :--- | :--- | :--- | :--- | :---: |");
-
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        var item = items[i];
-                        string checkedStr = item.IsChecked ? "[x]" : "[ ]";
-                        string status = EscapeMarkdownCell(item.Status);
-                        string process = EscapeMarkdownCell(item.CurrentProcess);
-                        string safeName = EscapeMarkdownCell(item.Name);
-                        string safeLink = EscapeMarkdownCell(item.Link);
-                        string chapter = EscapeMarkdownCell(item.DownloadingChapter);
-                        string page = EscapeMarkdownCell(item.DownloadingPageProgress);
-                        sb.AppendLine($"| {i + 1} | {checkedStr} | {safeName} | {safeLink} | {chapter} | {page} | {status} | {process} | {item.GetUniqueErrorCount()} |");
-                    }
-
-                    sb.AppendLine();
-                    sb.AppendLine("## Full State");
-                    sb.AppendLine(GalleryStateBeginMarker);
-                    sb.AppendLine("```json");
-                    sb.AppendLine(SerializeGalleryStates(states));
-                    sb.AppendLine("```");
-                    sb.AppendLine(GalleryStateEndMarker);
-
-                    File.WriteAllText(saveFileDialog.FileName, sb.ToString(), new UTF8Encoding(true));
-
-                    Log($"All content successfully saved to Markdown file: {saveFileDialog.FileName}");
-                    lblStatus.Text = "Saved to MD file.";
-                }
-                catch (Exception ex)
-                {
-                    Log($"Failed to save file: {ex.Message}");
-                    MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                Log($"Failed to save file: {ex.Message}");
+                MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private void BtnLoad_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog
+            if (!File.Exists(PortablePaths.PortableGalleryListPath))
             {
-                Filter = "Markdown Files (*.md)|*.md|All Files (*.*)|*.*"
-            };
+                MessageBox.Show($"Portable markdown file not found:\n{PortablePaths.PortableGalleryListPath}", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
-            if (openFileDialog.ShowDialog() == true)
+            try
             {
-                try
+                string content = File.ReadAllText(PortablePaths.PortableGalleryListPath, Encoding.UTF8);
+                List<GalleryItem> loadedItems = LoadGalleryItemsFromMarkdown(content);
+
+                if (loadedItems.Any())
                 {
-                    string content = File.ReadAllText(openFileDialog.FileName, Encoding.UTF8);
-                    List<GalleryItem> loadedItems = LoadGalleryItemsFromMarkdown(content);
-
-                    if (loadedItems.Any())
+                    _scrapedItems.Clear();
+                    if (chkSelectAll != null)
                     {
-                        _scrapedItems.Clear();
-                        if (chkSelectAll != null)
-                        {
-                            chkSelectAll.IsChecked = false;
-                        }
-
-                        for (int i = 0; i < loadedItems.Count; i++)
-                        {
-                            var item = loadedItems[i];
-                            item.OriginalIndex = i;
-                            _scrapedItems.Add(item);
-                        }
-
-                        RecalculateDuplicates();
-                        lblLinkCount.Text = _scrapedItems.Count.ToString();
-                        ApplySavedDownloadSettings(loadedItems.FirstOrDefault());
-                        Log($"Successfully loaded {_scrapedItems.Count} items from: {openFileDialog.FileName}");
-                        lblStatus.Text = "Markdown file loaded successfully.";
+                        chkSelectAll.IsChecked = false;
                     }
-                    else
+
+                    for (int i = 0; i < loadedItems.Count; i++)
                     {
-                        MessageBox.Show("No valid entries found in the markdown file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                        var item = loadedItems[i];
+                        item.OriginalIndex = i;
+                        _scrapedItems.Add(item);
                     }
+
+                    RecalculateDuplicates();
+                    lblLinkCount.Text = _scrapedItems.Count.ToString();
+                    ApplySavedDownloadSettings(loadedItems.FirstOrDefault());
+                    Log($"Successfully loaded {_scrapedItems.Count} items from portable markdown: {PortablePaths.PortableGalleryListPath}");
+                    lblStatus.Text = "Portable markdown file loaded successfully.";
                 }
-                catch (Exception ex)
+                else
                 {
-                    Log($"Failed to load file: {ex.Message}");
-                    MessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("No valid entries found in the markdown file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to load file: {ex.Message}");
+                MessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

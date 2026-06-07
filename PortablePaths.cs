@@ -23,6 +23,14 @@ namespace get_link_manga
 
         internal static string DefaultDownloadRoot => Path.Combine(AppRoot, "image downloader GMTPC");
 
+        internal static string PortableGalleryListPath => Path.Combine(AppRoot, "save gallery.md");
+
+        internal static string SevenZipRoot => Path.Combine(PortableDataRoot, "7-Zip");
+
+        internal static string SevenZipExePath => Path.Combine(SevenZipRoot, "7z.exe");
+
+        internal static string PortableArchivePath => Path.Combine(AppRoot, "Comic-GMTPC.7z");
+
         internal static string GetRuntimeNativeFolder()
         {
             string rid;

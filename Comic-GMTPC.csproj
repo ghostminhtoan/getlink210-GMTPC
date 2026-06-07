@@ -181,6 +181,9 @@
     <Compile Include="PortableRuntimeBootstrap.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="PortableArchiveBootstrap.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ErrorReportWindow.xaml.cs">
       <DependentUpon>ErrorReportWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -226,6 +229,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="runtimes\win-arm64\native\WebView2Loader.dll">
       <LogicalName>runtimes/win-arm64/native/WebView2Loader.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="7-Zip\**\*">
+      <LogicalName>7-Zip/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
