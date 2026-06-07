@@ -1,0 +1,45 @@
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+
+namespace get_link_manga
+{
+    internal static class PortablePaths
+    {
+        internal static string AppRoot
+        {
+            get
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                return Path.GetFullPath(baseDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            }
+        }
+
+        internal static string PortableDataRoot => Path.Combine(AppRoot, ".portable");
+
+        internal static string WebView2UserDataFolder => Path.Combine(PortableDataRoot, "webview2");
+
+        internal static string RuntimeRoot => Path.Combine(AppRoot, "runtimes");
+
+        internal static string DefaultDownloadRoot => Path.Combine(AppRoot, "image downloader GMTPC");
+
+        internal static string GetRuntimeNativeFolder()
+        {
+            string rid;
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                rid = "win-arm64";
+            }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+            {
+                rid = "win-x64";
+            }
+            else
+            {
+                rid = "win-x86";
+            }
+
+            return Path.Combine(RuntimeRoot, rid, "native");
+        }
+    }
+}

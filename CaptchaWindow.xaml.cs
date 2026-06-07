@@ -37,8 +37,11 @@ namespace get_link_manga
         {
             try
             {
-                // Setup WebView2 user data folder inside local appdata to persist cookies/session and ensure clean execution
-                var env = await CoreWebView2Environment.CreateAsync(null, System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "get_link_manga_webview2"));
+                // Keep WebView2 data next to the portable app root so a copied exe remains self-contained.
+                var env = await CoreWebView2Environment.CreateAsync(
+                    null,
+                    PortablePaths.WebView2UserDataFolder,
+                    new CoreWebView2EnvironmentOptions());
                 await webView.EnsureCoreWebView2Async(env);
                 
                 webView.Source = new Uri(_targetUrl);

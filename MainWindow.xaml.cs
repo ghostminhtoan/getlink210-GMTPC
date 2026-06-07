@@ -148,7 +148,7 @@ namespace get_link_manga
 
             try
             {
-                txtDownloadPath.Text = System.IO.Path.GetFullPath(Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Documents\image downloader GMTPC"));
+                txtDownloadPath.Text = PortablePaths.DefaultDownloadRoot;
             }
             catch {}
 

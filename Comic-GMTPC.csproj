@@ -175,6 +175,12 @@
     <Compile Include="BuildInfo.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="PortablePaths.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="PortableRuntimeBootstrap.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ErrorReportWindow.xaml.cs">
       <DependentUpon>ErrorReportWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -210,6 +216,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="runtimes\win-x64\native\WebView2Loader.dll">
+      <LogicalName>runtimes/win-x64/native/WebView2Loader.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="runtimes\win-x86\native\WebView2Loader.dll">
+      <LogicalName>runtimes/win-x86/native/WebView2Loader.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="runtimes\win-arm64\native\WebView2Loader.dll">
+      <LogicalName>runtimes/win-arm64/native/WebView2Loader.dll</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

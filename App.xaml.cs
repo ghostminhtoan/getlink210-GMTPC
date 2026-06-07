@@ -6,6 +6,15 @@ namespace get_link_manga
     {
         protected override void OnStartup(StartupEventArgs e)
         {
+            PortableRuntimeBootstrap.EnsurePortableRuntime();
+            try
+            {
+                System.IO.Directory.SetCurrentDirectory(PortablePaths.AppRoot);
+            }
+            catch
+            {
+            }
+
             base.OnStartup(e);
             var mainWindow = new MainWindow();
             mainWindow.Show();
