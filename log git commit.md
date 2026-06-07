@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `f7e688d` | **Build Time**: 2026-06-07 ∕ 09.10.34 PM Sunday | **Message**: ui-compact-gallery-panel
 - **Commit**: `a6d95f3` | **Build Time**: 2026-06-07 ∕ 08.58.31 PM Sunday | **Message**: fix: restore gallery panel layout
 - **Commit**: `eb40a4f` | **Build Time**: 2026-06-07 03.22.13 PM Sunday | **Message**: feat: make app portable with embedded runtime loader
 - **Commit**: `6618a7a` | **Build Time**: 2026-06-07 08.41.22 PM Sunday | **Message**: fix: make designer references build reliably
