@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `1f49230` | **Date**: 2026-06-07 10:07:08 | **Message**: fix: resolve truyenqq retry image urls
 - **Commit**: `ee034b4` | **Date**: 2026-06-07 09:39:03 | **Message**: feat: resume downloads from process manifest
 - **Commit**: `17c23a0` | **Date**: 2026-06-07 07:37:33 | **Message**: feat: stabilize temp resume and log progress
 - **Commit**: `a1121d2` | **Date**: 2026-06-07 07:12:30 | **Message**: feat: separate process state and persist download settings
