@@ -976,7 +976,7 @@ namespace get_link_manga
                     chapterLinks = FilterPendingChapterLinksFromProcess(rootFolder, "truyenqq", item, chapterLinks);
                     if (chapterLinks.Count == 0)
                     {
-                        Log($"[truyenqq] Tất cả chapter của '{item.Name}' đã Done theo process.");
+                        TruyenqqLog($"Tất cả chapter của '{item.Name}' đã Done theo process.");
                         if (queueItem != null)
                         {
                             Dispatcher.Invoke(() =>
@@ -989,7 +989,7 @@ namespace get_link_manga
                     }
                 }
 
-                Log($"[truyenqq] Phát hiện {chapterLinks.Count} chương cho truyện '{item.Name}'. Bắt đầu tải lần lượt...");
+                TruyenqqLog($"Phát hiện {chapterLinks.Count} chương cho truyện '{item.Name}'. Bắt đầu tải lần lượt...");
 
                 await DownloadTruyenqqPendingChaptersAsync(item, rootFolder, token, queueItem, chapterLinks);
 
@@ -1127,7 +1127,7 @@ namespace get_link_manga
 
             string safeManga = GetSafePathName(cleanManga);
             string safeChapter = GetSafePathName(cleanChapter);
-            string progressKey = $"truyenqq|{queueItem?.Link ?? item.Link ?? cleanManga}";
+            string progressKey = $"truyenqq|{GetSafePathName(cleanManga)}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
             UpsertMainLogLine(progressKey, $"[truyenqq] Đang tải {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");

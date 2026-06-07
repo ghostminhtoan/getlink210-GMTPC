@@ -823,7 +823,7 @@ namespace get_link_manga
                     chapterLinks = FilterPendingChapterLinksFromProcess(rootFolder, "vi-hentai.pro", item, chapterLinks);
                     if (chapterLinks.Count == 0)
                     {
-                        Log($"[vi-hentai.pro] Tất cả chapter của '{item.Name}' đã Done theo process.");
+                        ViHentaiLog($"Tất cả chapter của '{item.Name}' đã Done theo process.");
                         if (queueItem != null)
                         {
                             Dispatcher.Invoke(() =>
@@ -836,7 +836,7 @@ namespace get_link_manga
                     }
                 }
 
-                Log($"[vi-hentai.pro] Truy cập {chapterLinks.Count} chapters cho truyện '{item.Name}'. Sẽ tải lần lượt...");
+                ViHentaiLog($"Truy cập {chapterLinks.Count} chapters cho truyện '{item.Name}'. Sẽ tải lần lượt...");
 
                 await DownloadViHentaiPendingChaptersAsync(item, rootFolder, token, queueItem, chapterLinks);
 
@@ -941,7 +941,7 @@ namespace get_link_manga
 
             string safeManga = GetSafePathName(mangaTitle);
             string safeChapter = GetSafePathName(chapterTitle);
-            string progressKey = $"vi-hentai.pro|{queueItem?.Link ?? item.Link ?? mangaTitle}";
+            string progressKey = $"vi-hentai.pro|{GetSafePathName(mangaTitle)}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
             UpsertMainLogLine(progressKey, $"[vi-hentai.pro] Đang tải {mangaTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
