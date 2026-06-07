@@ -457,7 +457,7 @@ namespace get_link_manga
                 IsChecked = state.IsChecked,
                 IsDuplicate = state.IsDuplicate,
                 HasNoChapters = state.HasNoChapters,
-                Name = state.Name,
+                Name = string.IsNullOrWhiteSpace(state.Name) ? state.Name : FormatGalleryTitle(state.Name),
                 Link = state.Link,
                 LinkCount = state.LinkCount,
                 SourceDomain = state.SourceDomain,

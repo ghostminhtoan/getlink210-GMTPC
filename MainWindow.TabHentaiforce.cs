@@ -529,6 +529,12 @@ namespace get_link_manga
         {
             if (string.IsNullOrEmpty(title)) return title;
 
+            title = Regex.Replace(
+                title,
+                @"\s+(?:chương mới nhất|chap mới nhất|chapter mới nhất|chương|chap|chapter)\s+\d+(?:\.\d+)?(?:\s*[\-\|].*)?$",
+                "",
+                RegexOptions.IgnoreCase).Trim();
+
             // Find all bracketed contents: [...] or (...) or {...}
             var matches = Regex.Matches(title, @"[\[({][^\])}]*[\])}]");
             System.Collections.Generic.List<string> bracketsList = new System.Collections.Generic.List<string>();
