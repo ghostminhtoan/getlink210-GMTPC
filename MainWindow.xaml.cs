@@ -55,6 +55,94 @@ namespace get_link_manga
         public MainWindow()
         {
             InitializeComponent();
+            void TogglePauseResume(System.Windows.Controls.Button button)
+            {
+                _isDownloadPaused = !_isDownloadPaused;
+
+                var nextText = _isDownloadPaused ? "Resume all" : "Pause all";
+                button.Content = nextText;
+                button.Tag = _isDownloadPaused ? "resume" : "pause";
+            }
+
+            System.Windows.Controls.Button FindPauseButton()
+            {
+                System.Windows.Controls.Button found = null;
+
+                void Walk(System.Windows.DependencyObject node)
+                {
+                    if (node == null || found != null)
+                    {
+                        return;
+                    }
+
+                    var button = node as System.Windows.Controls.Button;
+                    if (button != null)
+                    {
+                        var contentBlock = button.Content as System.Windows.Controls.TextBlock;
+                        var contentText = contentBlock != null
+                            ? contentBlock.Text
+                            : (button.Content == null ? null : button.Content.ToString());
+                        var tagText = button.Tag == null ? null : button.Tag.ToString();
+                        var nameText = button.Name;
+
+                        if (string.Equals(contentText, "Pause all", System.StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(contentText, "Resume all", System.StringComparison.OrdinalIgnoreCase) ||
+                            (!string.IsNullOrEmpty(contentText) && contentText.IndexOf("pause", System.StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (!string.IsNullOrEmpty(contentText) && contentText.IndexOf("resume", System.StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            string.Equals(tagText, "pause", System.StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(tagText, "resume", System.StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(nameText, "BtnPauseDownload", System.StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(nameText, "BtnPauseAll", System.StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(nameText, "BtnResumeDownload", System.StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(nameText, "BtnResumeAll", System.StringComparison.OrdinalIgnoreCase) ||
+                            (!string.IsNullOrEmpty(nameText) && nameText.IndexOf("pause", System.StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (!string.IsNullOrEmpty(nameText) && nameText.IndexOf("resume", System.StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            found = button;
+                            return;
+                        }
+                    }
+
+                    var childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(node);
+                    for (var i = 0; i < childCount; i++)
+                    {
+                        Walk(System.Windows.Media.VisualTreeHelper.GetChild(node, i));
+                        if (found != null)
+                        {
+                            return;
+                        }
+                    }
+                }
+
+                Walk(this);
+                return found;
+            }
+
+            Loaded += (sender, args) =>
+            {
+                var pauseButton = FindPauseButton();
+                if (pauseButton == null)
+                {
+                    return;
+                }
+
+                pauseButton.PreviewMouseLeftButtonDown += (buttonSender, mouseArgs) =>
+                {
+                    mouseArgs.Handled = true;
+                    TogglePauseResume((System.Windows.Controls.Button)buttonSender);
+                };
+
+                pauseButton.PreviewKeyDown += (buttonSender, keyArgs) =>
+                {
+                    if (keyArgs.Key != System.Windows.Input.Key.Enter && keyArgs.Key != System.Windows.Input.Key.Space)
+                    {
+                        return;
+                    }
+
+                    keyArgs.Handled = true;
+                    TogglePauseResume((System.Windows.Controls.Button)buttonSender);
+                };
+            };
             InitializeLogPanels();
             dgResults.ItemsSource = _scrapedItems;
 
@@ -71,6 +159,23 @@ namespace get_link_manga
                 StyleComboBoxPopup(cmbNhentaiSort);
                 StyleComboBoxPopup(cmbConnections);
                 StyleComboBoxPopup(cmbMultiDownload);
+
+                if (btnPauseDownload != null)
+                {
+                    btnPauseDownload.PreviewMouseLeftButtonUp += (sender, args) =>
+                    {
+                        if (_isDownloadPaused)
+                        {
+                            ResumeAllDownloads();
+                        }
+                        else
+                        {
+                            PauseAllDownloads();
+                        }
+
+                        args.Handled = true;
+                    };
+                }
 
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, WindowSave_Executed));
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, WindowOpen_Executed));
@@ -400,6 +505,7 @@ namespace get_link_manga
                 DeleteProcessMarkdownForItem(item);
                 _scrapedItems.Remove(item);
             }
+
             Log($"Đã xóa {toRemove.Count} truyện hoàn thành khỏi danh sách.");
             lblLinkCount.Text = _scrapedItems.Count.ToString();
         }

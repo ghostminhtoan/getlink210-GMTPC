@@ -169,8 +169,8 @@ namespace get_link_manga
                     sb.AppendLine("# Scraped HentaiForce Galleries");
                     sb.AppendLine();
                     sb.AppendLine("## Summary");
-                    sb.AppendLine("| No. | Checked | Name | Link | Status | Process | Error Count |");
-                    sb.AppendLine("| :--- | :---: | :--- | :--- | :--- | :--- | :---: |");
+                    sb.AppendLine("| No. | Checked | Name | Link | Chapter | Page | Status | Process | Error Count |");
+                    sb.AppendLine("| :--- | :---: | :--- | :--- | :--- | :--- | :--- | :--- | :---: |");
 
                     for (int i = 0; i < items.Count; i++)
                     {
@@ -180,7 +180,9 @@ namespace get_link_manga
                         string process = EscapeMarkdownCell(item.CurrentProcess);
                         string safeName = EscapeMarkdownCell(item.Name);
                         string safeLink = EscapeMarkdownCell(item.Link);
-                        sb.AppendLine($"| {i + 1} | {checkedStr} | {safeName} | {safeLink} | {status} | {process} | {item.GetUniqueErrorCount()} |");
+                        string chapter = EscapeMarkdownCell(item.DownloadingChapter);
+                        string page = EscapeMarkdownCell(item.DownloadingPageProgress);
+                        sb.AppendLine($"| {i + 1} | {checkedStr} | {safeName} | {safeLink} | {chapter} | {page} | {status} | {process} | {item.GetUniqueErrorCount()} |");
                     }
 
                     sb.AppendLine();

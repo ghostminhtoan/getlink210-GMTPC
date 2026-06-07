@@ -279,6 +279,7 @@ namespace get_link_manga
 
             int successfulRetries = 0;
             int failedRetries = 0;
+            bool wasDownloading = string.Equals(queueItem.Status, "Downloading", StringComparison.OrdinalIgnoreCase);
 
             foreach (var err in errorsToRetry)
             {
@@ -352,8 +353,16 @@ namespace get_link_manga
             }
 
             Dispatcher.Invoke(() => {
-                queueItem.Status = queueItem.GetUniqueErrorCount() > 0 ? "Error" : "Completed";
-                queueItem.CurrentProcess = queueItem.GetUniqueErrorCount() > 0 ? "Done with errors" : "Done";
+                if (wasDownloading)
+                {
+                    queueItem.Status = "Downloading";
+                    queueItem.CurrentProcess = $"Retrying errors... ({successfulRetries} ok, {failedRetries} fail)";
+                }
+                else
+                {
+                    queueItem.Status = queueItem.GetUniqueErrorCount() > 0 ? "Error" : "Completed";
+                    queueItem.CurrentProcess = queueItem.GetUniqueErrorCount() > 0 ? "Done with errors" : "Done";
+                }
             });
 
             UpdateQueueErrorLabel();

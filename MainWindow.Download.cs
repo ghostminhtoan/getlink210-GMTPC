@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,6 +20,54 @@ namespace get_link_manga
     {
         private CancellationTokenSource _downloadCts;
         private volatile bool _isDownloadPaused = false;
+        private static readonly ConcurrentDictionary<string, DateTime> _tempLogWriteTimes = new ConcurrentDictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, DateTime> _processWriteTimes = new ConcurrentDictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+
+        internal void PauseAllDownloads()
+        {
+            _isDownloadPaused = true;
+            foreach (var item in _scrapedItems)
+            {
+                if (item != null && !item.IsStopped && string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase))
+                {
+                    item.IsPaused = true;
+                    item.Status = "Paused";
+                }
+            }
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                if (btnPauseDownload != null)
+                {
+                    btnPauseDownload.Content = "▶️";
+                    btnPauseDownload.Tag = "Resume";
+                }
+            }));
+        }
+
+        internal void ResumeAllDownloads()
+        {
+            _isDownloadPaused = false;
+            foreach (var item in _scrapedItems)
+            {
+                if (item != null && item.IsPaused && !item.IsStopped)
+                {
+                    item.IsPaused = false;
+                    if (string.Equals(item.Status, "Paused", StringComparison.OrdinalIgnoreCase))
+                    {
+                        item.Status = "Downloading";
+                    }
+                }
+            }
+
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                if (btnPauseDownload != null)
+                {
+                    btnPauseDownload.Content = "⏸️";
+                    btnPauseDownload.Tag = "Pause";
+                }
+            }));
+        }
 
         internal string BuildStableTempFolderPath(string rootFolder, string siteFolder, params string[] identityParts)
         {
@@ -51,6 +100,22 @@ namespace get_link_manga
                 }
 
                 Directory.CreateDirectory(tempFolder);
+
+                bool forceWrite =
+                    string.Equals(status, "Done", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(status, "Error", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(status, "Cancelled", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(status, "Paused", StringComparison.OrdinalIgnoreCase);
+
+                DateTime nowUtc = DateTime.UtcNow;
+                if (!forceWrite &&
+                    _tempLogWriteTimes.TryGetValue(tempFolder, out DateTime lastWriteUtc) &&
+                    (nowUtc - lastWriteUtc).TotalMilliseconds < 500)
+                {
+                    return;
+                }
+
+                _tempLogWriteTimes[tempFolder] = nowUtc;
 
                 var sb = new StringBuilder();
                 sb.AppendLine("# Download Trace");
@@ -242,6 +307,14 @@ namespace get_link_manga
             string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
             Directory.CreateDirectory(Path.GetDirectoryName(processPath));
 
+            DateTime nowUtc = DateTime.UtcNow;
+            if (_processWriteTimes.TryGetValue(processPath, out DateTime lastWriteUtc) &&
+                (nowUtc - lastWriteUtc).TotalMilliseconds < 500)
+            {
+                return;
+            }
+            _processWriteTimes[processPath] = nowUtc;
+
             var doneLinks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var statePaths = new[] { processPath, GetLegacyDownloadProcessFilePath(rootFolder, siteFolder, item) }
                 .Where(path => preserveExistingDone && File.Exists(path))
@@ -286,6 +359,14 @@ namespace get_link_manga
             {
                 return;
             }
+
+            DateTime nowUtc = DateTime.UtcNow;
+            if (_processWriteTimes.TryGetValue(processPath, out DateTime lastWriteUtc) &&
+                (nowUtc - lastWriteUtc).TotalMilliseconds < 250)
+            {
+                return;
+            }
+            _processWriteTimes[processPath] = nowUtc;
 
             string[] lines = File.ReadAllLines(processPath, Encoding.UTF8);
             for (int i = 0; i < lines.Length; i++)
@@ -776,7 +857,10 @@ namespace get_link_manga
                 cmbConnections.IsEnabled = true;
 
                 UpdateQueueErrorLabel();
-                CleanupActiveTempFolders();
+                if (_downloadCts != null && _downloadCts.IsCancellationRequested)
+                {
+                    CleanupActiveTempFolders();
+                }
             }
         }
 

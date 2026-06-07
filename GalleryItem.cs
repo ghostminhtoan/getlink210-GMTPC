@@ -194,6 +194,9 @@ namespace get_link_manga
                         DownloadingChapter = value.Substring(0, idx).Trim();
                         string p = value.Substring(idx + " (trang ".Length).Replace(")", "").Trim();
                         DownloadingPageProgress = $"Trang {p}";
+                        _currentProcess = string.IsNullOrWhiteSpace(DownloadingPageProgress)
+                            ? DownloadingChapter
+                            : $"{DownloadingChapter} | {DownloadingPageProgress}";
                     }
                     else if (value.StartsWith("Trang ") || value.Contains("/"))
                     {
@@ -209,11 +212,15 @@ namespace get_link_manga
                         {
                             DownloadingChapter = "General";
                         }
+                        _currentProcess = string.IsNullOrWhiteSpace(DownloadingChapter)
+                            ? DownloadingPageProgress
+                            : $"{DownloadingChapter} | {DownloadingPageProgress}";
                     }
                     else if (value.StartsWith("Retry:"))
                     {
                         DownloadingChapter = "Retrying errors";
                         DownloadingPageProgress = value.Replace("Retry:", "").Trim();
+                        _currentProcess = $"{DownloadingChapter} | {DownloadingPageProgress}";
                     }
                     else
                     {
