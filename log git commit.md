@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `17c23a0` | **Date**: 2026-06-07 07:37:33 | **Message**: feat: stabilize temp resume and log progress
 - **Commit**: `a1121d2` | **Date**: 2026-06-07 07:12:30 | **Message**: feat: separate process state and persist download settings
 - **Commit**: `3c5e080` | **Date**: 2026-06-07 06:36:22 | **Message**: feat: resume saved downloads and add log filter toggle
 - **Commit**: `5171176` | **Date**: 2026-06-06 22:23:49 | **Message**: fix: de-duplicate errors and persist gallery state
