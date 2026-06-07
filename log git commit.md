@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `a1121d2` | **Date**: 2026-06-07 07:12:30 | **Message**: feat: separate process state and persist download settings
 - **Commit**: `3c5e080` | **Date**: 2026-06-07 06:36:22 | **Message**: feat: resume saved downloads and add log filter toggle
 - **Commit**: `5171176` | **Date**: 2026-06-06 22:23:49 | **Message**: fix: de-duplicate errors and persist gallery state
 - **Commit**: `6c85b05` | **Date**: 2026-06-06 20:42:33 | **Message**: fix: normalize utf8 and open folder behavior
