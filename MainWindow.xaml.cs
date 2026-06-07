@@ -397,6 +397,7 @@ namespace get_link_manga
 
             foreach (var item in toRemove)
             {
+                DeleteProcessMarkdownForItem(item);
                 _scrapedItems.Remove(item);
             }
             Log($"Đã xóa {toRemove.Count} truyện hoàn thành khỏi danh sách.");

@@ -60,6 +60,8 @@ namespace get_link_manga
                 sb.AppendLine($"| UpdatedAt | {EscapeMarkdownTableValue(DateTime.Now.ToString("O"))} |");
                 sb.AppendLine($"| Name | {EscapeMarkdownTableValue(item?.Name ?? string.Empty)} |");
                 sb.AppendLine($"| Link | {EscapeMarkdownTableValue(item?.Link ?? string.Empty)} |");
+                sb.AppendLine($"| Chapter | {EscapeMarkdownTableValue(item?.DownloadingChapter ?? string.Empty)} |");
+                sb.AppendLine($"| Page | {EscapeMarkdownTableValue(item?.DownloadingPageProgress ?? string.Empty)} |");
                 sb.AppendLine($"| Status | {EscapeMarkdownTableValue(status ?? string.Empty)} |");
                 sb.AppendLine($"| CurrentProcess | {EscapeMarkdownTableValue(currentProcess ?? string.Empty)} |");
                 sb.AppendLine($"| CompletedPages | {completedPages} |");
@@ -158,6 +160,46 @@ namespace get_link_manga
             return File.Exists(legacyPath) ? legacyPath : processPath;
         }
 
+        private static string NormalizeProcessLink(string link)
+        {
+            return (link ?? string.Empty).Trim().TrimEnd('/');
+        }
+
+        private string GetProcessSiteFolder(GalleryItem item)
+        {
+            try
+            {
+                string url = item?.Link ?? string.Empty;
+                var uri = new Uri(url);
+                string host = (uri.Host ?? string.Empty).ToLowerInvariant();
+
+                if (host.Contains("truyenqq"))
+                {
+                    return "truyenqq";
+                }
+
+                if (host.Contains("nettruyen"))
+                {
+                    return "nettruyen";
+                }
+
+                if (host.Contains("vi-hentai"))
+                {
+                    return "vi-hentai.pro";
+                }
+
+                if (host.Contains("hentaiera"))
+                {
+                    return "hentaiera";
+                }
+            }
+            catch
+            {
+            }
+
+            return GetSafePathName(item?.SourceDomain ?? "site");
+        }
+
         private List<string> LoadPendingChapterLinksFromProcess(string rootFolder, string siteFolder, GalleryItem item)
         {
             string processPath = GetExistingDownloadProcessFilePath(rootFolder, siteFolder, item);
@@ -224,14 +266,14 @@ namespace get_link_manga
             sb.AppendLine($"Source: {item?.Link ?? string.Empty}");
             sb.AppendLine($"Updated: {DateTime.Now:O}");
             sb.AppendLine();
-            sb.AppendLine("| No. | Status | Chapter | Link |");
-            sb.AppendLine("| :--- | :--- | :--- | :--- |");
+            sb.AppendLine("| No. | Status | Chapter | Link | Page |");
+            sb.AppendLine("| :--- | :--- | :--- | :--- | :--- |");
 
             for (int i = 0; i < chapterLinks.Count; i++)
             {
                 string link = chapterLinks[i];
                 string status = doneLinks.Contains(link) ? "Done" : "Pending";
-                sb.AppendLine($"| {i + 1} | {status} | {EscapeMarkdownTableValue(GuessChapterNameFromLink(link))} | {EscapeMarkdownTableValue(link)} |");
+                sb.AppendLine($"| {i + 1} | {status} | {EscapeMarkdownTableValue(GuessChapterNameFromLink(link))} | {EscapeMarkdownTableValue(link)} |  |");
             }
 
             File.WriteAllText(processPath, sb.ToString(), new UTF8Encoding(true));
@@ -257,6 +299,12 @@ namespace get_link_manga
                 string[] cells = line.Split('|');
                 if (cells.Length >= 5)
                 {
+                    string rowLink = NormalizeProcessLink(cells.Length > 4 ? cells[4] : string.Empty);
+                    if (!string.Equals(rowLink, NormalizeProcessLink(chapterLink), StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     cells[2] = " Done ";
                     lines[i] = string.Join("|", cells);
                 }
@@ -270,6 +318,45 @@ namespace get_link_manga
             InitializeChapterProcess(rootFolder, siteFolder, item, chapterLinks);
             var pending = LoadPendingChapterLinksFromProcess(rootFolder, siteFolder, item);
             return pending ?? chapterLinks.ToList();
+        }
+
+        internal void DeleteProcessMarkdownForItem(GalleryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            string rootFolder = item.DownloadPath;
+            if (string.IsNullOrWhiteSpace(rootFolder) && !string.IsNullOrWhiteSpace(txtDownloadPath?.Text))
+            {
+                rootFolder = txtDownloadPath.Text.Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(rootFolder))
+            {
+                return;
+            }
+
+            string siteFolder = GetProcessSiteFolder(item);
+            foreach (string path in new[]
+            {
+                GetDownloadProcessFilePath(rootFolder, siteFolder, item),
+                GetLegacyDownloadProcessFilePath(rootFolder, siteFolder, item)
+            })
+            {
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Cleanup Warning] Không thể xóa file process '{path}': {ex.Message}");
+                }
+            }
         }
 
         private string GuessChapterNameFromLink(string link)

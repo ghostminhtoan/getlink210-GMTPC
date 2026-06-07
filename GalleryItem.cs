@@ -197,7 +197,6 @@ namespace get_link_manga
                     }
                     else if (value.StartsWith("Trang ") || value.Contains("/"))
                     {
-                        DownloadingChapter = "General";
                         if (value.EndsWith(" pages"))
                         {
                             DownloadingPageProgress = $"Trang {value.Replace(" pages", "").Trim()}";
@@ -205,6 +204,10 @@ namespace get_link_manga
                         else
                         {
                             DownloadingPageProgress = value;
+                        }
+                        if (string.IsNullOrWhiteSpace(DownloadingChapter))
+                        {
+                            DownloadingChapter = "General";
                         }
                     }
                     else if (value.StartsWith("Retry:"))
@@ -214,8 +217,11 @@ namespace get_link_manga
                     }
                     else
                     {
-                        DownloadingChapter = value;
-                        DownloadingPageProgress = "";
+                        if (string.IsNullOrWhiteSpace(DownloadingChapter))
+                        {
+                            DownloadingChapter = value;
+                        }
+                        DownloadingPageProgress = value;
                     }
                 }
             }
