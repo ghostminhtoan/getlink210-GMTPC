@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `c964a94` | **Build Time**: 2026-06-07 01.32.36 PM Sunday | **Message**: fix: include build info in project
 - **Commit**: `9849e83` | **Build Time**: 2026-06-07 01.32.36 PM Sunday | **Message**: fix: make build info visible in xaml
 - **Commit**: `b7cdaa9` | **Build Time**: 2026-06-07 01.12.21 PM Sunday | **Message**: feat: show build time and simplify result actions
 - **Commit**: `239855f` | **Date**: 2026-06-07 11:42:31 | **Message**: fix: separate process chapter and page state
