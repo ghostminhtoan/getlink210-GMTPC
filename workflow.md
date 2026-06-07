@@ -74,10 +74,11 @@ Tài liệu này chứa toàn bộ quy tắc code, cấu trúc dự án, hướn
   "C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe" "C:\Users\Admin\source\repos\ghostminhtoan\get link manga\Comic-GMTPC.csproj" /p:Configuration=Release /p:Platform=AnyCPU
   ```
 - **Đường dẫn file thực thi:** `bin\Release\get link manga.exe`
+- **Build time:** Khi code xong và build chốt thành công thì ghi build time đúng thời điểm đó, không lấy lại theo các lần rebuild sau trong Visual Studio. Format bắt buộc: `2026-06-07 12.44.28 PM Sunday` (năm-tháng-ngày ∕ giờ.phút.giây AM/PM Thứ, trong đó `∕` là ký tự unicode riêng, không phải `/` trên bàn phím).
 
 ## 6. Quy tắc git commit
 - **Sau khi build file exe ra release thành công, luôn luôn thực hiện git commit & git push lên repo github.**
-- **Mỗi khi tạo commit mới, bắt buộc phải cập nhật lịch sử (Mã commit, Thời gian, Nội dung) vào file [log git commit.md](file:///r:/HDD R/ZC SYMLINK/USERS/source/repos/ghostminhtoan/get link manga/log git commit.md) với quy tắc: Commit mới nhất luôn nằm ở trên cùng (dưới phần tiêu đề).**
+- **Mỗi khi tạo commit mới, bắt buộc phải cập nhật lịch sử (Mã commit, Build Time, Nội dung) vào file [log git commit.md](file:///r:/HDD R/ZC SYMLINK/USERS/source/repos/ghostminhtoan/get link manga/log git commit.md) với quy tắc: Commit mới nhất luôn nằm ở trên cùng (dưới phần tiêu đề). Build Time phải là thời điểm build chốt, không phải thời điểm Visual Studio rebuild sau đó.**
 
 ---
 
