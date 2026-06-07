@@ -26,47 +26,11 @@ namespace get_link_manga
         internal void PauseAllDownloads()
         {
             _isDownloadPaused = true;
-            foreach (var item in _scrapedItems)
-            {
-                if (item != null && !item.IsStopped && string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase))
-                {
-                    item.IsPaused = true;
-                    item.Status = "Paused";
-                }
-            }
-            Dispatcher.BeginInvoke((Action)(() =>
-            {
-                if (btnPauseDownload != null)
-                {
-                    btnPauseDownload.Content = "▶️";
-                    btnPauseDownload.Tag = "Resume";
-                }
-            }));
         }
 
         internal void ResumeAllDownloads()
         {
             _isDownloadPaused = false;
-            foreach (var item in _scrapedItems)
-            {
-                if (item != null && item.IsPaused && !item.IsStopped)
-                {
-                    item.IsPaused = false;
-                    if (string.Equals(item.Status, "Paused", StringComparison.OrdinalIgnoreCase))
-                    {
-                        item.Status = "Downloading";
-                    }
-                }
-            }
-
-            Dispatcher.BeginInvoke((Action)(() =>
-            {
-                if (btnPauseDownload != null)
-                {
-                    btnPauseDownload.Content = "⏸️";
-                    btnPauseDownload.Tag = "Pause";
-                }
-            }));
         }
 
         internal string BuildStableTempFolderPath(string rootFolder, string siteFolder, params string[] identityParts)
@@ -525,52 +489,7 @@ namespace get_link_manga
 
         private async void BtnPauseDownload_Click(object sender, RoutedEventArgs e)
         {
-            if (_downloadCts == null)
-            {
-                var itemsToResume = _scrapedItems
-                    .Where(item => item.IsPaused || string.Equals(item.Status, "Paused", StringComparison.OrdinalIgnoreCase) || string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                if (!itemsToResume.Any())
-                {
-                    return;
-                }
-
-                Log($"[Local Actions] Resuming {itemsToResume.Count} saved paused item(s)...");
-                await StartDownloadProcessAsync(itemsToResume, preserveExistingState: true);
-                return;
-            }
-
-            if (_isDownloadPaused)
-            {
-                _isDownloadPaused = false;
-                btnPauseDownload.Content = "⏸️";
-                btnPauseDownload.Tag = "Pause";
-                Log("Đã tiếp tục tải xuống (Download resumed).");
-                foreach (var item in _scrapedItems)
-                {
-                    if (item.Status == "Paused" || item.IsPaused)
-                    {
-                        item.IsPaused = false;
-                        item.Status = "Downloading";
-                    }
-                }
-            }
-            else
-            {
-                _isDownloadPaused = true;
-                btnPauseDownload.Content = "▶️";
-                btnPauseDownload.Tag = "Resume";
-                Log("Đã tạm dừng tải xuống (Download paused).");
-                foreach (var item in _scrapedItems)
-                {
-                    if (item.Status == "Downloading" || !item.IsPaused)
-                    {
-                        item.IsPaused = true;
-                        item.Status = "Paused";
-                    }
-                }
-            }
+            await Task.CompletedTask;
         }
 
         private void BtnStopDownload_Click(object sender, RoutedEventArgs e)
@@ -581,7 +500,6 @@ namespace get_link_manga
                 _isDownloadPaused = false;
                 btnStopDownload.Content = "⏹️...";
                 btnStopDownload.IsEnabled = false;
-                btnPauseDownload.IsEnabled = false;
                 Log("Đang dừng quá trình tải xuống... (Stopping download process...)");
 
                 foreach (var item in _scrapedItems)
@@ -631,9 +549,6 @@ namespace get_link_manga
             _isDownloadPaused = false;
 
             btnStartDownload.IsEnabled = false;
-            btnPauseDownload.Content = "⏸️";
-            btnPauseDownload.Tag = "Pause";
-            btnPauseDownload.IsEnabled = true;
             btnStopDownload.IsEnabled = true;
             btnStopDownload.Content = "⏹️";
 
@@ -834,9 +749,6 @@ namespace get_link_manga
                 _isDownloadPaused = false;
 
                 btnStartDownload.IsEnabled = true;
-                btnPauseDownload.Content = "⏸️";
-                btnPauseDownload.Tag = "Pause";
-                btnPauseDownload.IsEnabled = false;
                 btnStopDownload.IsEnabled = false;
                 btnStopDownload.Content = "⏹️";
 

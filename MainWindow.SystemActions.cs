@@ -237,18 +237,6 @@ namespace get_link_manga
 
                         RecalculateDuplicates();
                         lblLinkCount.Text = _scrapedItems.Count.ToString();
-                        bool hasResumeableItems = _scrapedItems.Any(item =>
-                            item.IsPaused ||
-                            string.Equals(item.Status, "Paused", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(item.Status, "Queued", StringComparison.OrdinalIgnoreCase));
-                        if (btnPauseDownload != null)
-                        {
-                            btnPauseDownload.IsEnabled = hasResumeableItems;
-                            btnPauseDownload.Tag = hasResumeableItems ? "Resume" : "Pause";
-                            btnPauseDownload.Content = hasResumeableItems ? "▶️" : "⏸️";
-                        }
-
                         ApplySavedDownloadSettings(loadedItems.FirstOrDefault());
                         Log($"Successfully loaded {_scrapedItems.Count} items from: {openFileDialog.FileName}");
                         lblStatus.Text = "Markdown file loaded successfully.";

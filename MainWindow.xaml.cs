@@ -160,23 +160,6 @@ namespace get_link_manga
                 StyleComboBoxPopup(cmbConnections);
                 StyleComboBoxPopup(cmbMultiDownload);
 
-                if (btnPauseDownload != null)
-                {
-                    btnPauseDownload.PreviewMouseLeftButtonUp += (sender, args) =>
-                    {
-                        if (_isDownloadPaused)
-                        {
-                            ResumeAllDownloads();
-                        }
-                        else
-                        {
-                            PauseAllDownloads();
-                        }
-
-                        args.Handled = true;
-                    };
-                }
-
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, WindowSave_Executed));
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, WindowOpen_Executed));
                 InputBindings.Add(new KeyBinding(ApplicationCommands.Save, new KeyGesture(Key.S, ModifierKeys.Control)));

@@ -1152,7 +1152,7 @@
                               SelectionUnit="FullRow"
                               PreviewKeyDown="DgResults_PreviewKeyDown"
                               PreviewTextInput="DgResults_PreviewTextInput"
-                              MouseDoubleClick="DgResults_MouseDoubleClick"
+                              PreviewMouseLeftButtonDown="DgResults_MouseDoubleClick"
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling"
                               VirtualizingPanel.ScrollUnit="Item"
@@ -1278,7 +1278,7 @@
                                                  </Grid.ColumnDefinitions>
 
                                                  <!-- Status Display -->
-                                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" MouseLeftButtonUp="StatusCell_Click" Cursor="Hand" Background="Transparent">
+                                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
                                                      <TextBlock FontSize="11" FontWeight="Bold" Foreground="{StaticResource CyberpunkCyanBrush}">
                                                          <TextBlock.Style>
                                                              <Style TargetType="TextBlock">
@@ -1304,37 +1304,11 @@
                                                  </StackPanel>
 
                                                  <!-- Row Buttons -->
-                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="5,0,0,0">
-                                                     <!-- Play/Resume Button -->
-                                                     <Button Content="▶️" Click="BtnRowResume_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Resume download">
-                                                         <Button.Style>
-                                                             <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
-                                                                 <Setter Property="Visibility" Value="Collapsed"/>
-                                                                 <Style.Triggers>
-                                                                     <DataTrigger Binding="{Binding Status}" Value="Paused">
-                                                                         <Setter Property="Visibility" Value="Visible"/>
-                                                                     </DataTrigger>
-                                                                 </Style.Triggers>
-                                                             </Style>
-                                                         </Button.Style>
-                                                     </Button>
-                                                     <!-- Pause Button -->
-                                                     <Button Content="⏸️" Click="BtnRowPause_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Pause download">
-                                                         <Button.Style>
-                                                             <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
-                                                                 <Setter Property="Visibility" Value="Collapsed"/>
-                                                                 <Style.Triggers>
-                                                                     <DataTrigger Binding="{Binding Status}" Value="Downloading">
-                                                                         <Setter Property="Visibility" Value="Visible"/>
-                                                                     </DataTrigger>
-                                                                 </Style.Triggers>
-                                                             </Style>
-                                                         </Button.Style>
-                                                     </Button>
-                                                     <!-- Stop Button -->
-                                                     <Button Content="⏹️" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download">
-                                                         <Button.Style>
-                                                             <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="5,0,0,0">
+                                                    <!-- Stop Button -->
+                                                    <Button Content="⏹️" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
                                                                  <Setter Property="Visibility" Value="Collapsed"/>
                                                                  <Style.Triggers>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Downloading">
@@ -1407,7 +1381,7 @@
                              <DataGridTemplateColumn Header="PROCESS" Width="200">
                                   <DataGridTemplateColumn.CellTemplate>
                                       <DataTemplate>
-                                          <StackPanel Margin="5,4" Orientation="Vertical" MouseLeftButtonUp="ProcessCell_Click" Cursor="Hand" Background="Transparent">
+                                          <StackPanel Margin="5,4" Orientation="Vertical" Background="Transparent">
                                              <StackPanel.Style>
                                                  <Style TargetType="StackPanel">
                                                      <Setter Property="Visibility" Value="Visible"/>
@@ -1440,7 +1414,7 @@
                              </DataGridTemplateColumn>
 
                             <!-- Action Buttons Column -->
-                            <DataGridTemplateColumn Header="ACTIONS" Width="90">
+                            <DataGridTemplateColumn Header="VIEW LINK" Width="60">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -1451,12 +1425,6 @@
                                                     Style="{StaticResource CyberpunkButtonCyan}"
                                                     FontSize="13" Padding="0"
                                                     ToolTip="Mở link trong trình duyệt"/>
-                                            <Button Content="⬇️" 
-                                                    Click="BtnDownloadSingleInRow_Click"
-                                                    Width="30" Height="28" Margin="2,0"
-                                                    Style="{StaticResource CyberpunkButtonPink}"
-                                                    FontSize="13" Padding="0"
-                                                    ToolTip="Tải truyện này"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -1597,7 +1565,7 @@
                                     <ComboBoxItem Content="32"/>
                                 </ComboBox>
 
-                                <TextBlock Grid.Column="4" Text="MULTI DOWNLOAD" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="DOWNLOAD MULTIPLE BOOK" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
 
                                 <ComboBox Grid.Column="6" Name="cmbMultiDownload" 
                                           Style="{StaticResource CyberpunkComboBox}"
@@ -1626,6 +1594,14 @@
                                     <ComboBoxItem Content="10"/>
                                 </ComboBox>
 
+                                <TextBlock Grid.Column="7" Text="{x:Static local:BuildInfo.DisplayText}"
+                                           Foreground="{StaticResource CyberpunkYellowBrush}"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Right"
+                                           Margin="0,0,10,0"/>
+
                                 <Button Grid.Column="8" Name="btnStartDownload" Content="⬇️" Click="BtnStartDownload_Click" Height="35" Width="78" FontSize="13" ToolTip="DOWNLOAD ALL">
                                     <Button.Style>
                                         <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
@@ -1633,28 +1609,6 @@
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter Property="Content" Value="⬇️ ALL"/>
                                                 </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button Grid.Column="10" Name="btnPauseDownload" Content="⏸️" Tag="Pause" Click="BtnPauseDownload_Click" Height="35" Width="84" FontSize="13" IsEnabled="False" ToolTip="PAUSE / RESUME ALL">
-                                    <Button.Style>
-                                        <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-                                            <Style.Triggers>
-                                                <MultiTrigger>
-                                                    <MultiTrigger.Conditions>
-                                                        <Condition Property="IsMouseOver" Value="True"/>
-                                                        <Condition Property="Tag" Value="Pause"/>
-                                                    </MultiTrigger.Conditions>
-                                                    <Setter Property="Content" Value="⏸️ ALL"/>
-                                                </MultiTrigger>
-                                                <MultiTrigger>
-                                                    <MultiTrigger.Conditions>
-                                                        <Condition Property="IsMouseOver" Value="True"/>
-                                                        <Condition Property="Tag" Value="Resume"/>
-                                                    </MultiTrigger.Conditions>
-                                                    <Setter Property="Content" Value="▶️ ALL"/>
-                                                </MultiTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Button.Style>

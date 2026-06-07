@@ -132,6 +132,11 @@ namespace get_link_manga
 
         private void DgResults_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            if (e.ClickCount < 2)
+            {
+                return;
+            }
+
             var element = e.OriginalSource as DependencyObject;
             while (element != null && !(element is DataGridRow))
             {
@@ -150,6 +155,7 @@ namespace get_link_manga
                             UseShellExecute = true
                         });
                         Log($"Opened link: {item.Link}");
+                        e.Handled = true;
                     }
                     catch (Exception ex)
                     {
@@ -370,28 +376,12 @@ namespace get_link_manga
 
         private void StatusCell_Click(object sender, MouseButtonEventArgs e)
         {
-            if (sender is FrameworkElement fe && fe.DataContext is GalleryItem item)
-            {
-                if (!string.IsNullOrEmpty(item.Status))
-                {
-                    txtFilter.Text = item.Status;
-                }
-            }
+            // Intentionally left blank: clicking status no longer filters chapters/pages.
         }
 
         private void ProcessCell_Click(object sender, MouseButtonEventArgs e)
         {
-            if (sender is FrameworkElement fe && fe.DataContext is GalleryItem item)
-            {
-                if (!string.IsNullOrEmpty(item.CurrentProcess))
-                {
-                    txtFilter.Text = item.CurrentProcess;
-                }
-                else if (!string.IsNullOrEmpty(item.DownloadingChapter))
-                {
-                    txtFilter.Text = item.DownloadingChapter;
-                }
-            }
+            // Intentionally left blank: clicking process text no longer auto-filters by chapter/page.
         }
     }
 }
