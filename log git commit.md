@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `eb40a4f` | **Build Time**: 2026-06-07 03.22.13 PM Sunday | **Message**: feat: make app portable with embedded runtime loader
 - **Commit**: `765c94d` | **Build Time**: 2026-06-07 03.04.32 PM Sunday | **Message**: fix: strip latest chapter from book titles
 - **Commit**: `788a1e9` | **Build Time**: 2026-06-07 02.47.53 PM Sunday | **Message**: fix: clear temp folders after stop
 - **Commit**: `43b84cd` | **Build Time**: 2026-06-07 02.15.32 PM Sunday | **Message**: fix: clean retry chapter folders
