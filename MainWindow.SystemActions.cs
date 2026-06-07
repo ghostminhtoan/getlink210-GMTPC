@@ -156,7 +156,7 @@ namespace get_link_manga
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
                 Filter = "Markdown Files (*.md)|*.md|Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
-                FileName = "hentaiforce_galleries.md"
+                FileName = "save gallery.md"
             };
 
             if (saveFileDialog.ShowDialog() == true)

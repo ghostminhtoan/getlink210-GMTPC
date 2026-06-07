@@ -896,7 +896,7 @@ namespace get_link_manga
             string safeChapter = GetSafePathName(chapterTitle);
             string unmergedPath = Path.Combine(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(rootFolder, "vi-hentai.pro", safeManga, safeChapter);
-            string tempFolder = Path.Combine(rootFolder, "vi-hentai.pro", ".tmp", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
+            string tempFolder = BuildStableTempFolderPath(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}", item.Link, item.Name, safeManga, safeChapter);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
@@ -937,6 +937,8 @@ namespace get_link_manga
             {
                 throw new Exception("Không tìm thấy URL ảnh sau khi giải mã.");
             }
+
+            WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {chapterTitle}");
 
             int maxThreads = 2;
             Dispatcher.Invoke(() =>
@@ -1018,6 +1020,7 @@ namespace get_link_manga
                                             }
                                         }));
                                     }
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn");
                                 }
                                 return;
                             }
@@ -1056,6 +1059,7 @@ namespace get_link_manga
                                         }
                                     }));
                                 }
+                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất");
                             }
                         }
                         finally
@@ -1092,6 +1096,8 @@ namespace get_link_manga
                 {
                     UnregisterTempFolder(tempFolder);
                 }
+
+                WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
 
                 // Check for missing files
                 string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;

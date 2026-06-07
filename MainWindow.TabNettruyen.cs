@@ -1059,7 +1059,7 @@ namespace get_link_manga
             
             string unmergedPath = Path.Combine(rootFolder, "nettruyen", $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(rootFolder, "nettruyen", safeManga, safeChapter);
-            string tempFolder = Path.Combine(rootFolder, "nettruyen", ".tmp", $".tmp_{safeManga}_{safeChapter}_{Guid.NewGuid()}");
+            string tempFolder = BuildStableTempFolderPath(rootFolder, "nettruyen", $"{safeManga}-{safeChapter}", item.Link, item.Name, cleanManga, cleanChapter);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
@@ -1165,6 +1165,8 @@ namespace get_link_manga
                 throw new Exception($"Không thể tìm thấy hình ảnh nào của chương truyện '{chapterTitle}' để tải xuống.");
             }
 
+            WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {cleanChapter}");
+
             // Connection settings
             int maxThreads = 4;
             Dispatcher.Invoke(() =>
@@ -1246,6 +1248,7 @@ namespace get_link_manga
                                             }
                                         }));
                                     }
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn");
                                 }
                                 return;
                             }
@@ -1285,6 +1288,7 @@ namespace get_link_manga
                                         }
                                     }));
                                 }
+                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất");
                             }
                         }
                         finally
@@ -1323,6 +1327,8 @@ namespace get_link_manga
             {
                 UnregisterTempFolder(tempFolder);
             }
+
+            WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
 
             // Check for missing files
             string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;

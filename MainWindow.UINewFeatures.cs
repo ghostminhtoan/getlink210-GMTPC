@@ -134,7 +134,7 @@ namespace get_link_manga
                     return;
                 }
 
-                await StartDownloadProcessAsync(new List<GalleryItem> { item });
+                await StartDownloadProcessAsync(new List<GalleryItem> { item }, preserveExistingState: true);
             }
         }
 

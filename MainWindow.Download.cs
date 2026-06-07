@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +20,76 @@ namespace get_link_manga
     {
         private CancellationTokenSource _downloadCts;
         private volatile bool _isDownloadPaused = false;
+
+        internal string BuildStableTempFolderPath(string rootFolder, string siteFolder, params string[] identityParts)
+        {
+            string safeSite = GetSafePathName(siteFolder ?? "site");
+            string key = string.Join("|", (identityParts ?? Array.Empty<string>()).Where(part => !string.IsNullOrWhiteSpace(part)).Select(part => part.Trim()));
+            string prefixSource = identityParts != null && identityParts.Length > 0 ? identityParts[0] : "item";
+            string prefix = GetSafePathName(prefixSource);
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                prefix = "item";
+            }
+            if (prefix.Length > 36)
+            {
+                prefix = prefix.Substring(0, 36);
+            }
+
+            string hash = GetStableShortHash(key);
+            return Path.Combine(rootFolder, safeSite, ".tmp", $".tmp_{prefix}_{hash}");
+        }
+
+        private string GetStableShortHash(string input)
+        {
+            using (var sha = SHA256.Create())
+            {
+                byte[] bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(input ?? string.Empty));
+                var sb = new StringBuilder(16);
+                for (int i = 0; i < 8; i++)
+                {
+                    sb.Append(bytes[i].ToString("x2"));
+                }
+                return sb.ToString();
+            }
+        }
+
+        private string GetTempProgressLogPath(string tempFolder)
+        {
+            return Path.Combine(tempFolder, "progress.log");
+        }
+
+        private void WriteTempProgressLog(string tempFolder, GalleryItem item, string status, int completedPages, int totalPages, string currentProcess, string note = null)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(tempFolder))
+                {
+                    return;
+                }
+
+                Directory.CreateDirectory(tempFolder);
+
+                var sb = new StringBuilder();
+                sb.AppendLine($"UpdatedAt={DateTime.Now:O}");
+                sb.AppendLine($"Name={item?.Name ?? string.Empty}");
+                sb.AppendLine($"Link={item?.Link ?? string.Empty}");
+                sb.AppendLine($"Status={status ?? string.Empty}");
+                sb.AppendLine($"CurrentProcess={currentProcess ?? string.Empty}");
+                sb.AppendLine($"CompletedPages={completedPages}");
+                sb.AppendLine($"TotalPages={totalPages}");
+                if (!string.IsNullOrWhiteSpace(note))
+                {
+                    sb.AppendLine($"Note={note}");
+                }
+
+                File.WriteAllText(GetTempProgressLogPath(tempFolder), sb.ToString(), new UTF8Encoding(true));
+            }
+            catch
+            {
+                // Temp log is best-effort only.
+            }
+        }
 
         private void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -84,7 +156,7 @@ namespace get_link_manga
                 return;
             }
 
-            await StartDownloadProcessAsync(itemsToDownload);
+            await StartDownloadProcessAsync(itemsToDownload, preserveExistingState: true);
         }
 
         private async void BtnPauseDownload_Click(object sender, RoutedEventArgs e)
@@ -468,7 +540,7 @@ namespace get_link_manga
 
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, hostName, safeTitle);
-            string tempFolder = Path.Combine(rootFolder, hostName, ".tmp", $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            string tempFolder = BuildStableTempFolderPath(rootFolder, hostName, safeTitle, item.Link, item.Name);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
@@ -502,6 +574,8 @@ namespace get_link_manga
                     queueItem.CompletedChapters = 0;
                 });
             }
+
+            WriteTempProgressLog(tempFolder, item, "Downloading", 0, totalPages, "0/0 pages", "Bắt đầu tải HentaiForce");
 
             // 2. Identify path pattern
             string prefix = null;
@@ -620,6 +694,7 @@ namespace get_link_manga
                                         queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
                                     });
                                 }
+                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                             }
                         }
                         finally
@@ -653,6 +728,8 @@ namespace get_link_manga
                 {
                     UnregisterTempFolder(tempFolder);
                 }
+
+                WriteTempProgressLog(tempFolder, item, "Done", totalPages, totalPages, $"{totalPages}/{totalPages} pages", "Download completed");
 
                 // Check for missing files
                 ValidateDownloadedFiles(targetFolder, totalPages, queueItem, "Pages");
@@ -718,11 +795,11 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
         }
 
-        private async Task DownloadNhentaiGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token)
+        private async Task DownloadNhentaiGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null)
         {
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, "nhentai.net", safeTitle);
-            string tempFolder = Path.Combine(rootFolder, "nhentai.net", ".tmp", $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            string tempFolder = BuildStableTempFolderPath(rootFolder, "nhentai.net", safeTitle, item.Link, item.Name);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
@@ -913,6 +990,15 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                 lock (lockObj)
                                 {
                                     completedPages++;
+                                    if (queueItem != null)
+                                    {
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            queueItem.CompletedChapters = completedPages;
+                                            queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
+                                        });
+                                    }
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} existed");
                                     string modeText = isFastPath ? "Fast Path" : "Slow Path";
                                     Dispatcher.Invoke(() =>
                                     {
@@ -962,6 +1048,15 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                             lock (lockObj)
                             {
                                 completedPages++;
+                                if (queueItem != null)
+                                {
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        queueItem.CompletedChapters = completedPages;
+                                        queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
+                                    });
+                                }
+                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                                 if (completedPages % 5 == 0 || completedPages == totalPages)
                                 {
                                     string modeText = isFastPath ? "Fast Path" : "Slow Path";
@@ -1003,6 +1098,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 {
                     UnregisterTempFolder(tempFolder);
                 }
+
+                WriteTempProgressLog(tempFolder, item, "Done", totalPages, totalPages, $"{totalPages}/{totalPages} pages", "Download completed");
             }
         }
 
@@ -1752,7 +1849,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             item.Link = NormalizeHentaieraUrl(item.Link);
             string safeTitle = GetSafePathName(item.Name);
             string targetFolder = Path.Combine(rootFolder, "hentaiera.com", safeTitle);
-            string tempFolder = Path.Combine(rootFolder, "hentaiera.com", ".tmp", $".tmp_{safeTitle}_{Guid.NewGuid()}");
+            string tempFolder = BuildStableTempFolderPath(rootFolder, "hentaiera.com", safeTitle, item.Link, item.Name);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
@@ -1808,6 +1905,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                         queueItem.CompletedChapters = 0;
                     });
                 }
+
+                WriteTempProgressLog(tempFolder, item, "Downloading", 0, totalPages, "0/0 pages", "Bắt đầu tải hentaiera");
 
                 // Get number of connections limit
                 int maxThreads = 4;
@@ -1882,6 +1981,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                                 queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
                                             });
                                         }
+                                        WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} existed");
                                     }
                                     return;
                                 }
@@ -1903,6 +2003,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                             queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
                                         });
                                     }
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                                 }
                             }
                             finally
@@ -1932,14 +2033,12 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                     {
                         Log($"[Lỗi] Không thể di chuyển thư mục tạm Hentaiera: {ex.Message}");
                     }
-                    finally
-                    {
-                        UnregisterTempFolder(tempFolder);
-                    }
-
-                    // Check for missing files
-                    ValidateDownloadedFiles(targetFolder, totalPages, queueItem, "Pages");
                 }
+
+                WriteTempProgressLog(tempFolder, item, "Done", totalPages, totalPages, $"{totalPages}/{totalPages} pages", "Download completed");
+
+                // Check for missing files
+                ValidateDownloadedFiles(targetFolder, totalPages, queueItem, "Pages");
             }
             finally
             {
