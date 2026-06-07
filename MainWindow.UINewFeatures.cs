@@ -398,7 +398,7 @@ namespace get_link_manga
                 return queueItem.Link;
             }
 
-            string processPath = GetDownloadProcessFilePath(queueItem.DownloadPath, "truyenqq", queueItem);
+            string processPath = GetExistingDownloadProcessFilePath(queueItem.DownloadPath, "truyenqq", queueItem);
             if (!File.Exists(processPath))
             {
                 return null;

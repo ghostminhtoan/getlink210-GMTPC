@@ -130,12 +130,37 @@ namespace get_link_manga
                 safeBookKey = safeBookKey.Substring(0, 120).Trim();
             }
 
+            return Path.Combine(rootFolder, ".tmp", ".process", safeSite, $"{safeBookKey}.md");
+        }
+
+        private string GetLegacyDownloadProcessFilePath(string rootFolder, string siteFolder, GalleryItem item)
+        {
+            string safeSite = GetSafePathName(siteFolder ?? "site");
+            string bookKey = GetBookIdentifier(item?.Link) ?? item?.Name ?? "item";
+            string safeBookKey = GetSafePathName(bookKey.Replace("|", "-"));
+            if (safeBookKey.Length > 120)
+            {
+                safeBookKey = safeBookKey.Substring(0, 120).Trim();
+            }
+
             return Path.Combine(rootFolder, safeSite, ".process", $"{safeBookKey}.md");
+        }
+
+        private string GetExistingDownloadProcessFilePath(string rootFolder, string siteFolder, GalleryItem item)
+        {
+            string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
+            if (File.Exists(processPath))
+            {
+                return processPath;
+            }
+
+            string legacyPath = GetLegacyDownloadProcessFilePath(rootFolder, siteFolder, item);
+            return File.Exists(legacyPath) ? legacyPath : processPath;
         }
 
         private List<string> LoadPendingChapterLinksFromProcess(string rootFolder, string siteFolder, GalleryItem item)
         {
-            string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
+            string processPath = GetExistingDownloadProcessFilePath(rootFolder, siteFolder, item);
             if (!File.Exists(processPath))
             {
                 return null;
@@ -176,9 +201,13 @@ namespace get_link_manga
             Directory.CreateDirectory(Path.GetDirectoryName(processPath));
 
             var doneLinks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (preserveExistingDone && File.Exists(processPath))
+            var statePaths = new[] { processPath, GetLegacyDownloadProcessFilePath(rootFolder, siteFolder, item) }
+                .Where(path => preserveExistingDone && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string statePath in statePaths)
             {
-                foreach (string line in File.ReadAllLines(processPath, Encoding.UTF8))
+                foreach (string line in File.ReadAllLines(statePath, Encoding.UTF8))
                 {
                     string[] cells = line.Split('|');
                     if (cells.Length >= 5 && string.Equals(cells[2].Trim(), "Done", StringComparison.OrdinalIgnoreCase))
@@ -210,7 +239,7 @@ namespace get_link_manga
 
         private void MarkChapterProcessDone(string rootFolder, string siteFolder, GalleryItem item, string chapterLink)
         {
-            string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
+            string processPath = GetExistingDownloadProcessFilePath(rootFolder, siteFolder, item);
             if (!File.Exists(processPath) || string.IsNullOrWhiteSpace(chapterLink))
             {
                 return;
