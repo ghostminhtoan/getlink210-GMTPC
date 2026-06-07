@@ -3,6 +3,7 @@
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
 - **Commit**: `eb40a4f` | **Build Time**: 2026-06-07 03.22.13 PM Sunday | **Message**: feat: make app portable with embedded runtime loader
+- **Commit**: `bce63a2` | **Build Time**: 2026-06-07 05.21.48 PM Sunday | **Message**: fix: add check error panel and normalize retry names
 - **Commit**: `216b919` | **Build Time**: 2026-06-07 04.49.07 PM Sunday | **Message**: fix: keep one progress line per book
 - **Commit**: `5553f36` | **Build Time**: 2026-06-07 04.37.48 PM Sunday | **Message**: fix: group chapter progress log per book
 - **Commit**: `765c94d` | **Build Time**: 2026-06-07 03.04.32 PM Sunday | **Message**: fix: strip latest chapter from book titles
