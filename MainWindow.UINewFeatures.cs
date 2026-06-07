@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -280,12 +281,15 @@ namespace get_link_manga
             int successfulRetries = 0;
             int failedRetries = 0;
             bool wasDownloading = string.Equals(queueItem.Status, "Downloading", StringComparison.OrdinalIgnoreCase);
+            var chapterFoldersToFinalize = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var err in errorsToRetry)
             {
                 try
                 {
                     string targetFolder;
+                    string retryUnmergedFolder = null;
+                    string retryMergedFolder = null;
                     bool isViHentai = queueItem.SourceDomain != null && queueItem.SourceDomain.Contains("vi-hentai.pro");
                     bool isTruyenqq = queueItem.SourceDomain != null && queueItem.SourceDomain.Contains("truyenqq");
                     string imageUrl = err.ImageUrl;
@@ -305,16 +309,26 @@ namespace get_link_manga
                     if (isViHentai)
                     {
                         string safeChapter = GetSafePathName(err.ChapterName);
-                        targetFolder = Path.Combine(queueItem.DownloadPath, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
+                        retryUnmergedFolder = Path.Combine(queueItem.DownloadPath, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
+                        retryMergedFolder = Path.Combine(queueItem.DownloadPath, "vi-hentai.pro", safeManga, safeChapter);
+                        targetFolder = Directory.Exists(retryMergedFolder) ? retryMergedFolder : retryUnmergedFolder;
                     }
                     else if (isTruyenqq)
                     {
                         string safeChapter = GetSafePathName(err.ChapterName);
-                        targetFolder = Path.Combine(queueItem.DownloadPath, "truyenqq", $"{safeManga}-{safeChapter}");
+                        retryUnmergedFolder = Path.Combine(queueItem.DownloadPath, "truyenqq", $"{safeManga}-{safeChapter}");
+                        retryMergedFolder = Path.Combine(queueItem.DownloadPath, "truyenqq", safeManga, safeChapter);
+                        targetFolder = Directory.Exists(retryMergedFolder) ? retryMergedFolder : retryUnmergedFolder;
                     }
                     else
                     {
                         targetFolder = Path.Combine(queueItem.DownloadPath, queueItem.SourceDomain ?? "", safeManga);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(retryUnmergedFolder) &&
+                        !string.IsNullOrWhiteSpace(retryMergedFolder))
+                    {
+                        chapterFoldersToFinalize[retryUnmergedFolder] = retryMergedFolder;
                     }
 
                     Directory.CreateDirectory(targetFolder);
@@ -352,6 +366,18 @@ namespace get_link_manga
                 });
             }
 
+            foreach (var pair in chapterFoldersToFinalize)
+            {
+                try
+                {
+                    await FinalizeRetryChapterFolderAsync(pair.Key, pair.Value, _downloadCts?.Token ?? CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Retry] Không thể dọn folder chapter '{pair.Key}': {ex.Message}");
+                }
+            }
+
             Dispatcher.Invoke(() => {
                 if (wasDownloading)
                 {
@@ -373,6 +399,21 @@ namespace get_link_manga
                 MessageBox.Show($"Thử tải lại hoàn tất!\nThành công: {successfulRetries}\nThất bại: {failedRetries}", 
                     "Retry Completed", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        private async Task FinalizeRetryChapterFolderAsync(string unmergedPath, string mergedPath, CancellationToken token)
+        {
+            if (string.IsNullOrWhiteSpace(unmergedPath) || string.IsNullOrWhiteSpace(mergedPath))
+            {
+                return;
+            }
+
+            if (!Directory.Exists(unmergedPath))
+            {
+                return;
+            }
+
+            await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
         }
 
         private async Task<string> ResolveTruyenqqRetryImageUrlAsync(GalleryItem queueItem, ErrorDetail err)
