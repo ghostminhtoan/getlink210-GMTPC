@@ -270,6 +270,7 @@ namespace get_link_manga
 
             // Clear current errors before retrying so we can track new ones
             Dispatcher.Invoke(() => {
+                queueItem.Name = FormatGalleryTitle(queueItem.Name);
                 queueItem.Errors.Clear();
                 queueItem.ErrorCount = 0;
                 queueItem.Status = "Downloading";
@@ -304,6 +305,7 @@ namespace get_link_manga
                         throw new Exception("No image URL available");
                     }
 
+                    queueItem.Name = FormatGalleryTitle(queueItem.Name);
                     string safeManga = GetSafePathName(queueItem.Name);
                     
                     if (isViHentai)
@@ -359,6 +361,7 @@ namespace get_link_manga
                     Dispatcher.Invoke(() => {
                         queueItem.AddError(err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl);
                     });
+                    RecordCheckError(queueItem.SourceDomain ?? "retry", queueItem.Name, err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl);
                 }
 
                 Dispatcher.Invoke(() => {

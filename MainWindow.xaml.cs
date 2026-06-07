@@ -292,6 +292,16 @@ namespace get_link_manga
                     if (chkAutoScrollHentaieraLog?.IsChecked == true)
                         ScrollTextBoxToEnd(txtHentaieraLog);
                 }
+
+                if (isError)
+                {
+                    string source = "GENERAL";
+                    string bookName = "-";
+                    string chapterName = "-";
+                    int pageNumber = 0;
+                    string imageUrl = null;
+                    RecordCheckError(source, bookName, chapterName, pageNumber, message, imageUrl);
+                }
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
         private void BtnReverseOrder_Click(object sender, RoutedEventArgs e)
@@ -362,6 +372,11 @@ namespace get_link_manga
         private void BtnClearLog_Click(object sender, RoutedEventArgs e)
         {
             ClearLogPanel(txtLog);
+        }
+
+        private void BtnClearCheckErrors_Click(object sender, RoutedEventArgs e)
+        {
+            ClearCheckErrors();
         }
 
         private void BtnClearNhentaiLog_Click(object sender, RoutedEventArgs e)

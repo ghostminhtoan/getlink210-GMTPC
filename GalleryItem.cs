@@ -19,6 +19,82 @@ namespace get_link_manga
         }
     }
 
+    public class CheckErrorItem : INotifyPropertyChanged
+    {
+        private DateTime _lastSeen;
+        private string _source;
+        private string _bookName;
+        private string _chapterName;
+        private int _pageNumber;
+        private string _errorMessage;
+        private string _imageUrl;
+        private int _occurrenceCount = 1;
+
+        public DateTime LastSeen
+        {
+            get => _lastSeen;
+            set
+            {
+                if (_lastSeen != value)
+                {
+                    _lastSeen = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string Source
+        {
+            get => _source;
+            set { if (_source != value) { _source = value; OnPropertyChanged(); } }
+        }
+
+        public string BookName
+        {
+            get => _bookName;
+            set { if (_bookName != value) { _bookName = value; OnPropertyChanged(); } }
+        }
+
+        public string ChapterName
+        {
+            get => _chapterName;
+            set { if (_chapterName != value) { _chapterName = value; OnPropertyChanged(); } }
+        }
+
+        public int PageNumber
+        {
+            get => _pageNumber;
+            set { if (_pageNumber != value) { _pageNumber = value; OnPropertyChanged(); } }
+        }
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set { if (_errorMessage != value) { _errorMessage = value; OnPropertyChanged(); } }
+        }
+
+        public string ImageUrl
+        {
+            get => _imageUrl;
+            set { if (_imageUrl != value) { _imageUrl = value; OnPropertyChanged(); } }
+        }
+
+        public int OccurrenceCount
+        {
+            get => _occurrenceCount;
+            set { if (_occurrenceCount != value) { _occurrenceCount = value; OnPropertyChanged(); } }
+        }
+
+        public string PageDisplay => PageNumber > 0 ? PageNumber.ToString() : "-";
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
     public class GalleryItem : INotifyPropertyChanged
     {
         private bool _isChecked;

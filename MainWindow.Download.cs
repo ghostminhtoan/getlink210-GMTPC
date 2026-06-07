@@ -593,6 +593,7 @@ namespace get_link_manga
 
                 Dispatcher.Invoke(() =>
                 {
+                    item.Name = FormatGalleryTitle(item.Name);
                     item.SourceDomain = domain;
                     double num = ExtractNumber(item.LinkCount);
                     item.TotalChapters = num > 0 ? (int)Math.Ceiling(num) : 1;
@@ -707,9 +708,10 @@ namespace get_link_manga
                                         Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
                                         Dispatcher.Invoke(() =>
                                         {
-                                            item.Status = "Error";
-                                            item.AddError("General", 0, ex.Message);
-                                        });
+                                        item.Status = "Error";
+                                        item.AddError("General", 0, ex.Message);
+                                        RecordCheckError(item.SourceDomain ?? "general", item.Name, "General", 0, ex.Message);
+                                    });
                                     }
 
                                     lock (lockObj)
