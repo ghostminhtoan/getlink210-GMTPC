@@ -172,6 +172,9 @@
     <Compile Include="ChapterRangeParser.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="BuildInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ErrorReportWindow.xaml.cs">
       <DependentUpon>ErrorReportWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
