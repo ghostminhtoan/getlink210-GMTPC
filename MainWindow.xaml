@@ -1312,7 +1312,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Gallery Details Column (Vertical stack of Name and Link) -->
-                            <DataGridTemplateColumn Header="GALLERY DETAILS (TITLE &amp; URL)" Width="*">
+                            <DataGridTemplateColumn x:Name="colGalleryDetails" Header="CHI TIẾT TRUYỆN (TITLE &amp; URL)" Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Margin="3,1" Orientation="Vertical">
@@ -1364,7 +1364,7 @@
                                                 </TextBlock>
                                                 <!-- Chapter Count -->
                                                 <TextBlock Grid.Column="1"
-                                                           Text="{Binding LinkCount, StringFormat=latest: {0}}" 
+                                                           Text="{Binding LinkCount, StringFormat=mới nhất: {0}}" 
                                                            Foreground="{StaticResource CyberpunkMutedTextBrush}" 
                                                            FontSize="9"
                                                            VerticalAlignment="Center"/>
@@ -1375,7 +1375,7 @@
                             </DataGridTemplateColumn>
 
                              <!-- Status Column -->
-                             <DataGridTemplateColumn Header="STATUS" Width="170">
+                             <DataGridTemplateColumn x:Name="colStatus" Header="TRẠNG THÁI (STATUS)" Width="170">
                                  <DataGridTemplateColumn.CellTemplate>
                                      <DataTemplate>
                                          <Grid Margin="3,1">
@@ -1383,10 +1383,7 @@
                                                  <Style TargetType="Grid">
                                                      <Setter Property="Visibility" Value="Visible"/>
                                                      <Style.Triggers>
-                                                         <DataTrigger Binding="{Binding Status}" Value="{x:Null}">
-                                                             <Setter Property="Visibility" Value="Collapsed"/>
-                                                         </DataTrigger>
-                                                         <DataTrigger Binding="{Binding Status}" Value="">
+                                                         <DataTrigger Binding="{Binding ShouldShowStatus}" Value="False">
                                                              <Setter Property="Visibility" Value="Collapsed"/>
                                                          </DataTrigger>
                                                      </Style.Triggers>
@@ -1407,23 +1404,12 @@
 
                                                  <!-- Status Display -->
                                                  <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
-                                                     <TextBlock FontSize="10" FontWeight="Bold" Foreground="{StaticResource CyberpunkCyanBrush}">
+                                                     <TextBlock FontSize="10" FontWeight="Bold" Foreground="{StaticResource CyberpunkCyanBrush}" Text="{Binding DisplayStatusText}">
                                                          <TextBlock.Style>
                                                              <Style TargetType="TextBlock">
-                                                                 <Setter Property="Text" Value="⏳ Waiting"/>
                                                                  <Style.Triggers>
-                                                                     <DataTrigger Binding="{Binding Status}" Value="Downloading">
-                                                                         <Setter Property="Text" Value="⬇️ Loading"/>
-                                                                     </DataTrigger>
-                                                                     <DataTrigger Binding="{Binding Status}" Value="Completed">
-                                                                         <Setter Property="Text" Value="✅ Done"/>
-                                                                     </DataTrigger>
                                                                      <DataTrigger Binding="{Binding Status}" Value="Error">
-                                                                         <Setter Property="Text" Value="❌ Error"/>
                                                                          <Setter Property="Foreground" Value="Red"/>
-                                                                     </DataTrigger>
-                                                                     <DataTrigger Binding="{Binding Status}" Value="Paused">
-                                                                         <Setter Property="Text" Value="⏸️ Paused"/>
                                                                      </DataTrigger>
                                                                  </Style.Triggers>
                                                              </Style>
@@ -1506,7 +1492,7 @@
                              </DataGridTemplateColumn>
 
                              <!-- Process Column -->
-                             <DataGridTemplateColumn Header="PROCESS" Width="185">
+                            <DataGridTemplateColumn x:Name="colProcess" Header="TIẾN TRÌNH (PROCESS)" Width="160">
                                   <DataGridTemplateColumn.CellTemplate>
                                       <DataTemplate>
                                           <StackPanel Margin="3,1" Orientation="Vertical" Background="Transparent">
@@ -1514,10 +1500,7 @@
                                                  <Style TargetType="StackPanel">
                                                      <Setter Property="Visibility" Value="Visible"/>
                                                      <Style.Triggers>
-                                                         <DataTrigger Binding="{Binding Status}" Value="{x:Null}">
-                                                             <Setter Property="Visibility" Value="Collapsed"/>
-                                                         </DataTrigger>
-                                                         <DataTrigger Binding="{Binding Status}" Value="">
+                                                         <DataTrigger Binding="{Binding ShouldShowProcess}" Value="False">
                                                              <Setter Property="Visibility" Value="Collapsed"/>
                                                          </DataTrigger>
                                                      </Style.Triggers>
@@ -1525,14 +1508,14 @@
                                              </StackPanel.Style>
 
                                              <!-- Row 1: Downloading Chapter -->
-                                             <TextBlock Text="{Binding DownloadingChapter}" 
+                                             <TextBlock Text="{Binding DisplayDownloadingChapter}" 
                                                         Foreground="{StaticResource CyberpunkYellowBrush}" 
                                                         FontSize="10" 
                                                         FontWeight="SemiBold"
                                                         TextTrimming="CharacterEllipsis"/>
 
                                              <!-- Row 2: Page Progress -->
-                                             <TextBlock Text="{Binding DownloadingPageProgress}" 
+                                             <TextBlock Text="{Binding DisplayDownloadingPageProgress}" 
                                                         Foreground="{StaticResource CyberpunkTextBrush}" 
                                                         FontSize="9" 
                                                         Margin="0,1,0,0"/>

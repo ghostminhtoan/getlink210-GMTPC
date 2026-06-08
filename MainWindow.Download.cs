@@ -20,6 +20,7 @@ namespace get_link_manga
     {
         private CancellationTokenSource _downloadCts;
         private volatile bool _isDownloadPaused = false;
+        private volatile bool _stopAfterCurrentChapterRequested = false;
         private static readonly ConcurrentDictionary<string, DateTime> _tempLogWriteTimes = new ConcurrentDictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, DateTime> _processWriteTimes = new ConcurrentDictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
 
@@ -496,23 +497,30 @@ namespace get_link_manga
         {
             if (_downloadCts != null)
             {
-                _downloadCts.Cancel();
+                _stopAfterCurrentChapterRequested = true;
                 _isDownloadPaused = false;
-                btnStopDownload.Content = "⏹️...";
+                btnStopDownload.Content = "⏳";
                 btnStopDownload.IsEnabled = false;
-                Log("Đang dừng quá trình tải xuống... (Stopping download process...)");
+                Log("Đã nhận lệnh dừng mềm. Sẽ dừng sau khi các chapter đang tải hoàn tất.");
 
                 foreach (var item in _scrapedItems)
                 {
-                    if (item.Status == "Downloading" || item.Status == "Paused" || item.Status == "Queued")
+                    if (item.Status == "Downloading" || item.Status == "Paused")
                     {
+                        item.IsPaused = false;
+                        item.IsStopped = false;
+                        item.Status = "Stopping";
+                    }
+                    else if (item.Status == "Queued")
+                    {
+                        item.IsPaused = false;
                         item.IsStopped = true;
                         item.Status = "Cancelled";
+                        item.CurrentProcess = "Stopped before start";
                     }
                 }
 
-                // Best-effort cleanup so a new Start doesn't inherit leftover temp folders.
-                CleanupActiveTempFolders();
+                SaveActiveGalleryListSnapshot();
             }
         }
 
@@ -553,6 +561,7 @@ namespace get_link_manga
             _downloadCts = new CancellationTokenSource();
             CancellationToken token = _downloadCts.Token;
             _isDownloadPaused = false;
+            _stopAfterCurrentChapterRequested = false;
 
             btnStartDownload.IsEnabled = false;
             btnStopDownload.IsEnabled = true;
@@ -636,6 +645,11 @@ namespace get_link_manga
 
                     foreach (var group in groupedByBook)
                     {
+                        if (_stopAfterCurrentChapterRequested)
+                        {
+                            break;
+                        }
+
                         var bookGroup = group;
                         
                         // Wait for semaphore sequentially in the main loop to enforce visual grid order
@@ -654,6 +668,20 @@ namespace get_link_manga
 
                                 foreach (var item in bookGroup)
                                 {
+                                    if (_stopAfterCurrentChapterRequested || item.IsStopped)
+                                    {
+                                        if (!string.Equals(item.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            Dispatcher.Invoke(() =>
+                                            {
+                                                item.Status = "Cancelled";
+                                                item.CurrentProcess = "Stopped before next chapter";
+                                                item.IsStopped = true;
+                                            });
+                                        }
+                                        break;
+                                    }
+
                                     while (_isDownloadPaused || item.IsPaused)
                                     {
                                         token.ThrowIfCancellationRequested();
@@ -673,6 +701,13 @@ namespace get_link_manga
                                     try
                                     {
                                         await DownloadGalleryAsync(item, downloadRoot, token, item, chapterFilter);
+
+                                        if (item.IsStopped || _stopAfterCurrentChapterRequested && string.Equals(item.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            Log($"[Download] Đã dừng sau chapter hiện tại: {item.Name}");
+                                            break;
+                                        }
+
                                         lock (lockObj)
                                         {
                                             completedGalleries++;
@@ -735,9 +770,16 @@ namespace get_link_manga
                     await Task.WhenAll(tasks);
                 }
 
-                lblStatus.Text = "Tải xuống hoàn tất! (Downloads completed)";
-                Log("Tải xuống toàn bộ thành công!");
-                MessageBox.Show("Đã tải xong toàn bộ truyện được chọn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (_stopAfterCurrentChapterRequested)
+                {
+                    Log("Đã dừng tải sau khi hoàn tất chapter đang chạy.");
+                }
+                else
+                {
+                    lblStatus.Text = "Tải xuống hoàn tất! (Downloads completed)";
+                    Log("Tải xuống toàn bộ thành công!");
+                    MessageBox.Show("Đã tải xong toàn bộ truyện được chọn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -756,6 +798,7 @@ namespace get_link_manga
                 _downloadCts?.Dispose();
                 _downloadCts = null;
                 _isDownloadPaused = false;
+                _stopAfterCurrentChapterRequested = false;
 
                 btnStartDownload.IsEnabled = true;
                 btnStopDownload.IsEnabled = false;
@@ -782,6 +825,7 @@ namespace get_link_manga
                 {
                     CleanupActiveTempFolders();
                 }
+                SaveActiveGalleryListSnapshot();
             }
         }
 

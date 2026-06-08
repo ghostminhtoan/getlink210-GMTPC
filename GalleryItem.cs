@@ -207,6 +207,11 @@ namespace get_link_manga
                 {
                     _isChecked = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(DisplayStatusText));
+                    OnPropertyChanged(nameof(ShouldShowStatus));
+                    OnPropertyChanged(nameof(DisplayDownloadingChapter));
+                    OnPropertyChanged(nameof(DisplayDownloadingPageProgress));
+                    OnPropertyChanged(nameof(ShouldShowProcess));
                 }
             }
         }
@@ -296,7 +301,19 @@ namespace get_link_manga
         public string Status
         {
             get => _status;
-            set { if (_status != value) { _status = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_status != value)
+                {
+                    _status = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DisplayStatusText));
+                    OnPropertyChanged(nameof(ShouldShowStatus));
+                    OnPropertyChanged(nameof(DisplayDownloadingChapter));
+                    OnPropertyChanged(nameof(DisplayDownloadingPageProgress));
+                    OnPropertyChanged(nameof(ShouldShowProcess));
+                }
+            }
         }
 
         public string CurrentProcess
@@ -356,6 +373,10 @@ namespace get_link_manga
                         }
                         DownloadingPageProgress = value;
                     }
+
+                    OnPropertyChanged(nameof(DisplayDownloadingChapter));
+                    OnPropertyChanged(nameof(DisplayDownloadingPageProgress));
+                    OnPropertyChanged(nameof(ShouldShowProcess));
                 }
             }
         }
@@ -411,14 +432,80 @@ namespace get_link_manga
         public string DownloadingChapter
         {
             get => _downloadingChapter;
-            set { if (_downloadingChapter != value) { _downloadingChapter = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_downloadingChapter != value)
+                {
+                    _downloadingChapter = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DisplayDownloadingChapter));
+                    OnPropertyChanged(nameof(ShouldShowProcess));
+                }
+            }
         }
 
         public string DownloadingPageProgress
         {
             get => _downloadingPageProgress;
-            set { if (_downloadingPageProgress != value) { _downloadingPageProgress = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_downloadingPageProgress != value)
+                {
+                    _downloadingPageProgress = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DisplayDownloadingPageProgress));
+                    OnPropertyChanged(nameof(ShouldShowProcess));
+                }
+            }
         }
+
+        private bool ShouldHideQueuedDisplay =>
+            !_isChecked &&
+            string.Equals(_status, "Queued", StringComparison.OrdinalIgnoreCase);
+
+        public bool ShouldShowStatus =>
+            !string.IsNullOrWhiteSpace(DisplayStatusText);
+
+        public string DisplayStatusText
+        {
+            get
+            {
+                if (ShouldHideQueuedDisplay)
+                {
+                    return string.Empty;
+                }
+
+                switch (_status)
+                {
+                    case "Queued":
+                        return "⏳ Chờ tải (Waiting)";
+                    case "Downloading":
+                        return "⬇️ Đang tải (Downloading)";
+                    case "Completed":
+                        return "✅ Hoàn tất (Done)";
+                    case "Error":
+                        return "❌ Lỗi (Error)";
+                    case "Paused":
+                        return "⏸️ Tạm dừng (Paused)";
+                    case "Stopping":
+                        return "🛑 Dừng mềm (Stopping)";
+                    case "Cancelled":
+                        return "⛔ Đã dừng (Stopped)";
+                    default:
+                        return string.IsNullOrWhiteSpace(_status) ? string.Empty : _status;
+                }
+            }
+        }
+
+        public string DisplayDownloadingChapter =>
+            ShouldHideQueuedDisplay ? string.Empty : _downloadingChapter;
+
+        public string DisplayDownloadingPageProgress =>
+            ShouldHideQueuedDisplay ? string.Empty : _downloadingPageProgress;
+
+        public bool ShouldShowProcess =>
+            !string.IsNullOrWhiteSpace(DisplayDownloadingChapter) ||
+            !string.IsNullOrWhiteSpace(DisplayDownloadingPageProgress);
 
         public List<ErrorDetail> GetUniqueErrors()
         {
