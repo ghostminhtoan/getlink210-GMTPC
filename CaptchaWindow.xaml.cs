@@ -16,10 +16,15 @@ namespace get_link_manga
         public string UserAgent { get; private set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
         public string ResolvedHtml { get; private set; }
         private readonly string _targetUrl;
+        private readonly bool _autoDeleteCookiesOnLoad;
+        private readonly DateTime _windowOpenedAt = DateTime.Now;
         private DateTime _captchaBypassStartTime = DateTime.MinValue;
         private DateTime _lastCaptchaKeyboardAttempt = DateTime.MinValue;
+        private DateTime _challengeDetectedAt = DateTime.MinValue;
+        public bool BypassWasNeeded { get; private set; }
+        public double WindowElapsedSeconds => (DateTime.Now - _windowOpenedAt).TotalSeconds;
 
-        public CaptchaWindow(string targetUrl)
+        public CaptchaWindow(string targetUrl, bool autoDeleteCookiesOnLoad = false)
         {
             InitializeComponent();
             if (webViewHost != null)
@@ -27,16 +32,59 @@ namespace get_link_manga
                 webViewHost.Children.Add(webView);
             }
             _targetUrl = targetUrl;
+            _autoDeleteCookiesOnLoad = autoDeleteCookiesOnLoad;
+            ApplyLanguage(GetIsVietnameseUiEnabled());
             try
             {
                 var uri = new Uri(targetUrl);
-                this.Title = $"GIẢI CAPTCHA CLOUDFLARE - {uri.Host.ToUpper()}";
+                this.Title = $"{GetCaptchaWindowTitlePrefix()} - {uri.Host.ToUpper()}";
             }
             catch
             {
-                this.Title = "GIẢI CAPTCHA CLOUDFLARE";
+                this.Title = GetCaptchaWindowTitlePrefix();
             }
             Loaded += CaptchaWindow_Loaded;
+        }
+
+        private bool GetIsVietnameseUiEnabled()
+        {
+            try
+            {
+                if (Application.Current?.Properties["IsVietnameseUi"] is bool isVietnamese)
+                {
+                    return isVietnamese;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private string GetCaptchaWindowTitlePrefix()
+        {
+            return GetIsVietnameseUiEnabled() ? "Vượt Cloudflare Captcha" : "Cloudflare Captcha";
+        }
+
+        private void ApplyLanguage(bool isVietnamese)
+        {
+            if (isVietnamese)
+            {
+                if (txtCaptchaHeader != null) txtCaptchaHeader.Text = "VƯỢT CLOUDFLARE CAPTCHA";
+                if (txtCaptchaDescription != null) txtCaptchaDescription.Text = "VUI LÒNG HOÀN THÀNH THỬ THÁCH TRONG TRÌNH DUYỆT BÊN DƯỚI. KHI TRANG TẢI XONG, NHẤN 'ĐÃ XONG'";
+                if (btnDeleteCookies != null) btnDeleteCookies.Content = "XÓA COOKIE";
+                if (btnDone != null) btnDone.Content = "ĐÃ XONG CAPTCHA";
+                if (btnCancel != null) btnCancel.Content = "HỦY";
+            }
+            else
+            {
+                if (txtCaptchaHeader != null) txtCaptchaHeader.Text = "CLOUDFLARE CAPTCHA BYPASS";
+                if (txtCaptchaDescription != null) txtCaptchaDescription.Text = "PLEASE COMPLETE THE CHALLENGE IN THE BROWSER BELOW. WHEN THE PAGE FINISHES LOADING, CLICK 'DONE'";
+                if (btnDeleteCookies != null) btnDeleteCookies.Content = "DELETE COOKIES";
+                if (btnDone != null) btnDone.Content = "CAPTCHA DONE";
+                if (btnCancel != null) btnCancel.Content = "CANCEL";
+            }
         }
 
         private async void CaptchaWindow_Loaded(object sender, RoutedEventArgs e)
@@ -52,6 +100,11 @@ namespace get_link_manga
                 
                 webView.Source = new Uri(_targetUrl);
 
+                if (_autoDeleteCookiesOnLoad)
+                {
+                    await DeleteCookiesAndReloadAsync(showMessage: false);
+                }
+
                 // Start auto-bypass detection loop
                 _ = AutoDetectBypassAsync();
             }
@@ -66,7 +119,6 @@ namespace get_link_manga
         private async Task AutoDetectBypassAsync()
         {
             DateTime nettruyenChaptersWaitStartTime = DateTime.MinValue;
-            
             while (true)
             {
                 await Task.Delay(1000);
@@ -117,6 +169,10 @@ namespace get_link_manga
 
                     if (result != null && result.Trim('"') == "ok")
                     {
+                        bool challengeWasReal = BypassWasNeeded ||
+                            (_challengeDetectedAt != DateTime.MinValue && (DateTime.Now - _challengeDetectedAt).TotalSeconds >= 2.0);
+                        BypassWasNeeded = challengeWasReal;
+
                         if (!title.Contains("Just a moment") && !title.Contains("Cloudflare"))
                         {
                             bool shouldDelay = false;
@@ -169,7 +225,6 @@ namespace get_link_manga
                                     }
                                 }
                             }
-
                             if (!shouldDelay)
                             {
                                 // Get final HTML
@@ -186,13 +241,20 @@ namespace get_link_manga
                                     ResolvedHtml = finalHtml;
                                 }
 
-                                // Great! We bypassed it. Let's auto click done.
+                                // False positive if window clears almost instantly without a real challenge.
                                 Dispatcher.Invoke(() =>
                                 {
                                     BtnDone_Click(this, null);
                                 });
                                 break;
                             }
+                        }
+                    }
+                    else
+                    {
+                        if (_challengeDetectedAt == DateTime.MinValue)
+                        {
+                            _challengeDetectedAt = DateTime.Now;
                         }
                     }
                     
@@ -208,9 +270,9 @@ namespace get_link_manga
                         double secsSinceStart = (DateTime.Now - _captchaBypassStartTime).TotalSeconds;
                         double secsSinceLastAttempt = (DateTime.Now - _lastCaptchaKeyboardAttempt).TotalSeconds;
 
-                        // First attempt after 10 seconds, then every 5 seconds
+                        // Only auto-bypass after challenge has actually stayed long enough.
                         bool shouldAttempt = false;
-                        if (_lastCaptchaKeyboardAttempt == DateTime.MinValue && secsSinceStart >= 10)
+                        if (_lastCaptchaKeyboardAttempt == DateTime.MinValue && secsSinceStart >= 8)
                         {
                             shouldAttempt = true;
                         }
@@ -221,6 +283,7 @@ namespace get_link_manga
 
                         if (shouldAttempt)
                         {
+                            BypassWasNeeded = true;
                             _lastCaptchaKeyboardAttempt = DateTime.Now;
 
                             await Dispatcher.InvokeAsync(() =>
@@ -285,6 +348,23 @@ namespace get_link_manga
                     ResolvedUri = finalUri;
                 }
 
+                try
+                {
+                    string finalHtml = await webView.CoreWebView2.ExecuteScriptAsync("document.documentElement.outerHTML");
+                    if (!string.IsNullOrWhiteSpace(finalHtml))
+                    {
+                        if (finalHtml.StartsWith("\"") && finalHtml.EndsWith("\""))
+                        {
+                            finalHtml = UnescapeJsonString(finalHtml);
+                        }
+
+                        ResolvedHtml = finalHtml;
+                    }
+                }
+                catch
+                {
+                }
+
                 // Get cookies from WebView2 CookieManager for the final redirected URL
                 string fetchUrl = ResolvedUri?.ToString() ?? _targetUrl;
                 var list = await webView.CoreWebView2.CookieManager.GetCookiesAsync(fetchUrl);
@@ -333,41 +413,54 @@ namespace get_link_manga
             }
         }
 
+        private async Task DeleteCookiesAndReloadAsync(bool showMessage)
+        {
+            if (webView.CoreWebView2 == null)
+            {
+                throw new InvalidOperationException("Trình duyệt chưa sẵn sàng.");
+            }
+
+            webView.CoreWebView2.CookieManager.DeleteAllCookies();
+
+            ResolvedCookies = new CookieContainer();
+            ResolvedUri = null;
+            ResolvedHtml = null;
+            BypassWasNeeded = false;
+            _captchaBypassStartTime = DateTime.MinValue;
+            _lastCaptchaKeyboardAttempt = DateTime.MinValue;
+            _challengeDetectedAt = DateTime.MinValue;
+
+            await Task.Delay(250);
+
+            Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    webView.CoreWebView2.Reload();
+                }
+                catch
+                {
+                    try
+                    {
+                        webView.CoreWebView2.Navigate(_targetUrl);
+                    }
+                    catch
+                    {
+                    }
+                }
+            });
+
+            if (showMessage)
+            {
+                MessageBox.Show("Đã xóa cookie, refresh trang, tiếp tục chờ captcha/bypass.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
         private async void BtnDeleteCookies_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (webView.CoreWebView2 != null)
-                {
-                    webView.CoreWebView2.CookieManager.DeleteAllCookies();
-
-                    // Reset the bypass state so the challenge flow starts over cleanly.
-                    ResolvedCookies = new CookieContainer();
-                    ResolvedUri = null;
-                    ResolvedHtml = null;
-                    _captchaBypassStartTime = DateTime.MinValue;
-                    _lastCaptchaKeyboardAttempt = DateTime.MinValue;
-
-                    await Task.Delay(250);
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        try
-                        {
-                            if (webView.CoreWebView2 != null)
-                            {
-                                webView.CoreWebView2.Navigate(_targetUrl);
-                            }
-                        }
-                        catch { }
-                    });
-
-                    MessageBox.Show("Đã xóa cookie và tải lại trang để bypass captcha lại.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Trình duyệt chưa sẵn sàng.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
+                await DeleteCookiesAndReloadAsync(showMessage: true);
             }
             catch (Exception ex)
             {

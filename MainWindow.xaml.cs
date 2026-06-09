@@ -32,6 +32,7 @@ namespace get_link_manga
         internal BookmarkHistoryManager _bookmarkManager = new BookmarkHistoryManager();
         private BookmarkHistoryWindow _bookmarkHistoryWindowInstance;
         private readonly System.Windows.Controls.ProgressBar progressBar = new System.Windows.Controls.ProgressBar();
+        private bool _startupArchivePromptShown;
 
         static MainWindow()
         {
@@ -55,6 +56,9 @@ namespace get_link_manga
         public MainWindow()
         {
             InitializeComponent();
+            _isVietnameseUi = true;
+            ApplyCurrentUiLanguage();
+            InitializeGalleryListAutosave();
             if (txtBuildInfo != null)
             {
                 txtBuildInfo.Text = BuildInfo.DisplayText;
@@ -164,8 +168,10 @@ namespace get_link_manga
                 StyleComboBoxPopup(cmbConnections);
                 StyleComboBoxPopup(cmbMultiDownload);
 
+                CommandBindings.Add(new CommandBinding(ApplicationCommands.New, WindowNew_Executed));
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, WindowSave_Executed));
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, WindowOpen_Executed));
+                InputBindings.Add(new KeyBinding(ApplicationCommands.New, new KeyGesture(Key.N, ModifierKeys.Control)));
                 InputBindings.Add(new KeyBinding(ApplicationCommands.Save, new KeyGesture(Key.S, ModifierKeys.Control)));
                 InputBindings.Add(new KeyBinding(ApplicationCommands.Open, new KeyGesture(Key.O, ModifierKeys.Control)));
 
@@ -174,6 +180,11 @@ namespace get_link_manga
                 {
                     view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Ascending));
                 }
+            };
+
+            Closing += (s, e) =>
+            {
+                SaveActiveGalleryListSnapshot();
             };
         }
 
@@ -290,6 +301,12 @@ namespace get_link_manga
                     if (chkAutoScrollNettruyenLog?.IsChecked == true)
                         ScrollTextBoxToEnd(txtNettruyenLog);
                 }
+                if (txtTruyenggvnLog != null)
+                {
+                    AppendLogLine(txtTruyenggvnLog, logLine, isError);
+                    if (chkAutoScrollTruyenggvnLog?.IsChecked == true)
+                        ScrollTextBoxToEnd(txtTruyenggvnLog);
+                }
                 if (txtHentaieraLog != null)
                 {
                     AppendLogLine(txtHentaieraLog, logLine, isError);
@@ -339,40 +356,6 @@ namespace get_link_manga
             }
         }
 
-        private async void BtnRetryErrors_Click(object sender, RoutedEventArgs e)
-        {
-            var targetItems = _scrapedItems.Where(item => item.IsChecked && item.ErrorCount > 0).ToList();
-            if (!targetItems.Any())
-            {
-                targetItems = _scrapedItems.Where(item => item.ErrorCount > 0).ToList();
-            }
-
-            if (!targetItems.Any())
-            {
-                MessageBox.Show("Không tìm thấy truyện nào có lỗi để tải lại.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            btnRetryErrors.IsEnabled = false;
-            Log($"[Retry] Bắt đầu tải lại lỗi cho {targetItems.Count} truyện...");
-            try
-            {
-                foreach (var item in targetItems)
-                {
-                    await RetryDownloadQueueItemErrorsAsync(item, showMessageBox: false);
-                }
-                MessageBox.Show($"Hoàn tất tải lại lỗi cho {targetItems.Count} truyện!", "Retry Completed", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                Log($"[Retry Error] Lỗi khi chạy hàng đợi tải lại: {ex.Message}");
-            }
-            finally
-            {
-                btnRetryErrors.IsEnabled = true;
-            }
-        }
-
         private void BtnClearLog_Click(object sender, RoutedEventArgs e)
         {
             ClearLogPanel(txtLog);
@@ -403,6 +386,11 @@ namespace get_link_manga
             ClearLogPanel(txtNettruyenLog);
         }
 
+        private void BtnClearTruyenggvnLog_Click(object sender, RoutedEventArgs e)
+        {
+            ClearLogPanel(txtTruyenggvnLog);
+        }
+
         private void BtnClearHentaieraLog_Click(object sender, RoutedEventArgs e)
         {
             ClearLogPanel(txtHentaieraLog);
@@ -417,6 +405,7 @@ namespace get_link_manga
             else if (btn == btnViHentaiFetchCaptcha) url = txtViHentaiTagUrl.Text;
             else if (btn == btnTruyenqqFetchCaptcha) url = txtTruyenqqTagUrl.Text;
             else if (btn == btnNettruyenFetchCaptcha) url = txtNettruyenTagUrl.Text;
+            else if (btn == btnTruyenggvnFetchCaptcha) url = txtTruyenggvnTagUrl.Text;
             else if (btnHentaieraFetchCaptcha != null && btn == btnHentaieraFetchCaptcha) url = txtHentaieraTagUrl.Text;
 
             if (string.IsNullOrWhiteSpace(url))
@@ -425,9 +414,16 @@ namespace get_link_manga
                 return;
             }
 
+            if (btn == btnNhentaiFetchCaptcha)
+            {
+                ResetCookiesForCaptcha(url);
+                MessageBox.Show("Đã xóa cookie cho nhentai.xxx. Site này không cần captcha nữa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             ResetCookiesForCaptcha(url);
 
-            var captchaWin = new CaptchaWindow(url)
+            var captchaWin = new CaptchaWindow(url, autoDeleteCookiesOnLoad: true)
             {
                 Owner = this
             };
@@ -462,7 +458,14 @@ namespace get_link_manga
                         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
                     }
 
-                    Log("Đồng bộ cookie và user-agent từ CaptchaWindow thành công!");
+                    if (captchaWin.BypassWasNeeded)
+                    {
+                        Log("Đồng bộ cookie và user-agent từ CaptchaWindow thành công sau khi bypass captcha.");
+                    }
+                    else
+                    {
+                        Log("Đồng bộ cookie và user-agent từ CaptchaWindow thành công. Không phát hiện captcha thật.");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -515,14 +518,19 @@ namespace get_link_manga
         private int _currentMaxParallelBooks = 2;
         private DynamicSemaphore _activeBookSemaphore;
 
+        private void WindowNew_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            BtnNewList_Click(sender, new RoutedEventArgs());
+        }
+
         private void WindowSave_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            BtnSave_Click(sender, new RoutedEventArgs());
+            BtnSaveCustom_Click(sender, new RoutedEventArgs());
         }
 
         private void WindowOpen_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            BtnLoad_Click(sender, new RoutedEventArgs());
+            BtnLoadCustom_Click(sender, new RoutedEventArgs());
         }
     }
 }

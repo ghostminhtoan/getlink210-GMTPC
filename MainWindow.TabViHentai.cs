@@ -293,16 +293,7 @@ namespace get_link_manga
 
         private void BtnViHentaiPasteDirect_Click(object sender, RoutedEventArgs e)
         {
-            var win = new DirectDownloadWindow(isNhentai: false);
-            win.Owner = this;
-            win.OnImport = async (links) =>
-            {
-                if (links != null && links.Any())
-                {
-                    await ImportViHentaiDirectLinksAsync(links);
-                }
-            };
-            win.Show();
+            _ = PasteDirectLinksFromClipboardAsync(ImportViHentaiDirectLinksAsync, "Vi-hentai direct paste: no valid links found in clipboard.");
         }
 
         private Task ImportViHentaiDirectLinksAsync(System.Collections.Generic.List<string> links)
@@ -504,12 +495,6 @@ namespace get_link_manga
             await _viHentaiHtmlGate.WaitAsync(token);
             try
             {
-                bool ok = await SolveViHentaiCaptchaIfNeededAsync(url);
-                if (!ok)
-                {
-                    throw new Exception("Bị chặn bởi Cloudflare Captcha trên vi-hentai.pro.");
-                }
-
                 int delayMs = 1200;
                 for (int attempt = 1; attempt <= 3; attempt++)
                 {
@@ -519,25 +504,42 @@ namespace get_link_manga
                         using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                         using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, token))
                         {
-                            if ((int)response.StatusCode == 429 && attempt < 3)
+                            string content = await response.Content.ReadAsStringAsync();
+
+                            if (response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.ServiceUnavailable)
                             {
-                                ViHentaiLog($"[Throttle] vi-hentai trả về 429 khi {action}. Tự động mở cửa sổ Captcha để gia hạn session...");
+                                ViHentaiLog($"[Captcha] vi-hentai trả về {(int)response.StatusCode} khi {action}. Mở CaptchaWindow vì có dấu hiệu chặn thật.");
                                 bool solved = await SolveViHentaiCaptchaIfNeededAsync(url);
                                 if (solved)
                                 {
-                                    ViHentaiLog("[Throttle] Đã giải captcha thành công, thử lại ngay lập tức.");
+                                    ViHentaiLog("[Captcha] Đồng bộ session xong. Thử lại ngay.");
                                     continue;
                                 }
+                                throw new Exception("Bị chặn bởi Cloudflare Captcha trên vi-hentai.pro.");
+                            }
 
+                            if (IsViHentaiCaptchaChallengeHtml(content))
+                            {
+                                ViHentaiLog($"[Captcha] vi-hentai trả HTML challenge khi {action}. Mở CaptchaWindow.");
+                                bool solved = await SolveViHentaiCaptchaIfNeededAsync(url);
+                                if (solved)
+                                {
+                                    ViHentaiLog("[Captcha] Đồng bộ session xong. Thử lại ngay.");
+                                    continue;
+                                }
+                                throw new Exception("Bị chặn bởi Cloudflare Captcha trên vi-hentai.pro.");
+                            }
+
+                            if ((int)response.StatusCode == 429 && attempt < 3)
+                            {
                                 int retryDelay = GetRetryDelayMilliseconds(response, attempt, delayMs);
-                                ViHentaiLog($"[Throttle] vi-hentai trả về 429. Chờ {retryDelay}ms rồi thử lại ({attempt}/3).");
+                                ViHentaiLog($"[Throttle] vi-hentai trả về 429 khi {action}. Chưa thấy challenge thật, chỉ chờ {retryDelay}ms rồi thử lại ({attempt}/3).");
                                 await Task.Delay(retryDelay, token);
                                 delayMs = Math.Min(delayMs * 2, 8000);
                                 continue;
                             }
 
                             response.EnsureSuccessStatusCode();
-                            string content = await response.Content.ReadAsStringAsync();
                             await Task.Delay(delayMs, token);
                             return content;
                         }
@@ -884,6 +886,7 @@ namespace get_link_manga
                         queueItem.CompletedChapters = currentIdx;
                     });
                 }
+
             }
         }
 
@@ -939,14 +942,19 @@ namespace get_link_manga
                 catch {}
             }
 
-            string safeManga = GetSafePathName(mangaTitle);
+            string safeManga = GetCanonicalBookFolderName(item, mangaTitle, "Unknown Manga");
+            string aliasSafeManga = GetSafePathName(mangaTitle);
             string safeChapter = GetSafePathName(chapterTitle);
-            string progressKey = $"vi-hentai.pro|{GetSafePathName(mangaTitle)}";
+            string progressKey = $"vi-hentai.pro|{safeManga}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
             UpsertMainLogLine(progressKey, $"[vi-hentai.pro] Đang tải {mangaTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
-            string unmergedPath = Path.Combine(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
-            string mergedPath = Path.Combine(rootFolder, "vi-hentai.pro", safeManga, safeChapter);
+
+            string siteRootFolder = Path.Combine(rootFolder, "vi-hentai.pro");
+            await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
+
+            string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
+            string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
             string tempFolder = BuildStableTempFolderPath(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}", item.Link, item.Name, safeManga, safeChapter);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
@@ -1133,6 +1141,7 @@ namespace get_link_manga
                     }
 
                     await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                    await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
                     UpsertMainLogLine(progressKey, $"[vi-hentai.pro] Đã tải xong {mangaTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
                 }
                 catch (Exception ex)
