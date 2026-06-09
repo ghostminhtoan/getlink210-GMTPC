@@ -5,18 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:get_link_manga"
         mc:Ignorable="d"
-        Title="Comic-GMTPC v1.0" Height="850" Width="1400"
+        Title="Comic-GMTPC v1.0" Height="920" Width="1540"
         Background="{StaticResource CyberpunkDarkBrush}"
         WindowStartupLocation="CenterScreen"
         SizeChanged="Window_SizeChanged"
         Loaded="MainWindow_Loaded">
 
     <Window.Resources>
-        <!-- Missing resource definitions -->
         <Style x:Key="ToggleButtonSwitch" TargetType="ToggleButton">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="20"/>
-            <Setter Property="Background" Value="#121622"/>
+            <Setter Property="Background" Value="#16304b"/>
             <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -25,13 +24,13 @@
                     <ControlTemplate TargetType="ToggleButton">
                         <Border x:Name="BackgroundBorder" 
                                 CornerRadius="10" 
-                                Background="#121622" 
+                                Background="#16304b" 
                                 BorderBrush="{TemplateBinding BorderBrush}" 
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 SnapsToDevicePixels="True">
                             <Grid>
                                 <Ellipse x:Name="Thumb" 
-                                         Fill="#888888" 
+                                         Fill="#a0b4c7" 
                                          Width="12" Height="12" 
                                          HorizontalAlignment="Left" 
                                          Margin="3,0,3,0"
@@ -40,16 +39,16 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="BackgroundBorder" Property="Background" Value="#172e42"/>
+                                <Setter TargetName="BackgroundBorder" Property="Background" Value="#20486E"/>
                                 <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource CyberpunkCyanBrush}"/>
                                 <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="Thumb" Property="Fill" Value="{StaticResource CyberpunkCyanBrush}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="False">
-                                <Setter TargetName="BackgroundBorder" Property="Background" Value="#121622"/>
+                                <Setter TargetName="BackgroundBorder" Property="Background" Value="#102133"/>
                                 <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
                                 <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Left"/>
-                                <Setter TargetName="Thumb" Property="Fill" Value="#666666"/>
+                                <Setter TargetName="Thumb" Property="Fill" Value="#7d92a8"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -58,7 +57,7 @@
         </Style>
         <Style x:Key="ProgressBarSuccess" TargetType="ProgressBar">
             <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
-            <Setter Property="Background" Value="{StaticResource CyberpunkBorderBrush}"/>
+            <Setter Property="Background" Value="#0B1726"/>
         </Style>
         <Style x:Key="TabControlInLine" TargetType="TabControl">
             <Setter Property="Background" Value="{StaticResource CyberpunkDarkBrush}"/>
@@ -66,14 +65,14 @@
         </Style>
         <!-- DataGrid Style -->
         <Style x:Key="CyberpunkDataGrid" TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
-            <Setter Property="Background" Value="#06090e"/>
-            <Setter Property="RowBackground" Value="#06090e"/>
-            <Setter Property="AlternatingRowBackground" Value="#0c0f17"/>
+            <Setter Property="Background" Value="#0d1828"/>
+            <Setter Property="RowBackground" Value="#0d1828"/>
+            <Setter Property="AlternatingRowBackground" Value="#132235"/>
             <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="GridLinesVisibility" Value="All"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="#1f293d"/>
-            <Setter Property="VerticalGridLinesBrush" Value="#1f293d"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#223550"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#223550"/>
             <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="HeadersVisibility" Value="Column"/>
             <Setter Property="RowHeaderWidth" Value="0"/>
@@ -81,18 +80,18 @@
 
         <!-- Column Header Style -->
         <Style x:Key="CyberpunkDataGridColumnHeader" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#121622"/>
-            <Setter Property="Foreground" Value="{StaticResource CyberpunkPinkBrush}"/>
+            <Setter Property="Background" Value="#16253A"/>
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="Padding" Value="10,8"/>
             <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="0,0,1,2"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#1c1122"/>
-                    <Setter Property="Foreground" Value="{StaticResource CyberpunkPinkBrush}"/>
+                    <Setter Property="Background" Value="#1c2f47"/>
+                    <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -103,11 +102,11 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#161f30"/>
+                    <Setter Property="Background" Value="#17304a"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#1e2d4a"/>
-                    <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
+                    <Setter Property="Background" Value="#20486E"/>
+                    <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -131,16 +130,16 @@
 
         <Style x:Key="CompactCyanButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
             <Setter Property="Height" Value="26"/>
-            <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Padding" Value="7,2"/>
-            <Setter Property="Margin" Value="0,0,6,5"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
         </Style>
 
         <Style x:Key="CompactPinkButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
             <Setter Property="Height" Value="26"/>
-            <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Padding" Value="7,2"/>
-            <Setter Property="Margin" Value="0,0,6,5"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
         </Style>
 
         <Style x:Key="CheckErrorWrapTextStyle" TargetType="TextBlock">
@@ -150,35 +149,35 @@
 
         <!-- ComboBox Style -->
         <Style x:Key="CyberpunkComboBox" TargetType="ComboBox">
-            <Setter Property="Background" Value="#0e121a"/>
-            <Setter Property="Foreground" Value="DarkGreen"/>
+            <Setter Property="Background" Value="#0E1A29"/>
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="Padding" Value="8,3"/>
         </Style>
         
         <!-- ComboBoxItem Style for dropdown items -->
         <Style x:Key="CyberpunkComboBoxItemStyle" TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{StaticResource CyberpunkCardBrush}"/>
-            <Setter Property="Foreground" Value="Cyan"/>
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="Padding" Value="10,4"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#1c1122"/>
-                    <Setter Property="Foreground" Value="Red"/>
+                    <Setter Property="Background" Value="#17304A"/>
+                    <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#1e2d4a"/>
-                    <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
+                    <Setter Property="Background" Value="#20486E"/>
+                    <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
         <!-- Custom TabItem Style -->
         <Style x:Key="CyberpunkTabItem" TargetType="TabItem">
-            <Setter Property="Background" Value="#0e121a"/>
-            <Setter Property="BorderBrush" Value="#1f293d"/>
-            <Setter Property="Foreground" Value="#c8d4e2"/>
-            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Background" Value="#0E1A29"/>
+            <Setter Property="BorderBrush" Value="#223550"/>
+            <Setter Property="Foreground" Value="#C6D5E5"/>
+            <Setter Property="Padding" Value="16,10"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Template">
@@ -187,9 +186,9 @@
                         <Border x:Name="border" 
                                 Background="{TemplateBinding Background}" 
                                 BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="1,1,1,3" 
-                                Margin="0,0,4,0" 
-                                CornerRadius="4,4,0,0" 
+                                BorderThickness="1" 
+                                Margin="0,0,6,0" 
+                                CornerRadius="10,10,0,0" 
                                 Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True"
                                 Cursor="Hand">
@@ -203,7 +202,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#121622"/>
+                                <Setter TargetName="border" Property="Background" Value="#122238"/>
                                 <Setter TargetName="border" Property="BorderBrush" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                                 <Setter TargetName="headerText" Property="Foreground" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             </Trigger>
@@ -216,7 +215,7 @@
                                     <Condition Property="IsMouseOver" Value="True"/>
                                     <Condition Property="IsSelected" Value="False"/>
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="border" Property="Background" Value="#171f2f"/>
+                                <Setter TargetName="border" Property="Background" Value="#17304A"/>
                                 <Setter TargetName="headerText" Property="Foreground" Value="#ffffff"/>
                             </MultiTrigger>
                             <MultiTrigger>
@@ -224,7 +223,7 @@
                                     <Condition Property="IsMouseOver" Value="True"/>
                                     <Condition Property="IsSelected" Value="True"/>
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="border" Property="Background" Value="#171f2f"/>
+                                <Setter TargetName="border" Property="Background" Value="#17304A"/>
                                 <Setter TargetName="headerText" Property="Foreground" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             </MultiTrigger>
                         </ControlTemplate.Triggers>
@@ -232,9 +231,66 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="HeroStepCard" TargetType="Border">
+            <Setter Property="Background" Value="#15293E"/>
+            <Setter Property="BorderBrush" Value="#31506E"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+
+        <Style x:Key="PanelSectionTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="PanelSectionHint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkMutedTextBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+
+        <Style x:Key="InputLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkMutedTextBrush}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="SurfaceTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#0D1828"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource CyberpunkCyanBrush}"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="MetricCard" TargetType="Border">
+            <Setter Property="Background" Value="#0D1828"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="12,10"/>
+        </Style>
+
+        <Style x:Key="WorkspaceSectionCard" TargetType="Border">
+            <Setter Property="Background" Value="#0E1A29"/>
+            <Setter Property="BorderBrush" Value="#203954"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="14"/>
+        </Style>
     </Window.Resources>
     
-    <Grid Margin="15">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <!-- Title Bar / Header -->
             <RowDefinition Height="Auto"/>
@@ -243,60 +299,103 @@
             <!-- Footer Status Bar -->
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        <Border Grid.Row="0" Padding="24" Margin="0,0,0,10" Style="{StaticResource CyberpunkCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
+                    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                        <TextBlock Name="txtHeaderTitle"
+                                   Text="Comic GMTPC"
+                                   Foreground="{StaticResource CyberpunkTextBrush}"
+                                   FontFamily="Bahnschrift SemiBold, Segoe UI Semibold"
+                                   FontSize="30"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="Simple flow: choose website, paste link, review list, then download."
+                                   Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                                   FontSize="14"
+                                   Margin="0,8,0,0"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
 
-        <Grid Grid.Row="0" Margin="0,0,0,6">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+                    <WrapPanel Grid.Row="1">
+                        <Border Style="{StaticResource HeroStepCard}">
+                            <StackPanel>
+                                <TextBlock Text="STEP 1" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="10" FontWeight="Bold"/>
+                                <TextBlock Text="CHOOSE SOURCE" Foreground="{StaticResource CyberpunkTextBrush}" FontSize="13" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource HeroStepCard}">
+                            <StackPanel>
+                                <TextBlock Text="STEP 2" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="10" FontWeight="Bold"/>
+                                <TextBlock Text="PASTE LINK" Foreground="{StaticResource CyberpunkTextBrush}" FontSize="13" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource HeroStepCard}" Margin="0">
+                            <StackPanel>
+                                <TextBlock Text="STEP 3" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="10" FontWeight="Bold"/>
+                                <TextBlock Text="DOWNLOAD" Foreground="{StaticResource CyberpunkTextBrush}" FontSize="13" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </Grid>
 
-            <TextBlock Name="txtHeaderTitle"
-                       Text="Comic GMTPC"
-                       Foreground="{StaticResource CyberpunkCyanBrush}"
-                       FontSize="20"
-                       FontWeight="Bold"
-                       VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Width="500" HorizontalAlignment="Right">
+                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,12">
+                        <Button Name="btnNewList" Content="NEW" Click="BtnNewList_Click" Style="{StaticResource CompactCyanButton}" MinWidth="84" Padding="12,3" FontWeight="Bold"/>
+                        <Button Name="btnSaveList" Content="SAVE DEFAULT" Click="BtnSave_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
+                        <Button Name="btnLoadList" Content="LOAD DEFAULT" Click="BtnLoad_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
+                        <Button Name="btnSaveCustomList" Content="SAVE CUSTOM" Click="BtnSaveCustom_Click" Style="{StaticResource CompactPinkButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
+                        <Button Name="btnLoadCustomList" Content="LOAD CUSTOM" Click="BtnLoadCustom_Click" Style="{StaticResource CompactPinkButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
+                    </WrapPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0">
-                    <Button Name="btnNewList" Content="NEW" Click="BtnNewList_Click" Style="{StaticResource CompactCyanButton}" MinWidth="58" Padding="10,2" FontWeight="Bold"/>
-                    <Button Name="btnSaveList" Content="SAVE DEFAULT" Click="BtnSave_Click" Style="{StaticResource CompactCyanButton}" MinWidth="102" Padding="10,2" FontWeight="Bold"/>
-                    <Button Name="btnLoadList" Content="LOAD DEFAULT" Click="BtnLoad_Click" Style="{StaticResource CompactCyanButton}" MinWidth="102" Padding="10,2" FontWeight="Bold"/>
-                    <Button Name="btnSaveCustomList" Content="SAVE CUSTOM" Click="BtnSaveCustom_Click" Style="{StaticResource CompactPinkButton}" MinWidth="106" Padding="10,2" FontWeight="Bold"/>
-                    <Button Name="btnLoadCustomList" Content="LOAD CUSTOM" Click="BtnLoadCustom_Click" Style="{StaticResource CompactPinkButton}" MinWidth="106" Padding="10,2" FontWeight="Bold"/>
-                </WrapPanel>
-                <TextBlock Name="txtLanguageLabel"
-                           Text="ENG"
-                           Foreground="{StaticResource CyberpunkMutedTextBrush}"
-                           FontSize="11"
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"
-                           Margin="0,0,8,0"/>
-                <ToggleButton Name="tglLanguage"
-                              Style="{StaticResource ToggleButtonSwitch}"
-                              Width="46"
-                              Height="20"
-                              VerticalAlignment="Center"
-                              IsChecked="True"
-                              Checked="TglLanguage_Checked"
-                              Unchecked="TglLanguage_Unchecked"/>
-                <TextBlock Name="txtLanguageTarget"
-                           Text="VI"
-                           Foreground="{StaticResource CyberpunkCyanBrush}"
-                           FontSize="11"
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"
-                           Margin="8,0,0,0"/>
-            </StackPanel>
-        </Grid>
+                    <Border Style="{StaticResource MetricCard}">
+                        <StackPanel>
+                            <TextBlock Text="INTERFACE LANGUAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+                                <TextBlock Name="txtLanguageLabel"
+                                           Text="ENG"
+                                           Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <ToggleButton Name="tglLanguage"
+                                              Style="{StaticResource ToggleButtonSwitch}"
+                                              Width="46"
+                                              Height="20"
+                                              VerticalAlignment="Center"
+                                              IsChecked="True"
+                                              Checked="TglLanguage_Checked"
+                                              Unchecked="TglLanguage_Unchecked"/>
+                                <TextBlock Name="txtLanguageTarget"
+                                           Text="VI"
+                                           Foreground="{StaticResource CyberpunkCyanBrush}"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <!-- Grid for Content -->
-        <Grid Grid.Row="1" Name="gridMainContent" Margin="0,15,0,0">
+        <Grid Grid.Row="1" Name="gridMainContent" Margin="0,14,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="450"/>
-                <ColumnDefinition Width="15"/>
+                <ColumnDefinition Width="500"/>
+                <ColumnDefinition Width="18"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -1453,17 +1552,26 @@
                 </TabItem>
             </TabControl>
 
-                <Border Grid.Row="1" Margin="0,12,0,0" Style="{StaticResource CyberpunkCard}" Padding="10">
-                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <Button Name="btnCopyLinksOnly" Content="COPY LINKS" Click="BtnCopyLinksOnly_Click" Style="{StaticResource CompactCyanButton}" MinWidth="92" Width="Auto" Padding="10,2" FontWeight="Bold"/>
-                        <Button Name="btnCopyNamesAndLinks" Content="COPY NAME+LINK" Click="BtnCopyNamesAndLinks_Click" Style="{StaticResource CompactPinkButton}" MinWidth="126" Width="Auto" Padding="10,2" FontWeight="Bold"/>
-                        <Button Name="btnClearResults" Content="CLEAR" Click="BtnClear_Click" Style="{StaticResource CompactCyanButton}" MinWidth="60" Width="Auto" Padding="10,2" FontWeight="Bold"/>
-                    </WrapPanel>
+                <Border Grid.Row="1" Margin="0,16,0,0" Style="{StaticResource WorkspaceSectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="QUICK ACTIONS FOR CURRENT LIST"
+                                   Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,10"/>
+                        <TextBlock Text="Sau khi lấy danh sách, bạn có thể copy nhanh hoặc dọn hàng chờ ở đây."
+                                   Style="{StaticResource PanelSectionHint}"/>
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Button Name="btnCopyLinksOnly" Content="COPY LINKS" Click="BtnCopyLinksOnly_Click" Style="{StaticResource CompactCyanButton}" MinWidth="112" Width="Auto" Padding="12,3" FontWeight="Bold"/>
+                            <Button Name="btnCopyNamesAndLinks" Content="COPY NAME+LINK" Click="BtnCopyNamesAndLinks_Click" Style="{StaticResource CompactPinkButton}" MinWidth="148" Width="Auto" Padding="12,3" FontWeight="Bold"/>
+                            <Button Name="btnClearResults" Content="CLEAR" Click="BtnClear_Click" Style="{StaticResource CompactCyanButton}" MinWidth="92" Width="Auto" Padding="12,3" FontWeight="Bold"/>
+                        </WrapPanel>
+                    </StackPanel>
                 </Border>
             </Grid>
 
             <!-- Right Output Panel (Shared) -->
-            <Border Name="borderRightPanel" Grid.Column="2" Grid.Row="0" Style="{StaticResource CyberpunkCard}" Padding="15">
+            <Border Name="borderRightPanel" Grid.Column="2" Grid.Row="0" Style="{StaticResource CyberpunkCard}" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/> <!-- Header -->
@@ -1473,29 +1581,34 @@
                         <RowDefinition Height="Auto"/> <!-- Download Section -->
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Margin="0,0,0,7">
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Name="txtResultsHeader" Text="EXTRACTED GALLERY LINKS" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,5"/>
+                        <StackPanel>
+                            <TextBlock Name="txtResultsHeader" Text="EXTRACTED GALLERY LINKS" Style="{StaticResource PanelSectionTitle}" VerticalAlignment="Center" Margin="0,0,12,4"/>
+                            <TextBlock Text="Review queue, tick what you want, then start download."
+                                       Style="{StaticResource PanelSectionHint}"
+                                       Margin="0"/>
+                        </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,5">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                                 <TextBlock Name="txtWordWrapLabel" Text="WORD WRAP" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <ToggleButton Name="chkWordWrap" Style="{StaticResource ToggleButtonSwitch}" Height="20" Width="40"/>
                             </StackPanel>
-                            <Border Background="#1c1122" BorderBrush="{StaticResource CyberpunkPinkBrush}" BorderThickness="1" CornerRadius="3" Padding="8,3">
+                            <Border Style="{StaticResource MetricCard}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Name="txtTotalBooksLabel" Text="Total Books: " Foreground="{StaticResource CyberpunkTextBrush}" FontSize="11" FontWeight="Bold"/>
-                                    <TextBlock Name="lblLinkCount" Text="0" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Name="lblLinkCount" Text="0" Foreground="{StaticResource CyberpunkYellowBrush}" FontSize="11" FontWeight="Bold"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
                     </Grid>
 
                     <!-- Toolbar for Filtering and Sorting -->
-                    <WrapPanel Grid.Row="1" Margin="0,0,0,4" Orientation="Horizontal">
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,10" Orientation="Horizontal">
                         <Button Name="btnSortByLatestChapter" Content="sort by latest chapter" Click="BtnSortByLatestChapter_Click" Style="{StaticResource CompactCyanButton}" MinWidth="152" Width="Auto" Padding="10,2"/>
                         <Button Name="btnRestoreOrder" Content="RESTORE ORDER" Click="BtnRestoreOrder_Click" Style="{StaticResource CompactCyanButton}" MinWidth="112" Width="Auto" Padding="10,2"/>
                         <Button Name="btnDuplicateName" Content="DUPLICATE NAME" Click="BtnDuplicateName_Click" Style="{StaticResource CompactPinkButton}" MinWidth="118" Width="Auto" Padding="10,2"/>
@@ -1504,13 +1617,13 @@
                         <Button Name="btnClearComplete" Content="CLEAR COMPLETE BOOKS" Click="BtnClearComplete_Click" Style="{StaticResource CompactPinkButton}" MinWidth="162" Width="Auto" Padding="10,2"/>
                     </WrapPanel>
 
-                    <TextBlock Grid.Row="2"
-                               Text="{Binding Text, ElementName=lblStatus}"
-                               Foreground="{StaticResource CyberpunkMutedTextBrush}"
-                               FontSize="11"
-                               FontWeight="Bold"
-                               Margin="2,0,0,5"
-                               TextWrapping="Wrap"/>
+                    <Border Grid.Row="2" Style="{StaticResource WorkspaceSectionCard}" Padding="12" Margin="0,0,0,10">
+                        <TextBlock Text="{Binding Text, ElementName=lblStatus}"
+                                   Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"/>
+                    </Border>
 
                     <!-- Scraped links DataGrid -->
                     <DataGrid Grid.Row="3" 
@@ -1531,7 +1644,7 @@
                               VirtualizingPanel.VirtualizationMode="Recycling"
                               VirtualizingPanel.ScrollUnit="Item"
                               EnableRowVirtualization="True"
-                              Margin="0,0,0,8">
+                              Margin="0,0,0,10">
                             <DataGrid.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Tích chọn dòng đang bôi đen (Check Selected)" Click="MenuCheckSelected_Click"/>
@@ -1847,9 +1960,10 @@
                     </DataGrid>
 
                     <!-- Download Section -->
-                    <Border Grid.Row="4" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="0,1,0,0" Padding="0,7,0,0" Margin="0,7,0,0">
+                    <Border Grid.Row="4" Style="{StaticResource WorkspaceSectionCard}" Padding="16" Margin="0,8,0,0">
                             <Grid>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/> <!-- Section title -->
                                     <RowDefinition Height="Auto"/> <!-- Path and Search -->
                                     <RowDefinition Height="5"/>
                                     <RowDefinition Height="Auto"/> <!-- Folder Actions and Chapter Selection -->
@@ -1857,8 +1971,13 @@
                                     <RowDefinition Height="Auto"/> <!-- Connections and Start Download -->
                                 </Grid.RowDefinitions>
 
+                            <TextBlock Grid.Row="0"
+                                       Text="DOWNLOAD SETTINGS"
+                                       Style="{StaticResource PanelSectionTitle}"
+                                       Margin="0,0,0,12"/>
+
                             <!-- Row 0: Path and Search -->
-                            <Grid Grid.Row="0">
+                            <Grid Grid.Row="1">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/> <!-- "DOWNLOAD PATH" Label -->
                                     <ColumnDefinition Width="8"/>
@@ -1873,35 +1992,25 @@
                                     <ColumnDefinition Width="260"/>  <!-- Search Textbox -->
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0" Text="DOWNLOAD PATH" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="DOWNLOAD PATH" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center"/>
 
                                 <TextBox Grid.Column="2" Name="txtDownloadPath" 
-                                            Background="#0e121a" 
-                                            BorderBrush="{StaticResource CyberpunkBorderBrush}" 
-                                            Foreground="{StaticResource CyberpunkTextBrush}" 
-                                            CaretBrush="{StaticResource CyberpunkCyanBrush}"
-                                            Height="26"
-                                            VerticalContentAlignment="Center"
+                                            Style="{StaticResource SurfaceTextBox}"
                                             IsReadOnly="True"/>
 
                                 <Button Grid.Column="4" Name="btnBrowseFolder" Content="BROWSE" Click="BtnBrowseFolder_Click" Style="{StaticResource CompactCyanButton}" Width="72" Margin="0"/>
 
                                 <Button Grid.Column="6" Name="btnOpenFolder" Content="OPEN FOLDER" Click="BtnOpenFolder_Click" Style="{StaticResource CompactCyanButton}" Width="92" Margin="0"/>
 
-                                <TextBlock Name="txtSearchLabel" Grid.Column="8" Text="SEARCH" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Name="txtSearchLabel" Grid.Column="8" Text="SEARCH" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="10" Name="txtFilter" 
                                          TextChanged="TxtFilter_TextChanged"
-                                         Background="#0e121a" 
-                                         BorderBrush="{StaticResource CyberpunkBorderBrush}" 
-                                         Foreground="{StaticResource CyberpunkTextBrush}" 
-                                         CaretBrush="{StaticResource CyberpunkCyanBrush}"
-                                         Height="26"
-                                         VerticalContentAlignment="Center"
+                                         Style="{StaticResource SurfaceTextBox}"
                                          ToolTip="Tìm kiếm tên truyện..."/>
                             </Grid>
 
                             <!-- Row 2: Folder Actions and Chapter Selection -->
-                            <Grid Grid.Row="2">
+                            <Grid Grid.Row="3">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/> <!-- "FOLDER ACTIONS" Label -->
                                     <ColumnDefinition Width="8"/>
@@ -1914,22 +2023,17 @@
                                     <ColumnDefinition Width="*"/>    <!-- Chapter Textbox -->
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Name="txtFolderActionsLabel" Grid.Column="0" Text="FOLDER ACTIONS" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Name="txtFolderActionsLabel" Grid.Column="0" Text="FOLDER ACTIONS" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center"/>
                                 <Button Grid.Column="2" Name="btnCompressBooks" Content="COMPRESS" Click="BtnCompressBooks_Click" Style="{StaticResource CompactCyanButton}" Width="94" Margin="0"/>
                                 <Button Grid.Column="4" Name="btnExtractBooks" Content="EXTRACT" Click="BtnExtractBooks_Click" Style="{StaticResource CompactPinkButton}" Width="86" Margin="0"/>
 
-                                <TextBlock Name="txtChapterSelectionLabel" Grid.Column="6" Text="CHAPTER SELECTION" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Name="txtChapterSelectionLabel" Grid.Column="6" Text="CHAPTER SELECTION" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="8" Name="txtChapterSelection"
-                                         Background="#0e121a"
-                                         BorderBrush="{StaticResource CyberpunkBorderBrush}"
-                                         Foreground="{StaticResource CyberpunkTextBrush}"
-                                         CaretBrush="{StaticResource CyberpunkCyanBrush}"
-                                         Height="26"
-                                         VerticalContentAlignment="Center"
+                                         Style="{StaticResource SurfaceTextBox}"
                                          ToolTip="Nhập chap cần tải. VD: 1-10;15;20-25 (để trống = tải tất cả)"/>
                             </Grid>
 
-                            <Grid Grid.Row="3" Name="archiveProgressPanel" Margin="0,6,0,4" Visibility="Collapsed">
+                            <Grid Grid.Row="4" Name="archiveProgressPanel" Margin="0,8,0,6" Visibility="Collapsed">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120"/>
                                     <ColumnDefinition Width="8"/>
@@ -1988,7 +2092,7 @@
                             </Grid>
 
                             <!-- Row 4: Connections and Actions -->
-                            <Grid Grid.Row="4">
+                            <Grid Grid.Row="5">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/> <!-- "CONNECTION" Label -->
                                     <ColumnDefinition Width="6"/>
@@ -2009,7 +2113,7 @@
                                     <ColumnDefinition Width="Auto"/> <!-- ERROR LOG button -->
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Name="txtConnectionLabel" Grid.Column="0" Text="CONNECTION" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Name="txtConnectionLabel" Grid.Column="0" Text="CONNECTION" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center"/>
 
                                 <ComboBox Grid.Column="2" Name="cmbConnections" 
                                           Style="{StaticResource CyberpunkComboBox}"
@@ -2034,7 +2138,7 @@
                                     <ComboBoxItem Content="32"/>
                                 </ComboBox>
 
-                                <TextBlock Name="txtDownloadMultipleBookLabel" Grid.Column="4" Text="DOWNLOAD MULTIPLE BOOK" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Name="txtDownloadMultipleBookLabel" Grid.Column="4" Text="DOWNLOAD MULTIPLE BOOK" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center"/>
 
                                 <ComboBox Grid.Column="6" Name="cmbMultiDownload" 
                                           Style="{StaticResource CyberpunkComboBox}"
@@ -2071,40 +2175,10 @@
                                            HorizontalAlignment="Right"
                                            Margin="0,0,10,0"/>
 
-                                <Button Grid.Column="8" Name="btnStartDownload" Content="⬇️" Click="BtnStartDownload_Click" Height="30" Width="64" FontSize="12" ToolTip="DOWNLOAD ALL">
-                                    <Button.Style>
-                                        <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-                                            <Style.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Content" Value="⬇️ ALL"/>
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button Grid.Column="12" Name="btnStopDownload" Content="⏹️" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="30" Width="48" FontSize="12" IsEnabled="False" ToolTip="Stop"/>
-                                <Button Grid.Column="14" Name="btnRetryErrors" Content="⚠️" Click="BtnRetryErrors_Click" Height="30" Width="64" FontSize="12" ToolTip="RETRY ALL">
-                                    <Button.Style>
-                                        <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
-                                            <Style.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Content" Value="⚠️ ALL"/>
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                                <Button Grid.Column="16" Name="btnRetryErrorLog" Content="📝" Click="BtnRetryErrorLog_Click" Height="30" Width="64" FontSize="12" ToolTip="ERROR LOG">
-                                    <Button.Style>
-                                        <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
-                                            <Style.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Content" Value="📝 LOG"/>
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
+                                <Button Grid.Column="8" Name="btnStartDownload" Content="START" Click="BtnStartDownload_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="34" MinWidth="92" FontSize="12" ToolTip="DOWNLOAD ALL"/>
+                                <Button Grid.Column="12" Name="btnStopDownload" Content="STOP" Click="BtnStopDownload_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="34" MinWidth="82" FontSize="12" IsEnabled="False" ToolTip="Stop"/>
+                                <Button Grid.Column="14" Name="btnRetryErrors" Content="RETRY" Click="BtnRetryErrors_Click" Style="{StaticResource CyberpunkButtonCyan}" Height="34" MinWidth="82" FontSize="12" ToolTip="RETRY ALL"/>
+                                <Button Grid.Column="16" Name="btnRetryErrorLog" Content="LOG" Click="BtnRetryErrorLog_Click" Style="{StaticResource CyberpunkButtonPink}" Height="34" MinWidth="82" FontSize="12" ToolTip="ERROR LOG"/>
                             </Grid>
                         </Grid>
                     </Border>
