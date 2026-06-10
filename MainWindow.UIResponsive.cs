@@ -13,44 +13,59 @@ namespace get_link_manga
             if (e.NewSize.Width < 1120)
             {
                 // Portrait / stacked mode
-                if (gridMainContent.ColumnDefinitions.Count > 0)
-                {
-                    gridMainContent.ColumnDefinitions.Clear();
-                }
+                gridMainContent.ColumnDefinitions.Clear();
+                gridMainContent.RowDefinitions.Clear();
 
-                if (gridMainContent.RowDefinitions.Count == 0)
-                {
-                    gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(430, GridUnitType.Pixel) });
-                    gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(18, GridUnitType.Pixel) });
-                    gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-                }
+                gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                gridMainContent.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(12, GridUnitType.Pixel) });
+                gridMainContent.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(12, GridUnitType.Pixel) });
+                gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+                Grid.SetColumn(headerPanel, 0);
+                Grid.SetRow(headerPanel, 0);
+                Grid.SetRowSpan(headerPanel, 1);
+
+                Grid.SetColumn(leftPanelHost, 0);
+                Grid.SetRow(leftPanelHost, 2);
+                Grid.SetRowSpan(leftPanelHost, 1);
 
                 Grid.SetColumn(tabLeftPanel, 0);
                 Grid.SetRow(tabLeftPanel, 0);
 
                 Grid.SetColumn(borderRightPanel, 0);
-                Grid.SetRow(borderRightPanel, 2);
+                Grid.SetRow(borderRightPanel, 4);
+                Grid.SetRowSpan(borderRightPanel, 1);
             }
             else
             {
                 // Landscape / side-by-side mode
-                if (gridMainContent.RowDefinitions.Count > 0)
-                {
-                    gridMainContent.RowDefinitions.Clear();
-                }
+                gridMainContent.ColumnDefinitions.Clear();
+                gridMainContent.RowDefinitions.Clear();
 
-                if (gridMainContent.ColumnDefinitions.Count == 0)
-                {
-                    gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(520, GridUnitType.Pixel) });
-                    gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18, GridUnitType.Pixel) });
-                    gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                }
+                gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(520, GridUnitType.Pixel) });
+                gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18, GridUnitType.Pixel) });
+                gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                gridMainContent.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(12, GridUnitType.Pixel) });
+                gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+                Grid.SetColumn(headerPanel, 0);
+                Grid.SetRow(headerPanel, 0);
+                Grid.SetRowSpan(headerPanel, 1);
+
+                Grid.SetColumn(leftPanelHost, 0);
+                Grid.SetRow(leftPanelHost, 2);
+                Grid.SetRowSpan(leftPanelHost, 1);
 
                 Grid.SetColumn(tabLeftPanel, 0);
                 Grid.SetRow(tabLeftPanel, 0);
 
-                Grid.SetColumn(borderRightPanel, 2);
+                Grid.SetColumn(borderRightPanel, 0);
                 Grid.SetRow(borderRightPanel, 0);
+                Grid.SetColumn(borderRightPanel, 2);
+                Grid.SetRowSpan(borderRightPanel, 3);
             }
 
             ApplyAdaptiveLayout(e.NewSize);
@@ -75,13 +90,11 @@ namespace get_link_manga
             if (headerPanel != null)
             {
                 headerPanel.Padding = ultraCompact
-                    ? new Thickness(14, 12, 14, 12)
+                    ? new Thickness(12, 10, 12, 10)
                     : compactMode
-                        ? new Thickness(16, 14, 16, 14)
-                        : new Thickness(18);
-                headerPanel.Margin = ultraCompact
-                    ? new Thickness(0, 0, 0, 6)
-                    : new Thickness(0, 0, 0, 8);
+                        ? new Thickness(14, 12, 14, 12)
+                        : new Thickness(16, 14, 16, 14);
+                headerPanel.Margin = new Thickness(0);
             }
 
             if (txtHeaderTitle != null)
@@ -111,28 +124,25 @@ namespace get_link_manga
 
             if (headerUtilityPanel != null)
             {
-                headerUtilityPanel.Width = ultraCompact ? 220 : compactMode ? 236 : 260;
+                headerUtilityPanel.Width = ultraCompact ? 190 : compactMode ? 206 : 220;
             }
 
             if (languageCard != null)
             {
                 languageCard.Padding = ultraCompact
-                    ? new Thickness(10, 6, 10, 6)
-                    : new Thickness(12, 8, 12, 8);
+                    ? new Thickness(8, 6, 8, 6)
+                    : new Thickness(10, 7, 10, 7);
             }
 
             if (gridMainContent != null)
             {
-                gridMainContent.Margin = ultraCompact
-                    ? new Thickness(0, 2, 0, 0)
-                    : compactMode
-                        ? new Thickness(0, 4, 0, 0)
-                        : new Thickness(0, 6, 0, 0);
+                gridMainContent.Margin = new Thickness(0);
 
                 if (gridMainContent.ColumnDefinitions.Count >= 3)
                 {
-                    double leftWidth = ultraCompact ? 430 : compactMode ? 460 : 520;
+                    double leftWidth = ultraCompact ? 430 : compactMode ? 470 : 520;
                     gridMainContent.ColumnDefinitions[0].Width = new GridLength(leftWidth, GridUnitType.Pixel);
+                    gridMainContent.ColumnDefinitions[1].Width = new GridLength(ultraCompact ? 12 : 18, GridUnitType.Pixel);
                 }
             }
 

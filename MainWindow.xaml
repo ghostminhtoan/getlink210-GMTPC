@@ -144,9 +144,9 @@
         </Style>
 
         <Style x:Key="WideActionButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-            <Setter Property="Height" Value="58"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Padding" Value="10,5"/>
         </Style>
 
         <Style x:Key="CheckErrorWrapTextStyle" TargetType="TextBlock">
@@ -299,22 +299,25 @@
     
     <Grid Name="rootLayout" Margin="18">
         <Grid.RowDefinitions>
-            <!-- Title Bar / Header -->
-            <RowDefinition Height="Auto"/>
-            <!-- Main Content Grid -->
             <RowDefinition Height="*"/>
-            <!-- Footer Status Bar -->
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Name="headerPanel" Grid.Row="0" Padding="18" Margin="0,0,0,8" Style="{StaticResource CyberpunkCard}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
 
+        <Grid Grid.Row="0" Name="gridMainContent" Margin="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="12"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="520"/>
+                <ColumnDefinition Width="18"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Name="headerPanel" Grid.Column="0" Grid.Row="0" Padding="18" Margin="0,0,0,0" Style="{StaticResource CyberpunkCard}">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -335,7 +338,39 @@
                                    TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <WrapPanel Name="headerStepsPanel" Grid.Row="1" Margin="0,0,0,4">
+                    <StackPanel Name="headerUtilityPanel" Grid.Row="1" Width="220" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,10">
+                        <Border Name="languageCard" Style="{StaticResource MetricCard}" Padding="12,8">
+                            <StackPanel>
+                                <TextBlock Text="INTERFACE LANGUAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold"/>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6,0,0">
+                                    <TextBlock Name="txtLanguageLabel"
+                                               Text="ENG"
+                                               Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0"/>
+                                    <ToggleButton Name="tglLanguage"
+                                                  Style="{StaticResource ToggleButtonSwitch}"
+                                                  Width="46"
+                                                  Height="20"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="True"
+                                                  Checked="TglLanguage_Checked"
+                                                  Unchecked="TglLanguage_Unchecked"/>
+                                    <TextBlock Name="txtLanguageTarget"
+                                               Text="VI"
+                                               Foreground="{StaticResource CyberpunkCyanBrush}"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <WrapPanel Name="headerStepsPanel" Grid.Row="2" Margin="0,0,0,4">
                         <Border Style="{StaticResource HeroStepCard}">
                             <StackPanel>
                                 <TextBlock Text="STEP 1" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="10" FontWeight="Bold"/>
@@ -356,7 +391,7 @@
                         </Border>
                     </WrapPanel>
 
-                    <WrapPanel Name="headerActionsPanel" Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+                    <WrapPanel Name="headerActionsPanel" Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0">
                         <Button Name="btnNewList" Content="NEW" Click="BtnNewList_Click" Style="{StaticResource CompactCyanButton}" MinWidth="84" Padding="12,3" FontWeight="Bold"/>
                         <Button Name="btnSaveList" Content="SAVE DEFAULT" Click="BtnSave_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
                         <Button Name="btnLoadList" Content="LOAD DEFAULT" Click="BtnLoad_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
@@ -364,50 +399,9 @@
                         <Button Name="btnLoadCustomList" Content="LOAD CUSTOM" Click="BtnLoadCustom_Click" Style="{StaticResource CompactPinkButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
                     </WrapPanel>
                 </Grid>
+            </Border>
 
-                <StackPanel Name="headerUtilityPanel" Grid.Column="1" Width="260" HorizontalAlignment="Right" VerticalAlignment="Top">
-                    <Border Name="languageCard" Style="{StaticResource MetricCard}" Padding="12,8">
-                        <StackPanel>
-                            <TextBlock Text="INTERFACE LANGUAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6,0,0">
-                                <TextBlock Name="txtLanguageLabel"
-                                           Text="ENG"
-                                           Foreground="{StaticResource CyberpunkMutedTextBrush}"
-                                           FontSize="11"
-                                           FontWeight="Bold"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,8,0"/>
-                                <ToggleButton Name="tglLanguage"
-                                              Style="{StaticResource ToggleButtonSwitch}"
-                                              Width="46"
-                                              Height="20"
-                                              VerticalAlignment="Center"
-                                              IsChecked="True"
-                                              Checked="TglLanguage_Checked"
-                                              Unchecked="TglLanguage_Unchecked"/>
-                                <TextBlock Name="txtLanguageTarget"
-                                           Text="VI"
-                                           Foreground="{StaticResource CyberpunkCyanBrush}"
-                                           FontSize="11"
-                                           FontWeight="Bold"
-                                           VerticalAlignment="Center"
-                                           Margin="8,0,0,0"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Grid for Content -->
-        <Grid Grid.Row="1" Name="gridMainContent" Margin="0,6,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="520"/>
-                <ColumnDefinition Width="18"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <Grid Grid.Column="0" Grid.Row="0">
+            <Grid Name="leftPanelHost" Grid.Column="0" Grid.Row="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
@@ -1579,7 +1573,7 @@
             </Grid>
 
             <!-- Right Output Panel (Shared) -->
-            <Border Name="borderRightPanel" Grid.Column="2" Grid.Row="0" Style="{StaticResource CyberpunkCard}" Padding="20">
+            <Border Name="borderRightPanel" Grid.Column="2" Grid.Row="0" Grid.RowSpan="3" Style="{StaticResource CyberpunkCard}" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/> <!-- Header -->
