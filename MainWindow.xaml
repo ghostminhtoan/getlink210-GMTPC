@@ -66,14 +66,14 @@
         </Style>
         <!-- DataGrid Style -->
         <Style x:Key="CyberpunkDataGrid" TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
-            <Setter Property="Background" Value="#0d1828"/>
-            <Setter Property="RowBackground" Value="#0d1828"/>
-            <Setter Property="AlternatingRowBackground" Value="#132235"/>
+            <Setter Property="Background" Value="#0B1726"/>
+            <Setter Property="RowBackground" Value="#0B1726"/>
+            <Setter Property="AlternatingRowBackground" Value="#102033"/>
             <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="GridLinesVisibility" Value="All"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="#223550"/>
-            <Setter Property="VerticalGridLinesBrush" Value="#223550"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#1F3650"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#1F3650"/>
             <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="HeadersVisibility" Value="Column"/>
             <Setter Property="RowHeaderWidth" Value="0"/>
@@ -81,7 +81,7 @@
 
         <!-- Column Header Style -->
         <Style x:Key="CyberpunkDataGridColumnHeader" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#16253A"/>
+            <Setter Property="Background" Value="#162842"/>
             <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="11"/>
@@ -130,23 +130,23 @@
         </Style>
 
         <Style x:Key="CompactCyanButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
-            <Setter Property="Height" Value="24"/>
+            <Setter Property="Height" Value="26"/>
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="Padding" Value="10,3"/>
             <Setter Property="Margin" Value="0,0,6,6"/>
         </Style>
 
         <Style x:Key="CompactPinkButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
-            <Setter Property="Height" Value="24"/>
+            <Setter Property="Height" Value="26"/>
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="Padding" Value="10,3"/>
             <Setter Property="Margin" Value="0,0,6,6"/>
         </Style>
 
         <Style x:Key="WideActionButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="FontSize" Value="9"/>
-            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Padding" Value="10,4"/>
         </Style>
 
         <Style x:Key="CheckErrorWrapTextStyle" TargetType="TextBlock">
@@ -181,10 +181,10 @@
         </Style>
         <!-- Custom TabItem Style -->
         <Style x:Key="CyberpunkTabItem" TargetType="TabItem">
-            <Setter Property="Background" Value="#0E1A29"/>
+            <Setter Property="Background" Value="#0D1A2A"/>
             <Setter Property="BorderBrush" Value="#223550"/>
             <Setter Property="Foreground" Value="#C6D5E5"/>
-            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Padding" Value="14,8"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Margin" Value="0,0,4,0"/>
@@ -241,19 +241,25 @@
         </Style>
 
         <Style x:Key="HeroStepCard" TargetType="Border">
-            <Setter Property="Background" Value="#15293E"/>
-            <Setter Property="BorderBrush" Value="#31506E"/>
+            <Setter Property="Background" Value="#142A43"/>
+            <Setter Property="BorderBrush" Value="#3B6384"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Padding" Value="16,12"/>
             <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#06111D" BlurRadius="20" ShadowDepth="0" Opacity="0.22"/>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="PanelSectionTitle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
-            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontSize" Value="20"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="FontFamily" Value="Bahnschrift SemiBold, Segoe UI Semibold"/>
         </Style>
 
         <Style x:Key="PanelSectionHint" TargetType="TextBlock">
@@ -270,31 +276,53 @@
             <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
 
+        <Style x:Key="HeroEyebrowText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <Style x:Key="HeroTitleText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
+            <Setter Property="FontFamily" Value="Bahnschrift SemiBold, Segoe UI Semibold"/>
+            <Setter Property="FontSize" Value="30"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <Style x:Key="BadgeCard" TargetType="Border">
+            <Setter Property="Background" Value="#102437"/>
+            <Setter Property="BorderBrush" Value="#335776"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+        </Style>
+
         <Style x:Key="SurfaceTextBox" TargetType="TextBox">
-            <Setter Property="Background" Value="#0D1828"/>
+            <Setter Property="Background" Value="#0B1726"/>
             <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="{StaticResource CyberpunkTextBrush}"/>
             <Setter Property="CaretBrush" Value="{StaticResource CyberpunkCyanBrush}"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Height" Value="34"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <Style x:Key="MetricCard" TargetType="Border">
-            <Setter Property="Background" Value="#0D1828"/>
-            <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
+            <Setter Property="Background" Value="#0B1726"/>
+            <Setter Property="BorderBrush" Value="#31506E"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="CornerRadius" Value="16"/>
             <Setter Property="Padding" Value="12,10"/>
         </Style>
 
         <Style x:Key="WorkspaceSectionCard" TargetType="Border">
-            <Setter Property="Background" Value="#0E1A29"/>
-            <Setter Property="BorderBrush" Value="#203954"/>
+            <Setter Property="Background" Value="#0C1827"/>
+            <Setter Property="BorderBrush" Value="#26445F"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Padding" Value="14"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Padding" Value="16"/>
         </Style>
     </Window.Resources>
     
@@ -302,6 +330,33 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+
+        <Grid>
+            <Ellipse Width="420"
+                     Height="420"
+                     Fill="#163A61"
+                     Opacity="0.14"
+                     HorizontalAlignment="Left"
+                     VerticalAlignment="Top"
+                     Margin="-120,-140,0,0"
+                     IsHitTestVisible="False">
+                <Ellipse.Effect>
+                    <BlurEffect Radius="110"/>
+                </Ellipse.Effect>
+            </Ellipse>
+            <Ellipse Width="520"
+                     Height="520"
+                     Fill="#6A2B2A"
+                     Opacity="0.10"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Bottom"
+                     Margin="0,0,-180,-190"
+                     IsHitTestVisible="False">
+                <Ellipse.Effect>
+                    <BlurEffect Radius="130"/>
+                </Ellipse.Effect>
+            </Ellipse>
+        </Grid>
 
         <Grid Grid.Row="0" Name="gridMainContent" Margin="0">
             <Grid.RowDefinitions>
@@ -315,7 +370,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Name="headerPanel" Grid.Column="0" Grid.Row="0" Padding="18" Margin="0,0,0,0" Style="{StaticResource CyberpunkCard}">
+            <Border Name="headerPanel" Grid.Column="0" Grid.Row="0" Padding="20" Margin="0,0,0,0" Style="{StaticResource CyberpunkCard}" Background="{StaticResource CyberpunkHeroBrush}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -323,52 +378,69 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Margin="0" Visibility="Collapsed">
-                        <TextBlock Name="txtHeaderTitle"
-                                   Text="Comic GMTPC"
-                                   Foreground="{StaticResource CyberpunkTextBrush}"
-                                   FontFamily="Bahnschrift SemiBold, Segoe UI Semibold"
-                                   FontSize="28"
-                                   FontWeight="Bold"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock Name="txtHeaderSubtitle" Text="Simple flow: choose website, paste link, review list, then download."
-                                   Foreground="{StaticResource CyberpunkMutedTextBrush}"
-                                   FontSize="13"
-                                   Margin="0,6,0,0"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Name="headerUtilityPanel" Grid.Row="0" Width="220" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,8">
-                        <Border Name="languageCard" Style="{StaticResource MetricCard}" Padding="12,8">
-                            <StackPanel>
-                                <TextBlock Text="INTERFACE LANGUAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6,0,0">
-                                    <TextBlock Name="txtLanguageLabel"
-                                               Text="ENG"
-                                               Foreground="{StaticResource CyberpunkMutedTextBrush}"
-                                               FontSize="11"
-                                               FontWeight="Bold"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,8,0"/>
-                                    <ToggleButton Name="tglLanguage"
-                                                  Style="{StaticResource ToggleButtonSwitch}"
-                                                  Width="46"
-                                                  Height="20"
-                                                  VerticalAlignment="Center"
-                                                  IsChecked="True"
-                                                  Checked="TglLanguage_Checked"
-                                                  Unchecked="TglLanguage_Unchecked"/>
-                                    <TextBlock Name="txtLanguageTarget"
-                                               Text="VI"
-                                               Foreground="{StaticResource CyberpunkCyanBrush}"
-                                               FontSize="11"
-                                               FontWeight="Bold"
-                                               VerticalAlignment="Center"
-                                               Margin="8,0,0,0"/>
+                        <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                            <TextBlock Text="COMIC CONTROL DECK" Style="{StaticResource HeroEyebrowText}"/>
+                            <TextBlock Name="txtHeaderTitle"
+                                       Text="Comic GMTPC"
+                                       Style="{StaticResource HeroTitleText}"
+                                       Margin="0,4,0,0"/>
+                            <TextBlock Name="txtHeaderSubtitle"
+                                       Text="Gaming-style comic scraper: chọn nguồn, gom chapter, kiểm queue, rồi tải hàng loạt."
+                                       Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                                       FontSize="13"
+                                       Margin="0,8,0,0"
+                                       TextWrapping="Wrap"/>
+                            <WrapPanel Margin="0,12,0,0">
+                                <Border Style="{StaticResource BadgeCard}">
+                                    <TextBlock Text="MULTI SOURCE" Foreground="{StaticResource CyberpunkTextBrush}" FontWeight="Bold" FontSize="10"/>
+                                </Border>
+                                <Border Style="{StaticResource BadgeCard}">
+                                    <TextBlock Text="QUEUE CONTROL" Foreground="{StaticResource CyberpunkTextBrush}" FontWeight="Bold" FontSize="10"/>
+                                </Border>
+                                <Border Style="{StaticResource BadgeCard}">
+                                    <TextBlock Text="BATCH DOWNLOAD" Foreground="{StaticResource CyberpunkTextBrush}" FontWeight="Bold" FontSize="10"/>
+                                </Border>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <StackPanel Name="headerUtilityPanel" Grid.Column="1" Width="220" HorizontalAlignment="Right" VerticalAlignment="Top">
+                            <Border Name="languageCard" Style="{StaticResource MetricCard}" Padding="14,10">
+                                <StackPanel>
+                                    <TextBlock Text="INTERFACE LANGUAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+                                        <TextBlock Name="txtLanguageLabel"
+                                                   Text="ENG"
+                                                   Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                        <ToggleButton Name="tglLanguage"
+                                                      Style="{StaticResource ToggleButtonSwitch}"
+                                                      Width="46"
+                                                      Height="20"
+                                                      VerticalAlignment="Center"
+                                                      IsChecked="True"
+                                                      Checked="TglLanguage_Checked"
+                                                      Unchecked="TglLanguage_Unchecked"/>
+                                        <TextBlock Name="txtLanguageTarget"
+                                                   Text="VI"
+                                                   Foreground="{StaticResource CyberpunkCyanBrush}"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   VerticalAlignment="Center"
+                                                   Margin="8,0,0,0"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
 
                     <WrapPanel Name="headerStepsPanel" Grid.Row="1" Margin="0,0,0,2">
                         <Border Style="{StaticResource HeroStepCard}">
@@ -391,7 +463,7 @@
                         </Border>
                     </WrapPanel>
 
-                    <WrapPanel Name="headerActionsPanel" Grid.Row="2" Orientation="Horizontal" Margin="0,4,0,0">
+                    <WrapPanel Name="headerActionsPanel" Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
                         <Button Name="btnNewList" Content="NEW" Click="BtnNewList_Click" Style="{StaticResource CompactCyanButton}" MinWidth="84" Padding="12,3" FontWeight="Bold"/>
                         <Button Name="btnSaveList" Content="SAVE DEFAULT" Click="BtnSave_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
                         <Button Name="btnLoadList" Content="LOAD DEFAULT" Click="BtnLoad_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
@@ -1563,11 +1635,11 @@
             </TabControl>
             </ScrollViewer>
 
-                <Border Grid.Row="1" Margin="0,8,0,0" Style="{StaticResource WorkspaceSectionCard}">
+                <Border Grid.Row="1" Margin="0,10,0,0" Style="{StaticResource WorkspaceSectionCard}">
                     <StackPanel>
                         <TextBlock Text="QUICK ACTIONS FOR CURRENT LIST"
-                                   Foreground="{StaticResource CyberpunkMutedTextBrush}"
-                                   FontSize="10"
+                                   Foreground="{StaticResource CyberpunkCyanBrush}"
+                                   FontSize="11"
                                    FontWeight="Bold"
                                    Margin="0,0,0,10"/>
                         <TextBlock Text="Sau khi lấy danh sách, bạn có thể copy nhanh hoặc dọn hàng chờ ở đây."
@@ -1592,13 +1664,13 @@
                         <RowDefinition Height="Auto"/> <!-- Download Section -->
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <Grid Grid.Row="0" Margin="0,0,0,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBlock Name="txtResultsHeader" Text="EXTRACTED GALLERY LINKS" Style="{StaticResource PanelSectionTitle}" VerticalAlignment="Center" Margin="0,0,12,4"/>
+                            <TextBlock Name="txtResultsHeader" Text="QUEUE OPS / EXTRACTED GALLERY LINKS" Style="{StaticResource PanelSectionTitle}" VerticalAlignment="Center" Margin="0,0,12,4"/>
                             <TextBlock Text="Review queue, tick what you want, then start download."
                                        Style="{StaticResource PanelSectionHint}"
                                        Margin="0"/>
@@ -1619,7 +1691,7 @@
                     </Grid>
 
                     <!-- Toolbar for Filtering and Sorting -->
-                    <WrapPanel Grid.Row="1" Margin="0,0,0,10" Orientation="Horizontal">
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,12" Orientation="Horizontal">
                         <Button Name="btnSortByLatestChapter" Content="sort by latest chapter" Click="BtnSortByLatestChapter_Click" Style="{StaticResource CompactCyanButton}" MinWidth="152" Width="Auto" Padding="10,2"/>
                         <Button Name="btnRestoreOrder" Content="RESTORE ORDER" Click="BtnRestoreOrder_Click" Style="{StaticResource CompactCyanButton}" MinWidth="112" Width="Auto" Padding="10,2"/>
                         <Button Name="btnDuplicateName" Content="DUPLICATE NAME" Click="BtnDuplicateName_Click" Style="{StaticResource CompactPinkButton}" MinWidth="118" Width="Auto" Padding="10,2"/>
@@ -1628,9 +1700,9 @@
                         <Button Name="btnClearComplete" Content="CLEAR COMPLETE BOOKS" Click="BtnClearComplete_Click" Style="{StaticResource CompactPinkButton}" MinWidth="162" Width="Auto" Padding="10,2"/>
                     </WrapPanel>
 
-                    <Border Grid.Row="2" Style="{StaticResource WorkspaceSectionCard}" Padding="12" Margin="0,0,0,10">
+                    <Border Grid.Row="2" Style="{StaticResource WorkspaceSectionCard}" Padding="14" Margin="0,0,0,12">
                         <TextBlock Text="{Binding Text, ElementName=lblStatus}"
-                                   Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                                   Foreground="{StaticResource CyberpunkTextBrush}"
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    TextWrapping="Wrap"/>

@@ -5,70 +5,106 @@
     <Application.Resources>
         <ResourceDictionary>
 
-            <!-- Refreshed palette: calmer, clearer, easier for first-time users -->
-            <Color x:Key="CyberpunkDarkColor">#07131F</Color>
-            <Color x:Key="CyberpunkCardColor">#112033</Color>
-            <Color x:Key="CyberpunkCyanColor">#6BE3D6</Color>
-            <Color x:Key="CyberpunkPinkColor">#FF8B6B</Color>
-            <Color x:Key="CyberpunkYellowColor">#FFD166</Color>
-            <Color x:Key="CyberpunkBorderColor">#28435E</Color>
+            <!-- Gaming/comic palette: deeper contrast, stronger accent hierarchy -->
+            <Color x:Key="CyberpunkDarkColor">#06111C</Color>
+            <Color x:Key="CyberpunkCardColor">#0F1D2F</Color>
+            <Color x:Key="CyberpunkCyanColor">#67F0E0</Color>
+            <Color x:Key="CyberpunkPinkColor">#FF7B5C</Color>
+            <Color x:Key="CyberpunkYellowColor">#F7C65C</Color>
+            <Color x:Key="CyberpunkBorderColor">#2D4A68</Color>
+            <Color x:Key="CyberpunkSurfaceAltColor">#132741</Color>
+            <Color x:Key="CyberpunkSurfaceEdgeColor">#1B3554</Color>
+            <Color x:Key="CyberpunkHeroTopColor">#153055</Color>
+            <Color x:Key="CyberpunkHeroBottomColor">#091624</Color>
+            <Color x:Key="CyberpunkDangerColor">#FF5D6C</Color>
 
             <LinearGradientBrush x:Key="CyberpunkDarkBrush" StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#07131F" Offset="0"/>
-                <GradientStop Color="#0B1827" Offset="0.45"/>
-                <GradientStop Color="#102334" Offset="1"/>
+                <GradientStop Color="#06111C" Offset="0"/>
+                <GradientStop Color="#091A2B" Offset="0.35"/>
+                <GradientStop Color="#0E2136" Offset="0.72"/>
+                <GradientStop Color="#142A41" Offset="1"/>
             </LinearGradientBrush>
             <SolidColorBrush x:Key="CyberpunkCardBrush" Color="{StaticResource CyberpunkCardColor}" />
             <SolidColorBrush x:Key="CyberpunkCyanBrush" Color="{StaticResource CyberpunkCyanColor}" />
             <SolidColorBrush x:Key="CyberpunkPinkBrush" Color="{StaticResource CyberpunkPinkColor}" />
             <SolidColorBrush x:Key="CyberpunkYellowBrush" Color="{StaticResource CyberpunkYellowColor}" />
             <SolidColorBrush x:Key="CyberpunkBorderBrush" Color="{StaticResource CyberpunkBorderColor}" />
+            <SolidColorBrush x:Key="CyberpunkSurfaceAltBrush" Color="{StaticResource CyberpunkSurfaceAltColor}" />
+            <SolidColorBrush x:Key="CyberpunkSurfaceEdgeBrush" Color="{StaticResource CyberpunkSurfaceEdgeColor}" />
+            <SolidColorBrush x:Key="CyberpunkDangerBrush" Color="{StaticResource CyberpunkDangerColor}" />
             <SolidColorBrush x:Key="CyberpunkTextBrush" Color="#F7FBFF" />
-            <SolidColorBrush x:Key="CyberpunkMutedTextBrush" Color="#A9BBD0" />
+            <SolidColorBrush x:Key="CyberpunkMutedTextBrush" Color="#9AB0C6" />
+            <LinearGradientBrush x:Key="CyberpunkHeroBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{StaticResource CyberpunkHeroTopColor}" Offset="0"/>
+                <GradientStop Color="#112744" Offset="0.42"/>
+                <GradientStop Color="{StaticResource CyberpunkHeroBottomColor}" Offset="1"/>
+            </LinearGradientBrush>
 
             <!-- Custom Cyberpunk Card Style -->
             <Style x:Key="CyberpunkCard" TargetType="Border">
-                <Setter Property="Background" Value="#122238"/>
+                <Setter Property="Background" Value="#101F31"/>
                 <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="CornerRadius" Value="18"/>
+                <Setter Property="CornerRadius" Value="20"/>
                 <Setter Property="Effect">
                     <Setter.Value>
-                        <DropShadowEffect Color="#020811" BlurRadius="28" ShadowDepth="0" Opacity="0.3"/>
+                        <DropShadowEffect Color="#01070E" BlurRadius="34" ShadowDepth="0" Opacity="0.42"/>
                     </Setter.Value>
                 </Setter>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="BorderBrush" Value="#3A5A79"/>
+                        <Setter Property="BorderBrush" Value="#477399"/>
                     </Trigger>
                 </Style.Triggers>
             </Style>
 
             <!-- Cyberpunk Glow Effect -->
-            <DropShadowEffect x:Key="CyberpunkCyanGlow" Color="{StaticResource CyberpunkCyanColor}" BlurRadius="20" ShadowDepth="0" Opacity="0.16" />
-            <DropShadowEffect x:Key="CyberpunkPinkGlow" Color="{StaticResource CyberpunkPinkColor}" BlurRadius="20" ShadowDepth="0" Opacity="0.16" />
+            <DropShadowEffect x:Key="CyberpunkCyanGlow" Color="{StaticResource CyberpunkCyanColor}" BlurRadius="22" ShadowDepth="0" Opacity="0.2" />
+            <DropShadowEffect x:Key="CyberpunkPinkGlow" Color="{StaticResource CyberpunkPinkColor}" BlurRadius="22" ShadowDepth="0" Opacity="0.18" />
             
             <!-- Cyberpunk Button Base Template -->
              <ControlTemplate x:Key="CyberpunkButtonTemplate" TargetType="Button">
-                <Border x:Name="border"
-                        Background="{TemplateBinding Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="12"
-                        SnapsToDevicePixels="True">
-                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-                                      Margin="{TemplateBinding Padding}">
-                        <ContentPresenter.Resources>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="TextWrapping" Value="Wrap"/>
-                                <Setter Property="TextAlignment" Value="Center"/>
-                            </Style>
-                        </ContentPresenter.Resources>
-                    </ContentPresenter>
-                </Border>
+                <Grid SnapsToDevicePixels="True">
+                    <Border x:Name="outerGlow"
+                            Margin="0"
+                            Background="Transparent"
+                            BorderBrush="#00FFFFFF"
+                            BorderThickness="0"
+                            CornerRadius="14"/>
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="12"
+                            SnapsToDevicePixels="True">
+                        <Grid>
+                            <Border Height="1"
+                                    VerticalAlignment="Top"
+                                    Margin="10,0,10,0"
+                                    Background="#40FFFFFF"
+                                    CornerRadius="1"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                        <Setter Property="TextAlignment" Value="Center"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Grid>
+                    </Border>
+                </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                    </Trigger>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="outerGlow" Property="BorderBrush" Value="#26FFFFFF"/>
+                        <Setter TargetName="outerGlow" Property="BorderThickness" Value="1"/>
+                    </Trigger>
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter TargetName="border" Property="RenderTransformOrigin" Value="0.5,0.5"/>
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
@@ -76,7 +112,7 @@
             <!-- Cyberpunk Button Customizations -->
             <Style x:Key="CyberpunkButtonCyan" TargetType="Button">
                 <Setter Property="Template" Value="{StaticResource CyberpunkButtonTemplate}"/>
-                <Setter Property="Background" Value="#163149"/>
+                <Setter Property="Background" Value="#163752"/>
                 <Setter Property="BorderBrush" Value="{StaticResource CyberpunkCyanBrush}"/>
                 <Setter Property="Foreground" Value="#F6FBFF"/>
                 <Setter Property="BorderThickness" Value="1"/>
@@ -85,7 +121,7 @@
                 <Setter Property="Padding" Value="14,8"/>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#224766"/>
+                        <Setter Property="Background" Value="#1E4667"/>
                         <Setter Property="Foreground" Value="#FFFFFF"/>
                         <Setter Property="Effect" Value="{StaticResource CyberpunkCyanGlow}"/>
                     </Trigger>
@@ -97,7 +133,7 @@
 
             <Style x:Key="CyberpunkButtonPink" TargetType="Button">
                 <Setter Property="Template" Value="{StaticResource CyberpunkButtonTemplate}"/>
-                <Setter Property="Background" Value="#342532"/>
+                <Setter Property="Background" Value="#382739"/>
                 <Setter Property="BorderBrush" Value="{StaticResource CyberpunkPinkBrush}"/>
                 <Setter Property="Foreground" Value="#FFF8F4"/>
                 <Setter Property="BorderThickness" Value="1"/>
@@ -106,7 +142,7 @@
                 <Setter Property="Padding" Value="14,8"/>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#4E3036"/>
+                        <Setter Property="Background" Value="#4D3036"/>
                         <Setter Property="Foreground" Value="#FFFFFF"/>
                         <Setter Property="Effect" Value="{StaticResource CyberpunkPinkGlow}"/>
                     </Trigger>
@@ -118,7 +154,7 @@
 
             <Style x:Key="CyberpunkButtonImportant" TargetType="Button">
                 <Setter Property="Template" Value="{StaticResource CyberpunkButtonTemplate}"/>
-                <Setter Property="Background" Value="#564120"/>
+                <Setter Property="Background" Value="#5D441D"/>
                 <Setter Property="BorderBrush" Value="{StaticResource CyberpunkYellowBrush}"/>
                 <Setter Property="Foreground" Value="#FFFDF8"/>
                 <Setter Property="BorderThickness" Value="1"/>
@@ -127,11 +163,11 @@
                 <Setter Property="Padding" Value="16,9"/>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#705127"/>
+                        <Setter Property="Background" Value="#7C5925"/>
                         <Setter Property="Foreground" Value="#FFFFFF"/>
                         <Setter Property="Effect">
                             <Setter.Value>
-                                <DropShadowEffect Color="{StaticResource CyberpunkYellowColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.2"/>
+                                <DropShadowEffect Color="{StaticResource CyberpunkYellowColor}" BlurRadius="20" ShadowDepth="0" Opacity="0.24"/>
                             </Setter.Value>
                         </Setter>
                     </Trigger>
