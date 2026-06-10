@@ -17,7 +17,7 @@ Tài liệu này chứa toàn bộ quy tắc code, cấu trúc dự án, hướn
 ---
 
 ## 2. Quy Tắc Code & Lập Trình C#
-- **Không tạo mới `HttpClient` mỗi:** Bắt buộc sử dụng instance static `_httpClient` được định nghĩa sẵn trong [MainWindow.xaml.cs](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/MainWindow.xaml.cs). Nó được cấu hình tự động giải nén (GZip, Deflate) và User-Agent phù hợp.
+- **Không tạo mới `HttpClient` mỗi nơi:** Bắt buộc sử dụng instance static `_httpClient` được định nghĩa sẵn trong [MainWindow.xaml.cs](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/MainWindow.xaml.cs). Nó được cấu hình tự động giải nén (GZip, Deflate) và User-Agent phù hợp.
 - **Xử lý bất đồng bộ (Async/Await):** Luôn dùng `async/await` cho các tác vụ I/O (cào web, đọc ghi file) để tránh đơ giao diện.
 - **Cơ chế dừng cào (Cancellation):** Các vòng lặp cào dữ liệu phải hỗ trợ `CancellationToken` từ `CancellationTokenSource` (`_cts`). Kiểm tra `token.IsCancellationRequested` để dừng tác vụ kịp thời và đưa nút bấm về trạng thái ban đầu trong khối `finally`.
 - **An toàn đa luồng (UI Thread Safety):** Khi muốn tương tác với các control giao diện từ luồng phụ, sử dụng `Dispatcher.Invoke(() => { ... })`.
@@ -34,7 +34,7 @@ Tài liệu này chứa toàn bộ quy tắc code, cấu trúc dự án, hướn
 
 ---
 
-## 3. Quy Tắc Thiết Giao Diện (WPF / XAML)
+## 3. Quy Tắc Thiết Kế Giao Diện (WPF / XAML)
 - **Theme Cyberpunk:** Sử dụng các tài nguyên màu sắc và hiệu ứng được định nghĩa trong [App.xaml](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/App.xaml):
   - **Màu nền:** `CyberpunkDarkBrush` (Màu tối chủ đạo `#0a0d14`)
   - **Màu khung/Panel:** `CyberpunkCardBrush` (`#121622`)
