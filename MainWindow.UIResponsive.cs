@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace get_link_manga
 {
@@ -77,6 +78,7 @@ namespace get_link_manga
             bool compactHeight = size.Height < 820;
             bool compactMode = compactWidth || compactHeight;
             bool ultraCompact = size.Width < 1380 || size.Height < 780;
+            bool lowResolutionMode = size.Width <= 1360 || size.Height <= 768;
 
             if (rootLayout != null)
             {
@@ -90,9 +92,9 @@ namespace get_link_manga
             if (headerPanel != null)
             {
                 headerPanel.Padding = ultraCompact
-                    ? new Thickness(12, 10, 12, 10)
+                    ? new Thickness(10, 8, 10, 8)
                     : compactMode
-                        ? new Thickness(14, 12, 14, 12)
+                        ? new Thickness(12, 10, 12, 10)
                         : new Thickness(16, 14, 16, 14);
                 headerPanel.Margin = new Thickness(0);
             }
@@ -116,15 +118,15 @@ namespace get_link_manga
             if (headerActionsPanel != null)
             {
                 headerActionsPanel.Margin = ultraCompact
-                    ? new Thickness(0, 4, 0, 0)
+                    ? new Thickness(0, 2, 0, 0)
                     : compactMode
-                        ? new Thickness(0, 6, 0, 0)
+                        ? new Thickness(0, 4, 0, 0)
                         : new Thickness(0, 8, 0, 0);
             }
 
             if (headerUtilityPanel != null)
             {
-                headerUtilityPanel.Width = ultraCompact ? 190 : compactMode ? 206 : 220;
+                headerUtilityPanel.Width = lowResolutionMode ? 176 : ultraCompact ? 190 : compactMode ? 206 : 220;
             }
 
             if (languageCard != null)
@@ -140,9 +142,14 @@ namespace get_link_manga
 
                 if (gridMainContent.ColumnDefinitions.Count >= 3)
                 {
-                    double leftWidth = ultraCompact ? 430 : compactMode ? 470 : 520;
+                    double leftWidth = lowResolutionMode ? 392 : ultraCompact ? 430 : compactMode ? 470 : 520;
                     gridMainContent.ColumnDefinitions[0].Width = new GridLength(leftWidth, GridUnitType.Pixel);
-                    gridMainContent.ColumnDefinitions[1].Width = new GridLength(ultraCompact ? 12 : 18, GridUnitType.Pixel);
+                    gridMainContent.ColumnDefinitions[1].Width = new GridLength(lowResolutionMode ? 10 : ultraCompact ? 12 : 18, GridUnitType.Pixel);
+                }
+
+                if (gridMainContent.RowDefinitions.Count >= 2)
+                {
+                    gridMainContent.RowDefinitions[1].Height = new GridLength(lowResolutionMode ? 8 : 12, GridUnitType.Pixel);
                 }
             }
 
@@ -165,6 +172,26 @@ namespace get_link_manga
                 btnStartDownload.FontSize = ultraCompact ? 11 : 12;
                 btnStartDownload.MinWidth = ultraCompact ? 82 : 92;
             }
+
+            SetLayoutScale(headerPanel, lowResolutionMode ? 0.92 : compactHeight ? 0.97 : 1.0);
+            SetLayoutScale(leftPanelHost, lowResolutionMode ? 0.84 : ultraCompact ? 0.92 : compactMode ? 0.97 : 1.0);
+            SetLayoutScale(tabLeftPanel, lowResolutionMode ? 0.97 : 1.0);
+        }
+
+        private static void SetLayoutScale(FrameworkElement element, double scale)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            if (Math.Abs(scale - 1.0) < 0.001)
+            {
+                element.LayoutTransform = Transform.Identity;
+                return;
+            }
+
+            element.LayoutTransform = new ScaleTransform(scale, scale);
         }
     }
 }
