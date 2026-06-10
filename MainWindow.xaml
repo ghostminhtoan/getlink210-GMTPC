@@ -144,9 +144,9 @@
         </Style>
 
         <Style x:Key="WideActionButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-            <Setter Property="Height" Value="46"/>
-            <Setter Property="FontSize" Value="10.5"/>
-            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Padding" Value="8,4"/>
         </Style>
 
         <Style x:Key="CheckErrorWrapTextStyle" TargetType="TextBlock">
@@ -320,10 +320,9 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                    <StackPanel Grid.Row="0" Margin="0" Visibility="Collapsed">
                         <TextBlock Name="txtHeaderTitle"
                                    Text="Comic GMTPC"
                                    Foreground="{StaticResource CyberpunkTextBrush}"
@@ -338,7 +337,7 @@
                                    TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <StackPanel Name="headerUtilityPanel" Grid.Row="1" Width="220" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,10">
+                    <StackPanel Name="headerUtilityPanel" Grid.Row="0" Width="220" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,8">
                         <Border Name="languageCard" Style="{StaticResource MetricCard}" Padding="12,8">
                             <StackPanel>
                                 <TextBlock Text="INTERFACE LANGUAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold"/>
@@ -370,7 +369,7 @@
                         </Border>
                     </StackPanel>
 
-                    <WrapPanel Name="headerStepsPanel" Grid.Row="2" Margin="0,0,0,4">
+                    <WrapPanel Name="headerStepsPanel" Grid.Row="1" Margin="0,0,0,2">
                         <Border Style="{StaticResource HeroStepCard}">
                             <StackPanel>
                                 <TextBlock Text="STEP 1" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="10" FontWeight="Bold"/>
@@ -391,7 +390,7 @@
                         </Border>
                     </WrapPanel>
 
-                    <WrapPanel Name="headerActionsPanel" Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0">
+                    <WrapPanel Name="headerActionsPanel" Grid.Row="2" Orientation="Horizontal" Margin="0,4,0,0">
                         <Button Name="btnNewList" Content="NEW" Click="BtnNewList_Click" Style="{StaticResource CompactCyanButton}" MinWidth="84" Padding="12,3" FontWeight="Bold"/>
                         <Button Name="btnSaveList" Content="SAVE DEFAULT" Click="BtnSave_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
                         <Button Name="btnLoadList" Content="LOAD DEFAULT" Click="BtnLoad_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
@@ -419,7 +418,7 @@
                                 <SolidColorBrush Color="#00ff66"/>
                             </TabItem.Tag>
                             <Grid Margin="0,10,0,0">
-                                <Border Name="borderTruyenqqLeftPanel" Style="{StaticResource CyberpunkCard}" Padding="15">
+                                <Border Name="borderTruyenqqLeftPanel" Style="{StaticResource CyberpunkCard}" Padding="14">
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/> <!-- Section Title -->
@@ -431,7 +430,7 @@
                                             <RowDefinition Height="*"/>    <!-- Progress Logs -->
                                         </Grid.RowDefinitions>
 
-                                        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                                        <StackPanel Grid.Row="0" Margin="0,0,0,12">
                                             <TextBlock Name="txtTruyenqqSectionTitle" Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
                                             <WrapPanel Orientation="Horizontal" Margin="0,10,0,0">
                                                 <Button Name="btnOpenHomepageTruyenqq" Tag="truyenqq" Content="🏠 HOMEPAGE" Click="BtnOpenHomepage_Click" Style="{StaticResource CompactCyanButton}" MinWidth="86" Padding="8,0" FontWeight="Bold"/>
@@ -493,7 +492,7 @@
                                         <Grid Grid.Row="4" Height="0" Margin="0"/>
 
                                         <!-- Scrape & Direct Import Actions -->
-                                        <Grid Grid.Row="5" Margin="0,14,0,10">
+                                        <Grid Grid.Row="5" Margin="0,8,0,6">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="10"/>
@@ -706,7 +705,7 @@
                             <TabItem.Tag>
                                 <SolidColorBrush Color="#7dff9b"/>
                             </TabItem.Tag>
-                            <Grid Margin="0,10,0,0">
+                            <Grid Margin="0,6,0,0">
                                 <Border Name="borderDaomeodenLeftPanel" Style="{StaticResource CyberpunkCard}" Padding="15">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -728,7 +727,7 @@
                                             </WrapPanel>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                        <StackPanel Grid.Row="1" Margin="0,0,0,10">
                                             <TextBlock Text="TARGET URL" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                                             <TextBox Name="txtDaomeodenTagUrl"
                                                      Text="https://daomeoden.net/the-loai/romance.html"
@@ -739,11 +738,11 @@
                                                      Height="32"/>
                                         </StackPanel>
 
-                                        <Grid Grid.Row="2" Margin="0,0,0,15">
+                                        <Grid Grid.Row="2" Margin="0,0,0,12">
                                             <Button Name="btnDaomeodenFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnDaomeodenFetchInfo_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="45" FontSize="12"/>
                                         </Grid>
 
-                                        <Grid Grid.Row="3" Margin="0,0,0,15">
+                                        <Grid Grid.Row="3" Margin="0,0,0,12">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="8"/>
@@ -1554,7 +1553,7 @@
                 </TabItem>
             </TabControl>
 
-                <Border Grid.Row="1" Margin="0,16,0,0" Style="{StaticResource WorkspaceSectionCard}">
+                <Border Grid.Row="1" Margin="0,8,0,0" Style="{StaticResource WorkspaceSectionCard}">
                     <StackPanel>
                         <TextBlock Text="QUICK ACTIONS FOR CURRENT LIST"
                                    Foreground="{StaticResource CyberpunkMutedTextBrush}"
