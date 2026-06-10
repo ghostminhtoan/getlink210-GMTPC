@@ -57,6 +57,7 @@ namespace get_link_manga
         {
             InitializeComponent();
             WindowState = WindowState.Maximized;
+            Loaded += (s, e) => ApplyAdaptiveLayout(new Size(ActualWidth, ActualHeight));
             _isVietnameseUi = true;
             ApplyCurrentUiLanguage();
             InitializeGalleryListAutosave();

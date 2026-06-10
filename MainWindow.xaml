@@ -297,7 +297,7 @@
         </Style>
     </Window.Resources>
     
-    <Grid Margin="18">
+    <Grid Name="rootLayout" Margin="18">
         <Grid.RowDefinitions>
             <!-- Title Bar / Header -->
             <RowDefinition Height="Auto"/>
@@ -306,7 +306,7 @@
             <!-- Footer Status Bar -->
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Padding="18" Margin="0,0,0,8" Style="{StaticResource CyberpunkCard}">
+        <Border Name="headerPanel" Grid.Row="0" Padding="18" Margin="0,0,0,8" Style="{StaticResource CyberpunkCard}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -328,14 +328,14 @@
                                    FontSize="28"
                                    FontWeight="Bold"
                                    VerticalAlignment="Center"/>
-                        <TextBlock Text="Simple flow: choose website, paste link, review list, then download."
+                        <TextBlock Name="txtHeaderSubtitle" Text="Simple flow: choose website, paste link, review list, then download."
                                    Foreground="{StaticResource CyberpunkMutedTextBrush}"
                                    FontSize="13"
                                    Margin="0,6,0,0"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <WrapPanel Grid.Row="1" Margin="0,0,0,4">
+                    <WrapPanel Name="headerStepsPanel" Grid.Row="1" Margin="0,0,0,4">
                         <Border Style="{StaticResource HeroStepCard}">
                             <StackPanel>
                                 <TextBlock Text="STEP 1" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="10" FontWeight="Bold"/>
@@ -356,7 +356,7 @@
                         </Border>
                     </WrapPanel>
 
-                    <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+                    <WrapPanel Name="headerActionsPanel" Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
                         <Button Name="btnNewList" Content="NEW" Click="BtnNewList_Click" Style="{StaticResource CompactCyanButton}" MinWidth="84" Padding="12,3" FontWeight="Bold"/>
                         <Button Name="btnSaveList" Content="SAVE DEFAULT" Click="BtnSave_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
                         <Button Name="btnLoadList" Content="LOAD DEFAULT" Click="BtnLoad_Click" Style="{StaticResource CompactCyanButton}" MinWidth="126" Padding="12,3" FontWeight="Bold"/>
@@ -365,8 +365,8 @@
                     </WrapPanel>
                 </Grid>
 
-                <StackPanel Grid.Column="1" Width="260" HorizontalAlignment="Right" VerticalAlignment="Top">
-                    <Border Style="{StaticResource MetricCard}" Padding="12,8">
+                <StackPanel Name="headerUtilityPanel" Grid.Column="1" Width="260" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <Border Name="languageCard" Style="{StaticResource MetricCard}" Padding="12,8">
                         <StackPanel>
                             <TextBlock Text="INTERFACE LANGUAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="10" FontWeight="Bold"/>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6,0,0">
@@ -651,9 +651,9 @@
                                                 <ColumnDefinition Width="10"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <Button Grid.Column="0" Name="btnNettruyenScrape" Content="GET LINK" Click="BtnNettruyenScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="2" Name="btnNettruyenCrawlMore" Content="GET MORE" Click="BtnNettruyenCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="4" Name="btnNettruyenPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNettruyenPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                            <Button Grid.Column="0" Name="btnNettruyenScrape" Content="GET LINK" Click="BtnNettruyenScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="2" Name="btnNettruyenCrawlMore" Content="GET MORE" Click="BtnNettruyenCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="4" Name="btnNettruyenPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNettruyenPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
                                         </Grid>
 
                                         <!-- Check Error Panel -->
@@ -784,9 +784,9 @@
                                                 <ColumnDefinition Width="10"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <Button Grid.Column="0" Name="btnDaomeodenScrape" Content="GET LINK" Click="BtnDaomeodenScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="2" Name="btnDaomeodenCrawlMore" Content="GET MORE" Click="BtnDaomeodenCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="4" Name="btnDaomeodenPasteDirect" Content="PASTE DIRECT LINK" Click="BtnDaomeodenPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                            <Button Grid.Column="0" Name="btnDaomeodenScrape" Content="GET LINK" Click="BtnDaomeodenScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="2" Name="btnDaomeodenCrawlMore" Content="GET MORE" Click="BtnDaomeodenCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="4" Name="btnDaomeodenPasteDirect" Content="PASTE DIRECT LINK" Click="BtnDaomeodenPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
                                         </Grid>
 
                                         <Border Grid.Row="6" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Padding="12" CornerRadius="3">
@@ -890,9 +890,9 @@
                                                  <ColumnDefinition Width="10"/>
                                                  <ColumnDefinition Width="*"/>
                                              </Grid.ColumnDefinitions>
-                                             <Button Grid.Column="0" Name="btnViHentaiScrape" Content="GET LINK" Click="BtnViHentaiScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                             <Button Grid.Column="2" Name="btnViHentaiCrawlMore" Content="GET MORE" Click="BtnViHentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                             <Button Grid.Column="4" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                             <Button Grid.Column="0" Name="btnViHentaiScrape" Content="GET LINK" Click="BtnViHentaiScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                             <Button Grid.Column="2" Name="btnViHentaiCrawlMore" Content="GET MORE" Click="BtnViHentaiCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                             <Button Grid.Column="4" Name="btnViHentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnViHentaiPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
                                          </Grid>
 
                                         <!-- Check Error Panel -->
@@ -1030,9 +1030,9 @@
                                                 <ColumnDefinition Width="10"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <Button Grid.Column="0" Name="btnTruyenggvnScrape" Content="GET LINK" Click="BtnTruyenggvnScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="2" Name="btnTruyenggvnCrawlMore" Content="GET MORE" Click="BtnTruyenggvnCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="4" Name="btnTruyenggvnPasteDirect" Content="PASTE DIRECT LINK" Click="BtnTruyenggvnPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                            <Button Grid.Column="0" Name="btnTruyenggvnScrape" Content="GET LINK" Click="BtnTruyenggvnScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="2" Name="btnTruyenggvnCrawlMore" Content="GET MORE" Click="BtnTruyenggvnCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="4" Name="btnTruyenggvnPasteDirect" Content="PASTE DIRECT LINK" Click="BtnTruyenggvnPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
                                         </Grid>
 
                                         <Grid Grid.Row="6" Visibility="Collapsed">
@@ -1175,9 +1175,9 @@
                                                 <ColumnDefinition Width="10"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <Button Grid.Column="0" Name="btnScrape" Content="GET LINK" Click="BtnScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="2" Name="btnCrawlMore" Content="GET MORE" Click="BtnCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="4" Name="btnPasteDirect" Content="PASTE DIRECT LINK" Click="BtnPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                            <Button Grid.Column="0" Name="btnScrape" Content="GET LINK" Click="BtnScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="2" Name="btnCrawlMore" Content="GET MORE" Click="BtnCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="4" Name="btnPasteDirect" Content="PASTE DIRECT LINK" Click="BtnPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
                                         </Grid>
 
                                         <!-- Check Error Panel -->
@@ -1355,9 +1355,9 @@
                                                 <ColumnDefinition Width="10"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <Button Grid.Column="0" Name="btnNhentaiScrape" Content="GET LINK" Click="BtnNhentaiScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="2" Name="btnNhentaiCrawlMore" Content="GET MORE" Click="BtnNhentaiCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="4" Name="btnNhentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNhentaiPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                            <Button Grid.Column="0" Name="btnNhentaiScrape" Content="GET LINK" Click="BtnNhentaiScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="2" Name="btnNhentaiCrawlMore" Content="GET MORE" Click="BtnNhentaiCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="4" Name="btnNhentaiPasteDirect" Content="PASTE DIRECT LINK" Click="BtnNhentaiPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
                                         </Grid>
 
                                         <!-- Check Error Panel -->
@@ -1500,9 +1500,9 @@
                                                 <ColumnDefinition Width="10"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <Button Grid.Column="0" Name="btnHentaieraScrape" Content="GET LINK" Click="BtnHentaieraScrape_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="2" Name="btnHentaieraCrawlMore" Content="GET MORE" Click="BtnHentaieraCrawlMore_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
-                                            <Button Grid.Column="4" Name="btnHentaieraPasteDirect" Content="PASTE DIRECT LINK" Click="BtnHentaieraPasteDirect_Click" Style="{StaticResource CyberpunkButtonImportant}" Height="48" FontSize="12"/>
+                                            <Button Grid.Column="0" Name="btnHentaieraScrape" Content="GET LINK" Click="BtnHentaieraScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="2" Name="btnHentaieraCrawlMore" Content="GET MORE" Click="BtnHentaieraCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="4" Name="btnHentaieraPasteDirect" Content="PASTE DIRECT LINK" Click="BtnHentaieraPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
                                         </Grid>
 
                                         <!-- Check Error Panel -->
