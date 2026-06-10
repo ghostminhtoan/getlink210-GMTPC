@@ -233,5 +233,10 @@ namespace get_link_manga
                 tabMenu.SelectedIndex = index;
             }
         }
+
+        public void ApplyLanguage(bool isVietnamese)
+        {
+            Title = isVietnamese ? "LỊCH SỬ & ĐÁNH DẤU" : "BOOKMARKS & HISTORY";
+        }
     }
 }

@@ -15,11 +15,11 @@
         <!-- Header info -->
         <Border Grid.Row="0" BorderBrush="{StaticResource CyberpunkPinkBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,12">
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="CLOUDFLARE CAPTCHA BYPASS" 
+                <TextBlock x:Name="txtCaptchaHeader" Text="CLOUDFLARE CAPTCHA BYPASS" 
                            FontSize="16" 
                            FontWeight="ExtraBold" 
                            Style="{StaticResource CyberpunkHeader}"/>
-                <TextBlock Text="VUI LÒNG HOÀN THÀNH THỬ THÁCH TRÊN TRÌNH DUYỆT BÊN DƯỚI. KHI TRANG TẢI XONG, NHẤN 'ĐÃ HOÀN THÀNH'" 
+                <TextBlock x:Name="txtCaptchaDescription" Text="VUI LÒNG HOÀN THÀNH THỬ THÁCH TRÊN TRÌNH DUYỆT BÊN DƯỚI. KHI TRANG TẢI XONG, NHẤN 'ĐÃ HOÀN THÀNH'" 
                            FontSize="9" 
                            Foreground="{StaticResource CyberpunkCyanBrush}" 
                            FontWeight="Bold"

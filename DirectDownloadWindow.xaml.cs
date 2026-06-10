@@ -14,12 +14,30 @@ namespace get_link_manga
         public List<string> ImportedLinks { get; private set; } = new List<string>();
         public Action<List<string>> OnImport { get; set; }
 
-        public DirectDownloadWindow(bool isNhentai = false)
+        public DirectDownloadWindow(
+            bool isNhentai = false,
+            string customTitle = null,
+            string customDescription = null,
+            string customExample = null)
         {
             _isNhentai = isNhentai;
             InitializeComponent();
 
-            if (_isNhentai)
+            if (!string.IsNullOrWhiteSpace(customTitle))
+            {
+                Title = customTitle;
+            }
+
+            if (!string.IsNullOrWhiteSpace(customDescription))
+            {
+                lblDescription.Text = customDescription;
+            }
+
+            if (!string.IsNullOrWhiteSpace(customExample))
+            {
+                txtLinksInput.Tag = customExample;
+            }
+            else if (_isNhentai)
             {
                 Title = "PASTE NHENTAI DIRECT LINKS";
                 lblDescription.Text = "Paste nhentai.net gallery links below (one link per line). The system will fetch and analyze titles automatically.";

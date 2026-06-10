@@ -171,6 +171,7 @@ namespace get_link_manga
         private bool _isStopped;
         private string _downloadingChapter;
         private string _downloadingPageProgress;
+        private int _nhentaiTotalPagesHint;
 
         public bool HasNoChapters
         {
@@ -180,6 +181,19 @@ namespace get_link_manga
                 if (_hasNoChapters != value)
                 {
                     _hasNoChapters = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int NhentaiTotalPagesHint
+        {
+            get => _nhentaiTotalPagesHint;
+            set
+            {
+                if (_nhentaiTotalPagesHint != value)
+                {
+                    _nhentaiTotalPagesHint = value;
                     OnPropertyChanged();
                 }
             }
