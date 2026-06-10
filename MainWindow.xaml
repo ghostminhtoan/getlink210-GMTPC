@@ -409,7 +409,15 @@
 
             <!-- Tab Control for Crawlers (Left Side) -->
             <!-- Tab Control for Crawlers (Left Side) -->
-            <TabControl Name="tabLeftPanel" Grid.Row="0" Style="{StaticResource TabControlInLine}" Background="Transparent" BorderThickness="0">
+            <ScrollViewer Name="leftPanelScrollViewer"
+                          Grid.Row="0"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          CanContentScroll="True"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Padding="0">
+            <TabControl Name="tabLeftPanel" Style="{StaticResource TabControlInLine}" Background="Transparent" BorderThickness="0">
                 <!-- MANGA Parent Tab -->
                 <TabItem x:Name="tabMangaRootItem" Header="MANGA" Style="{StaticResource CyberpunkTabItem}" Tag="{StaticResource CyberpunkCyanBrush}">
                     <TabControl Name="tabManga" Style="{StaticResource TabControlInLine}" Background="Transparent" BorderThickness="0" SelectionChanged="TabManga_SelectionChanged">
@@ -1553,6 +1561,7 @@
                     </TabControl>
                 </TabItem>
             </TabControl>
+            </ScrollViewer>
 
                 <Border Grid.Row="1" Margin="0,8,0,0" Style="{StaticResource WorkspaceSectionCard}">
                     <StackPanel>

@@ -129,6 +129,11 @@ namespace get_link_manga
                 headerUtilityPanel.Width = lowResolutionMode ? 176 : ultraCompact ? 190 : compactMode ? 206 : 220;
             }
 
+            if (leftPanelScrollViewer != null)
+            {
+                leftPanelScrollViewer.Padding = new Thickness(0);
+            }
+
             if (languageCard != null)
             {
                 languageCard.Padding = ultraCompact
@@ -174,8 +179,17 @@ namespace get_link_manga
             }
 
             SetLayoutScale(headerPanel, lowResolutionMode ? 0.92 : compactHeight ? 0.97 : 1.0);
-            SetLayoutScale(leftPanelHost, lowResolutionMode ? 0.84 : ultraCompact ? 0.92 : compactMode ? 0.97 : 1.0);
-            SetLayoutScale(tabLeftPanel, lowResolutionMode ? 0.97 : 1.0);
+            SetLayoutScale(leftPanelHost, lowResolutionMode ? 0.80 : ultraCompact ? 0.90 : compactMode ? 0.96 : 1.0);
+            SetLayoutScale(tabLeftPanel, lowResolutionMode ? 0.94 : ultraCompact ? 0.97 : 1.0);
+            SetLayoutScale(tabManga, lowResolutionMode ? 0.92 : ultraCompact ? 0.96 : 1.0);
+            SetLayoutScale(tabHentai, lowResolutionMode ? 0.80 : ultraCompact ? 0.90 : 1.0);
+
+            ApplyTabSizing(tabLeftPanel, lowResolutionMode ? 10.0 : ultraCompact ? 10.5 : 11.0,
+                lowResolutionMode ? new Thickness(10, 5, 10, 5) : ultraCompact ? new Thickness(11, 6, 11, 6) : new Thickness(12, 7, 12, 7));
+            ApplyTabSizing(tabManga, lowResolutionMode ? 9.5 : ultraCompact ? 10.0 : 11.0,
+                lowResolutionMode ? new Thickness(8, 4, 8, 4) : ultraCompact ? new Thickness(9, 5, 9, 5) : new Thickness(12, 7, 12, 7));
+            ApplyTabSizing(tabHentai, lowResolutionMode ? 8.5 : ultraCompact ? 9.0 : 11.0,
+                lowResolutionMode ? new Thickness(6, 4, 6, 4) : ultraCompact ? new Thickness(8, 4, 8, 4) : new Thickness(12, 7, 12, 7));
         }
 
         private static void SetLayoutScale(FrameworkElement element, double scale)
@@ -192,6 +206,24 @@ namespace get_link_manga
             }
 
             element.LayoutTransform = new ScaleTransform(scale, scale);
+        }
+
+        private static void ApplyTabSizing(TabControl tabControl, double fontSize, Thickness padding)
+        {
+            if (tabControl == null)
+            {
+                return;
+            }
+
+            foreach (var item in tabControl.Items)
+            {
+                if (item is TabItem tabItem)
+                {
+                    tabItem.FontSize = fontSize;
+                    tabItem.Padding = padding;
+                    tabItem.Margin = new Thickness(0, 0, 3, 0);
+                }
+            }
         }
     }
 }
