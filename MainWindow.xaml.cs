@@ -56,6 +56,7 @@ namespace get_link_manga
         public MainWindow()
         {
             InitializeComponent();
+            WindowState = WindowState.Maximized;
             _isVietnameseUi = true;
             ApplyCurrentUiLanguage();
             InitializeGalleryListAutosave();

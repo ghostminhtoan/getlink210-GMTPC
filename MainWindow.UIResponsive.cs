@@ -10,7 +10,7 @@ namespace get_link_manga
         {
             if (gridMainContent == null) return;
 
-            if (e.NewSize.Width < 900)
+            if (e.NewSize.Width < 1120)
             {
                 // Portrait / Stacked Mode: Stack Left and Right panels vertically
                 if (gridMainContent.ColumnDefinitions.Count > 0)
@@ -20,8 +20,8 @@ namespace get_link_manga
 
                 if (gridMainContent.RowDefinitions.Count == 0)
                 {
-                    gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(350, GridUnitType.Pixel) }); // Left config panel
-                    gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(15, GridUnitType.Pixel) });  // Spacing spacer
+                    gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(430, GridUnitType.Pixel) }); // Left config panel
+                    gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(18, GridUnitType.Pixel) });  // Spacing spacer
                     gridMainContent.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });   // Right output panel
                 }
 
@@ -41,8 +41,8 @@ namespace get_link_manga
 
                 if (gridMainContent.ColumnDefinitions.Count == 0)
                 {
-                    gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(450, GridUnitType.Pixel) });
-                    gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(15, GridUnitType.Pixel) });
+                    gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(520, GridUnitType.Pixel) });
+                    gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18, GridUnitType.Pixel) });
                     gridMainContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 }
 
