@@ -644,7 +644,22 @@ namespace get_link_manga
             }
 
             string pageUri = new Uri(_currentReaderPage.FilePath).AbsoluteUri;
-            _readerWebView.NavigateToString(BuildReaderHtml(pageUri, _readerFitMode));
+            try
+            {
+                string tempDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".tmp");
+                if (!System.IO.Directory.Exists(tempDir))
+                {
+                    System.IO.Directory.CreateDirectory(tempDir);
+                }
+                string tempFile = System.IO.Path.Combine(tempDir, "reader.html");
+                string html = BuildReaderHtml(pageUri, _readerFitMode);
+                System.IO.File.WriteAllText(tempFile, html, System.Text.Encoding.UTF8);
+                _readerWebView.CoreWebView2.Navigate(new Uri(tempFile).AbsoluteUri);
+            }
+            catch
+            {
+                _readerWebView.NavigateToString(BuildReaderHtml(pageUri, _readerFitMode));
+            }
         }
 
         private void RenderReaderPlaceholder()

@@ -101,12 +101,23 @@ namespace get_link_manga
 
             var stack = new StackPanel();
 
+            var titleText = new TextBlock
+            {
+                Text = _isVietnameseUi ? "TỶ LỆ HIỂN THỊ" : "DISPLAY SCALE",
+                Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush"),
+                FontSize = 9,
+                FontWeight = FontWeights.Bold,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+            stack.Children.Add(titleText);
+
             _dpiPresetCombo = new ComboBox
             {
                 Name = "cmbDisplayDpi",
                 Style = TryFindResource("CyberpunkComboBox") as Style,
                 ItemContainerStyle = TryFindResource("CyberpunkComboBoxItemStyle") as Style,
-                Height = 28,
+                Height = 22,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -127,9 +138,9 @@ namespace get_link_manga
                 _globalDownloadActionPanel = new StackPanel
                 {
                     Name = "headerDownloadActionsPanel",
-                    Orientation = Orientation.Vertical,
-                    Margin = new Thickness(0, 6, 0, 0),
-                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Orientation = Orientation.Horizontal,
+                    Margin = new Thickness(0),
+                    VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Right
                 };
             }
@@ -141,37 +152,19 @@ namespace get_link_manga
                 {
                     floatingDownloadActionsHost.Children.Add(_globalDownloadActionPanel);
                 }
-
-                CompactHeaderPanelButtons(_globalDownloadActionPanel, false);
             }
 
-            MoveToolbarElement(btnStartDownload, new Thickness(0, 0, 8, 4));
-            MoveToolbarElement(btnStopDownload, new Thickness(0, 0, 8, 4));
-            MoveToolbarElement(btnRetryErrors, new Thickness(0, 0, 8, 4));
-            MoveToolbarElement(btnRetryErrorLog, new Thickness(0, 0, 8, 4));
-            MoveToolbarElement(btnShutdownMenu?.Parent as UIElement, new Thickness(0, 0, 8, 4));
-            MoveToolbarElement(txtBuildInfo, new Thickness(8, 3, 0, 0));
+            MoveToolbarElement(txtBuildInfo, new Thickness(8, 0, 12, 0));
+            MoveToolbarElement(btnStartDownload, new Thickness(0, 0, 6, 0));
+            MoveToolbarElement(btnStopDownload, new Thickness(0, 0, 6, 0));
+            MoveToolbarElement(btnRetryErrors, new Thickness(0, 0, 6, 0));
+            MoveToolbarElement(btnRetryErrorLog, new Thickness(0, 0, 6, 0));
+            MoveToolbarElement(btnShutdownMenu?.Parent as UIElement ?? btnShutdownMenu, new Thickness(0, 0, 6, 0));
         }
 
         private void CompactHeaderPanelButtons(Panel panel, bool isPrimaryRow)
         {
-            if (panel == null)
-            {
-                return;
-            }
-
-            foreach (Button button in panel.Children.OfType<Button>())
-            {
-                button.Height = isPrimaryRow ? 18 : 20;
-                button.FontSize = isPrimaryRow ? 7.6 : 8.2;
-                button.MinWidth = isPrimaryRow ? 82 : 70;
-                button.MaxWidth = isPrimaryRow ? 118 : 108;
-                button.HorizontalAlignment = HorizontalAlignment.Stretch;
-                button.Padding = isPrimaryRow
-                    ? new Thickness(4, 0, 4, 0)
-                    : new Thickness(5, 1, 5, 1);
-                button.Margin = new Thickness(0, 0, 0, 3);
-            }
+            // No-op or unused now
         }
 
         private void MoveToolbarElement(UIElement element, Thickness margin)
@@ -188,14 +181,23 @@ namespace get_link_manga
                 frameworkElement.VerticalAlignment = VerticalAlignment.Center;
                 frameworkElement.HorizontalAlignment = HorizontalAlignment.Left;
 
-                if (frameworkElement is Button button)
+                Button button = null;
+                if (frameworkElement is Button btn)
                 {
-                    button.MinWidth = ReferenceEquals(frameworkElement, btnShutdownMenu) ? 36 : 58;
+                    button = btn;
+                }
+                else if (frameworkElement is Panel p)
+                {
+                    button = p.Children.OfType<Button>().FirstOrDefault();
+                }
+
+                if (button != null)
+                {
+                    button.MinWidth = ReferenceEquals(button, btnShutdownMenu) ? 32 : 56;
                     button.Height = 20;
-                    button.FontSize = ReferenceEquals(frameworkElement, btnShutdownMenu) ? 13 : 9.1;
-                    button.Padding = ReferenceEquals(frameworkElement, btnShutdownMenu)
-                        ? new Thickness(6, 1, 6, 1)
-                        : new Thickness(6, 1, 6, 1);
+                    button.FontSize = ReferenceEquals(button, btnShutdownMenu) ? 12 : 9.0;
+                    button.Padding = new Thickness(4, 0, 4, 0);
+                    button.VerticalAlignment = VerticalAlignment.Center;
                 }
 
                 if (!_globalDownloadActionPanel.Children.Contains(frameworkElement))
@@ -272,6 +274,16 @@ namespace get_link_manga
 
             BuildNavigationRail();
             BuildSectionViews();
+
+            if (floatingDownloadActionsHost != null)
+            {
+                RemoveFromParent(floatingDownloadActionsHost);
+                Grid.SetColumn(floatingDownloadActionsHost, 2);
+                Grid.SetRow(floatingDownloadActionsHost, 1);
+                Panel.SetZIndex(floatingDownloadActionsHost, 99);
+                floatingDownloadActionsHost.Margin = new Thickness(0, 0, 18, 18);
+                gridMainContent.Children.Add(floatingDownloadActionsHost);
+            }
         }
 
         private void BuildNavigationRail()
@@ -373,16 +385,16 @@ namespace get_link_manga
 
             if (languageCard != null)
             {
-                languageCard.Width = double.NaN;
+                languageCard.Width = 110;
                 languageCard.MinWidth = 0;
-                languageCard.HorizontalAlignment = HorizontalAlignment.Stretch;
+                languageCard.HorizontalAlignment = HorizontalAlignment.Center;
             }
 
             if (scaleCard != null)
             {
-                scaleCard.Width = double.NaN;
+                scaleCard.Width = 110;
                 scaleCard.MinWidth = 0;
-                scaleCard.HorizontalAlignment = HorizontalAlignment.Stretch;
+                scaleCard.HorizontalAlignment = HorizontalAlignment.Center;
             }
 
             if (headerActionsPanel != null)

@@ -131,33 +131,33 @@
         </Style>
 
         <Style x:Key="CompactCyanButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
-            <Setter Property="Height" Value="26"/>
+            <Setter Property="Height" Value="22"/>
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Padding" Value="10,2"/>
             <Setter Property="Margin" Value="0,0,6,6"/>
         </Style>
 
         <Style x:Key="CompactPinkButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
-            <Setter Property="Height" Value="26"/>
+            <Setter Property="Height" Value="22"/>
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Padding" Value="10,2"/>
             <Setter Property="Margin" Value="0,0,6,6"/>
         </Style>
 
         <Style x:Key="WideActionButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-            <Setter Property="Height" Value="38"/>
+            <Setter Property="Height" Value="26"/>
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Padding" Value="10,2"/>
         </Style>
 
         <Style x:Key="TabFetchPrimaryButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-            <Setter Property="Height" Value="38"/>
-            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="FontSize" Value="10"/>
         </Style>
 
         <Style x:Key="TabFetchSecondaryButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="FontSize" Value="10"/>
         </Style>
 
         <Style x:Key="CheckErrorWrapTextStyle" TargetType="TextBlock">
@@ -167,9 +167,9 @@
 
         <!-- ComboBox Style -->
         <Style x:Key="CyberpunkComboBox" TargetType="ComboBox">
-            <Setter Property="Background" Value="#0B1726"/>
-            <Setter Property="Foreground" Value="#F2F7FC"/>
-            <Setter Property="BorderBrush" Value="#69D5E6"/>
+            <Setter Property="Background" Value="#090D16"/>
+            <Setter Property="Foreground" Value="#0B1E36"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CyberpunkBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="6,2"/>
             <Setter Property="FontSize" Value="10"/>
@@ -180,17 +180,17 @@
         
         <!-- ComboBoxItem Style for dropdown items -->
         <Style x:Key="CyberpunkComboBoxItemStyle" TargetType="ComboBoxItem">
-            <Setter Property="Background" Value="#0B1320"/>
-            <Setter Property="Foreground" Value="#F2F7FC"/>
-            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Background" Value="#06090F"/>
+            <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
+            <Setter Property="Padding" Value="8,4"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#1B3551"/>
+                    <Setter Property="Background" Value="#12243C"/>
                     <Setter Property="Foreground" Value="#FFFFFF"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#27557D"/>
+                    <Setter Property="Background" Value="#17304A"/>
                     <Setter Property="Foreground" Value="#FFFFFF"/>
                 </Trigger>
             </Style.Triggers>
@@ -200,9 +200,9 @@
             <Setter Property="Background" Value="#0D1A2A"/>
             <Setter Property="BorderBrush" Value="#223550"/>
             <Setter Property="Foreground" Value="#C6D5E5"/>
-            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Padding" Value="10,4"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontSize" Value="10"/>
             <Setter Property="Margin" Value="0,0,4,0"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -212,7 +212,7 @@
                                 BorderBrush="{TemplateBinding BorderBrush}" 
                                 BorderThickness="1" 
                                 Margin="{TemplateBinding Margin}" 
-                                CornerRadius="8,8,0,0" 
+                                CornerRadius="4,4,0,0" 
                                 Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True"
                                 Cursor="Hand">
@@ -656,7 +656,7 @@
                             </Grid.RowDefinitions>
                             <Border Grid.Row="0" Name="languageCard" Style="{StaticResource MetricCard}" Padding="8,6" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Width="117">
                                 <StackPanel>
-                                    <TextBlock Text="INTERFACE LANGUAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="9" FontWeight="Bold"/>
+                                    <TextBlock Text="INTERFACE LANGUAGE" TextWrapping="Wrap" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="9" FontWeight="Bold"/>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
                                         <TextBlock Name="txtLanguageLabel"
                                                    Text="ENG"
