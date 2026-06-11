@@ -145,18 +145,18 @@
         </Style>
 
         <Style x:Key="WideActionButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-            <Setter Property="Height" Value="26"/>
+            <Setter Property="Height" Value="36"/>
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="Padding" Value="10,2"/>
         </Style>
 
         <Style x:Key="TabFetchPrimaryButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonImportant}">
-            <Setter Property="Height" Value="26"/>
+            <Setter Property="Height" Value="36"/>
             <Setter Property="FontSize" Value="10"/>
         </Style>
 
         <Style x:Key="TabFetchSecondaryButton" TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
-            <Setter Property="Height" Value="26"/>
+            <Setter Property="Height" Value="32"/>
             <Setter Property="FontSize" Value="10"/>
         </Style>
 
@@ -200,7 +200,7 @@
             <Setter Property="Background" Value="#0D1A2A"/>
             <Setter Property="BorderBrush" Value="#223550"/>
             <Setter Property="Foreground" Value="#C6D5E5"/>
-            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Padding" Value="6,8"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="Margin" Value="0,0,4,0"/>

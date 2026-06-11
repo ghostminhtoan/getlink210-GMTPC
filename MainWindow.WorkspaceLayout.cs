@@ -341,23 +341,19 @@ namespace get_link_manga
         {
             var button = new Button
             {
-                MinHeight = 38,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Width = 110,
+                Height = 38,
+                HorizontalAlignment = HorizontalAlignment.Center,
                 Style = TryFindResource("SidebarMenuButton") as Style
             };
 
             button.Content = new TextBlock
             {
                 Text = text,
-                TextWrapping = section == AppSection.ChooseSource ? TextWrapping.Wrap : TextWrapping.NoWrap,
-                TextAlignment = TextAlignment.Left
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                FontSize = 9.8
             };
-
-            if (section == AppSection.ChooseSource)
-            {
-                button.MaxWidth = 148;
-                button.MinHeight = 44;
-            }
 
             button.Click += (sender, args) => SelectAppSection(section);
             _navigationButtons[section] = button;
