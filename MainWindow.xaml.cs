@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Http;
@@ -56,15 +56,13 @@ namespace get_link_manga
         public MainWindow()
         {
             InitializeComponent();
-            WindowState = WindowState.Maximized;
+            InitializeWorkspaceShell();
+            PreviewMouseWheel += MainWindow_PreviewMouseWheel;
             Loaded += (s, e) => ApplyAdaptiveLayout(new Size(ActualWidth, ActualHeight));
             _isVietnameseUi = true;
             ApplyCurrentUiLanguage();
             InitializeGalleryListAutosave();
-            if (txtBuildInfo != null)
-            {
-                txtBuildInfo.Text = BuildInfo.DisplayText;
-            }
+            ApplyBuildInfoText();
             void TogglePauseResume(System.Windows.Controls.Button button)
             {
                 _isDownloadPaused = !_isDownloadPaused;
@@ -192,7 +190,17 @@ namespace get_link_manga
 
         private void StyleComboBoxPopup(System.Windows.Controls.ComboBox comboBox)
         {
+            if (comboBox == null)
+            {
+                return;
+            }
+
             comboBox.ApplyTemplate();
+            if (comboBox.Template == null)
+            {
+                return;
+            }
+
             var popup = comboBox.Template.FindName("Popup", comboBox) as Popup;
             if (popup != null)
             {
@@ -200,7 +208,7 @@ namespace get_link_manga
                 {
                     if (popup.Child is System.Windows.Controls.Border border)
                     {
-                        border.Background = new SolidColorBrush(Color.FromRgb(0x12, 0x16, 0x22));
+                        border.Background = new SolidColorBrush(Color.FromRgb(0x0D, 0x12, 0x1F));
                     }
                 };
             }
