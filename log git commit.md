@@ -1,7 +1,8 @@
-﻿# Lịch Sử Git Commit - Dự Án "get link manga"
+# Lịch Sử Git Commit - Dự Án "get link manga"
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `324bd44` | **Build Time**: 2026-06-11 ∕ 04.24.18 PM Thursday | **Message**: style: rebuild UI with premium Cyberpunk theme
 - **Commit**: `f7e688d` | **Build Time**: 2026-06-07 ∕ 09.10.34 PM Sunday | **Message**: ui-compact-gallery-panel
 - **Commit**: `a6d95f3` | **Build Time**: 2026-06-07 ∕ 08.58.31 PM Sunday | **Message**: fix: restore gallery panel layout
 - **Commit**: `eb40a4f` | **Build Time**: 2026-06-07 03.22.13 PM Sunday | **Message**: feat: make app portable with embedded runtime loader
