@@ -16,12 +16,14 @@ namespace get_link_manga
 {
     public partial class MainWindow : Window
     {
-        private enum ReaderFitMode
+        internal enum ReaderFitMode
         {
             FitWidth,
             FitHeight,
             ActualSize,
-            VerticalScroll
+            VerticalScroll,
+            HorizontalScrollLTR,
+            HorizontalScrollRTL
         }
 
         private sealed class ReaderSortKeyComparer : IComparer<string>
@@ -87,7 +89,8 @@ namespace get_link_manga
         private ReaderMangaItem _currentReaderManga;
         private ReaderChapterItem _currentReaderChapter;
         private ReaderPageItem _currentReaderPage;
-        private ReaderFitMode _readerFitMode = ReaderFitMode.FitWidth;
+        internal ReaderFitMode _readerFitMode = ReaderFitMode.FitWidth;
+        private ReaderFullscreenWindow _fullscreenWindow = null;
         private string _lastReaderLibraryRoot;
         private bool _readerWebViewReady;
         private bool _readerSelectionGuard;
@@ -242,6 +245,8 @@ namespace get_link_manga
             _readerFitCombo.Items.Add("Fit height");
             _readerFitCombo.Items.Add("Actual");
             _readerFitCombo.Items.Add("Cuộn dọc");
+            _readerFitCombo.Items.Add("left → right");
+            _readerFitCombo.Items.Add("left ← right");
             _readerFitCombo.SelectedIndex = 0;
             _readerFitCombo.SelectionChanged += ReaderFitCombo_SelectionChanged;
 
@@ -669,7 +674,11 @@ namespace get_link_manga
                 string tempFile = System.IO.Path.Combine(tempDir, "reader.html");
                 
                 string html;
-                if (_readerFitMode == ReaderFitMode.VerticalScroll && _currentReaderChapter != null)
+                bool isScrollMode = _readerFitMode == ReaderFitMode.VerticalScroll ||
+                                   _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
+                                   _readerFitMode == ReaderFitMode.HorizontalScrollRTL;
+
+                if (isScrollMode && _currentReaderChapter != null)
                 {
                     var pageUris = new List<string>();
                     foreach (var p in _currentReaderChapter.Pages)
@@ -686,10 +695,19 @@ namespace get_link_manga
 
                 System.IO.File.WriteAllText(tempFile, html, System.Text.Encoding.UTF8);
                 _readerWebView.CoreWebView2.Navigate(new Uri(tempFile).AbsoluteUri);
+
+                if (_fullscreenWindow != null)
+                {
+                    _fullscreenWindow.RenderPage();
+                }
             }
             catch
             {
-                if (_readerFitMode == ReaderFitMode.VerticalScroll && _currentReaderChapter != null)
+                bool isScrollMode = _readerFitMode == ReaderFitMode.VerticalScroll ||
+                                   _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
+                                   _readerFitMode == ReaderFitMode.HorizontalScrollRTL;
+
+                if (isScrollMode && _currentReaderChapter != null)
                 {
                     var pageUris = new List<string>();
                     foreach (var p in _currentReaderChapter.Pages)
@@ -702,6 +720,11 @@ namespace get_link_manga
                 {
                     string pageUri = new Uri(_currentReaderPage.FilePath).AbsoluteUri;
                     _readerWebView.NavigateToString(BuildReaderHtml(pageUri, _readerFitMode));
+                }
+
+                if (_fullscreenWindow != null)
+                {
+                    _fullscreenWindow.RenderPage();
                 }
             }
         }
@@ -810,6 +833,12 @@ namespace get_link_manga
                     break;
                 case ReaderFitMode.VerticalScroll:
                     index = 3;
+                    break;
+                case ReaderFitMode.HorizontalScrollLTR:
+                    index = 4;
+                    break;
+                case ReaderFitMode.HorizontalScrollRTL:
+                    index = 5;
                     break;
             }
             if (_readerFitCombo.SelectedIndex != index)
@@ -941,6 +970,12 @@ namespace get_link_manga
                 case 3:
                     _readerFitMode = ReaderFitMode.VerticalScroll;
                     break;
+                case 4:
+                    _readerFitMode = ReaderFitMode.HorizontalScrollLTR;
+                    break;
+                case 5:
+                    _readerFitMode = ReaderFitMode.HorizontalScrollRTL;
+                    break;
             }
             RenderReaderPage();
         }
@@ -956,47 +991,20 @@ namespace get_link_manga
 
             if (_isReaderFullscreen)
             {
-                if (_navigationRailBorder != null) _navigationRailBorder.Visibility = Visibility.Collapsed;
-                if (_sectionHeaderBorder != null) _sectionHeaderBorder.Visibility = Visibility.Collapsed;
-                if (floatingDownloadActionsHost != null) floatingDownloadActionsHost.Visibility = Visibility.Collapsed;
-                if (_readerSidebarBorder != null) _readerSidebarBorder.Visibility = Visibility.Collapsed;
-
-                if (gridMainContent != null && gridMainContent.ColumnDefinitions.Count >= 2)
-                {
-                    gridMainContent.ColumnDefinitions[0].Width = new GridLength(0);
-                    gridMainContent.ColumnDefinitions[1].Width = new GridLength(0);
-                }
-
-                if (_readerRootGrid != null && _readerRootGrid.ColumnDefinitions.Count >= 2)
-                {
-                    _readerRootGrid.ColumnDefinitions[0].Width = new GridLength(0);
-                    _readerRootGrid.ColumnDefinitions[1].Width = new GridLength(0);
-                }
-
                 if (_readerFullscreenButton != null)
                 {
                     _readerFullscreenButton.Content = _isVietnameseUi ? "Thoát Full" : "Exit Full";
                 }
+
+                _fullscreenWindow = new ReaderFullscreenWindow(this);
+                _fullscreenWindow.Show();
             }
             else
             {
-                if (_navigationRailBorder != null) _navigationRailBorder.Visibility = Visibility.Visible;
-                if (_sectionHeaderBorder != null) _sectionHeaderBorder.Visibility = Visibility.Visible;
-                if (floatingDownloadActionsHost != null) floatingDownloadActionsHost.Visibility = Visibility.Visible;
-                if (_readerSidebarBorder != null) _readerSidebarBorder.Visibility = Visibility.Visible;
-
-                if (gridMainContent != null && gridMainContent.ColumnDefinitions.Count >= 2)
+                if (_fullscreenWindow != null)
                 {
-                    gridMainContent.ColumnDefinitions[0].Width = new GridLength(250);
-                    gridMainContent.ColumnDefinitions[1].Width = new GridLength(12);
+                    _fullscreenWindow.Close();
                 }
-
-                if (_readerRootGrid != null && _readerRootGrid.ColumnDefinitions.Count >= 2)
-                {
-                    _readerRootGrid.ColumnDefinitions[0].Width = new GridLength(290);
-                    _readerRootGrid.ColumnDefinitions[1].Width = new GridLength(14);
-                }
-
                 if (_readerFullscreenButton != null)
                 {
                     _readerFullscreenButton.Content = "Fullscreen";
@@ -1004,15 +1012,52 @@ namespace get_link_manga
             }
         }
 
+        internal void OnFullscreenClosed()
+        {
+            _fullscreenWindow = null;
+            _isReaderFullscreen = false;
+            if (_readerFullscreenButton != null)
+            {
+                _readerFullscreenButton.Content = "Fullscreen";
+            }
+        }
+
+        internal void HandleFullscreenHotkey(KeyEventArgs e)
+        {
+            HandleReaderHotkeys(e);
+        }
+
         private static string BuildReaderHtmlForChapter(List<string> pageUris, ReaderFitMode fitMode)
         {
             var sb = new StringBuilder();
-            sb.Append("<html><body style=\"margin:0;background:#06090f;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;\">");
-            foreach (var pageUri in pageUris)
+            if (fitMode == ReaderFitMode.HorizontalScrollLTR)
             {
-                sb.Append($"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;width:min(100%, 100vw - 24px);height:auto;margin:0 auto;padding:0;\"/>");
+                sb.Append("<html><body style=\"margin:0;background:#06090f;overflow-y:hidden;overflow-x:auto;display:flex;flex-direction:row;align-items:center;height:100vh;\">");
+                foreach (var pageUri in pageUris)
+                {
+                    sb.Append($"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;height:100vh;width:auto;margin:0;padding:0;\"/>");
+                }
+                sb.Append("</body></html>");
             }
-            sb.Append("</body></html>");
+            else if (fitMode == ReaderFitMode.HorizontalScrollRTL)
+            {
+                sb.Append("<html><body style=\"margin:0;background:#06090f;overflow-y:hidden;overflow-x:auto;display:flex;flex-direction:row-reverse;align-items:center;height:100vh;\">");
+                foreach (var pageUri in pageUris)
+                {
+                    sb.Append($"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;height:100vh;width:auto;margin:0;padding:0;\"/>");
+                }
+                sb.Append("<script>window.onload = function() { window.scrollTo(document.body.scrollWidth, 0); };</script>");
+                sb.Append("</body></html>");
+            }
+            else
+            {
+                sb.Append("<html><body style=\"margin:0;background:#06090f;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;\">");
+                foreach (var pageUri in pageUris)
+                {
+                    sb.Append($"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;width:min(100%, 100vw - 24px);height:auto;margin:0 auto;padding:0;\"/>");
+                }
+                sb.Append("</body></html>");
+            }
             return sb.ToString();
         }
 
@@ -1062,6 +1107,12 @@ namespace get_link_manga
             {
                 case Key.Left:
                 case Key.PageUp:
+                    if (_readerFitMode == ReaderFitMode.VerticalScroll ||
+                        _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
+                        _readerFitMode == ReaderFitMode.HorizontalScrollRTL)
+                    {
+                        return false;
+                    }
                     MoveReaderPage(-1);
                     e.Handled = true;
                     return true;
@@ -1069,6 +1120,12 @@ namespace get_link_manga
                 case Key.Right:
                 case Key.PageDown:
                 case Key.Space:
+                    if (_readerFitMode == ReaderFitMode.VerticalScroll ||
+                        _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
+                        _readerFitMode == ReaderFitMode.HorizontalScrollRTL)
+                    {
+                        return false;
+                    }
                     MoveReaderPage(1);
                     e.Handled = true;
                     return true;
@@ -1127,6 +1184,106 @@ namespace get_link_manga
             {
                 UpdateReaderStatus(BuildReaderStatusText());
             }
+        }
+    }
+
+    internal class ReaderFullscreenWindow : Window
+    {
+        private readonly MainWindow _mainWindow;
+        private readonly WebView2 _webView;
+        private bool _webViewReady;
+
+        public ReaderFullscreenWindow(MainWindow mainWindow)
+        {
+            _mainWindow = mainWindow;
+            Title = "Manga Reader - Fullscreen";
+            Background = new SolidColorBrush(Color.FromRgb(0x06, 0x09, 0x0F));
+            WindowStyle = WindowStyle.None;
+            WindowState = WindowState.Maximized;
+            Topmost = true;
+
+            _webView = new WebView2
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch
+            };
+
+            var grid = new Grid();
+            grid.Children.Add(_webView);
+            Content = grid;
+
+            Loaded += ReaderFullscreenWindow_Loaded;
+            Closed += ReaderFullscreenWindow_Closed;
+            KeyDown += ReaderFullscreenWindow_KeyDown;
+        }
+
+        private async void ReaderFullscreenWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Directory.CreateDirectory(PortablePaths.WebView2UserDataFolder);
+                var env = await CoreWebView2Environment.CreateAsync(
+                    null,
+                    PortablePaths.WebView2UserDataFolder,
+                    new CoreWebView2EnvironmentOptions());
+                await _webView.EnsureCoreWebView2Async(env);
+                if (_webView.CoreWebView2 != null)
+                {
+                    _webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
+                    _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+                    _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+                    _webView.CoreWebView2.Settings.IsZoomControlEnabled = false;
+                }
+
+                _webView.PreviewKeyDown += (s, args) =>
+                {
+                    if (args.Key == Key.Escape)
+                    {
+                        Close();
+                        args.Handled = true;
+                    }
+                    else
+                    {
+                        ReaderFullscreenWindow_KeyDown(this, args);
+                    }
+                };
+
+                _webViewReady = true;
+                RenderPage();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to initialize WebView2 in Fullscreen: " + ex.Message);
+            }
+        }
+
+        public void RenderPage()
+        {
+            if (!_webViewReady) return;
+
+            string tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".tmp");
+            string tempFile = Path.Combine(tempDir, "reader.html");
+            if (File.Exists(tempFile))
+            {
+                _webView.CoreWebView2.Navigate(new Uri(tempFile).AbsoluteUri);
+            }
+        }
+
+        private void ReaderFullscreenWindow_Closed(object sender, EventArgs e)
+        {
+            _mainWindow.OnFullscreenClosed();
+        }
+
+        private void ReaderFullscreenWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                Close();
+                e.Handled = true;
+                return;
+            }
+
+            _mainWindow.HandleFullscreenHotkey(e);
         }
     }
 }

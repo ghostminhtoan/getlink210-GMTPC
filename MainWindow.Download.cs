@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -48,15 +48,13 @@ namespace get_link_manga
             string prefixSource = identityParts != null && identityParts.Length > 0 ? identityParts[0] : "item";
             string prefix = GetSafePathName(prefixSource);
             if (string.IsNullOrWhiteSpace(prefix))
-            {
                 prefix = "item";
-            }
-            if (prefix.Length > 120)
-            {
-                prefix = prefix.Substring(0, 120).Trim();
-            }
-
             return Path.Combine(rootFolder, ".tmp", $"{prefix}-tmp");
+        }
+
+        internal string BuildStableChapterTempFolderPath(string rootFolder, string siteFolder, params string[] identityParts)
+        {
+            return BuildStableTempFolderPath(rootFolder, siteFolder, identityParts);
         }
 
         private string GetTempProgressLogPath(string tempFolder, int completedPages, int totalPages)
@@ -535,48 +533,7 @@ namespace get_link_manga
             }
         }
 
-        private void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new VistaFolderBrowser
-            {
-                Title = "Chọn thư mục lưu truyện (Select Download Folder)"
-            };
 
-            IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-            if (dialog.ShowDialog(hwnd))
-            {
-                txtDownloadPath.Text = dialog.SelectedPath;
-                Log($"Download path updated to: {dialog.SelectedPath}");
-            }
-        }
-
-        private void BtnOpenFolder_Click(object sender, RoutedEventArgs e)
-        {
-            string path = txtDownloadPath.Text.Trim();
-            if (string.IsNullOrEmpty(path))
-            {
-                MessageBox.Show("Vui lòng chọn thư mục lưu trước (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!Directory.Exists(path))
-            {
-                try
-                {
-                    Directory.CreateDirectory(path);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Không thể tạo thư mục: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-            if (!ShellFolderLauncher.TryOpenFolder(path, out string openError))
-            {
-                MessageBox.Show($"Không thể mở thư mục: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         private async void BtnStartDownload_Click(object sender, RoutedEventArgs e)
         {
@@ -728,6 +685,13 @@ namespace get_link_manga
 
                 lblStatus.Text = "Tải xuống hoàn tất! (Downloads completed)";
                 Log("Tải xuống toàn bộ thành công!");
+
+                if (_shutdownAfterCompleted)
+                {
+                    Log("[Shutdown] Tải hoàn tất và tùy chọn tự động tắt máy đang bật. Hệ thống sẽ tắt sau 15 giây.");
+                    System.Diagnostics.Process.Start("shutdown", "-s -t 15");
+                }
+
                 MessageBox.Show("Đã tải xong toàn bộ truyện được chọn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (OperationCanceledException)
@@ -1440,13 +1404,13 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                             {
                                 string testPathTemp = Path.ChangeExtension(localFilePath, checkExt);
                                 string testPathFinal = Path.ChangeExtension(finalFilePath, checkExt);
-                                if (File.Exists(testPathTemp) && new FileInfo(testPathTemp).Length > 1024)
+                                if (File.Exists(testPathTemp) && new FileInfo(testPathTemp).Length > 0)
                                 {
                                     alreadyExists = true;
                                     existingFile = testPathTemp;
                                     break;
                                 }
-                                if (File.Exists(testPathFinal) && new FileInfo(testPathFinal).Length > 1024)
+                                if (File.Exists(testPathFinal) && new FileInfo(testPathFinal).Length > 0)
                                 {
                                     alreadyExists = true;
                                     existingFile = testPathFinal;
@@ -1634,6 +1598,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 return null;
             }
 
+            html = GetSafeChapterHtml(html);
+
             string[] patterns =
             {
                 @"(?:data-src|src)=[""'](?<imgUrl>https?://[a-z0-9-]+\.nhentaimg\.com/[^""']+/" + pageNum + @"\.(?:jpg|png|gif|webp|jpeg|bmp))[""']",
@@ -1686,6 +1652,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             {
                 return null;
             }
+
+            html = GetSafeChapterHtml(html);
 
             html = html.Replace("\\/", "/");
 
@@ -2471,7 +2439,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
         private async Task DownloadUrlToFileWithRefererAsync(string url, string referer, string filePath, CancellationToken token, bool isViHentai = false, bool isTruyenqq = false)
         {
-            if (File.Exists(filePath) && new FileInfo(filePath).Length > 1024)
+            long minSize = (isTruyenqq || (url != null && (url.Contains("nhentai.xxx") || url.Contains("nhentai.net") || url.Contains("nhentaimg.com")))) ? 0 : 1024;
+            if (File.Exists(filePath) && new FileInfo(filePath).Length > minSize)
             {
                 return; // skip duplicate
             }
@@ -2532,10 +2501,10 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             throw new Exception($"Không thể tải ảnh sau {maxAttempts} lần thử: {url}");
         }
 
-        private void ValidateDownloadedFiles(string folderPath, int expectedCount, GalleryItem queueItem, string chapterName = "General", IDictionary<int, string> pageImageUrls = null)
+        private bool ValidateDownloadedFiles(string folderPath, int expectedCount, GalleryItem queueItem, string chapterName = "General", IDictionary<int, string> pageImageUrls = null)
         {
             if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
-                return;
+                return false;
 
             try
             {
@@ -2575,11 +2544,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                             }
                         });
                     }
+                    return false;
                 }
+                return true;
             }
             catch (Exception ex)
             {
                 Log($"[Lỗi] Không thể kiểm tra tính toàn vẹn của thư mục '{folderPath}': {ex.Message}");
+                return false;
             }
         }
 

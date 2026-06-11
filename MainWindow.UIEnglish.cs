@@ -88,6 +88,8 @@ namespace get_link_manga
             new UiTextPair("STEP 2", "BƯỚC 2"),
             new UiTextPair("STEP 3", "BƯỚC 3"),
             new UiTextPair("INTERFACE LANGUAGE", "NGÔN NGỮ GIAO DIỆN"),
+            new UiTextPair("DISPLAY SCALE", "TỶ LỆ HIỂN THỊ"),
+            new UiTextPair("100% = baseline cho 1360x768", "100% = chuẩn cho 1360x768"),
             new UiTextPair("Review queue, tick what you want, then start download.", "Kiểm tra danh sách, tích mục muốn tải, rồi bấm tải."),
             new UiTextPair("Check selected rows", "Tích chọn dòng đang bôi đen"),
             new UiTextPair("Uncheck selected rows", "Bỏ tích dòng đang bôi đen"),
@@ -111,7 +113,7 @@ namespace get_link_manga
             new UiTextPair("Tải các dòng đã tích (Download selected lines)", "Tải các dòng đã tích", "Táº£i cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch (Download selected lines)")
         };
 
-        private bool _isVietnameseUi;
+        internal bool _isVietnameseUi;
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
@@ -181,6 +183,86 @@ namespace get_link_manga
 
             UpdateTruyenqqSpecificActions();
             _bookmarkHistoryWindowInstance?.ApplyLanguage(_isVietnameseUi);
+            RefreshVisibleGalleryLanguage();
+            UpdateFoldButtonUi();
+            UpdateWorkspaceShellLanguage();
+        }
+
+        private void RefreshVisibleGalleryLanguage()
+        {
+            foreach (GalleryItem item in _scrapedItems)
+            {
+                item?.RefreshDisplayText();
+            }
+        }
+
+        private void ApplyResultsGridHeaderLanguage(
+            string galleryDetailsText,
+            string statusText,
+            string processText,
+            string viewText)
+        {
+            SetResultsColumnHeaderText(colGalleryDetails, galleryDetailsText);
+            SetResultsColumnHeaderText(colStatus, statusText);
+            SetResultsColumnHeaderText(colProcess, processText);
+
+            if (colViewLink != null)
+            {
+                colViewLink.Header = viewText;
+            }
+        }
+
+        private void SetResultsColumnHeaderText(System.Windows.Controls.DataGridColumn column, string text)
+        {
+            if (column == null)
+            {
+                return;
+            }
+
+            if (column.Header is TextBlock textBlock)
+            {
+                textBlock.Text = text;
+                return;
+            }
+
+            if (column.Header is DependencyObject dependencyObject)
+            {
+                TextBlock nestedTextBlock = FindHeaderTextBlock(dependencyObject);
+                if (nestedTextBlock != null)
+                {
+                    nestedTextBlock.Text = text;
+                    return;
+                }
+            }
+
+            column.Header = text;
+        }
+
+        private TextBlock FindHeaderTextBlock(DependencyObject root)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root is TextBlock textBlock)
+            {
+                return textBlock;
+            }
+
+            foreach (object child in LogicalTreeHelper.GetChildren(root))
+            {
+                if (child is DependencyObject dependencyChild)
+                {
+                    TextBlock nested = FindHeaderTextBlock(dependencyChild);
+                    if (nested != null)
+                    {
+                        return nested;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private void UpdateTruyenqqSpecificActions()
@@ -219,12 +301,31 @@ namespace get_link_manga
         {
             Title = "Comic-GMTPC v1.0 - English";
 
-            if (txtHeaderTitle != null) txtHeaderTitle.Text = "Comic GMTPC - Download manga step by step";
+            if (txtHeaderTitle != null) txtHeaderTitle.Text = string.Empty;
+            if (txtHeaderSubtitle != null) txtHeaderSubtitle.Text = string.Empty;
+            if (txtHeaderStepPrimary != null) txtHeaderStepPrimary.Text = "STEP 1";
+            if (txtHeaderStepPrimaryTitle != null) txtHeaderStepPrimaryTitle.Text = "CHOOSE SOURCE OR PASTE LINK";
+            if (txtHeaderStepSecondary != null) txtHeaderStepSecondary.Text = "STEP 2";
+            if (txtHeaderStepSecondaryTitle != null) txtHeaderStepSecondaryTitle.Text = "DOWNLOAD";
             if (txtLanguageLabel != null) txtLanguageLabel.Text = "ENG";
             if (txtLanguageTarget != null) txtLanguageTarget.Text = "VI";
             if (txtTotalBooksLabel != null) txtTotalBooksLabel.Text = "Total titles: ";
+            if (txtResultsHeader != null) txtResultsHeader.Text = "EXTRACTED GALLERY LINKS";
+            if (btnShutdownMenu != null) btnShutdownMenu.ToolTip = "Shutdown options";
+            if (txtShutdownPopupHeader != null) txtShutdownPopupHeader.Text = "SHUTDOWN OPTIONS";
+            if (chkShutdownAfterCompleted != null) chkShutdownAfterCompleted.Content = "shutdown after completed";
+            if (txtShutdownCountdownLabel != null) txtShutdownCountdownLabel.Text = "shutdown in day:hour:minute:second";
+            if (txtShutdownDaysLabel != null) txtShutdownDaysLabel.Text = "DAY";
+            if (txtShutdownHoursLabel != null) txtShutdownHoursLabel.Text = "HOUR";
+            if (txtShutdownMinutesLabel != null) txtShutdownMinutesLabel.Text = "MIN";
+            if (txtShutdownSecondsLabel != null) txtShutdownSecondsLabel.Text = "SEC";
+            if (txtShutdownPopupHint != null) txtShutdownPopupHint.Text = "0:1:30:0 = 1 hour 30 minutes. Schedule uses Windows shutdown command.";
+            if (btnScheduleShutdownTimer != null) btnScheduleShutdownTimer.Content = "SCHEDULE";
+            if (btnCancelShutdownTimer != null) btnCancelShutdownTimer.Content = "CANCEL";
+            if (btnCloseShutdownPopup != null) btnCloseShutdownPopup.Content = "CLOSE";
 
             ApplyUiTextMappings(false);
+            ApplyResultsGridHeaderLanguage("GALLERY DETAILS", "STATUS", "PROCESS", "VIEW");
 
             if (btnSaveList != null) btnSaveList.Content = "Save default";
             if (btnLoadList != null) btnLoadList.Content = "Open default";

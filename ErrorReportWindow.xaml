@@ -1,4 +1,4 @@
-﻿<Window x:Class="get_link_manga.ErrorReportWindow"
+<Window x:Class="get_link_manga.ErrorReportWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ERROR REPORT" Height="500" Width="650"
@@ -107,7 +107,7 @@
                     Click="BtnCopyErrors_Click"
                     Style="{StaticResource CyberpunkButtonCyan}" 
                     Height="35" Width="140" FontSize="11"/>
-            <Button Grid.Column="4" Content="CLOSE" 
+            <Button Grid.Column="4" Name="btnClose" Content="CLOSE" 
                     Click="BtnClose_Click"
                     Style="{StaticResource CyberpunkButtonCyan}" 
                     Height="35" Width="80" FontSize="11"/>

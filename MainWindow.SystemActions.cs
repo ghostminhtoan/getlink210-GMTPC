@@ -106,6 +106,110 @@ namespace get_link_manga
             return checkedItems.Any() ? checkedItems : _scrapedItems.ToList();
         }
 
+        private void SaveGalleryItemsMarkdownFile(string path, IList<GalleryItem> items, string title)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("Path is required.", nameof(path));
+            }
+
+            var safeItems = (items ?? Array.Empty<GalleryItem>()).ToList();
+            var states = safeItems.Select((item, index) => CreateGalleryItemState(item, index)).ToList();
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"# {title}");
+            sb.AppendLine();
+            sb.AppendLine("## Summary");
+            sb.AppendLine("| No. | Checked | Name | Link | Chapter | Page | Status | Process | Error Count |");
+            sb.AppendLine("| :--- | :---: | :--- | :--- | :--- | :--- | :--- | :--- | :---: |");
+
+            for (int i = 0; i < safeItems.Count; i++)
+            {
+                var item = safeItems[i];
+                string checkedStr = item.IsChecked ? "[x]" : "[ ]";
+                string status = EscapeMarkdownCell(item.Status);
+                string process = EscapeMarkdownCell(item.CurrentProcess);
+                string safeName = EscapeMarkdownCell(item.Name);
+                string safeLink = EscapeMarkdownCell(item.Link);
+                string chapter = EscapeMarkdownCell(item.DownloadingChapter);
+                string page = EscapeMarkdownCell(item.DownloadingPageProgress);
+                sb.AppendLine($"| {i + 1} | {checkedStr} | {safeName} | {safeLink} | {chapter} | {page} | {status} | {process} | {item.GetUniqueErrorCount()} |");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("## Full State");
+            sb.AppendLine(GalleryStateBeginMarker);
+            sb.AppendLine("```json");
+            sb.AppendLine(SerializeGalleryStates(states));
+            sb.AppendLine("```");
+            sb.AppendLine(GalleryStateEndMarker);
+
+            WriteTextFileAtomically(path, sb.ToString(), new UTF8Encoding(true));
+        }
+
+        private void WriteTextFileAtomically(string path, string content, Encoding encoding)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("Path is required.", nameof(path));
+            }
+
+            string fullPath = Path.GetFullPath(path);
+            string directory = Path.GetDirectoryName(fullPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            string fileName = Path.GetFileName(fullPath);
+            string tempPath = Path.Combine(directory ?? AppDomain.CurrentDomain.BaseDirectory, $".{fileName}.{Guid.NewGuid():N}.tmp");
+            string backupPath = fullPath + ".bak";
+
+            byte[] bytes = (encoding ?? Encoding.UTF8).GetBytes(content ?? string.Empty);
+            using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.WriteThrough))
+            {
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Flush(true);
+            }
+
+            try
+            {
+                if (File.Exists(fullPath))
+                {
+                    File.Replace(tempPath, fullPath, backupPath, true);
+                }
+                else
+                {
+                    File.Move(tempPath, fullPath);
+                }
+            }
+            catch
+            {
+                File.Copy(tempPath, fullPath, true);
+                TryDeleteFileIfExists(tempPath);
+            }
+        }
+
+        private void WriteAllLinesAtomically(string path, IEnumerable<string> lines, Encoding encoding)
+        {
+            string content = string.Join(Environment.NewLine, lines ?? Enumerable.Empty<string>());
+            WriteTextFileAtomically(path, content, encoding ?? Encoding.UTF8);
+        }
+
+        private void TryDeleteFileIfExists(string path)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch
+            {
+            }
+        }
+
         private void BtnCopyLinksOnly_Click(object sender, RoutedEventArgs e)
         {
             var items = GetItemsToExport();
@@ -153,37 +257,7 @@ namespace get_link_manga
 
             try
             {
-                var states = items.Select((item, index) => CreateGalleryItemState(item, index)).ToList();
-
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("# Scraped HentaiForce Galleries");
-                sb.AppendLine();
-                sb.AppendLine("## Summary");
-                sb.AppendLine("| No. | Checked | Name | Link | Chapter | Page | Status | Process | Error Count |");
-                sb.AppendLine("| :--- | :---: | :--- | :--- | :--- | :--- | :--- | :--- | :---: |");
-
-                for (int i = 0; i < items.Count; i++)
-                {
-                    var item = items[i];
-                    string checkedStr = item.IsChecked ? "[x]" : "[ ]";
-                    string status = EscapeMarkdownCell(item.Status);
-                    string process = EscapeMarkdownCell(item.CurrentProcess);
-                    string safeName = EscapeMarkdownCell(item.Name);
-                    string safeLink = EscapeMarkdownCell(item.Link);
-                    string chapter = EscapeMarkdownCell(item.DownloadingChapter);
-                    string page = EscapeMarkdownCell(item.DownloadingPageProgress);
-                    sb.AppendLine($"| {i + 1} | {checkedStr} | {safeName} | {safeLink} | {chapter} | {page} | {status} | {process} | {item.GetUniqueErrorCount()} |");
-                }
-
-                sb.AppendLine();
-                sb.AppendLine("## Full State");
-                sb.AppendLine(GalleryStateBeginMarker);
-                sb.AppendLine("```json");
-                sb.AppendLine(SerializeGalleryStates(states));
-                sb.AppendLine("```");
-                sb.AppendLine(GalleryStateEndMarker);
-
-                File.WriteAllText(PortablePaths.PortableGalleryListPath, sb.ToString(), new UTF8Encoding(true));
+                SaveGalleryItemsMarkdownFile(PortablePaths.PortableGalleryListPath, items, "Scraped Galleries");
 
                 Log($"All content successfully saved to portable Markdown file: {PortablePaths.PortableGalleryListPath}");
                 lblStatus.Text = "Saved portable MD file.";
@@ -560,6 +634,101 @@ namespace get_link_manga
                 .Replace("|", "\\|")
                 .Replace("\r", " ")
                 .Replace("\n", "<br>");
+        }
+
+        private bool _shutdownAfterCompleted = false;
+
+        private void BtnShutdownMenu_Click(object sender, RoutedEventArgs e)
+        {
+            if (popupShutdownOptions != null)
+            {
+                popupShutdownOptions.IsOpen = !popupShutdownOptions.IsOpen;
+            }
+        }
+
+        private void ChkShutdownAfterCompleted_Checked(object sender, RoutedEventArgs e)
+        {
+            _shutdownAfterCompleted = true;
+            if (tglShutdownAfterDownload != null)
+            {
+                tglShutdownAfterDownload.IsChecked = true;
+            }
+        }
+
+        private void ChkShutdownAfterCompleted_Unchecked(object sender, RoutedEventArgs e)
+        {
+            _shutdownAfterCompleted = false;
+            if (tglShutdownAfterDownload != null)
+            {
+                tglShutdownAfterDownload.IsChecked = false;
+            }
+        }
+
+        private void TglShutdownAfterDownload_Checked(object sender, RoutedEventArgs e)
+        {
+            _shutdownAfterCompleted = true;
+            if (chkShutdownAfterCompleted != null)
+            {
+                chkShutdownAfterCompleted.IsChecked = true;
+            }
+        }
+
+        private void TglShutdownAfterDownload_Unchecked(object sender, RoutedEventArgs e)
+        {
+            _shutdownAfterCompleted = false;
+            if (chkShutdownAfterCompleted != null)
+            {
+                chkShutdownAfterCompleted.IsChecked = false;
+            }
+        }
+
+        private void BtnCloseShutdownPopup_Click(object sender, RoutedEventArgs e)
+        {
+            if (popupShutdownOptions != null)
+            {
+                popupShutdownOptions.IsOpen = false;
+            }
+        }
+
+        private void BtnScheduleShutdownTimer_Click(object sender, RoutedEventArgs e)
+        {
+            int days = 0, hours = 0, minutes = 0, seconds = 0;
+            int.TryParse(txtShutdownDays?.Text, out days);
+            int.TryParse(txtShutdownHours?.Text, out hours);
+            int.TryParse(txtShutdownMinutes?.Text, out minutes);
+            int.TryParse(txtShutdownSeconds?.Text, out seconds);
+
+            int totalSeconds = seconds + minutes * 60 + hours * 3600 + days * 86400;
+            if (totalSeconds <= 0)
+            {
+                MessageBox.Show(_isVietnameseUi ? "Vui lòng nhập thời gian lớn hơn 0." : "Please enter a time greater than 0.", "Info", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                System.Diagnostics.Process.Start("shutdown", $"-s -t {totalSeconds}");
+                MessageBox.Show(_isVietnameseUi ? $"Đã hẹn giờ tắt máy sau {totalSeconds} giây." : $"Scheduled shutdown in {totalSeconds} seconds.", "Scheduled", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (popupShutdownOptions != null) popupShutdownOptions.IsOpen = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error scheduling shutdown: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BtnCancelShutdownTimer_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start("shutdown", "-a");
+                MessageBox.Show(_isVietnameseUi ? "Đã hủy lệnh tắt máy." : "Cancelled scheduled shutdown.", "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (popupShutdownOptions != null) popupShutdownOptions.IsOpen = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error cancelling shutdown: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

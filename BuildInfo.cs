@@ -1,7 +1,7 @@
-namespace get_link_manga
+﻿namespace get_link_manga
 {
-    public static class BuildInfo
-    {
-        public const string DisplayText = "2026-06-07 ∕ 09.10.34 PM Sunday";
-    }
+public static class BuildInfo
+{
+public const string DisplayText = "2026-06-11 ∕ 05.53.51 PM";
+}
 }

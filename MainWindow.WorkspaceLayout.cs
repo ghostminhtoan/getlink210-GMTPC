@@ -280,13 +280,13 @@ namespace get_link_manga
             if (floatingDownloadActionsHost != null)
             {
                 RemoveFromParent(floatingDownloadActionsHost);
-                Grid.SetColumn(floatingDownloadActionsHost, 2);
-                Grid.SetRow(floatingDownloadActionsHost, 0);
+                Grid.SetColumn(floatingDownloadActionsHost, 0);
+                Grid.SetRow(floatingDownloadActionsHost, 1);
                 Panel.SetZIndex(floatingDownloadActionsHost, 99);
-                floatingDownloadActionsHost.VerticalAlignment = VerticalAlignment.Center;
+                floatingDownloadActionsHost.VerticalAlignment = VerticalAlignment.Bottom;
                 floatingDownloadActionsHost.HorizontalAlignment = HorizontalAlignment.Right;
-                floatingDownloadActionsHost.Margin = new Thickness(0, 0, 18, 0);
-                gridMainContent.Children.Add(floatingDownloadActionsHost);
+                floatingDownloadActionsHost.Margin = new Thickness(0, 0, 18, 12);
+                _shellRootGrid.Children.Add(floatingDownloadActionsHost);
             }
         }
 
@@ -385,16 +385,18 @@ namespace get_link_manga
 
             if (languageCard != null)
             {
-                languageCard.Width = 110;
+                languageCard.Width = double.NaN;
                 languageCard.MinWidth = 0;
-                languageCard.HorizontalAlignment = HorizontalAlignment.Center;
+                languageCard.MaxWidth = double.PositiveInfinity;
+                languageCard.HorizontalAlignment = HorizontalAlignment.Left;
             }
 
             if (scaleCard != null)
             {
-                scaleCard.Width = 110;
+                scaleCard.Width = double.NaN;
                 scaleCard.MinWidth = 0;
-                scaleCard.HorizontalAlignment = HorizontalAlignment.Center;
+                scaleCard.MaxWidth = double.PositiveInfinity;
+                scaleCard.HorizontalAlignment = HorizontalAlignment.Left;
             }
 
             if (headerActionsPanel != null)

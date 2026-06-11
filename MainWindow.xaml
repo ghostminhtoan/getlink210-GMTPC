@@ -654,7 +654,7 @@
                                 <RowDefinition Height="10"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <Border Grid.Row="0" Name="languageCard" Style="{StaticResource MetricCard}" Padding="8,6" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Width="117">
+                            <Border Grid.Row="0" Name="languageCard" Style="{StaticResource MetricCard}" Padding="8,6" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" HorizontalAlignment="Left">
                                 <StackPanel>
                                     <TextBlock Text="INTERFACE LANGUAGE" TextWrapping="Wrap" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="9" FontWeight="Bold"/>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,0">
@@ -689,7 +689,7 @@
                                     Padding="8,8"
                                     BorderBrush="{StaticResource CyberpunkBorderBrush}"
                                     BorderThickness="1"
-                                    Width="120">
+                                    HorizontalAlignment="Left">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
