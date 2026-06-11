@@ -37,6 +37,8 @@ namespace get_link_manga
         private TextBlock _updateContentText;
         private AppSection _currentSection = AppSection.ChooseSource;
         private bool _workspaceShellInitialized;
+        private Border _sectionHeaderBorder;
+        private Border _navigationRailBorder;
 
         private void InitializeWorkspaceShell()
         {
@@ -226,7 +228,7 @@ namespace get_link_manga
             _shellRootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             _shellRootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-            var sectionHeader = new Border
+            _sectionHeaderBorder = new Border
             {
                 Background = (Brush)TryFindResource("CyberpunkCardBrush") ?? new SolidColorBrush(Color.FromRgb(0x0D, 0x12, 0x1F)),
                 BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
@@ -252,7 +254,7 @@ namespace get_link_manga
             };
             sectionHeaderStack.Children.Add(_sectionTitleText);
             sectionHeaderStack.Children.Add(_sectionHintText);
-            sectionHeader.Child = sectionHeaderStack;
+            _sectionHeaderBorder.Child = sectionHeaderStack;
 
             _sectionContentBorder = new Border
             {
@@ -263,9 +265,9 @@ namespace get_link_manga
             _sectionContentHost = new ContentControl();
             _sectionContentBorder.Child = _sectionContentHost;
 
-            Grid.SetRow(sectionHeader, 0);
+            Grid.SetRow(_sectionHeaderBorder, 0);
             Grid.SetRow(_sectionContentBorder, 1);
-            _shellRootGrid.Children.Add(sectionHeader);
+            _shellRootGrid.Children.Add(_sectionHeaderBorder);
             _shellRootGrid.Children.Add(_sectionContentBorder);
 
             Grid.SetColumn(_shellRootGrid, 2);
@@ -279,16 +281,18 @@ namespace get_link_manga
             {
                 RemoveFromParent(floatingDownloadActionsHost);
                 Grid.SetColumn(floatingDownloadActionsHost, 2);
-                Grid.SetRow(floatingDownloadActionsHost, 1);
+                Grid.SetRow(floatingDownloadActionsHost, 0);
                 Panel.SetZIndex(floatingDownloadActionsHost, 99);
-                floatingDownloadActionsHost.Margin = new Thickness(0, 0, 18, 18);
+                floatingDownloadActionsHost.VerticalAlignment = VerticalAlignment.Center;
+                floatingDownloadActionsHost.HorizontalAlignment = HorizontalAlignment.Right;
+                floatingDownloadActionsHost.Margin = new Thickness(0, 0, 18, 0);
                 gridMainContent.Children.Add(floatingDownloadActionsHost);
             }
         }
 
         private void BuildNavigationRail()
         {
-            var navBorder = new Border
+            _navigationRailBorder = new Border
             {
                 Background = new SolidColorBrush(Color.FromRgb(0x06, 0x09, 0x0F)),
                 BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
@@ -299,7 +303,7 @@ namespace get_link_manga
             };
 
             var navStack = new StackPanel();
-            navBorder.Child = new ScrollViewer
+            _navigationRailBorder.Child = new ScrollViewer
             {
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
@@ -331,10 +335,10 @@ namespace get_link_manga
 
             BuildSidebarToolSections();
 
-            Grid.SetColumn(navBorder, 0);
-            Grid.SetRow(navBorder, 0);
-            Grid.SetRowSpan(navBorder, 2);
-            gridMainContent.Children.Add(navBorder);
+            Grid.SetColumn(_navigationRailBorder, 0);
+            Grid.SetRow(_navigationRailBorder, 0);
+            Grid.SetRowSpan(_navigationRailBorder, 2);
+            gridMainContent.Children.Add(_navigationRailBorder);
         }
 
         private void AddNavigationButton(AppSection section, string text)
@@ -514,6 +518,10 @@ namespace get_link_manga
 
         private void SelectAppSection(AppSection section)
         {
+            if (section != AppSection.Watch && _isReaderFullscreen)
+            {
+                ToggleReaderFullscreen();
+            }
             _currentSection = section;
             UpdateNavigationSelection();
             UpdateSectionHeader();

@@ -20,7 +20,8 @@ namespace get_link_manga
         {
             FitWidth,
             FitHeight,
-            ActualSize
+            ActualSize,
+            VerticalScroll
         }
 
         private sealed class ReaderSortKeyComparer : IComparer<string>
@@ -101,19 +102,21 @@ namespace get_link_manga
         private Button _readerPrevPageButton;
         private Button _readerNextPageButton;
         private Button _readerNextChapterButton;
-        private Button _readerFitWidthButton;
-        private Button _readerFitHeightButton;
-        private Button _readerActualSizeButton;
+        private ComboBox _readerFitCombo;
+        private Button _readerFullscreenButton;
+        private Border _readerSidebarBorder;
+        private Grid _readerRootGrid;
+        private bool _isReaderFullscreen = false;
         private Button _readerHistoryOpenButton;
 
         private FrameworkElement CreateWatchSection()
         {
-            var root = new Grid();
-            root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(290) });
-            root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
-            root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            _readerRootGrid = new Grid();
+            _readerRootGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(290) });
+            _readerRootGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
+            _readerRootGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var sidebar = new Border
+            _readerSidebarBorder = new Border
             {
                 Background = (Brush)TryFindResource("CyberpunkCardBrush") ?? new SolidColorBrush(Color.FromRgb(0x0D, 0x12, 0x1F)),
                 BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
@@ -128,7 +131,7 @@ namespace get_link_manga
             sidebarGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             sidebarGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             sidebarGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            sidebar.Child = sidebarGrid;
+            _readerSidebarBorder.Child = sidebarGrid;
 
             var watchToolbar = new WrapPanel();
             watchToolbar.Children.Add(CreateReaderMiniButton("Refresh library", (sender, args) => RefreshReaderLibraryIfNeeded(forceRefresh: true)));
@@ -191,23 +194,24 @@ namespace get_link_manga
             viewerCard.Child = viewerGrid;
 
             var topToolbar = new Grid();
-            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // << Chap
+            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // < Page
+            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Page selector
+            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Fit mode combo
+            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Page >
+            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Chap >>
+            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Fullscreen
+            topToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Title text
 
-            _readerPrevChapterButton = CreateReaderMiniButton("<< Chap", ReaderPrevChapter_Click);
-            _readerPrevPageButton = CreateReaderMiniButton("< Page", ReaderPrevPage_Click);
+            _readerPrevChapterButton = CreateReaderMiniButton("<< Chap", ReaderPrevChapter_Click, 54);
+            _readerPrevPageButton = CreateReaderMiniButton("< Page", ReaderPrevPage_Click, 54);
             _readerPageCombo = new ComboBox
             {
                 Style = TryFindResource("CyberpunkComboBox") as Style,
                 ItemContainerStyle = TryFindResource("CyberpunkComboBoxItemStyle") as Style,
-                Width = 180,
-                Height = 28,
-                Margin = new Thickness(8, 0, 8, 0),
+                Width = 110,
+                Height = 22,
+                Margin = new Thickness(0, 0, 6, 4),
                 VerticalContentAlignment = VerticalAlignment.Center,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 DisplayMemberPath = "DisplayLabel"
@@ -217,38 +221,50 @@ namespace get_link_manga
             _readerCurrentTitleText = new TextBlock
             {
                 Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                FontSize = 12,
+                FontSize = 11,
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(12, 0, 12, 0)
+                Margin = new Thickness(8, 0, 8, 4)
             };
 
-            var fitButtons = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left };
-            _readerFitWidthButton = CreateReaderMiniButton("Fit width", ReaderFitWidth_Click);
-            _readerFitHeightButton = CreateReaderMiniButton("Fit height", ReaderFitHeight_Click);
-            _readerActualSizeButton = CreateReaderMiniButton("Actual", ReaderActualSize_Click);
-            fitButtons.Children.Add(_readerFitWidthButton);
-            fitButtons.Children.Add(_readerFitHeightButton);
-            fitButtons.Children.Add(_readerActualSizeButton);
+            _readerFitCombo = new ComboBox
+            {
+                Style = TryFindResource("CyberpunkComboBox") as Style,
+                ItemContainerStyle = TryFindResource("CyberpunkComboBoxItemStyle") as Style,
+                Width = 92,
+                Height = 22,
+                Margin = new Thickness(0, 0, 6, 4),
+                VerticalContentAlignment = VerticalAlignment.Center,
+                HorizontalContentAlignment = HorizontalAlignment.Left
+            };
+            _readerFitCombo.Items.Add("Fit width");
+            _readerFitCombo.Items.Add("Fit height");
+            _readerFitCombo.Items.Add("Actual");
+            _readerFitCombo.Items.Add("Cuộn dọc");
+            _readerFitCombo.SelectedIndex = 0;
+            _readerFitCombo.SelectionChanged += ReaderFitCombo_SelectionChanged;
 
-            _readerNextPageButton = CreateReaderMiniButton("Page >", ReaderNextPage_Click);
-            _readerNextChapterButton = CreateReaderMiniButton("Chap >>", ReaderNextChapter_Click);
+            _readerNextPageButton = CreateReaderMiniButton("Page >", ReaderNextPage_Click, 54);
+            _readerNextChapterButton = CreateReaderMiniButton("Chap >>", ReaderNextChapter_Click, 54);
+            _readerFullscreenButton = CreateReaderMiniButton("Fullscreen", ReaderFullscreen_Click, 72);
 
             Grid.SetColumn(_readerPrevChapterButton, 0);
             Grid.SetColumn(_readerPrevPageButton, 1);
             Grid.SetColumn(_readerPageCombo, 2);
-            Grid.SetColumn(fitButtons, 3);
+            Grid.SetColumn(_readerFitCombo, 3);
             Grid.SetColumn(_readerNextPageButton, 4);
             Grid.SetColumn(_readerNextChapterButton, 5);
-            Grid.SetColumn(_readerCurrentTitleText, 6);
+            Grid.SetColumn(_readerFullscreenButton, 6);
+            Grid.SetColumn(_readerCurrentTitleText, 7);
 
             topToolbar.Children.Add(_readerPrevChapterButton);
             topToolbar.Children.Add(_readerPrevPageButton);
             topToolbar.Children.Add(_readerPageCombo);
-            topToolbar.Children.Add(fitButtons);
+            topToolbar.Children.Add(_readerFitCombo);
             topToolbar.Children.Add(_readerNextPageButton);
             topToolbar.Children.Add(_readerNextChapterButton);
+            topToolbar.Children.Add(_readerFullscreenButton);
             topToolbar.Children.Add(_readerCurrentTitleText);
 
             _readerWebView = new WebView2
@@ -272,27 +288,27 @@ namespace get_link_manga
             viewerGrid.Children.Add(_readerWebView);
             viewerGrid.Children.Add(_readerStatusText);
 
-            Grid.SetColumn(sidebar, 0);
+            Grid.SetColumn(_readerSidebarBorder, 0);
             Grid.SetColumn(viewerCard, 2);
-            root.Children.Add(sidebar);
-            root.Children.Add(viewerCard);
+            _readerRootGrid.Children.Add(_readerSidebarBorder);
+            _readerRootGrid.Children.Add(viewerCard);
 
             UpdateReaderStatus(_isVietnameseUi
                 ? "Bấm Refresh library để quét thư mục tải và bắt đầu đọc."
                 : "Use Refresh library to scan the download root and start reading.");
             UpdateReaderNavigationState();
 
-            return root;
+            return _readerRootGrid;
         }
 
-        private Button CreateReaderMiniButton(string text, RoutedEventHandler clickHandler)
+        private Button CreateReaderMiniButton(string text, RoutedEventHandler clickHandler, double minWidth = 54)
         {
             var button = new Button
             {
                 Content = text,
                 Style = TryFindResource("CompactCyanButton") as Style,
-                Margin = new Thickness(0, 0, 8, 8),
-                MinWidth = 86
+                Margin = new Thickness(0, 0, 6, 4),
+                MinWidth = minWidth
             };
 
             button.Click += clickHandler;
@@ -643,7 +659,6 @@ namespace get_link_manga
                 return;
             }
 
-            string pageUri = new Uri(_currentReaderPage.FilePath).AbsoluteUri;
             try
             {
                 string tempDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".tmp");
@@ -652,13 +667,42 @@ namespace get_link_manga
                     System.IO.Directory.CreateDirectory(tempDir);
                 }
                 string tempFile = System.IO.Path.Combine(tempDir, "reader.html");
-                string html = BuildReaderHtml(pageUri, _readerFitMode);
+                
+                string html;
+                if (_readerFitMode == ReaderFitMode.VerticalScroll && _currentReaderChapter != null)
+                {
+                    var pageUris = new List<string>();
+                    foreach (var p in _currentReaderChapter.Pages)
+                    {
+                        pageUris.Add(new Uri(p.FilePath).AbsoluteUri);
+                    }
+                    html = BuildReaderHtmlForChapter(pageUris, _readerFitMode);
+                }
+                else
+                {
+                    string pageUri = new Uri(_currentReaderPage.FilePath).AbsoluteUri;
+                    html = BuildReaderHtml(pageUri, _readerFitMode);
+                }
+
                 System.IO.File.WriteAllText(tempFile, html, System.Text.Encoding.UTF8);
                 _readerWebView.CoreWebView2.Navigate(new Uri(tempFile).AbsoluteUri);
             }
             catch
             {
-                _readerWebView.NavigateToString(BuildReaderHtml(pageUri, _readerFitMode));
+                if (_readerFitMode == ReaderFitMode.VerticalScroll && _currentReaderChapter != null)
+                {
+                    var pageUris = new List<string>();
+                    foreach (var p in _currentReaderChapter.Pages)
+                    {
+                        pageUris.Add(new Uri(p.FilePath).AbsoluteUri);
+                    }
+                    _readerWebView.NavigateToString(BuildReaderHtmlForChapter(pageUris, _readerFitMode));
+                }
+                else
+                {
+                    string pageUri = new Uri(_currentReaderPage.FilePath).AbsoluteUri;
+                    _readerWebView.NavigateToString(BuildReaderHtml(pageUri, _readerFitMode));
+                }
             }
         }
 
@@ -748,29 +792,30 @@ namespace get_link_manga
 
         private void UpdateReaderFitButtons()
         {
-            if (_readerFitWidthButton == null)
+            if (_readerFitCombo == null)
             {
                 return;
             }
-
-            ApplyReaderFitButtonState(_readerFitWidthButton, _readerFitMode == ReaderFitMode.FitWidth);
-            ApplyReaderFitButtonState(_readerFitHeightButton, _readerFitMode == ReaderFitMode.FitHeight);
-            ApplyReaderFitButtonState(_readerActualSizeButton, _readerFitMode == ReaderFitMode.ActualSize);
-        }
-
-        private void ApplyReaderFitButtonState(Button button, bool isActive)
-        {
-            if (button == null)
+            int index = 0;
+            switch (_readerFitMode)
             {
-                return;
+                case ReaderFitMode.FitWidth:
+                    index = 0;
+                    break;
+                case ReaderFitMode.FitHeight:
+                    index = 1;
+                    break;
+                case ReaderFitMode.ActualSize:
+                    index = 2;
+                    break;
+                case ReaderFitMode.VerticalScroll:
+                    index = 3;
+                    break;
             }
-
-            button.Background = isActive
-                ? new SolidColorBrush(Color.FromRgb(0x12, 0x22, 0x38))
-                : new SolidColorBrush(Color.FromRgb(0x12, 0x25, 0x38));
-            button.BorderBrush = isActive
-                ? (Brush)TryFindResource("CyberpunkYellowBrush")
-                : (Brush)TryFindResource("CyberpunkBorderBrush");
+            if (_readerFitCombo.SelectedIndex != index)
+            {
+                _readerFitCombo.SelectedIndex = index;
+            }
         }
 
         private ReaderPageItem GetAdjacentPage(int direction)
@@ -879,6 +924,98 @@ namespace get_link_manga
             RenderReaderPage();
         }
 
+        private void ReaderFitCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_readerFitCombo == null) return;
+            switch (_readerFitCombo.SelectedIndex)
+            {
+                case 0:
+                    _readerFitMode = ReaderFitMode.FitWidth;
+                    break;
+                case 1:
+                    _readerFitMode = ReaderFitMode.FitHeight;
+                    break;
+                case 2:
+                    _readerFitMode = ReaderFitMode.ActualSize;
+                    break;
+                case 3:
+                    _readerFitMode = ReaderFitMode.VerticalScroll;
+                    break;
+            }
+            RenderReaderPage();
+        }
+
+        private void ReaderFullscreen_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderFullscreen();
+        }
+
+        public void ToggleReaderFullscreen()
+        {
+            _isReaderFullscreen = !_isReaderFullscreen;
+
+            if (_isReaderFullscreen)
+            {
+                if (_navigationRailBorder != null) _navigationRailBorder.Visibility = Visibility.Collapsed;
+                if (_sectionHeaderBorder != null) _sectionHeaderBorder.Visibility = Visibility.Collapsed;
+                if (floatingDownloadActionsHost != null) floatingDownloadActionsHost.Visibility = Visibility.Collapsed;
+                if (_readerSidebarBorder != null) _readerSidebarBorder.Visibility = Visibility.Collapsed;
+
+                if (gridMainContent != null && gridMainContent.ColumnDefinitions.Count >= 2)
+                {
+                    gridMainContent.ColumnDefinitions[0].Width = new GridLength(0);
+                    gridMainContent.ColumnDefinitions[1].Width = new GridLength(0);
+                }
+
+                if (_readerRootGrid != null && _readerRootGrid.ColumnDefinitions.Count >= 2)
+                {
+                    _readerRootGrid.ColumnDefinitions[0].Width = new GridLength(0);
+                    _readerRootGrid.ColumnDefinitions[1].Width = new GridLength(0);
+                }
+
+                if (_readerFullscreenButton != null)
+                {
+                    _readerFullscreenButton.Content = _isVietnameseUi ? "Thoát Full" : "Exit Full";
+                }
+            }
+            else
+            {
+                if (_navigationRailBorder != null) _navigationRailBorder.Visibility = Visibility.Visible;
+                if (_sectionHeaderBorder != null) _sectionHeaderBorder.Visibility = Visibility.Visible;
+                if (floatingDownloadActionsHost != null) floatingDownloadActionsHost.Visibility = Visibility.Visible;
+                if (_readerSidebarBorder != null) _readerSidebarBorder.Visibility = Visibility.Visible;
+
+                if (gridMainContent != null && gridMainContent.ColumnDefinitions.Count >= 2)
+                {
+                    gridMainContent.ColumnDefinitions[0].Width = new GridLength(250);
+                    gridMainContent.ColumnDefinitions[1].Width = new GridLength(12);
+                }
+
+                if (_readerRootGrid != null && _readerRootGrid.ColumnDefinitions.Count >= 2)
+                {
+                    _readerRootGrid.ColumnDefinitions[0].Width = new GridLength(290);
+                    _readerRootGrid.ColumnDefinitions[1].Width = new GridLength(14);
+                }
+
+                if (_readerFullscreenButton != null)
+                {
+                    _readerFullscreenButton.Content = "Fullscreen";
+                }
+            }
+        }
+
+        private static string BuildReaderHtmlForChapter(List<string> pageUris, ReaderFitMode fitMode)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<html><body style=\"margin:0;background:#06090f;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;\">");
+            foreach (var pageUri in pageUris)
+            {
+                sb.Append($"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;width:min(100%, 100vw - 24px);height:auto;margin:0 auto;padding:0;\"/>");
+            }
+            sb.Append("</body></html>");
+            return sb.ToString();
+        }
+
         private void OpenLatestHistoryInReader(object sender, RoutedEventArgs e)
         {
             var latest = _bookmarkManager
@@ -970,6 +1107,13 @@ namespace get_link_manga
             if (_readerHistoryOpenButton != null)
             {
                 _readerHistoryOpenButton.Content = _isVietnameseUi ? "Mở history mới nhất" : "Open latest history";
+            }
+
+            if (_readerFullscreenButton != null)
+            {
+                _readerFullscreenButton.Content = _isReaderFullscreen 
+                    ? (_isVietnameseUi ? "Thoát Full" : "Exit Full")
+                    : "Fullscreen";
             }
 
             UpdateReaderFitButtons();

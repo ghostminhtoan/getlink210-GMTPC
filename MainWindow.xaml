@@ -2447,26 +2447,11 @@
                                     <RowDefinition Height="Auto"/> <!-- Connections and Start Download -->
                                 </Grid.RowDefinitions>
 
-                            <Border Name="borderQuickActionsPanel"
-                                    Grid.Row="0"
-                                    Style="{StaticResource WorkspaceSectionCard}"
-                                    Padding="12"
-                                    Margin="0">
-                                <StackPanel>
-                                    <TextBlock Text="QUICK ACTIONS FOR CURRENT LIST"
-                                               Foreground="{StaticResource CyberpunkCyanBrush}"
-                                               FontSize="11"
-                                               FontWeight="Bold"
-                                               Margin="0,0,0,10"/>
-                                    <TextBlock Text="Sau khi lấy danh sách, bạn có thể copy nhanh hoặc dọn hàng chờ ở đây."
-                                               Style="{StaticResource PanelSectionHint}"/>
-                                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                                        <Button Name="btnCopyLinksOnly" Content="COPY LINKS" Click="BtnCopyLinksOnly_Click" Style="{StaticResource CompactCyanButton}" MinWidth="112" Width="Auto" Padding="12,3" FontWeight="Bold"/>
-                                        <Button Name="btnCopyNamesAndLinks" Content="COPY NAME+LINK" Click="BtnCopyNamesAndLinks_Click" Style="{StaticResource CompactPinkButton}" MinWidth="148" Width="Auto" Padding="12,3" FontWeight="Bold"/>
-                                        <Button Name="btnClearResults" Content="CLEAR" Click="BtnClear_Click" Style="{StaticResource CompactCyanButton}" MinWidth="92" Width="Auto" Padding="12,3" FontWeight="Bold"/>
-                                    </WrapPanel>
-                                </StackPanel>
-                            </Border>
+                            <WrapPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,6">
+                                <Button Name="btnCopyLinksOnly" Content="COPY LINKS" Click="BtnCopyLinksOnly_Click" Style="{StaticResource CompactCyanButton}" MinWidth="92" Width="Auto" Padding="10,2" FontWeight="Bold"/>
+                                <Button Name="btnCopyNamesAndLinks" Content="COPY NAME+LINK" Click="BtnCopyNamesAndLinks_Click" Style="{StaticResource CompactPinkButton}" MinWidth="128" Width="Auto" Padding="10,2" FontWeight="Bold"/>
+                                <Button Name="btnClearResults" Content="CLEAR" Click="BtnClear_Click" Style="{StaticResource CompactCyanButton}" MinWidth="82" Width="Auto" Padding="10,2" FontWeight="Bold"/>
+                            </WrapPanel>
 
                             <TextBlock Grid.Row="2"
                                        Text="DOWNLOAD SETTINGS"
