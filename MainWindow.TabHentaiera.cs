@@ -72,7 +72,7 @@ namespace get_link_manga
                 string html = null;
                 try
                 {
-                    html = await _httpClient.GetStringAsync(url);
+                    html = await FetchStringAsync(url, _downloadCts?.Token ?? CancellationToken.None);
                     if (html.Contains("Just a moment...") || html.Contains("cloudflare-challenge") || html.Contains("cf-challenge"))
                     {
                         throw new HttpRequestException("Cloudflare challenge detected");
@@ -88,7 +88,7 @@ namespace get_link_manga
                         progressBar.IsIndeterminate = false;
                         return;
                     }
-                    html = await _httpClient.GetStringAsync(url);
+                    html = await FetchStringAsync(url, _downloadCts?.Token ?? CancellationToken.None);
                 }
                 
                 int maxPage = 1;
@@ -233,7 +233,7 @@ namespace get_link_manga
                     string html = null;
                     try
                     {
-                        html = await _httpClient.GetStringAsync(pageUrl);
+                        html = await FetchStringAsync(pageUrl, _downloadCts?.Token ?? CancellationToken.None);
                         if (html.Contains("Just a moment...") || html.Contains("cloudflare-challenge") || html.Contains("cf-challenge"))
                         {
                             throw new HttpRequestException("Cloudflare challenge detected");
@@ -246,7 +246,7 @@ namespace get_link_manga
                         {
                             throw new Exception("Bị chặn bởi Cloudflare Captcha trên hentaiera.com.");
                         }
-                        html = await _httpClient.GetStringAsync(pageUrl);
+                        html = await FetchStringAsync(pageUrl, _downloadCts?.Token ?? CancellationToken.None);
                     }
                     
                     // Match items with class gallery_title or caption containing the gallery link and title
@@ -395,7 +395,7 @@ namespace get_link_manga
                         string html = null;
                         try
                         {
-                            html = await _httpClient.GetStringAsync(link);
+                            html = await FetchStringAsync(link, _downloadCts?.Token ?? CancellationToken.None);
                             if (html.Contains("Just a moment...") || html.Contains("cloudflare-challenge") || html.Contains("cf-challenge"))
                             {
                                 throw new HttpRequestException("Cloudflare challenge detected");
@@ -408,7 +408,7 @@ namespace get_link_manga
                             {
                                 throw new Exception("Bị chặn bởi Cloudflare Captcha.");
                             }
-                            html = await _httpClient.GetStringAsync(link);
+                            html = await FetchStringAsync(link, _downloadCts?.Token ?? CancellationToken.None);
                         }
                         var titleMatch = Regex.Match(html, @"<title[^>]*>\s*(.*?)\s*</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
                         string title = "Gallery ID " + GetHentaieraGalleryIdFromLink(link);

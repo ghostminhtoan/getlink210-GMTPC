@@ -157,7 +157,7 @@ namespace get_link_manga
                 string normalizedUrl = NormalizeDaomeodenUrl(rawUrl);
                 txtDaomeodenTagUrl.Text = normalizedUrl;
 
-                string html = await _httpClient.GetStringAsync(normalizedUrl);
+                string html = await FetchStringAsync(normalizedUrl, _downloadCts?.Token ?? CancellationToken.None);
                 int estimatedPages = 1;
                 if (Regex.IsMatch(html, @"bookGenreLoad\s*\(", RegexOptions.IgnoreCase))
                 {
@@ -266,7 +266,7 @@ namespace get_link_manga
                 {
                     token.ThrowIfCancellationRequested();
                     string pageUrl = GetDaomeodenPageUrl(baseUrl, page);
-                    string html = await _httpClient.GetStringAsync(pageUrl);
+                    string html = await FetchStringAsync(pageUrl, _downloadCts?.Token ?? CancellationToken.None);
 
                     foreach (var item in ParseDaomeodenGalleryItemsFromHtml(html, pageUrl))
                     {
@@ -396,7 +396,7 @@ namespace get_link_manga
                             string link = NormalizeDaomeodenUrl(rawLink);
                             if (Regex.IsMatch(link, @"/the-loai/", RegexOptions.IgnoreCase))
                             {
-                                string html = await _httpClient.GetStringAsync(link);
+                                string html = await FetchStringAsync(link, _downloadCts?.Token ?? CancellationToken.None);
                                 foreach (var item in ParseDaomeodenGalleryItemsFromHtml(html, link))
                                 {
                                     if (_scrapedItems.Any(existing => existing.Link.Equals(item.Link, StringComparison.OrdinalIgnoreCase)))
@@ -475,7 +475,7 @@ namespace get_link_manga
 
         private async Task<GalleryItem> BuildDaomeodenGalleryItemAsync(string link)
         {
-            string html = await _httpClient.GetStringAsync(link);
+            string html = await FetchStringAsync(link, _downloadCts?.Token ?? CancellationToken.None);
             string title = Path.GetFileNameWithoutExtension(link);
             string latest = string.Empty;
 
@@ -582,7 +582,7 @@ namespace get_link_manga
 
         private async Task DownloadDaomeodenBookAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, ChapterFilter chapterFilter)
         {
-            string html = await _httpClient.GetStringAsync(item.Link);
+            string html = await FetchStringAsync(item.Link, _downloadCts?.Token ?? CancellationToken.None);
             item.Name = FormatGalleryTitle(ExtractDaomeodenBookTitleFromHtml(html, item.Link));
 
             var chapterMatches = Regex.Matches(
@@ -651,8 +651,11 @@ namespace get_link_manga
                     SourceDomain = DaomeodenSiteFolder
                 };
 
-                await DownloadDaomeodenChapterAsync(chapterItem, rootFolder, token, queueItem, true);
-                MarkChapterProcessDone(rootFolder, DaomeodenSiteFolder, item, chapterLinks[i]);
+                bool chapterCompleted = await DownloadDaomeodenChapterAsync(chapterItem, rootFolder, token, queueItem, true);
+                if (chapterCompleted)
+                {
+                    MarkChapterProcessDone(rootFolder, DaomeodenSiteFolder, item, chapterLinks[i]);
+                }
 
                 if (queueItem != null)
                 {
@@ -711,19 +714,21 @@ namespace get_link_manga
             await DownloadDaomeodenChapterImagesAsync(item, rootFolder, token, queueItem, info);
         }
 
-        private async Task DownloadDaomeodenChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, bool isParentQueue)
+        private async Task<bool> DownloadDaomeodenChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, bool isParentQueue)
         {
             var info = ParseDaomeodenChapterInfoFromChapterUrl(item.Link);
             await EnrichDaomeodenChapterInfoFromPageAsync(info, token);
-            await DownloadDaomeodenChapterImagesAsync(item, rootFolder, token, queueItem, info);
+            return await DownloadDaomeodenChapterImagesAsync(item, rootFolder, token, queueItem, info);
         }
 
-        private async Task DownloadDaomeodenChapterImagesAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, DaomeodenChapterInfo info)
+        private async Task<bool> DownloadDaomeodenChapterImagesAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, DaomeodenChapterInfo info)
         {
+            info.ChapterTitle = NormalizeChapterLabel(info.ChapterTitle);
             string safeManga = GetSafePathName(info.BookTitle);
-            string safeChapter = GetSafePathName(info.ChapterTitle);
-            string targetFolder = Path.Combine(rootFolder, DaomeodenSiteFolder, safeManga, safeChapter);
-            string tempFolder = BuildStableTempFolderPath(rootFolder, DaomeodenSiteFolder, $"{safeManga}-{safeChapter}", item.Link, item.Name, safeManga, safeChapter);
+            string safeChapter = GetSafeChapterPathName(info.ChapterTitle);
+            string siteRootFolder = GetSiteDownloadRoot(rootFolder, DaomeodenSiteFolder);
+            string targetFolder = Path.Combine(siteRootFolder, safeManga, safeChapter);
+            string tempFolder = BuildStableChapterTempFolderPath(rootFolder, DaomeodenSiteFolder, safeManga, safeChapter);
 
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
@@ -765,7 +770,7 @@ namespace get_link_manga
                 var pageMap = imageUrls
                     .Select((url, index) => new { url, index })
                     .ToDictionary(x => x.index + 1, x => x.url);
-                ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem ?? item, info.ChapterTitle, pageMap);
+                return ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem ?? item, info.ChapterTitle, pageMap);
             }
             finally
             {

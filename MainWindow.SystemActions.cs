@@ -485,7 +485,7 @@ namespace get_link_manga
                 IsStopped = item.IsStopped,
                 DownloadingChapter = item.DownloadingChapter,
                 DownloadingPageProgress = item.DownloadingPageProgress,
-                ConnectionCount = GetComboBoxSelectedInt(cmbConnections, 1),
+                ConnectionCount = GetComboBoxSelectedInt(cmbConnections, 4),
                 MultiDownloadCount = GetComboBoxSelectedInt(cmbMultiDownload, 2),
                 Errors = item.GetUniqueErrors().Select(error => new ErrorState
                 {

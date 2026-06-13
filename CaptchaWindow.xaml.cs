@@ -17,6 +17,7 @@ namespace get_link_manga
         public string ResolvedHtml { get; private set; }
         private readonly string _targetUrl;
         private readonly bool _autoDeleteCookiesOnLoad;
+        private readonly bool _headlessAutomation;
         private readonly DateTime _windowOpenedAt = DateTime.Now;
         private DateTime _captchaBypassStartTime = DateTime.MinValue;
         private DateTime _lastCaptchaKeyboardAttempt = DateTime.MinValue;
@@ -24,7 +25,7 @@ namespace get_link_manga
         public bool BypassWasNeeded { get; private set; }
         public double WindowElapsedSeconds => (DateTime.Now - _windowOpenedAt).TotalSeconds;
 
-        public CaptchaWindow(string targetUrl, bool autoDeleteCookiesOnLoad = false)
+        public CaptchaWindow(string targetUrl, bool autoDeleteCookiesOnLoad = false, bool headlessAutomation = false)
         {
             InitializeComponent();
             if (webViewHost != null)
@@ -33,7 +34,14 @@ namespace get_link_manga
             }
             _targetUrl = targetUrl;
             _autoDeleteCookiesOnLoad = autoDeleteCookiesOnLoad;
+            _headlessAutomation = headlessAutomation;
             ApplyLanguage(GetIsVietnameseUiEnabled());
+
+            if (_headlessAutomation)
+            {
+                ConfigureHeadlessWindow();
+            }
+
             try
             {
                 var uri = new Uri(targetUrl);
@@ -44,6 +52,40 @@ namespace get_link_manga
                 this.Title = GetCaptchaWindowTitlePrefix();
             }
             Loaded += CaptchaWindow_Loaded;
+        }
+
+        private void ConfigureHeadlessWindow()
+        {
+            ShowInTaskbar = false;
+            ShowActivated = false;
+            WindowStyle = WindowStyle.None;
+            ResizeMode = ResizeMode.NoResize;
+            Width = 1;
+            Height = 1;
+            Left = -10000;
+            Top = -10000;
+            Opacity = 0;
+
+            if (txtCaptchaHeader != null)
+            {
+                txtCaptchaHeader.Visibility = Visibility.Collapsed;
+            }
+            if (txtCaptchaDescription != null)
+            {
+                txtCaptchaDescription.Visibility = Visibility.Collapsed;
+            }
+            if (btnDeleteCookies != null)
+            {
+                btnDeleteCookies.Visibility = Visibility.Collapsed;
+            }
+            if (btnDone != null)
+            {
+                btnDone.Visibility = Visibility.Collapsed;
+            }
+            if (btnCancel != null)
+            {
+                btnCancel.Visibility = Visibility.Collapsed;
+            }
         }
 
         private bool GetIsVietnameseUiEnabled()
@@ -87,6 +129,89 @@ namespace get_link_manga
             }
         }
 
+        private static bool UrlContainsHost(string url, params string[] patterns)
+        {
+            if (string.IsNullOrWhiteSpace(url) || patterns == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < patterns.Length; i++)
+            {
+                string pattern = patterns[i];
+                if (!string.IsNullOrWhiteSpace(pattern) &&
+                    url.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsNettruyenUrl(string url)
+        {
+            return UrlContainsHost(url, "nettruyen");
+        }
+
+        private static bool IsTruyenqqChallengeUrl(string url)
+        {
+            return UrlContainsHost(url, "truyenqq", "truyenqqko");
+        }
+
+        private static bool ShouldUseVerifyFindSequence(string url)
+        {
+            return IsTruyenqqChallengeUrl(url);
+        }
+
+        private double GetInitialCaptchaAttemptDelaySeconds(string url)
+        {
+            return ShouldUseVerifyFindSequence(url) ? 10.0 : 8.0;
+        }
+
+        private double GetRepeatCaptchaAttemptDelaySeconds(string url)
+        {
+            return ShouldUseVerifyFindSequence(url) ? 12.0 : 5.0;
+        }
+
+        private string GetCaptchaFindKeyword(string url)
+        {
+            return ShouldUseVerifyFindSequence(url) ? "verify" : "human";
+        }
+
+        private async Task SendCaptchaKeyboardBypassAsync(string url)
+        {
+            await Dispatcher.InvokeAsync(() =>
+            {
+                try
+                {
+                    this.Activate();
+                    webView.Focus();
+                    System.Windows.Input.Keyboard.Focus(webView);
+                }
+                catch
+                {
+                }
+            });
+            await Task.Delay(300);
+
+            string findKeyword = GetCaptchaFindKeyword(url);
+
+            System.Windows.Forms.SendKeys.SendWait("^f");
+            await Task.Delay(500);
+
+            System.Windows.Forms.SendKeys.SendWait(findKeyword);
+            await Task.Delay(500);
+
+            System.Windows.Forms.SendKeys.SendWait("{ESCAPE}");
+            await Task.Delay(300);
+
+            System.Windows.Forms.SendKeys.SendWait("+{TAB}");
+            await Task.Delay(300);
+
+            System.Windows.Forms.SendKeys.SendWait(" ");
+        }
+
         private async void CaptchaWindow_Loaded(object sender, RoutedEventArgs e)
         {
             try
@@ -110,7 +235,10 @@ namespace get_link_manga
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khởi tạo trình duyệt WebView2: {ex.Message}\n\nHãy đảm bảo bạn đã cài đặt WebView2 Runtime trên hệ thống.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (!_headlessAutomation)
+                {
+                    MessageBox.Show($"Lỗi khởi tạo trình duyệt WebView2: {ex.Message}\n\nHãy đảm bảo bạn đã cài đặt WebView2 Runtime trên hệ thống.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
                 DialogResult = false;
                 Close();
             }
@@ -176,11 +304,16 @@ namespace get_link_manga
                         if (!title.Contains("Just a moment") && !title.Contains("Cloudflare"))
                         {
                             bool shouldDelay = false;
-                            if (url.IndexOf("nettruyen", StringComparison.OrdinalIgnoreCase) >= 0)
+                            if (IsNettruyenUrl(url))
                             {
                                 // Find and click "Xem thêm" by text content (CSS selectors are unreliable across nettruyen domains)
                                 string processChaptersJs = @"
                                     (function() {
+                                        function getChapterLinks() {
+                                            var html = document.documentElement.outerHTML || '';
+                                            var matches = html.match(/\/(?:chuong|chap|chapter|c|chuong-tranh|chuong-doc)-\d+(?:\.\d+)?(?:\/|\s|""|'|\?|$)/gi);
+                                            return matches ? matches.length : 0;
+                                        }
                                         var xemThem = null;
                                         var allEls = document.querySelectorAll('a, button, span, div');
                                         for (var i = 0; i < allEls.length; i++) {
@@ -194,13 +327,12 @@ namespace get_link_manga
                                             xemThem.click();
                                             return 'clicked';
                                         }
-                                        var html = document.documentElement.outerHTML || '';
-                                        var hasChapter = /\/(?:chuong|chap|chapter|c|chuong-tranh|chuong-doc)-(?:0|1|2|3|4|5|6|7|8|9|10)(?:\/|\s|""|'|\?|$)/i.test(html);
-                                        if (hasChapter) {
+                                        var chapterCount = getChapterLinks();
+                                        if (chapterCount > 0) {
                                             return 'ready';
                                         }
                                         if (!xemThem) {
-                                            return 'ready';
+                                            return 'waiting';
                                         }
                                         return 'waiting';
                                     })()";
@@ -219,7 +351,7 @@ namespace get_link_manga
                                     }
                                     
                                     double elapsed = (DateTime.Now - nettruyenChaptersWaitStartTime).TotalSeconds;
-                                    if (elapsed < 15.0) // Timeout after 15 seconds of waiting for chapters to load
+                                    if (elapsed < 20.0) // Timeout after 20 seconds of waiting for chapters to load
                                     {
                                         shouldDelay = true;
                                     }
@@ -256,12 +388,22 @@ namespace get_link_manga
                         {
                             _challengeDetectedAt = DateTime.Now;
                         }
+
+                        if (_headlessAutomation && _challengeDetectedAt != DateTime.MinValue &&
+                            (DateTime.Now - _challengeDetectedAt).TotalSeconds >= 6.0)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                DialogResult = false;
+                                Close();
+                            });
+                            break;
+                        }
                     }
                     
-                    // Turnstile captcha bypass via keyboard sequence: Ctrl+F → "human" → Escape → Shift+Tab → Space
-                    if (url.IndexOf("nettruyen", StringComparison.OrdinalIgnoreCase) >= 0)
+                    // Turnstile captcha bypass via keyboard sequence.
+                    if (!_headlessAutomation && (IsNettruyenUrl(url) || IsTruyenqqChallengeUrl(url)))
                     {
-                        // Track when the captcha page first appeared
                         if (_captchaBypassStartTime == DateTime.MinValue)
                         {
                             _captchaBypassStartTime = DateTime.Now;
@@ -269,14 +411,15 @@ namespace get_link_manga
 
                         double secsSinceStart = (DateTime.Now - _captchaBypassStartTime).TotalSeconds;
                         double secsSinceLastAttempt = (DateTime.Now - _lastCaptchaKeyboardAttempt).TotalSeconds;
+                        double initialDelay = GetInitialCaptchaAttemptDelaySeconds(url);
+                        double repeatDelay = GetRepeatCaptchaAttemptDelaySeconds(url);
 
-                        // Only auto-bypass after challenge has actually stayed long enough.
                         bool shouldAttempt = false;
-                        if (_lastCaptchaKeyboardAttempt == DateTime.MinValue && secsSinceStart >= 8)
+                        if (_lastCaptchaKeyboardAttempt == DateTime.MinValue && secsSinceStart >= initialDelay)
                         {
                             shouldAttempt = true;
                         }
-                        else if (_lastCaptchaKeyboardAttempt != DateTime.MinValue && secsSinceLastAttempt >= 5)
+                        else if (_lastCaptchaKeyboardAttempt != DateTime.MinValue && secsSinceLastAttempt >= repeatDelay)
                         {
                             shouldAttempt = true;
                         }
@@ -285,38 +428,7 @@ namespace get_link_manga
                         {
                             BypassWasNeeded = true;
                             _lastCaptchaKeyboardAttempt = DateTime.Now;
-
-                            await Dispatcher.InvokeAsync(() =>
-                            {
-                                try
-                                {
-                                    // Activate window and focus WebView2
-                                    this.Activate();
-                                    webView.Focus();
-                                    System.Windows.Input.Keyboard.Focus(webView);
-                                }
-                                catch { }
-                            });
-                            await Task.Delay(300);
-
-                            // Step 1: Ctrl+F to open Find dialog
-                            System.Windows.Forms.SendKeys.SendWait("^f");
-                            await Task.Delay(500);
-
-                            // Step 2: Type "human" to search
-                            System.Windows.Forms.SendKeys.SendWait("human");
-                            await Task.Delay(500);
-
-                            // Step 3: Escape to close Find dialog
-                            System.Windows.Forms.SendKeys.SendWait("{ESCAPE}");
-                            await Task.Delay(300);
-
-                            // Step 4: Shift+Tab to move focus to the checkbox
-                            System.Windows.Forms.SendKeys.SendWait("+{TAB}");
-                            await Task.Delay(300);
-
-                            // Step 5: Space to check the checkbox
-                            System.Windows.Forms.SendKeys.SendWait(" ");
+                            await SendCaptchaKeyboardBypassAsync(url);
                         }
                     }
                 }
@@ -333,7 +445,10 @@ namespace get_link_manga
             {
                 if (webView.CoreWebView2 == null)
                 {
-                    MessageBox.Show("Trình duyệt chưa sẵn sàng.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    if (!_headlessAutomation)
+                    {
+                        MessageBox.Show("Trình duyệt chưa sẵn sàng.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
                     return;
                 }
 
@@ -409,7 +524,12 @@ namespace get_link_manga
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi thu thập cookies: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (!_headlessAutomation)
+                {
+                    MessageBox.Show($"Lỗi thu thập cookies: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                DialogResult = false;
+                Close();
             }
         }
 

@@ -29,7 +29,13 @@ namespace get_link_manga
 
         internal static string SevenZipExePath => Path.Combine(SevenZipRoot, "7z.exe");
 
-        internal static string PortableArchivePath => Path.Combine(AppRoot, "Comic-GMTPC.7z");
+        internal static string BandiViewRoot => Path.Combine(PortableDataRoot, "Bandiview");
+
+        internal static string BandiViewExePath => Path.Combine(BandiViewRoot, "BandiView.exe");
+
+        internal static string PortableArchivePath => Path.Combine(AppRoot, "Comic-GMTPC.zip");
+
+        internal static string LegacyPortableArchivePath => Path.Combine(AppRoot, "Comic-GMTPC.7z");
 
         internal static string GetRuntimeNativeFolder()
         {

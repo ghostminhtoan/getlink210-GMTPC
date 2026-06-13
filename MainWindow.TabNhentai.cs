@@ -71,8 +71,24 @@ namespace get_link_manga
             string url = txtNhentaiTagUrl.Text.Trim();
             if (string.IsNullOrEmpty(url)) return;
 
-            if (url.Contains("nhentai.net"))
+            if (url.IndexOf("nhentai.net", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                url.IndexOf("nhentai.xxx", StringComparison.OrdinalIgnoreCase) >= 0)
             {
+                if (url.IndexOf("nhentai.net", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    _isUpdatingNhentaiUrl = true;
+                    try
+                    {
+                        txtNhentaiTagUrl.Text = url.Replace("nhentai.net", "nhentai.xxx");
+                    }
+                    finally
+                    {
+                        _isUpdatingNhentaiUrl = false;
+                    }
+
+                    url = txtNhentaiTagUrl.Text.Trim();
+                }
+
                 var match = Regex.Match(url, @"[?&](?:amp;)?sort=([^&]+)", RegexOptions.IgnoreCase);
                 if (match.Success)
                 {
@@ -160,7 +176,7 @@ namespace get_link_manga
                     return;
                 }
 
-                string html = await _httpClient.GetStringAsync(url);
+                string html = await FetchStringAsync(url, _downloadCts?.Token ?? CancellationToken.None);
                 
                 // Parse all hrefs from the HTML
                 var hrefMatches = Regex.Matches(html, @"href\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase);
@@ -273,7 +289,7 @@ namespace get_link_manga
                 btnNhentaiCrawlMore.Content = "STOP CRAWLER";
             }
             btnNhentaiFetchInfo.IsEnabled = false;
-            lblStatus.Text = "Crawling nhentai.net in progress...";
+            lblStatus.Text = "Crawling nhentai.xxx in progress...";
             progressBar.Value = 0;
 
             if (clearExisting)
@@ -312,7 +328,7 @@ namespace get_link_manga
                         {
                             throw new Exception("Bị chặn bởi Cloudflare Captcha.");
                         }
-                        html = await _httpClient.GetStringAsync(pageUrl);
+                        html = await FetchStringAsync(pageUrl, _downloadCts?.Token ?? CancellationToken.None);
                         pageLoaded = true;
                     }
                     catch (Exception ex)
@@ -333,7 +349,7 @@ namespace get_link_manga
                             string viewId = match.Groups[1].Value;
                             string title = WebUtility.HtmlDecode(match.Groups[2].Value.Trim());
                             title = FormatGalleryTitle(title);
-                            string fullLink = $"https://nhentai.net/g/{viewId}/";
+                            string fullLink = $"https://nhentai.xxx/g/{viewId}/";
 
                             if (!_scrapedItems.Any(item => item.Link == fullLink || item.Name.Equals(title, StringComparison.OrdinalIgnoreCase)))
                             {
@@ -352,7 +368,7 @@ namespace get_link_manga
                     else
                     {
                         // Fallback: Try to request the page number directly as a single gallery ID
-                        string galleryUrl = $"https://nhentai.net/g/{page}/";
+                        string galleryUrl = $"https://nhentai.xxx/g/{page}/";
                         try
                         {
                             bool ok = await SolveNhentaiCaptchaIfNeededAsync(galleryUrl);
@@ -360,7 +376,7 @@ namespace get_link_manga
                             {
                                 throw new Exception("Bị chặn bởi Cloudflare Captcha.");
                             }
-                            string galleryHtml = await _httpClient.GetStringAsync(galleryUrl);
+                            string galleryHtml = await FetchStringAsync(galleryUrl, _downloadCts?.Token ?? CancellationToken.None);
                             
                             // Extract title of the gallery: <h1 class="title">...</h1>
                             var titleMatch = Regex.Match(galleryHtml, @"<h1\s+class=""title"">\s*(.*?)\s*</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
@@ -518,7 +534,7 @@ namespace get_link_manga
                         {
                             throw new Exception("Bị chặn bởi Cloudflare Captcha.");
                         }
-                        string html = await _httpClient.GetStringAsync(link);
+                        string html = await FetchStringAsync(link, _downloadCts?.Token ?? CancellationToken.None);
                         var titleMatch = Regex.Match(html, @"<h1\s+class=""title"">\s*(.*?)\s*</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
                         string title = "Gallery ID " + GetNhentaiGalleryIdFromLink(link);
                         

@@ -13,6 +13,91 @@ namespace get_link_manga
     public partial class MainWindow : Window
     {
         private ICollectionView ResultsView => CollectionViewSource.GetDefaultView(_scrapedItems);
+        private bool _isNameSortAscending = true;
+        private bool _isStatusSortAscending = true;
+        private bool _isProcessSortAscending = true;
+
+        private void ApplyResultsSort(string propertyName, ListSortDirection direction, string logMessage = null)
+        {
+            var view = ResultsView;
+            if (view == null || string.IsNullOrWhiteSpace(propertyName))
+            {
+                return;
+            }
+
+            view.SortDescriptions.Clear();
+            view.SortDescriptions.Add(new SortDescription(propertyName, direction));
+            if (!string.Equals(propertyName, "OriginalIndex", StringComparison.Ordinal))
+            {
+                view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Ascending));
+            }
+
+            if (!string.IsNullOrWhiteSpace(logMessage))
+            {
+                Log(logMessage);
+            }
+        }
+
+        private void ApplyResultsSort(DataGridColumn column, string propertyName, ref bool ascendingFlag, string label)
+        {
+            ListSortDirection direction = ascendingFlag ? ListSortDirection.Ascending : ListSortDirection.Descending;
+            ascendingFlag = !ascendingFlag;
+
+            ClearResultsColumnSortDirections(column);
+            if (column != null)
+            {
+                column.SortDirection = direction;
+            }
+
+            ApplyResultsSort(propertyName, direction, $"Sorted {label} {(direction == ListSortDirection.Ascending ? "ascending" : "descending")}.");
+        }
+
+        private void ClearResultsColumnSortDirections(DataGridColumn activeColumn = null)
+        {
+            if (dgResults?.Columns == null)
+            {
+                return;
+            }
+
+            foreach (DataGridColumn column in dgResults.Columns)
+            {
+                if (!ReferenceEquals(column, activeColumn))
+                {
+                    column.SortDirection = null;
+                }
+            }
+        }
+
+        private void DgResults_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            if (e?.Column == null || string.IsNullOrWhiteSpace(e.Column.SortMemberPath))
+            {
+                return;
+            }
+
+            e.Handled = true;
+
+            ListSortDirection direction = e.Column.SortDirection == ListSortDirection.Ascending
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
+
+            ClearResultsColumnSortDirections(e.Column);
+            e.Column.SortDirection = direction;
+            ApplyResultsSort(e.Column.SortMemberPath, direction, $"Sorted '{e.Column.Header}' {(direction == ListSortDirection.Ascending ? "ascending" : "descending")}.");
+
+            if (ReferenceEquals(e.Column, colGalleryDetails))
+            {
+                _isNameSortAscending = direction != ListSortDirection.Ascending;
+            }
+            else if (ReferenceEquals(e.Column, colStatus))
+            {
+                _isStatusSortAscending = direction != ListSortDirection.Ascending;
+            }
+            else if (ReferenceEquals(e.Column, colProcess))
+            {
+                _isProcessSortAscending = direction != ListSortDirection.Ascending;
+            }
+        }
 
         private void TxtFilter_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -45,24 +130,16 @@ namespace get_link_manga
 
         private void BtnSortByName_Click(object sender, RoutedEventArgs e)
         {
-            var view = ResultsView;
-            if (view != null)
-            {
-                view.SortDescriptions.Clear();
-                view.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
-                Log("Results sorted alphabetically by name.");
-            }
+            ApplyResultsSort(colGalleryDetails, "Name", ref _isNameSortAscending, "comic books");
         }
 
         private void BtnRestoreOrder_Click(object sender, RoutedEventArgs e)
         {
-            var view = ResultsView;
-            if (view != null)
-            {
-                view.SortDescriptions.Clear();
-                view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Ascending));
-                Log("Original order restored.");
-            }
+            _isNameSortAscending = true;
+            _isStatusSortAscending = true;
+            _isProcessSortAscending = true;
+            ClearResultsColumnSortDirections();
+            ApplyResultsSort("OriginalIndex", ListSortDirection.Ascending, "Original order restored.");
         }
 
         private void BtnNoLinkViHentai_Click(object sender, RoutedEventArgs e)
@@ -70,6 +147,10 @@ namespace get_link_manga
             var view = ResultsView;
             if (view != null)
             {
+                _isNameSortAscending = true;
+                _isStatusSortAscending = true;
+                _isProcessSortAscending = true;
+                ClearResultsColumnSortDirections();
                 view.SortDescriptions.Clear();
                 view.SortDescriptions.Add(new SortDescription("HasNoChapters", ListSortDirection.Descending));
                 view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Ascending));
@@ -92,6 +173,11 @@ namespace get_link_manga
 
         private void DgResults_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (IsTypingInEditableTextBox())
+            {
+                return;
+            }
+
             if (dgResults.Items.Count == 0) return;
 
             if (e.Key == Key.Home)
@@ -211,6 +297,11 @@ namespace get_link_manga
 
         private void DgResults_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
+            if (IsTypingInEditableTextBox())
+            {
+                return;
+            }
+
             if (string.IsNullOrEmpty(e.Text)) return;
 
             DateTime now = DateTime.Now;
@@ -241,6 +332,32 @@ namespace get_link_manga
             }
 
             e.Handled = true;
+        }
+
+        private bool IsTypingInEditableTextBox()
+        {
+            DependencyObject focused = Keyboard.FocusedElement as DependencyObject;
+            while (focused != null)
+            {
+                if (focused is TextBox textBox)
+                {
+                    return !ReferenceEquals(textBox, txtFilter);
+                }
+
+                if (focused is PasswordBox)
+                {
+                    return true;
+                }
+
+                if (focused is ComboBox comboBox && comboBox.IsEditable)
+                {
+                    return true;
+                }
+
+                focused = VisualTreeHelper.GetParent(focused);
+            }
+
+            return false;
         }
 
         public static string GetSimilarityCore(string name)

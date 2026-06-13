@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -14,8 +17,18 @@ namespace get_link_manga
     {
         private bool? _lastLatestChapterSortDescending;
         private string _lastNhentaiResolvedHtml;
-        private const string DefaultListFileName = "gallery-list-default.txt";
-        private const string AutosaveListFileName = "gallery-list-autosave.txt";
+        private CancellationTokenSource _autoRetryCts;
+        private Task _autoRetryLoopTask;
+        private const string DefaultListFileName = "gallery-list-default.md";
+        private const string DefaultListLegacyFileName = "gallery-list-default.txt";
+        private const string AutosaveListFileName = "gallery-list-autosave.md";
+        private const string AutosaveListLegacyFileName = "gallery-list-autosave.txt";
+        private const string AutosaveListMirrorFileName = "gallery-list-autosave.mirror.md";
+        private const int AutosaveDebounceMs = 150;
+        private readonly object _galleryAutosaveLock = new object();
+        private Timer _galleryAutosaveTimer;
+        private bool _isGalleryAutosaveInitialized;
+        private bool _isGalleryAutosaveSuspended;
 
         private sealed class GallerySnapshot
         {
@@ -31,22 +44,129 @@ namespace get_link_manga
         }
 
         private string DefaultListPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DefaultListFileName);
+        private string DefaultListLegacyPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DefaultListLegacyFileName);
         private string AutosaveListPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AutosaveListFileName);
+        private string AutosaveListLegacyPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AutosaveListLegacyFileName);
+        private string AutosaveListMirrorPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AutosaveListMirrorFileName);
 
         private void InitializeGalleryListAutosave()
         {
-            TryLoadGalleryListFile(AutosaveListPath, showMessage: false);
+            if (_isGalleryAutosaveInitialized)
+            {
+                return;
+            }
+
+            _isGalleryAutosaveInitialized = true;
+            _galleryAutosaveTimer = new Timer(_ => SaveActiveGalleryListSnapshot(), null, Timeout.Infinite, Timeout.Infinite);
+            _scrapedItems.CollectionChanged += ScrapedItems_CollectionChanged;
+
+            foreach (var item in _scrapedItems)
+            {
+                SubscribeGalleryItemAutosave(item);
+            }
+
+            RunWithGalleryAutosaveSuspended(() =>
+            {
+                TryLoadGalleryListFile(AutosaveListPath, showMessage: false);
+            });
+
+            RequestGalleryListAutosave(0);
         }
 
         private void SaveActiveGalleryListSnapshot()
         {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(SaveActiveGalleryListSnapshot);
+                return;
+            }
+
+            if (_isGalleryAutosaveSuspended)
+            {
+                return;
+            }
+
             try
             {
                 SaveGalleryListToFile(AutosaveListPath);
+                SaveGalleryItemsMarkdownFile(AutosaveListMirrorPath, _scrapedItems.ToList(), "Gallery Autosave Mirror Snapshot");
             }
             catch (Exception ex)
             {
                 Log($"Autosave failed: {ex.Message}");
+            }
+        }
+
+        private void RequestGalleryListAutosave(int delayMs = AutosaveDebounceMs)
+        {
+            if (_isGalleryAutosaveSuspended || _galleryAutosaveTimer == null)
+            {
+                return;
+            }
+
+            lock (_galleryAutosaveLock)
+            {
+                _galleryAutosaveTimer.Change(Math.Max(0, delayMs), Timeout.Infinite);
+            }
+        }
+
+        private void ScrapedItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e?.OldItems != null)
+            {
+                foreach (var item in e.OldItems.OfType<GalleryItem>())
+                {
+                    UnsubscribeGalleryItemAutosave(item);
+                }
+            }
+
+            if (e?.NewItems != null)
+            {
+                foreach (var item in e.NewItems.OfType<GalleryItem>())
+                {
+                    SubscribeGalleryItemAutosave(item);
+                }
+            }
+
+            RequestGalleryListAutosave(0);
+        }
+
+        private void SubscribeGalleryItemAutosave(GalleryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.PropertyChanged -= GalleryItem_AutosavePropertyChanged;
+            item.PropertyChanged += GalleryItem_AutosavePropertyChanged;
+        }
+
+        private void UnsubscribeGalleryItemAutosave(GalleryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.PropertyChanged -= GalleryItem_AutosavePropertyChanged;
+        }
+
+        private void GalleryItem_AutosavePropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            RequestGalleryListAutosave();
+        }
+
+        private void RunWithGalleryAutosaveSuspended(Action action)
+        {
+            _isGalleryAutosaveSuspended = true;
+            try
+            {
+                action?.Invoke();
+            }
+            finally
+            {
+                _isGalleryAutosaveSuspended = false;
             }
         }
 
@@ -57,14 +177,17 @@ namespace get_link_manga
             {
                 dgResults.Items.Refresh();
             }
+
             if (lblLinkCount != null)
             {
                 lblLinkCount.Text = "0";
             }
+
             if (chkSelectAll != null)
             {
                 chkSelectAll.IsChecked = false;
             }
+
             lblStatus.Text = _isVietnameseUi ? "Đã tạo danh sách mới." : "Started a new list.";
             RecalculateDuplicates();
         }
@@ -73,8 +196,8 @@ namespace get_link_manga
         {
             var dialog = new SaveFileDialog
             {
-                Filter = "List files (*.txt)|*.txt|All files (*.*)|*.*",
-                FileName = "gallery-list.txt"
+                Filter = "Markdown list (*.md)|*.md|List files (*.txt)|*.txt|All files (*.*)|*.*",
+                FileName = "gallery-list.md"
             };
 
             if (dialog.ShowDialog(this) == true)
@@ -88,7 +211,7 @@ namespace get_link_manga
         {
             var dialog = new OpenFileDialog
             {
-                Filter = "List files (*.txt)|*.txt|All files (*.*)|*.*"
+                Filter = "Markdown list (*.md)|*.md|List files (*.txt)|*.txt|All files (*.*)|*.*"
             };
 
             if (dialog.ShowDialog(this) == true)
@@ -123,7 +246,7 @@ namespace get_link_manga
                     url = "https://hentaiforce.net/";
                     break;
                 case "nhentai":
-                    url = "https://nhentai.net/";
+                    url = "https://nhentai.xxx/";
                     break;
                 case "hentaiera":
                     url = "https://hentaiera.com/";
@@ -145,8 +268,11 @@ namespace get_link_manga
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Không thể mở trang chủ: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    _isVietnameseUi ? $"Không thể mở trang chủ: {ex.Message}" : $"Cannot open homepage: {ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
@@ -174,8 +300,11 @@ namespace get_link_manga
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Không thể dán link trực tiếp: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    _isVietnameseUi ? $"Không thể dán link trực tiếp: {ex.Message}" : $"Cannot paste direct links: {ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
@@ -229,35 +358,18 @@ namespace get_link_manga
             {
                 item.IsChecked = !item.IsChecked;
             }
+
             Log("Inverted checked state for selected rows.");
         }
 
         private void BtnSortByStatus_Click(object sender, RoutedEventArgs e)
         {
-            var view = ResultsView;
-            if (view == null)
-            {
-                return;
-            }
-
-            view.SortDescriptions.Clear();
-            view.SortDescriptions.Add(new SortDescription("Status", ListSortDirection.Ascending));
-            view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Ascending));
-            Log("Sorted by status.");
+            ApplyResultsSort(colStatus, "StatusSortOrder", ref _isStatusSortAscending, "status");
         }
 
         private void BtnSortByProcess_Click(object sender, RoutedEventArgs e)
         {
-            var view = ResultsView;
-            if (view == null)
-            {
-                return;
-            }
-
-            view.SortDescriptions.Clear();
-            view.SortDescriptions.Add(new SortDescription("CurrentProcess", ListSortDirection.Ascending));
-            view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Ascending));
-            Log("Sorted by process.");
+            ApplyResultsSort(colProcess, "ProcessSortText", ref _isProcessSortAscending, "process");
         }
 
         private void BtnArchivePause_Click(object sender, RoutedEventArgs e)
@@ -267,6 +379,7 @@ namespace get_link_manga
             {
                 btnArchivePause.Content = _isDownloadPaused ? "RESUME" : "PAUSE";
             }
+
             lblStatus.Text = _isDownloadPaused
                 ? (_isVietnameseUi ? "Đã tạm dừng thao tác lưu trữ." : "Archive task paused.")
                 : (_isVietnameseUi ? "Đã tiếp tục thao tác lưu trữ." : "Archive task resumed.");
@@ -274,15 +387,18 @@ namespace get_link_manga
 
         private void BtnArchiveStop_Click(object sender, RoutedEventArgs e)
         {
+            _archiveCts?.Cancel();
             _isDownloadPaused = false;
             if (archiveProgressPanel != null)
             {
                 archiveProgressPanel.Visibility = Visibility.Collapsed;
             }
+
             if (btnArchivePause != null)
             {
                 btnArchivePause.Content = "PAUSE";
             }
+
             lblStatus.Text = _isVietnameseUi ? "Đã dừng thao tác lưu trữ." : "Archive task stopped.";
         }
 
@@ -294,8 +410,11 @@ namespace get_link_manga
 
             if (erroredItems.Count == 0)
             {
-                MessageBox.Show(_isVietnameseUi ? "Không có lỗi để thử lại." : "No errors to retry.",
-                    "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    _isVietnameseUi ? "Không có lỗi để thử lại." : "No errors to retry.",
+                    "Information",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
@@ -306,7 +425,86 @@ namespace get_link_manga
 
             MessageBox.Show(
                 _isVietnameseUi ? "Đã thử tải lại toàn bộ mục bị lỗi." : "Retried all errored items.",
-                "Retry", MessageBoxButton.OK, MessageBoxImage.Information);
+                "Retry",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        private void BtnAutoRetryErrors_Checked(object sender, RoutedEventArgs e)
+        {
+            StartAutoRetryLoopAsync();
+        }
+
+        private void BtnAutoRetryErrors_Unchecked(object sender, RoutedEventArgs e)
+        {
+            StopAutoRetryLoop();
+        }
+
+        private void StartAutoRetryLoopAsync()
+        {
+            if (_autoRetryLoopTask != null && !_autoRetryLoopTask.IsCompleted)
+            {
+                return;
+            }
+
+            _autoRetryCts?.Dispose();
+            _autoRetryCts = new CancellationTokenSource();
+            CancellationToken token = _autoRetryCts.Token;
+
+            _autoRetryLoopTask = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!token.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            var erroredItems = _scrapedItems
+                                .Where(item => item.GetUniqueErrorCount() > 0)
+                                .ToList();
+
+                            foreach (var item in erroredItems)
+                            {
+                                token.ThrowIfCancellationRequested();
+                                await RetryDownloadQueueItemErrorsAsync(item, showMessageBox: false);
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"[Auto Retry] Lỗi khi retry tự động: {ex.Message}");
+                        }
+
+                        await Task.Delay(1500, token);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                finally
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (btnAutoRetryErrors != null && btnAutoRetryErrors.IsChecked == true)
+                        {
+                            Log("[Auto Retry] Loop dừng nhưng toggle vẫn bật; sẽ tiếp tục theo dõi lỗi mới.");
+                        }
+                    });
+                }
+            }, token);
+        }
+
+        private void StopAutoRetryLoop()
+        {
+            _autoRetryCts?.Cancel();
+        }
+
+        private async void BtnAutoRetryErrors_Click(object sender, RoutedEventArgs e)
+        {
+            await Task.CompletedTask;
         }
 
         private void BtnRetryErrorLog_Click(object sender, RoutedEventArgs e)
@@ -317,95 +515,190 @@ namespace get_link_manga
 
             if (erroredItems.Count == 0)
             {
-                MessageBox.Show(_isVietnameseUi ? "Không có lỗi để hiển thị." : "No error logs available.",
-                    "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    _isVietnameseUi ? "Không có lỗi để hiển thị." : "No error logs available.",
+                    "Information",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
-            var summary = string.Join(Environment.NewLine,
+            var summary = string.Join(
+                Environment.NewLine,
                 erroredItems.Select(item => $"{item.Name}: {item.GetUniqueErrorCount()} error(s)"));
             MessageBox.Show(summary, "Error Log", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void BtnOpenFolderInRow_Click(object sender, RoutedEventArgs e)
+        private void BtnOpenFolderInRow_Click_LegacyDoNotUse(object sender, RoutedEventArgs e)
         {
-            var item = (sender as FrameworkElement)?.DataContext as GalleryItem;
-            if (item == null || string.IsNullOrWhiteSpace(item.DownloadPath))
-            {
-                return;
-            }
-
-            if (!Directory.Exists(item.DownloadPath))
-            {
-                MessageBox.Show($"Thư mục không tồn tại:\n{item.DownloadPath}", "Warning",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!ShellFolderLauncher.TryOpenFolder(item.DownloadPath, out string error))
-            {
-                MessageBox.Show($"Không thể mở thư mục: {error}", "Warning",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+            // Legacy placeholder only. Explorer flow moved to MainWindow.SystemExplorer.cs.
+            return;
         }
 
         private void SaveGalleryListToFile(string path)
         {
-            var lines = _scrapedItems.Select(item => string.Join("\t", new[]
+            string extension = Path.GetExtension(path ?? string.Empty);
+            if (string.Equals(extension, ".txt", StringComparison.OrdinalIgnoreCase))
             {
-                item.IsChecked ? "1" : "0",
-                EncodeCell(item.Name),
-                EncodeCell(item.Link),
-                item.OriginalIndex.ToString(),
-                EncodeCell(item.LinkCount),
-                EncodeCell(item.SourceDomain),
-                item.HasNoChapters ? "1" : "0",
-                item.NhentaiTotalPagesHint.ToString()
-            }));
+                var lines = _scrapedItems.Select(item => string.Join("\t", new[]
+                {
+                    item.IsChecked ? "1" : "0",
+                    EncodeCell(item.Name),
+                    EncodeCell(item.Link),
+                    item.OriginalIndex.ToString(),
+                    EncodeCell(item.LinkCount),
+                    EncodeCell(item.SourceDomain),
+                    item.HasNoChapters ? "1" : "0",
+                    item.NhentaiTotalPagesHint.ToString()
+                }));
 
-            File.WriteAllLines(path, lines, Encoding.UTF8);
+                WriteAllLinesAtomically(path, lines, Encoding.UTF8);
+                return;
+            }
+
+            SaveGalleryItemsMarkdownFile(path, _scrapedItems.ToList(), "Gallery Autosave Snapshot");
         }
 
         private void TryLoadGalleryListFile(string path, bool showMessage)
         {
             try
             {
-                if (!File.Exists(path))
+                string[] candidates = ResolveGalleryListLoadCandidates(path);
+                List<GalleryItem> loaded = null;
+
+                foreach (string candidate in candidates)
+                {
+                    if (string.IsNullOrWhiteSpace(candidate) || !File.Exists(candidate))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        List<GalleryItem> currentLoaded;
+                        if (string.Equals(Path.GetExtension(candidate), ".md", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string content = File.ReadAllText(candidate, Encoding.UTF8);
+                            currentLoaded = LoadGalleryItemsFromMarkdown(content);
+                        }
+                        else
+                        {
+                            currentLoaded = File.ReadAllLines(candidate, Encoding.UTF8)
+                                .Select(ParseGallerySnapshot)
+                                .Where(item => item != null)
+                                .ToList();
+                        }
+
+                        if (currentLoaded != null && currentLoaded.Count > 0)
+                        {
+                            loaded = currentLoaded;
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (loaded == null || loaded.Count == 0)
                 {
                     return;
                 }
 
-                var loaded = File.ReadAllLines(path, Encoding.UTF8)
-                    .Select(ParseGallerySnapshot)
-                    .Where(item => item != null)
-                    .ToList();
-
-                if (loaded.Count == 0)
+                RunWithGalleryAutosaveSuspended(() =>
                 {
-                    return;
-                }
-
-                _scrapedItems.Clear();
-                foreach (var item in loaded)
-                {
-                    _scrapedItems.Add(item);
-                }
+                    _scrapedItems.Clear();
+                    foreach (var item in loaded)
+                    {
+                        _scrapedItems.Add(item);
+                    }
+                });
 
                 lblLinkCount.Text = _scrapedItems.Count.ToString();
                 RecalculateDuplicates();
+                RequestGalleryListAutosave(0);
 
                 if (showMessage)
                 {
                     MessageBox.Show(
                         _isVietnameseUi ? "Đã tải danh sách thành công." : "List loaded successfully.",
-                        "Load", MessageBoxButton.OK, MessageBoxImage.Information);
+                        "Load",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Không thể tải danh sách: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    _isVietnameseUi ? $"Không thể tải danh sách: {ex.Message}" : $"Cannot load list: {ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
+        }
+
+        private string[] ResolveGalleryListLoadCandidates(string requestedPath)
+        {
+            if (string.Equals(requestedPath, AutosaveListPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return new[]
+                {
+                    AutosaveListPath,
+                    AutosaveListPath + ".bak",
+                    AutosaveListMirrorPath,
+                    AutosaveListMirrorPath + ".bak",
+                    AutosaveListLegacyPath
+                }
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(path => File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue)
+                .ToArray();
+            }
+
+            string resolved = ResolveGalleryListLoadPath(requestedPath);
+            return new[] { resolved };
+        }
+
+        private string ResolveGalleryListLoadPath(string requestedPath)
+        {
+            if (string.Equals(requestedPath, AutosaveListPath, StringComparison.OrdinalIgnoreCase))
+            {
+                string[] autosaveCandidates =
+                {
+                    AutosaveListPath,
+                    AutosaveListPath + ".bak",
+                    AutosaveListMirrorPath,
+                    AutosaveListMirrorPath + ".bak",
+                    AutosaveListLegacyPath
+                };
+
+                string latestAutosave = autosaveCandidates
+                    .Where(File.Exists)
+                    .OrderByDescending(path => File.GetLastWriteTimeUtc(path))
+                    .FirstOrDefault();
+
+                if (!string.IsNullOrWhiteSpace(latestAutosave))
+                {
+                    return latestAutosave;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(requestedPath) && File.Exists(requestedPath))
+            {
+                return requestedPath;
+            }
+
+            if (string.Equals(requestedPath, AutosaveListPath, StringComparison.OrdinalIgnoreCase) && File.Exists(AutosaveListLegacyPath))
+            {
+                return AutosaveListLegacyPath;
+            }
+
+            if (string.Equals(requestedPath, DefaultListPath, StringComparison.OrdinalIgnoreCase) && File.Exists(DefaultListLegacyPath))
+            {
+                return DefaultListLegacyPath;
+            }
+
+            return requestedPath;
         }
 
         private GalleryItem ParseGallerySnapshot(string line)

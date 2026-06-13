@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -12,12 +13,19 @@ namespace get_link_manga
     public partial class MainWindow : Window
     {
         private readonly SemaphoreSlim _folderStructureSemaphore = new SemaphoreSlim(1, 1);
+        private CancellationTokenSource _archiveCts;
 
         private async void BtnCompressBooks_Click(object sender, RoutedEventArgs e)
         {
             if (IsArchiveOperationBlocked())
             {
-                MessageBox.Show("Hãy dừng toàn bộ download trước khi nén sách.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowLocalizedMessageBox(
+                    "Stop active downloads before compressing books.",
+                    "Hãy dừng tải đang chạy trước khi nén sách.",
+                    "Information",
+                    "Thông tin",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
@@ -26,17 +34,19 @@ namespace get_link_manga
 
             if (!Directory.Exists(sourceFolder))
             {
-                MessageBox.Show($"Không tìm thấy folder để nén:\n{sourceFolder}", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowLocalizedMessageBox(
+                    $"Cannot find folder to compress:\n{sourceFolder}",
+                    $"Không tìm thấy folder để nén:\n{sourceFolder}",
+                    "Information",
+                    "Thông tin",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
-            if (!EnsureSevenZipReady())
-            {
-                MessageBox.Show("Không thể khởi tạo 7-Zip portable.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            lblStatus.Text = "Compressing books...";
+            StartArchiveProgress(
+                _isVietnameseUi ? "Đang nén sách..." : "Compressing books...",
+                false);
 
             try
             {
@@ -45,24 +55,25 @@ namespace get_link_manga
                     File.Delete(archivePath);
                 }
 
-                string arguments = $"a -t7z -mx=9 -y \"{Path.GetFileName(archivePath)}\" \"{Path.GetFileName(sourceFolder)}\"";
-                string output = await RunSevenZipAsync(arguments);
-
-                if (!File.Exists(archivePath))
-                {
-                    throw new InvalidOperationException("7z không tạo ra file nén.");
-                }
+                _archiveCts = new CancellationTokenSource();
+                await CreateZipArchiveWithProgressAsync(sourceFolder, archivePath, _archiveCts.Token);
 
                 Directory.Delete(sourceFolder, true);
 
                 Log($"[Archive] Đã nén portable folder thành công: {archivePath}");
-                if (!string.IsNullOrWhiteSpace(output))
-                {
-                    Log($"[Archive] 7z: {output}");
-                }
-
-                lblStatus.Text = "Books compressed successfully.";
-                MessageBox.Show($"Đã nén xong thành file:\n{archivePath}\n\nFolder gốc đã được xóa.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                lblStatus.Text = _isVietnameseUi ? "Đã nén xong sách." : "Books compressed successfully.";
+                ShowLocalizedMessageBox(
+                    $"Compressed into file:\n{archivePath}\n\nSource folder was removed.",
+                    $"Đã nén xong thành file:\n{archivePath}\n\nFolder gốc đã được xóa.",
+                    "Success",
+                    "Thành công",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (OperationCanceledException)
+            {
+                Log("[Archive] Người dùng đã hủy thao tác nén.");
+                lblStatus.Text = _isVietnameseUi ? "Đã hủy nén." : "Compression cancelled.";
             }
             catch (Exception ex)
             {
@@ -70,32 +81,46 @@ namespace get_link_manga
                 lblStatus.Text = "Compress failed.";
                 MessageBox.Show($"Lỗi khi nén sách: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            finally
+            {
+                ResetArchiveProgress();
+                _archiveCts?.Dispose();
+                _archiveCts = null;
+            }
         }
 
         private async void BtnExtractBooks_Click(object sender, RoutedEventArgs e)
         {
             if (IsArchiveOperationBlocked())
             {
-                MessageBox.Show("Hãy dừng toàn bộ download trước khi giải nén sách.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowLocalizedMessageBox(
+                    "Stop active downloads before extracting books.",
+                    "Hãy dừng tải đang chạy trước khi giải nén sách.",
+                    "Information",
+                    "Thông tin",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
             string sourceFolder = PortablePaths.DefaultDownloadRoot;
-            string archivePath = PortablePaths.PortableArchivePath;
+            string archivePath = GetAvailablePortableArchivePath();
 
             if (!File.Exists(archivePath))
             {
-                MessageBox.Show($"Không tìm thấy file nén:\n{archivePath}", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowLocalizedMessageBox(
+                    $"Cannot find archive file:\n{PortablePaths.PortableArchivePath}\n{PortablePaths.LegacyPortableArchivePath}",
+                    $"Không tìm thấy file nén:\n{PortablePaths.PortableArchivePath}\n{PortablePaths.LegacyPortableArchivePath}",
+                    "Information",
+                    "Thông tin",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
-            if (!EnsureSevenZipReady())
-            {
-                MessageBox.Show("Không thể khởi tạo 7-Zip portable.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            lblStatus.Text = "Extracting books...";
+            StartArchiveProgress(
+                _isVietnameseUi ? "Đang giải nén sách..." : "Extracting books...",
+                false);
 
             try
             {
@@ -104,30 +129,59 @@ namespace get_link_manga
                     Directory.Delete(sourceFolder, true);
                 }
 
-                string arguments = $"x -y \"{Path.GetFileName(archivePath)}\" -o\"{PortablePaths.AppRoot}\"";
-                string output = await RunSevenZipAsync(arguments);
+                _archiveCts = new CancellationTokenSource();
+                if (string.Equals(Path.GetExtension(archivePath), ".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ExtractZipArchiveWithProgressAsync(archivePath, PortablePaths.AppRoot, _archiveCts.Token);
+                }
+                else
+                {
+                    if (!EnsureSevenZipReady())
+                    {
+                        throw new InvalidOperationException("Không thể khởi tạo 7-Zip portable.");
+                    }
+
+                    string arguments = $"x -y \"{Path.GetFileName(archivePath)}\" -o\"{PortablePaths.AppRoot}\"";
+                    string output = await RunSevenZipAsync(arguments);
+                    if (!string.IsNullOrWhiteSpace(output))
+                    {
+                        Log($"[Archive] 7z: {output}");
+                    }
+                }
 
                 if (!Directory.Exists(sourceFolder))
                 {
-                    throw new InvalidOperationException("7z đã chạy nhưng không bung ra folder sách.");
+                    throw new InvalidOperationException("Không bung ra folder sách.");
                 }
 
                 File.Delete(archivePath);
 
                 Log($"[Archive] Đã giải nén portable folder thành công: {sourceFolder}");
-                if (!string.IsNullOrWhiteSpace(output))
-                {
-                    Log($"[Archive] 7z: {output}");
-                }
-
-                lblStatus.Text = "Books extracted successfully.";
-                MessageBox.Show($"Đã giải nén xong folder:\n{sourceFolder}\n\nFile nén đã được xóa.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                lblStatus.Text = _isVietnameseUi ? "Đã giải nén xong sách." : "Books extracted successfully.";
+                ShowLocalizedMessageBox(
+                    $"Extracted folder:\n{sourceFolder}\n\nArchive file was removed.",
+                    $"Đã giải nén xong folder:\n{sourceFolder}\n\nFile nén đã được xóa.",
+                    "Success",
+                    "Thành công",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (OperationCanceledException)
+            {
+                Log("[Archive] Người dùng đã hủy thao tác giải nén.");
+                lblStatus.Text = _isVietnameseUi ? "Đã hủy giải nén." : "Extraction cancelled.";
             }
             catch (Exception ex)
             {
                 Log($"[Archive Error] Không thể giải nén sách: {ex.Message}");
                 lblStatus.Text = "Extract failed.";
                 MessageBox.Show($"Lỗi khi giải nén sách: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                ResetArchiveProgress();
+                _archiveCts?.Dispose();
+                _archiveCts = null;
             }
         }
 
@@ -217,23 +271,134 @@ namespace get_link_manga
             }
         }
 
+        private void StartArchiveProgress(string statusText, bool showPauseButton)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (archiveProgressPanel != null)
+                {
+                    archiveProgressPanel.Visibility = Visibility.Visible;
+                }
+
+                if (btnArchivePause != null)
+                {
+                    btnArchivePause.IsEnabled = showPauseButton;
+                    btnArchivePause.Content = "PAUSE";
+                }
+
+                if (btnArchiveStop != null)
+                {
+                    btnArchiveStop.IsEnabled = true;
+                }
+
+                if (btnCompressBooks != null)
+                {
+                    btnCompressBooks.IsEnabled = false;
+                }
+
+                if (btnExtractBooks != null)
+                {
+                    btnExtractBooks.IsEnabled = false;
+                }
+
+                UpdateArchiveProgressUi(0, 1, statusText);
+            });
+        }
+
+        private void UpdateArchiveProgressUi(int completed, int total, string statusText = null)
+        {
+            int safeTotal = Math.Max(1, total);
+            int safeCompleted = Math.Max(0, Math.Min(completed, safeTotal));
+            double percent = safeTotal <= 0 ? 0 : (safeCompleted * 100d) / safeTotal;
+
+            Dispatcher.Invoke(() =>
+            {
+                if (archiveProgressBar != null)
+                {
+                    archiveProgressBar.Minimum = 0;
+                    archiveProgressBar.Maximum = 100;
+                    archiveProgressBar.Value = Math.Max(0, Math.Min(100, percent));
+                }
+
+                if (txtArchiveProgressValue != null)
+                {
+                    txtArchiveProgressValue.Text = $"{percent:0}%";
+                }
+
+                if (!string.IsNullOrWhiteSpace(statusText))
+                {
+                    lblStatus.Text = statusText;
+                }
+            });
+        }
+
+        private void ResetArchiveProgress()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (archiveProgressBar != null)
+                {
+                    archiveProgressBar.Value = 0;
+                }
+
+                if (txtArchiveProgressValue != null)
+                {
+                    txtArchiveProgressValue.Text = "0%";
+                }
+
+                if (archiveProgressPanel != null)
+                {
+                    archiveProgressPanel.Visibility = Visibility.Collapsed;
+                }
+
+                if (btnArchivePause != null)
+                {
+                    btnArchivePause.IsEnabled = false;
+                    btnArchivePause.Content = "PAUSE";
+                }
+
+                if (btnArchiveStop != null)
+                {
+                    btnArchiveStop.IsEnabled = false;
+                }
+
+                if (btnCompressBooks != null)
+                {
+                    btnCompressBooks.IsEnabled = true;
+                }
+
+                if (btnExtractBooks != null)
+                {
+                    btnExtractBooks.IsEnabled = true;
+                }
+            });
+        }
+
         private bool IsArchiveOperationBlocked()
         {
-            if (_downloadCts != null)
-            {
-                return true;
-            }
-
             return _scrapedItems.Any(item =>
-                string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(item.Status, "Queued", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(item.Status, "Paused", StringComparison.OrdinalIgnoreCase));
+                string.Equals(item.Status, "Downloading", StringComparison.OrdinalIgnoreCase));
         }
 
         private bool EnsureSevenZipReady()
         {
             PortableArchiveBootstrap.EnsurePortableSevenZip();
             return File.Exists(PortablePaths.SevenZipExePath);
+        }
+
+        private string GetAvailablePortableArchivePath()
+        {
+            if (File.Exists(PortablePaths.PortableArchivePath))
+            {
+                return PortablePaths.PortableArchivePath;
+            }
+
+            if (File.Exists(PortablePaths.LegacyPortableArchivePath))
+            {
+                return PortablePaths.LegacyPortableArchivePath;
+            }
+
+            return PortablePaths.PortableArchivePath;
         }
 
         private async Task<string> RunSevenZipAsync(string arguments)
@@ -274,6 +439,88 @@ namespace get_link_manga
                     return CompactSingleLine(mergedOutput);
                 }
             });
+        }
+
+        private async Task CreateZipArchiveWithProgressAsync(string sourceFolder, string archivePath, CancellationToken token)
+        {
+            await Task.Run(() =>
+            {
+                string rootName = Path.GetFileName(sourceFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                var files = Directory.GetFiles(sourceFolder, "*", SearchOption.AllDirectories)
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                using (var stream = new FileStream(archivePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: false))
+                {
+                    int total = Math.Max(1, files.Count);
+                    int completed = 0;
+
+                    foreach (string filePath in files)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        string relativePath = GetRelativePathSafe(sourceFolder, filePath);
+                        string entryName = Path.Combine(rootName, relativePath).Replace(Path.DirectorySeparatorChar, '/').Replace(Path.AltDirectorySeparatorChar, '/');
+                        archive.CreateEntryFromFile(filePath, entryName, CompressionLevel.Fastest);
+
+                        completed++;
+                        UpdateArchiveProgressUi(completed, total, _isVietnameseUi
+                            ? $"Đang nén: {Path.GetFileName(filePath)}"
+                            : $"Compressing: {Path.GetFileName(filePath)}");
+                    }
+                }
+            }, token);
+
+            UpdateArchiveProgressUi(1, 1, _isVietnameseUi ? "Nén xong." : "Compression complete.");
+        }
+
+        private async Task ExtractZipArchiveWithProgressAsync(string archivePath, string destinationRoot, CancellationToken token)
+        {
+            await Task.Run(() =>
+            {
+                using (var stream = new FileStream(archivePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false))
+                {
+                    var entries = archive.Entries.Where(entry => !string.IsNullOrWhiteSpace(entry.FullName)).ToList();
+                    int total = Math.Max(1, entries.Count);
+                    int completed = 0;
+
+                    foreach (ZipArchiveEntry entry in entries)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        string destinationPath = Path.GetFullPath(Path.Combine(destinationRoot, entry.FullName));
+                        Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
+
+                        if (string.IsNullOrEmpty(entry.Name))
+                        {
+                            Directory.CreateDirectory(destinationPath);
+                        }
+                        else
+                        {
+                            entry.ExtractToFile(destinationPath, overwrite: true);
+                        }
+
+                        completed++;
+                        UpdateArchiveProgressUi(completed, total, _isVietnameseUi
+                            ? $"Đang giải nén: {entry.Name}"
+                            : $"Extracting: {entry.Name}");
+                    }
+                }
+            }, token);
+
+            UpdateArchiveProgressUi(1, 1, _isVietnameseUi ? "Giải nén xong." : "Extraction complete.");
+        }
+
+        private static string GetRelativePathSafe(string basePath, string fullPath)
+        {
+            string baseNormalized = Path.GetFullPath(basePath)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            Uri baseUri = new Uri(baseNormalized);
+            Uri fullUri = new Uri(Path.GetFullPath(fullPath));
+            string relative = Uri.UnescapeDataString(baseUri.MakeRelativeUri(fullUri).ToString());
+            return relative.Replace('/', Path.DirectorySeparatorChar);
         }
 
         private static string CompactSingleLine(string text)
@@ -519,55 +766,10 @@ namespace get_link_manga
             Directory.Delete(source, true);
         }
 
-        private string GetActiveTargetFolder(string downloadRoot)
+        private string GetActiveTargetFolder_LegacyDoNotUse(string downloadRoot)
         {
-            string subFolder = "";
-            Dispatcher.Invoke(() =>
-            {
-                if (tabLeftPanel == null) return;
-
-                if (tabLeftPanel.SelectedIndex == 0)
-                {
-                    if (tabManga != null && tabManga.SelectedItem is System.Windows.Controls.TabItem selectedMangaTab)
-                    {
-                        string header = selectedMangaTab.Header?.ToString().ToLower() ?? "";
-                        if (header.Contains("truyenqq"))
-                            subFolder = "truyenqq";
-                        else if (header.Contains("nettruyen"))
-                            subFolder = "nettruyen";
-                    }
-                    else
-                    {
-                        subFolder = "truyenqq";
-                    }
-                }
-                else if (tabLeftPanel.SelectedIndex == 1)
-                {
-                    if (tabHentai != null && tabHentai.SelectedItem is System.Windows.Controls.TabItem selectedHentaiTab)
-                    {
-                        string header = selectedHentaiTab.Header?.ToString().ToLower() ?? "";
-                        if (header.Contains("hentaiforce"))
-                            subFolder = "hentaiforce.net";
-                        else if (header.Contains("nhentai"))
-                            subFolder = "nhentai.net";
-                        else if (header.Contains("hentaivn"))
-                            subFolder = "vi-hentai.pro";
-                        else if (header.Contains("hentaiera"))
-                            subFolder = "hentaiera.com";
-                    }
-                }
-            });
-
-            string targetFolder = string.IsNullOrEmpty(subFolder)
-                ? downloadRoot
-                : Path.Combine(downloadRoot, subFolder);
-
-            if (!Directory.Exists(targetFolder))
-            {
-                targetFolder = downloadRoot;
-            }
-
-            return targetFolder;
+            // Legacy placeholder only. Explorer flow moved to MainWindow.SystemExplorer.cs.
+            return downloadRoot;
         }
     }
 }

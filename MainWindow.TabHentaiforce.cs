@@ -73,7 +73,7 @@ namespace get_link_manga
 
             try
             {
-                string html = await _httpClient.GetStringAsync(url);
+                string html = await FetchStringAsync(url, _downloadCts?.Token ?? CancellationToken.None);
                 
                 // Parse absolute path to build pagination matching rules
                 Uri uri = new Uri(url);
@@ -292,7 +292,7 @@ namespace get_link_manga
                     bool pageLoaded = false;
                     try
                     {
-                        html = await _httpClient.GetStringAsync(pageUrl);
+                        html = await FetchStringAsync(pageUrl, _downloadCts?.Token ?? CancellationToken.None);
                         pageLoaded = true;
                     }
                     catch (Exception ex)
@@ -335,7 +335,7 @@ namespace get_link_manga
                         string galleryUrl = $"https://hentaiforce.net/view/{page}";
                         try
                         {
-                            string galleryHtml = await _httpClient.GetStringAsync(galleryUrl);
+                            string galleryHtml = await FetchStringAsync(galleryUrl, _downloadCts?.Token ?? CancellationToken.None);
                             // Extract title of the gallery: <h1 class="text-left font-weight-bold">BlondBlaze(Dispatch).</h1>
                             var titleMatch = Regex.Match(galleryHtml, @"<h1\s+class=""[^""]*?font-weight-bold[^""]*?"">\s*([^<]+?)\s*</h1>", RegexOptions.IgnoreCase);
                             string title = $"Gallery {page}";
@@ -449,7 +449,7 @@ namespace get_link_manga
                         }
 
                         // Try to scrape title from page
-                        string html = await _httpClient.GetStringAsync(link);
+                        string html = await FetchStringAsync(link, _downloadCts?.Token ?? CancellationToken.None);
                         var titleMatch = Regex.Match(html, @"<h1\s+class=""[^""]*?font-weight-bold[^""]*?"">\s*([^<]+?)\s*</h1>", RegexOptions.IgnoreCase);
                         string title = "Gallery ID " + GetGalleryIdFromLink(link);
                         
@@ -535,16 +535,22 @@ namespace get_link_manga
                 "",
                 RegexOptions.IgnoreCase).Trim();
 
-            // Find all bracketed contents: [...] or (...) or {...}
-            var matches = Regex.Matches(title, @"[\[({][^\])}]*[\])}]");
-            System.Collections.Generic.List<string> bracketsList = new System.Collections.Generic.List<string>();
-            foreach (Match m in matches)
+            var bracketSegments = ExtractLeadingBracketSegments(title);
+            var bracketsList = bracketSegments
+                .Select(segment => segment.Text.Trim())
+                .Where(segment => !string.IsNullOrWhiteSpace(segment))
+                .ToList();
+
+            int prefixLength = 0;
+            if (bracketSegments.Count > 0)
             {
-                bracketsList.Add(m.Value.Trim());
+                var lastSegment = bracketSegments[bracketSegments.Count - 1];
+                prefixLength = lastSegment.Start + lastSegment.Length;
             }
 
-            // Remove all bracketed contents from the title
-            string cleanTitle = Regex.Replace(title, @"[\[({][^\])}]*[\])}]", "");
+            string cleanTitle = prefixLength > 0 && prefixLength <= title.Length
+                ? title.Substring(prefixLength)
+                : title;
 
             // Clean up consecutive spaces and delimiters
             cleanTitle = Regex.Replace(cleanTitle, @"\s+", " ").Trim();
@@ -557,6 +563,113 @@ namespace get_link_manga
             }
 
             return Regex.Replace(cleanTitle, @"\s+", " ").Trim();
+        }
+
+        private sealed class BracketSegment
+        {
+            public int Start { get; set; }
+            public int Length { get; set; }
+            public string Text { get; set; }
+        }
+
+        private System.Collections.Generic.List<BracketSegment> ExtractLeadingBracketSegments(string input)
+        {
+            var allSegments = ExtractBalancedBracketSegments(input);
+            var leadingSegments = new System.Collections.Generic.List<BracketSegment>();
+            if (allSegments.Count == 0)
+            {
+                return leadingSegments;
+            }
+
+            int cursor = 0;
+            foreach (var segment in allSegments.OrderBy(segment => segment.Start))
+            {
+                while (cursor < input.Length && char.IsWhiteSpace(input[cursor]))
+                {
+                    cursor++;
+                }
+
+                if (segment.Start != cursor)
+                {
+                    break;
+                }
+
+                leadingSegments.Add(segment);
+                cursor = segment.Start + segment.Length;
+            }
+
+            return leadingSegments;
+        }
+
+        private System.Collections.Generic.List<BracketSegment> ExtractBalancedBracketSegments(string input)
+        {
+            var segments = new System.Collections.Generic.List<BracketSegment>();
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return segments;
+            }
+
+            var expectedClosers = new System.Collections.Generic.Stack<char>();
+            int topLevelStart = -1;
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                char current = input[i];
+                char expectedCloser;
+                if (TryGetBracketCloser(current, out expectedCloser))
+                {
+                    if (expectedClosers.Count == 0)
+                    {
+                        topLevelStart = i;
+                    }
+
+                    expectedClosers.Push(expectedCloser);
+                    continue;
+                }
+
+                if (expectedClosers.Count == 0)
+                {
+                    continue;
+                }
+
+                if (current != expectedClosers.Peek())
+                {
+                    continue;
+                }
+
+                expectedClosers.Pop();
+                if (expectedClosers.Count == 0 && topLevelStart >= 0)
+                {
+                    segments.Add(new BracketSegment
+                    {
+                        Start = topLevelStart,
+                        Length = i - topLevelStart + 1,
+                        Text = input.Substring(topLevelStart, i - topLevelStart + 1)
+                    });
+                    topLevelStart = -1;
+                }
+            }
+
+            return segments;
+        }
+
+        private bool TryGetBracketCloser(char opener, out char closer)
+        {
+            switch (opener)
+            {
+                case '[':
+                    closer = ']';
+                    return true;
+                case '(':
+                    closer = ')';
+                    return true;
+                case '{':
+                    closer = '}';
+                    return true;
+                default:
+                    closer = '\0';
+                    return false;
+            }
         }
     }
 }

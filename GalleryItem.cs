@@ -163,6 +163,7 @@ namespace get_link_manga
         private string _currentProcess;
         private int _errorCount;
         private string _downloadPath;
+        private string _chapterSelectionText;
         private double _progressPercent;
         private int _connectionCount = 1;
         private int _multiDownloadCount = 2;
@@ -321,6 +322,7 @@ namespace get_link_manga
                 {
                     _status = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(StatusSortOrder));
                     OnPropertyChanged(nameof(DisplayStatusText));
                     OnPropertyChanged(nameof(ShouldShowStatus));
                     OnPropertyChanged(nameof(DisplayDownloadingChapter));
@@ -390,6 +392,7 @@ namespace get_link_manga
 
                     OnPropertyChanged(nameof(DisplayDownloadingChapter));
                     OnPropertyChanged(nameof(DisplayDownloadingPageProgress));
+                    OnPropertyChanged(nameof(ProcessSortText));
                     OnPropertyChanged(nameof(ShouldShowProcess));
                 }
             }
@@ -405,6 +408,19 @@ namespace get_link_manga
         {
             get => _downloadPath;
             set { if (_downloadPath != value) { _downloadPath = value; OnPropertyChanged(); } }
+        }
+
+        public string ChapterSelectionText
+        {
+            get => _chapterSelectionText;
+            set
+            {
+                if (_chapterSelectionText != value)
+                {
+                    _chapterSelectionText = value;
+                    OnPropertyChanged();
+                }
+            }
         }
 
         public double ProgressPercent
@@ -453,6 +469,7 @@ namespace get_link_manga
                     _downloadingChapter = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(DisplayDownloadingChapter));
+                    OnPropertyChanged(nameof(ProcessSortText));
                     OnPropertyChanged(nameof(ShouldShowProcess));
                 }
             }
@@ -468,6 +485,7 @@ namespace get_link_manga
                     _downloadingPageProgress = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(DisplayDownloadingPageProgress));
+                    OnPropertyChanged(nameof(ProcessSortText));
                     OnPropertyChanged(nameof(ShouldShowProcess));
                 }
             }
@@ -476,6 +494,53 @@ namespace get_link_manga
         private bool ShouldHideQueuedDisplay =>
             !_isChecked &&
             string.Equals(_status, "Queued", StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsVietnameseUiEnabled()
+        {
+            try
+            {
+                return System.Windows.Application.Current?.Properties["IsVietnameseUi"] is bool isVietnamese && isVietnamese;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string GetLocalizedLabel(string english, string vietnamese)
+        {
+            return IsVietnameseUiEnabled() ? vietnamese : english;
+        }
+
+        private static string NormalizePageProgressText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = value.Trim();
+            string lower = trimmed.ToLowerInvariant();
+
+            if (lower.StartsWith("trang "))
+            {
+                string pageValue = trimmed.Substring("trang ".Length).Trim();
+                return $"{GetLocalizedLabel("Page", "Trang")} {pageValue}";
+            }
+
+            if (lower.StartsWith("page "))
+            {
+                string pageValue = trimmed.Substring("page ".Length).Trim();
+                return $"{GetLocalizedLabel("Page", "Trang")} {pageValue}";
+            }
+
+            if (trimmed.Contains("/"))
+            {
+                return $"{GetLocalizedLabel("Page", "Trang")} {trimmed}";
+            }
+
+            return trimmed;
+        }
 
         public bool ShouldShowStatus =>
             !string.IsNullOrWhiteSpace(DisplayStatusText);
@@ -492,21 +557,47 @@ namespace get_link_manga
                 switch (_status)
                 {
                     case "Queued":
-                        return "⏳ Chờ tải (Waiting)";
+                        return IsVietnameseUiEnabled() ? "⏳ Chờ tải" : "⏳ Waiting";
                     case "Downloading":
-                        return "⬇️ Đang tải (Downloading)";
+                        return IsVietnameseUiEnabled() ? "⬇️ Đang tải" : "⬇️ Downloading";
                     case "Completed":
-                        return "✅ Hoàn tất (Done)";
+                        return IsVietnameseUiEnabled() ? "✅ Hoàn tất" : "✅ Done";
                     case "Error":
-                        return "❌ Lỗi (Error)";
+                        return IsVietnameseUiEnabled() ? "❌ Lỗi" : "❌ Error";
                     case "Paused":
-                        return "⏸️ Tạm dừng (Paused)";
+                        return IsVietnameseUiEnabled() ? "⏸️ Tạm dừng" : "⏸️ Paused";
                     case "Stopping":
-                        return "🛑 Dừng mềm (Stopping)";
+                        return IsVietnameseUiEnabled() ? "🛑 Đang dừng" : "🛑 Stopping";
                     case "Cancelled":
-                        return "⛔ Đã dừng (Stopped)";
+                        return IsVietnameseUiEnabled() ? "⛔ Đã dừng" : "⛔ Stopped";
                     default:
                         return string.IsNullOrWhiteSpace(_status) ? string.Empty : _status;
+                }
+            }
+        }
+
+        public int StatusSortOrder
+        {
+            get
+            {
+                switch ((_status ?? string.Empty).Trim().ToLowerInvariant())
+                {
+                    case "downloading":
+                        return 1;
+                    case "queued":
+                        return 2;
+                    case "paused":
+                        return 3;
+                    case "error":
+                        return 4;
+                    case "completed":
+                        return 5;
+                    case "cancelled":
+                        return 6;
+                    case "stopping":
+                        return 7;
+                    default:
+                        return 99;
                 }
             }
         }
@@ -515,11 +606,23 @@ namespace get_link_manga
             ShouldHideQueuedDisplay ? string.Empty : _downloadingChapter;
 
         public string DisplayDownloadingPageProgress =>
-            ShouldHideQueuedDisplay ? string.Empty : _downloadingPageProgress;
+            ShouldHideQueuedDisplay ? string.Empty : NormalizePageProgressText(_downloadingPageProgress);
+
+        public string ProcessSortText =>
+            $"{DisplayDownloadingChapter ?? string.Empty}|{DisplayDownloadingPageProgress ?? string.Empty}";
 
         public bool ShouldShowProcess =>
             !string.IsNullOrWhiteSpace(DisplayDownloadingChapter) ||
             !string.IsNullOrWhiteSpace(DisplayDownloadingPageProgress);
+
+        public void RefreshDisplayText()
+        {
+            OnPropertyChanged(nameof(DisplayStatusText));
+            OnPropertyChanged(nameof(ShouldShowStatus));
+            OnPropertyChanged(nameof(DisplayDownloadingChapter));
+            OnPropertyChanged(nameof(DisplayDownloadingPageProgress));
+            OnPropertyChanged(nameof(ShouldShowProcess));
+        }
 
         public List<ErrorDetail> GetUniqueErrors()
         {

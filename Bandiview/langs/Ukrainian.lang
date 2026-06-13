@@ -1,0 +1,696 @@
+;
+; Auto generated file by doc2langs (bandiview)
+; 
+; DO NOT MODIFY THIS FILE MANUALLY!!!
+; 
+; If you want to modify this file, please visit https://go.bandisoft.com/apptranslation for more information.
+;
+
+[GENERAL]
+LANG_NAME                               = Українська
+TRANSLATORS                             = Дмитро Сорока, Did Kokos
+
+[TEXT]
+TEXT_MESSAGEBOX_OK                      = OK
+TEXT_MESSAGEBOX_CANCEL                  = Відміна
+TEXT_MESSAGEBOX_ABORT                   = Перервати
+TEXT_MESSAGEBOX_RETRY                   = Повторити
+TEXT_MESSAGEBOX_IGNORE                  = Пропустити
+TEXT_MESSAGEBOX_YES                     = Так
+TEXT_MESSAGEBOX_NO                      = Ні
+TEXT_MESSAGEBOX_CONTINUE                = Продовжити
+TEXT_MESSAGEBOX_HELP                    = Допомога
+
+TEXT_BETA                               = Бета
+TEXT_PORTABLE                           = Портативна
+TEXT_BUILDNO                            = Збірка#
+TEXT_SELECT_FOLDER                      = Виберіть папку
+TEXT_ASSOC_IMAGE                        = Файл зображення (${str1})
+TEXT_ASSOC_RAWIMAGE                     = Файл RAW зображення (${str1})
+TEXT_ASSOC_EBOOK                        = Стиснений файл зображення (${str1})
+TEXT_APP_DESC                           = BandiView – це швидкий переглядач зображень.
+TEXT_ABOUTBOX_TAB1                      = Про BandiView
+TEXT_PHOTOFOLDER_NAME                   = BandiView
+TEXT_OPENFILEDLG_IMAGEFILE              = Файл зображення
+TEXT_OPENFILEDLG_ALLFILE                = Всі файли
+TEXT_NEW_FOLDER                         = Нова папка
+TEXT_TRANSF_FILE_BEGIN_WITH             = BandiView_
+
+TEXT_UPDATE_DOWNLOAD_ERROR_MSG          = Не вдалося завантажити необхідні файди встановлення.
+TEXT_UPDATE_VERSION_CHECK_FAILED        = Помилка перевірки версії
+TEXT_UPDATE_VERSION_CHECKING            = Перевірка версії
+TEXT_UPDATE_DOWNLOAD_FAILED             = Помилка завантаження
+TEXT_UPDATE_LATEST_VERSION              = Оновлення відсутні
+TEXT_UPDATE_DO_DOWNLOAD                 = Наявне оновлення
+TEXT_UPDATE_DOWNLOAD_COMPLETED          = Завантаження завершено
+
+TEXT_ERR_NOT_ENOUGH_MEMORY              = Недостатньо пам'яті
+TEXT_ERR_BROKEN_FILE                    = Файл ушкоджений
+TEXT_ERR_CANT_CHANGE_FILENAME_WITH      = "Не можна використовувати в імені файлу [br]? : \ / * < > | ""
+TEXT_REGISTRATION_FAILED                = «Помилка реєстрації. Перевірте адресу електронної пошти та ключ продукту».
+TEXT_REGISTRATION_SUCCEED               = Ваш BandiView зареєстровано.
+TEXT_REGISTRATION_ASK                   = Ви впевнені, що хочете скасувати реєстрацію BandiView?
+TEXT_REGISTER_NOT_REGISTERED            = «BandiView не зареєстрований. Будь ласка, купіть і зареєструйте BandiView, щоб використовувати його без обмежень у функціях».
+TEXT_REGISTER_INFO                      = "«Цей користувач зареєстрував BandiView:[br]Адреса електронної пошти: ${str1}[br]Ключ продукту: ${str2}""
+
+
+TEXT_MSG_LASTPAGE                       = Це останнє зображення
+TEXT_MSG_FIRSTPAGE                      = Це перше зображення
+TEXT_MSG_NOIMAGEFILE                    = В цьому архіві немає зображень
+TEXT_MSG_INVALID_PHOTOFOLDER            = "Будь ласка, вкажіть в налаштуваннях шлях до "Фото папки 2""
+TEXT_MSG_CANTOPENARCHIVE                = Не вдалося відкрити файл:
+TEXT_MSG_INVALID_ARCHIVE_VERSION        = Цей файл не підтримується. Будь ласка, оновіть програму.
+TEXT_MSG_INVALID_PASSWORD               = Невірний пароль
+TEXT_MSG_STRETCHWHENSMALL_ON            = Розтягувати дрібні: Увімк.
+TEXT_MSG_STRETCHWHENSMALL_OFF           = Розтягувати дрібні: Вимк.
+TEXT_MSG_CANTOPENBOOKMARK               = Не вдалося відкрити закладки
+TEXT_MSG_BROKENARCHIVE                  = Цей архів пошкоджено
+TEXT_MSG_ADDTOBOOKMARK                  = Додати в закладки:
+TEXT_MSG_LOADRECENTBOOKMARK             = Відкрити нещодавно збережені закладки:
+TEXT_MSG_SLIDESHOWSTART                 = Запустити слайдшоу: ${TIME} сек
+TEXT_MSG_SLIDESHOWSTOP                  = Зупинити слайдшоу
+TEXT_MSG_ALWAYSONTOP_ON                 = Завжди вгорі: Увімк.
+TEXT_MSG_ALWAYSONTOP_OFF                = Завжди вгорі: Вимк.
+TEXT_MSG_ZOOMFIX_ON                     = Зафіксувати масштаб: Увімк.
+TEXT_MSG_ZOOMFIX_OFF                    = Зафіксувати масштаб: Вимк.
+TEXT_MSG_EXTPROGERR_LAUNCH              = Відкрити в Редакторі
+TEXT_MSG_EXTPROGERR_NOTSET              = Будь ласка, виберить Редактор зображень в налаштуваннях (Paint, Photoshop, и т.д.).
+TEXT_MSG_ARCHIVEBOOKMARK                = Запам'ятати розміщення всередині архіву:
+TEXT_MSG_RESTART_NOTIFY                 = Програма перезавантажиться
+TEXT_MSG_BOOKMARK_EXPORTED              = Закладки було збережено
+TEXT_MSG_BOOKMARK_EXPORT_FAILED         = Не вдалося зберегти закладки
+TEXT_MSG_BOOKMARK_OPEN_FAILED           = Не вдається відкрити закладки
+TEXT_MSG_BOOKMARK_IMPORT_FAILED         = Не вдалося імпортувати закладки
+TEXT_MSG_BOOKMARK_IMPORTED              = Імпортування закладок завершено
+TEXT_MSG_SETWALLPAPER_FAILED            = Не вдається встановити як шпалери
+TEXT_MSG_CANT_OPEN_IMAGE                = Не вдається відкрити файл зображення
+TEXT_MSG_CANT_OPEN_MMF                  = Не вдається відкрити MMF. (mmf:${str1})
+TEXT_MSG_NOTICE_RESTART                 = Програма перезавантажиться
+TEXT_MSG_DELETED                        = Видалено
+TEXT_MSG_USERCANCELLED                  = Скасоване
+TEXT_MSG_SET_TEMP_PATH                  = Шлях до тимчасової папки
+TEXT_MSG_TRANSFORM_ERR_CANT_OPEN_FILE   = Не вдається відкрити файл
+TEXT_MSG_TRANSFORM_ERR_CANT_SAVE_FILE   = Не вдається зберегти файл
+
+TEXT_MSG_ROTATE_0                       = Не повертати
+TEXT_MSG_ROTATE_90                      = Повернути на 90˚ вправо
+TEXT_MSG_ROTATE_180                     = Повернути на 180˚
+TEXT_MSG_ROTATE_270                     = Повернути на 90˚ вліво
+
+TEXT_ASK_INIT                           = Бажаєте ініціалізувати налаштування?
+TEXT_ASK_DELETE_IMAGE                   = Бажаєте Видалити цей файл до корзини?
+TEXT_ASK_DELETE_ARCHIVE                 = Це зображення є частиною архіву.[br][br]Бажаєте Видалити архів  остаточно?
+TEXT_ASK_LAUNCH_ASSOCUI                 = Для Windows 8 чи пізніших версій користувачамм необхідно зіставити розширення.[br][br]Бажаєте зв'язати розширення?
+TEXT_ASK_STOP_BATCH_PROCESSING          = Йде процес обробки. Бажаєте відмінити його?
+TEXT_MSG_CRASH_REPORT2                  = BandiView зіткнувся з проблемою і його необхідно закрити. Надіслати звіт про помилку розробнику?
+
+TEXT_FILTERMODE_NONE                    = Без фільтра
+TEXT_FILTERMODE_INTER                   = Фільтр: Зглажування
+TEXT_FILTERMODE_SHARPEN                 = Фільтр: Зглажування+Різкість
+
+TEXT_SHOWMODE_NONE                      = Перегляд: Реальний розмір (100%)
+TEXT_SHOWMODE_FIT2WINDOW                = Перегляд: За розміром вікна
+TEXT_SHOWMODE_FIT2WIDTH                 = Перегляд: За шириною
+TEXT_SHOWMODE_TWO_L2R                   = Розгортка (Зліва направо)
+TEXT_SHOWMODE_TWO_R2L                   = Розгортка (Справа наліво)
+TEXT_NEXTPATH_NOFILE                    = Перехід до папки: Останнє зображення (Будь ласка, відкрийте файл)
+TEXT_NEXTPATH_LASTFOLDER                = Наступна папка: Останнє зображення
+TEXT_PREVPATH_LASTFOLDER                = Попередня папка: Останнє зображення
+TEXT_NEXTPATH_OPENFOLDER                = Наступна папка:
+TEXT_PREVPATH_OPENFOLDER                = Попередня папка:
+
+TEXT_DELETE                             = Видалено:
+TEXT_COPY_TO_PHOTOFOLDER1               = Скопійовано в Папку 1:
+TEXT_COPY_TO_PHOTOFOLDER2               = Скопійовано в Папку 2:
+TEXT_MOVE_TO_PHOTOFOLDER1               = Переміщено в Папку 1:
+
+TEXT_BOOKMARKEDITDLG_PATH               = Шлях
+
+TEXT_PAGETURNFX_NONE                    = Без ефекту
+TEXT_PAGETURNFX_HV2                     = Листання
+TEXT_PAGETURNFX_ALPHA                   = ALPHA
+TEXT_PAGETURNFX_SLIDE                   = SLIDE
+
+TEXT_FILEINFO_FILENAME                  = Ім'я файлу
+TEXT_FILEINFO_SIZE                      = Розмір файлу
+TEXT_FILEINFO_CREATETIME                = Дата створення
+TEXT_FILEINFO_MODIFYTIME                = Дата змінення
+TEXT_FILEINFO_IMGINFO                   = Деталі
+TEXT_FILEINFO_ROTATE                    = Поворот
+TEXT_FILEINFO_ZOOM                      = Масштаб
+
+TEXT_EXIF_MAKER                         = Виробник
+TEXT_EXIF_MODEL                         = Модель камери
+TEXT_EXIF_SOFTWARE                      = Програма
+TEXT_EXIF_ARTIST                        = Автор
+TEXT_EXIF_COPYRIGHTPHOTOGRAPHER         = Авторські права
+TEXT_EXIF_DATETIME                      = Дата/Час зйомки
+TEXT_EXIF_FLASHUSED                     = Спалах
+TEXT_EXIF_FOCALLENGTH                   = Фокусна відстань
+TEXT_EXIF_FOCALLENGTH_35MM              = Фокусна відстань (35 мм)
+TEXT_EXIF_EXPOSURETIME                  = Витримка
+TEXT_EXIF_EXPOSUREBIAS                  = Експокорекція
+TEXT_EXIF_APERTUREFNUMBER               = Діафрагма
+TEXT_EXIF_ISOEQUIVALENT                 = Чуттєвість
+TEXT_EXIF_METERINGMODE                  = Режим експозаміру
+TEXT_EXIF_EXPOSUREPROGRAM               = Експпрограма
+TEXT_EXIF_DISTANCE                      = Відстань фокусування
+TEXT_EXIF_GPS                           = Інформація GPS
+TEXT_EXIF_COMMENT                       = Коментар
+
+
+TEXT_SORT_METHOD_FILENAME               = Сортувати за ім'ям
+TEXT_SORT_METHOD_DATE                   = Сортувати за датою змінення
+TEXT_SORT_METHOD_SIZE                   = Сортувати за розміром
+TEXT_SORT_METHOD_EXT                    = Сортувати за типом
+
+TEXT_BTN_PREV_FOLDER                    = Попередня папка ( [ )
+TEXT_BTN_NEXT_FOLDER                    = Наступна папка ( ] )
+TEXT_BTN_PREV_ARCHIVE                   = Попередній архів ( [ )
+TEXT_BTN_NEXT_ARCHIVE                   = Наступний архів ( ] )
+
+
+[CHILD_VIEW]
+SHOWMODE                                = Перегляд зображення
+SHOWMODE_NONE                           = Реальний розмір (100%)(&0)
+SHOWMODE_STRETCH                        = За розміром вікна(&9)
+SHOWMODE_STRETCH_SMALL                  = Розтягувати дрібні(&Z)
+SHOWMODE_FITWIDTH                       = За шириною(&8)
+SHOWMODE_TWO_L2R                        = Розгортка (Зліва направо)(&7)
+SHOWMODE_TWO_R2L                        = Розгортка (Справа наліво)(&6)
+SHOWMODE_STRETCH_SMALL                  = Розтягувати дрібні(&Z)
+
+VIEW_FILTER_NONE                        = Без фільтра(&U)
+VIEW_FILTER_INTER                       = Згладжування(&I)
+VIEW_FILTER_SHARPEN                     = Згладжування+Різкість(&S)
+
+VIEW_INTER_MODE                         = Інтерполяція
+VIEW_INTER_BILINEAR                     = Білінійна (Швидко)
+VIEW_INTER_BICUBIC                      = Бікубічна (Повільно, висока якість)
+VIEW_INTER_LANCZOS                      = Метод Ланцоша (Повільно, висока якість)
+
+VIEW_IMAGEPROC                          = Ефекти зображень
+VIEW_IMAGEPROC_NEGATIVE                 = Інвертувати (Ctrl+I)
+VIEW_IMAGEPROC_GAMMA                    = Гамма-компенсація (Ctrl+G)
+VIEW_IMAGEPROC_FLIP                     = Відобразити по вертикалі (Ctrl+F)
+VIEW_IMAGEPROC_MIRROR                   = Відобразити по горизонталі (Ctrl+M)
+
+[CHILD_HDR]
+
+[CHILD_ZOOM]
+
+[CHILD_SORT]
+
+[CHILD_GROUP]
+
+[CHILD_BOOKMARK]
+BOOKMARK_TITLE                          = Закладки
+TOOLTIP_BOOKMARK_DELALL                 = Видалити всі закладки
+TEXT_ASK_DELETE_BOOKMARKALL             = Бажаєте видалити всі збережені закладки?
+
+[CLIPBOARD]
+TEXT_MSG_COPY2CLIPBOARD                 = Скопійовано в буфер обміну
+TEXT_MSG_COPY2CLIPBOARD_FAILED          = Не вдалося скопіювати в буфер обміну
+
+[PHOTOFOLDER]
+CMD_PHOTOFOLDER1_COPY                   = Скопіювати до папки 1\tInsert
+CMD_PHOTOFOLDER1_MOVE                   = Перемістити до папки 1\tCtrl+Insert
+CMD_PHOTOFOLDER2_COPY                   = Скопіювати до папки 2\tShift+Insert
+CMD_PHOTOFOLDER_SETTING                 = Налаштування папок із фото
+CMD_PHOTOFOLDER1_OPEN                   = Відкрити папку 1
+
+[SLIDESHOW]
+SLIDESHOW_00                            = Зупинити слайдшоу\tCtrl+0
+SLIDESHOW_LOOP                          = Повторити
+SLIDESHOW_RANDOM                        = Випадковий порядок
+
+MENUSTR_PAGETURNFX_NONE                 = Без ефекту
+MENUSTR_PAGETURNFX_FLIP                 = Листання
+MENUSTR_PAGETURNFX_ALPHA                = Розчинення
+MENUSTR_PAGETURNFX_SLIDE                = Ковзання
+
+[IDD_SETTING_SLIDESHOW]
+
+
+
+[MENU]
+;$MENUSTR_OPEN                          = Відкрити[tab]Ctrl+O
+;$MENUSTR_OPENFOLDER                    = Відкрити папку\tF
+;$MENUSTR_SETTING                       = Налаштування\tF5
+$MENUSTR_OPEN                           = Відкрити
+$MENUSTR_OPENFOLDER                     = Відкрити папку(F)
+$MENUSTR_SETTING                        = Налаштування
+$MENUSTR_PAGESELECT                     = Вибрати зображення(Enter)
+$MENUSTR_PRINT                          = Друк(Ctrl+P)
+$MENUSTR_DELETE                         = Видалити(Del)
+
+$MENUSTR_CLOSE                          = Закрити\tF4
+$MENUSTR_OPEN_FILEPOSITION              = Показати в Провіднику\tCtrl+Enter
+
+$MENUSTR_PAGEMOVE                       = Перехід до зображення
+$MENUSTR_PAGEMOVE_NEXT                  = Наступне зображення\t->
+$MENUSTR_PAGEMOVE_PREV                  = Попереднє зображення\t<-
+$MENUSTR_PAGEMOVE_HOME                  = Перше зображення\tHome
+$MENUSTR_PAGEMOVE_END                   = Останнє зображення\tEnd
+$MENUSTR_PAGEMOVE_NEXT10                = Наступне 10-е\tCtrl+PgDn
+$MENUSTR_PAGEMOVE_PREV10                = Попереднє 10-е\tCtrl+PgUp
+$MENUSTR_PAGEMOVE_RAND_NEXT             = Наступне випадкове\tCtrl+Alt+PgDn
+$MENUSTR_PAGEMOVE_RAND_PREV             = Попереднє випадкове\tCtrl+Alt+PgUp
+$MENUSTR_PAGEMOVE_NEXT_PATH             = Наступна папка/архів\t]
+$MENUSTR_PAGEMOVE_PREV_PATH             = Попередня папка/архів\t[
+
+$MENUSTR_SORT_METHOD                    = Сортувати
+$MENUSTR_SORT_METHOD_FILENAME           = За ім'ям
+$MENUSTR_SORT_METHOD_DATE               = За датою
+$MENUSTR_SORT_METHOD_SIZE               = За розміром
+$MENUSTR_SORT_METHOD_EXT                = За типом
+$MENUSTR_SORT_DESCENDING                = Descending
+
+$MENUSTR_ZOOM                           = Масштаб
+$MENUSTR_ROTATION                       = Поворот
+$MENUSTR_ROTATION_NONE                  = Не повертати\tAlt+Up
+$MENUSTR_ROTATION_L90                   = Повернути на 90˚ вліво\tAlt+Left
+$MENUSTR_ROTATION_R90                   = Повернути на 90˚ вправо\tAlt+Right
+$MENUSTR_ROTATION_180                   = Відобразити по горизонталі\tAlt+Down
+
+$MENUSTR_EXIFSHOW_TOGGLE                = Файл/EXIF-інформація\tTAB
+$MENUSTR_WALLPAPER                      = Встановити як шпалери...
+$MENUSTR_COPY_TO_PHOTOFOLDER            = Скопіювати до папки\tIns
+$MENUSTR_COPY2CLIPBOARD                 = Скопіювати в буфер\tCtrl+C
+$MENUSTR_EXTPROG0                       = Відкрити в редакторі\tCtrl+E
+$MENUSTR_CONVERT                        = Перетворити\tCtrl+T
+
+$MENUSTR_ABOUT                          = Про програму\tF1
+$MENUSTR_EXIT                           = Вихід\tX
+
+; about popup menu
+MENUSTR_HOMEPAGE                        = Сайт програми
+MENUSTR_HELP                            = Довідка по швидких клавішах
+
+; bookmark popup menu
+MENUSTR_BOOKMARK_ADD                    = Додати в закладки\tB
+MENUSTR_BOOKMARK_DELALL                 = Видалити всі закладки
+MENUSTR_BOOKMARK_SETTTING               = Налаштування закладок
+MENUSTR_BOOKMARK_EDIT                   = Редагувати закладки\tF3
+
+
+[DIALOG]
+IDCANCEL                                = Відміна
+IDOK                                    = OK
+
+[IDD_ABOUT]
+IDD_ABOUT                               = Про BandiView
+IDC_BTN_HOMEPAGE                        = Сайт програми
+IDC_BTN_UPDATE                          = Оновити
+IDC_BTN_REGISTER                        = Зареєструвати
+IDC_BTN_BUY                             = Придбати
+IDC_STATIC_LICENSE                      = Інформація про реєстрацію BandiView
+
+[IDD_SETTING]
+IDD_SETTING                             = Налаштування
+IDC_BTN_INIT                            = Скинути
+$TEXT_SETTINGTAB_GENERAL                = Загальні
+$TEXT_SETTINGTAB_VIEW                   = Перегляд
+$TEXT_SETTINGTAB_IMAGEPROCESS           = Обробка
+$TEXT_SETTINGTAB_ASSOC                  = Асоціація
+$TEXT_SETTINGTAB_KEYBOARD               = Клавіатура
+$TEXT_SETTINGTAB_MOUSE                  = Миша
+$TEXT_SETTINGTAB_BOOKMARK               = Закладки
+$TEXT_SETTINGTAB_SHELL                  = Меню
+$TEXT_SETTINGTAB_ETC                    = Різне
+$TEXT_SETTINGTAB_LANG                   = Мова
+
+
+[IDD_SETTING_GENERAL]
+STATIC_SETTING                          = Загальні налаштування
+CHK_USESNAP                             = Прилипання вікна до країв екрану
+CHK_DONOTREMEMBERFOLDER                 = Не зберігати шлях до останньої папки
+CHK_ONE_INSTANCE                        = Не дозволяти запуск декількох екземплярів BandiView
+CHK_ASK_DELETE                          = Запитувати підтвердження перед видаленням файла
+CHK_ALWAYS_ON_TOP                       = Завжди вгорі (Ctrl+A)
+CHK_ESC_TO_EXIT                         = Виходити з програми при натисканні ESC
+CHK_CHECK_UPDATE                        = Перевіряти наявність оновлень
+CHK_CHECK_UPDATE_MINOR                  = Сповіщати про незначні оновлення
+STATIC_LASTFILEACTION_IMAGE             = При досягненні першого/останього зображення:
+STATIC_LASTFILEACTION_ARCHIVE           = При досягненні перш./ост. зображення в архіві:
+TEXT_COMBO_LASTFILE_ACTION_NONE         = Нічого не робити
+TEXT_COMBO_LASTFILE_ACTION_ASK          = Запитати
+TEXT_COMBO_LASTFILE_ACTION_LOOP         = Перейти до першого файлу
+TEXT_COMBO_LASTFILE_ACTION_NEXTPATH     = Перейти до наст./поп. файлу/папки
+STATIC_UPDATE                           = Оновити налаштування
+CHK_UPDATE_0                            = Повідомити та встановити останню версію
+
+[IDD_SETTING_VIEW]
+IDC_STATIC_VIEW                         = Налаштування перегляду
+IDC_CHK_SHOWBORDER                      = Показувати межі головного вікна
+IDC_CHK_SHOW_MINI_TITLE                 = Показати ім'я файлу на зображенні якщо меню сховано (Shift+TAB)
+IDC_CHK_SAVE_ZOOM_FIX                   = Запам'ятати стан масштабування зображень
+IDC_CHK_DO_NOT_SIDE_ARROW               = Не відображати бокові кнопки зі стрілками
+IDC_CHK_DO_NOT_SHOW_ZOOMINFO            = Не показувати керування масштабуванням
+IDC_CHK_HIDE_TOOLTIP_HELP               = Не відображати виринаючі підказки при наведенні курсора
+IDC_CHK_EXIFINFO_SMALL_FONT             = Використовувати маленький шрифт для файлу/EXIF інформації
+IDC_CHK_USEBKGNDIMAGE                   = Змінити фонове зображення за замовчуванням
+IDC_BTN_BKGND_SET                       = Огляд
+IDC_BTN_BKGND_OPEN                      = Папка
+IDC_STATIC_BKGNDCOLOR                   = Колір фону:
+IDC_BTN_BKGND                           = Вибрати
+IDC_STATIC_BORDERCOLOR                  = Колір межі:
+IDC_BTN_BORDERCOLOR                     = Вибрати
+
+[IDD_SETTING_BOOKMARK]
+IDC_STATIC_BOOKMARK                     = Налаштування закладок
+IDC_CHK_AUTOBOOKMARK                    = Автоматично зберігати поточний шлях зображення в закладки
+IDC_CHK_SHARE_SETTING                   = Загальні налаштування/закладки для всіх вікон
+IDC_CHK_REMEMBER_FILEPOS_IN_ARCHIVE     = Автоматично запам'ятовувати поточний шлях зображення в архіві
+IDC_BTN_CLEAR_FILE_POS_IN_ARCHIVE       = Видалити
+IDC_STATIC_MAX_BOOKMARK                 = Максимальна к-ть закладок:
+
+[IDD_SETTING_ASSOC]
+IDC_STATIC_ASSOC_IMAGE                  = Асоціація розширень
+LIST_COLUMN0                            = Розширення
+LIST_COLUMN1                            = Додаток за замовчуванням
+IDC_BTN_CHANGE                          = Змінити
+
+[IDD_SETTING_CUSTOM_KEY]
+LIST_COLUMN_KEY                         = Швидка клавіша
+
+[IDD_SETTING_CUSTOM_MOUSE]
+IDC_STATIC_CUSTOMMOUSE_ENABLE           = Параметр
+IDC_STATIC_CUSTOMMOUSE_ACTION           = Дія
+IDC_CHK_CUSTOM_LBUTTON                  = Ліва клавіша
+IDC_CHK_DBLCLICK2MAXIMIZE               = Розгортати/Відновлювати вікно подвійним клацанням
+IDC_CHK_CLICK2PAGETURN                  = Листати натисканням у лівому чи правому кутку екрана
+IDC_CHK_CUSTOM_MBUTTON                  = Середня клавіша
+IDC_CHK_CUSTOM_RBUTTON                  = Права клавіша
+IDC_CHK_CUSTOM_XBUTTON                  = Клавіша X
+IDC_CHK_CUSTOM_YBUTTON                  = Клавіша Y
+IDC_CHK_CUSTOM_WHEELUP                  = Колесико вгору
+IDC_CHK_CUSTOM_WHEELDN                  = Колесико вниз
+
+[IDD_SETTING_IMAGEPROCESSING]
+STATIC_IMAGEPROCESSING                  = Налаштування обробки зображень
+CHK_EXIFROTATION                        = Автоматично повертати зображення на основі EXIF інформації
+CHK_STRONG_SHARPEN                      = Використати фйільтр збільшення різкості
+CHK_CACHE_IMAGE                         = Кешувати наступне зображення
+STATIC_CACHE_MEMORY_SIZE                = Об'єм кеш-пам'яті:
+CHK_ALIGN_TOP_WHEN_LARGE                = Показувати верхню частину зображення, якщо воно більше ніж вікно
+CHK_USE_PREVIEW_MODE                    = Показувати спочатку зображення більш низької якості для прискорення візуалізації
+CHK_USE_IMAGE_ICC                       = Використовувати дані ICC профілю файлу зображення
+CHK_USE_MONITOR_ICC                     = Використовувати дані ICC профілю монітора
+STATIC_GIF_TRANSPARENT_OPTION           = Прозорий фон для GIF зображень:
+CHK_IMAGE_TRANSPARENT_OPTION            = Прозорий фон для 32-біт зображень
+TEXT_COMBO_GIF_TRANS_OPTION_0           = Використати прозорий фон
+TEXT_COMBO_GIF_TRANS_OPTION_1           = Використати білий колір фону
+TEXT_COMBO_GIF_TRANS_OPTION_2           = Використати чорний колір фону
+;CHK_CLIPFILE_ADVANCED
+
+[IDD_SETTING_SHELL]
+IDC_STATIC_SHELL_TITLE                  = Налаштування контекстного меню
+IDC_CHK_SHELL_USE_SHELL_MENU            = Використовувати контекстне меню в провіднику Windows
+IDC_CHK_SHELL_TRANSFORM_DLG             = Редагувати за допомогою BandiView
+IDC_CHK_SHELL_SHOW_WITH_BANDIVIEW       = Переглянути за допомогою BandiView
+IDC_CHK_SHELL_PREVIEW_IMAGE             = Перегляд в контекстному меню
+IDC_CHK_SHELL_SHOW_IMAGE_INFO           = Показувати інформацію про зображення
+IDC_CHK_SHELL_SHOW_ICON                 = Показувати значок BandiView
+
+[IDD_SETTING_PHOTOFOLDER]
+IDC_STATIC_PHOTOFOLDER                  = Папки з фото
+IDC_STATIC_PHOTOFOLDER_DESC1            = Папка 1:
+IDC_STATIC_PHOTOFOLDER_DESC2            = Папка 2:
+IDC_BTN_PHOTOFOLDER_SET1                = Огляд
+IDC_BTN_PHOTOFOLDER_OPEN1               = Відкрити
+
+[IDD_SETTING_ETC]
+IDC_STATIC_SETTING_ETC                  = Інші налаштування
+IDC_BTN_EXPORT_SETTINGS                 = Експорт налаштувань BandiView
+TEXT_REGISTRY_FILE                      = Файл реєстру
+CHK_SET_TEMP_FOLDER                     = Шлях до тимчасової папки
+BTN_SET_TEMP_FOLDER                     = Огляд...
+IDC_STATIC_EXTPROGRAM                   = Редактор зображень
+IDC_BTN_SET_EXTPROG0                    = Огляд
+IDC_BTN_SET_EXTPROG1_FAST               = Шаблон
+IDC_CHK_PAGETURNWAV                     = Відтворювати звуковий ефект під час листання
+IDC_CHK_DO_NOT_LOAD_RAW_IMAGE_FILE      = Не відкривати файли зображень в форматі RAW
+IDC_CHK_SKIP_RAWIMAGE_WHEN_JPG_EXIST    = При відкриванні файлів JPEG, не відкривати RAW зображення з одинаковим ім'ям
+IDC_CHK_READ_THUMBNAIL_WHEN_LOAD_RAW    = При відкриванні RAW зображень, показати ескіз, якщо він є
+IDC_CHK_RESIZE_WINDOW_2_FITIMAGE        = Підганяти розмір вікна під розмір зображення
+IDC_CHK_DISABLE_SCREEN_SAVER            = Вимикати екранну заставку Windows під час роботи BandiView
+
+[IDD_SETTING_LANG]
+IDC_STATIC_LANG                         = Налаштування мови
+
+[IDD_NAVIGATE]
+IDD_NAVIGATE                            = Виберіть зображення
+TEXT_COLUMN_NAME                        = Список
+TEXT_COLUMN_DATE                        = Дата зміни
+TEXT_COLUMN_SIZE                        = Розмір
+IDC_CHECK_SHOW_THUMBNAIL                = Приховати навігацію ескізами
+
+[IDD_PASSINPUT]
+IDD_PASSINPUT                           = Введіть пароль
+IDC_STATIC_PASSDESC                     = Цей файл зашифровано. Будь ласка, введіть пароль.
+
+[IDD_BOOKMARK_EDIT]
+IDD_BOOKMARK_EDIT                       = Редагування закладок
+IDC_BTN_DEL                             = Видалити
+IDC_BTN_IMPORT                          = Імпорт закладок
+IDC_BTN_EXPORT                          = Експорт закладок
+
+[IDD_PRINT]
+IDD_PRINT                               = Друк
+IDC_GROUP_PRINTER                       = Виберіть принтер
+IDC_BTN_PRINTER_PROPERTY                = Властивості
+IDC_CHK_ROTATE                          = Повернути на 90˚
+IDC_CHK_FIT_IN                          = За розміром аркуша
+IDC_STATIC_ZOOM                         = Масштаб:
+IDC_STATIC_MARGIN_L                     = Зліва:
+IDC_STATIC_MARGIN_T                     = Зверху:
+IDC_STATIC_MARGIN_R                     = Справа:
+IDC_STATIC_MARGIN_B                     = Знизу:
+IDC_STATIC_COPIES                       = Копій:
+IDC_BTN_PRINT                           = Друк
+IDC_BTN_CLOSE                           = Закрити
+
+[IDD_UPDATE]
+IDD_UPDATE                              = Оновлення BandiView
+IDC_STATIC_MESSAGE_1                    = BandiView оновлено.
+IDC_STATIC_MESSAGE_2                    = Натисніть клавішу "оновити" для встановлення найновішої версії.
+IDOK                                    = Оновити
+IDCANCEL                                = Відмінити
+IDC_BTN_SETTING_UPDATE                  = Параметри
+
+[IDD_ASK_OVERWRITE]
+IDD_ASK_OVERWRITE                       = Перейменування або заміна
+IDC_STATIC_ASK_OVERWRITE                = Такий файл вже існує.
+IDC_STATIC_SRC                          = Зображення
+IDC_STATIC_DST                          = Цільове зображення
+IDC_BTN_OVERWRITE                       = Перезаписати
+IDC_BTN_RENAME                          = Зберегти як...
+
+[IDD_WALLPAPER]
+IDD_WALLPAPER                           = Встановити як шпалери
+IDC_STATIC_PREVIEW                      = Перегляд
+IDC_STATIC_BACK_COLOR                   = Колір фону
+IDC_RADIO_BACKCOLOR_0                   = Чорний
+IDC_RADIO_BACKCOLOR_1                   = Авто
+IDC_RADIO_BACKCOLOR_2                   = Свій...
+IDC_BTN_BKGND                           = Вибрати...
+IDC_BTN_CLOSE                           = Закрити
+IDC_BTN_APPLY                           = Застосувати
+
+[IDD_OPEN_PROGRESS]
+IDD_OPEN_PROGRESS                       = Відкрити файл
+IDC_STATIC_OPENING                      = Відкривання...
+
+[IDD_SELECT_FOLDER]
+IDD_SELECT_FOLDER                       = Виберіть папку
+IDC_STATIC_FOLDER                       = Шлях до папки:
+IDC_BTN_NEWFOLDER                       = Нова папка
+IDC_CHK_OPEN_SUBFOLDER                  = Включити всі файлы із вкладених папок
+
+[IDD_REGISTER]
+IDD_REGISTER                            = Зареєструвати BandiView
+IDC_STATIC_DESC1                        = Введіть свій e-mail та ключ продукту, який ви отримали на e-mail.
+IDC_STATIC_EMAIL                        = E-mail
+IDC_STATIC_PRDUCT_KEY                   = Ключ продукту
+IDC_BTN_REGISTER                        = Зареєструйтеся зараз
+
+[IDD_SUBS]
+
+[IDD_META]
+IDC_BTN_CLOSE                           = Закрити
+
+[IDD_REGDLG]
+IDC_BTN_SELECT_ALL                      = Вибрати всі
+IDC_BTN_CLEAR_ALL                       = Скасувати всі
+IDC_BTN_APPLY_NOW                       = Застосувати
+
+[CMD]
+CMD_PAGE_NEXT                           = Наступне зображення
+CMD_PAGE_PREV                           = Попереднє зображення
+CMD_PAGE_NEXT10                         = Наступне 10-е
+CMD_PAGE_PREV10                         = Попереднє 10-е
+CMD_FOLDERARCHIVE_NEXT                  = Наступний архів/папка
+CMD_FOLDERARCHIVE_PREV                  = Попередній архів/папка
+CMD_PAGE_FIRST                          = Перше зображення
+CMD_PAGE_LAST                           = Останнє зображення
+CMD_NAVIGATE                            = Вибрати зображення
+
+CMD_EXIT                                = Вихід
+CMD_OPEN                                = Відкрити файл
+CMD_OPENFOLDER                          = Відкрити папку
+
+CMD_EXIFSHOW_TOGGLE                     = Показати файл/EXIF інформацію
+CMD_ZOOM_IN                             = Збільшити масштаб
+CMD_ZOOM_OUT                            = Зменшити масштаб
+CMD_FULLSCREEN                          = На повний екран
+CMD_MAXIMIZE                            = Розгорнути
+
+
+
+
+
+CMD_NULL                                = Нічого не робити
+CMD_MINIMIZE                            = Згорнути
+CMD_PAGE_NEXT_RAND                      = Наступне випадкове
+CMD_PAGE_PREV_RAND                      = Попереднє випадкове
+CMD_SCROLL_UP                           = Прокрутка вверх
+CMD_SCROLL_DN                           = Прокрутка вниз
+CMD_SCROLL_LEFT                         = Прокрутка вліво
+CMD_SCROLL_RIGHT                        = Прокрутка вправо
+
+CMD_COPY2PHOTOFOLDER                    = Скопіювати до папки
+CMD_MOVE2PHOTOFOLDER                    = Перемістити до папки
+CMD_COPY2PHOTOFOLDER2                   = Копіювати до папки фото2
+CMD_CONTEXT_MENU                        = Контекстне меню
+
+[CONV]
+EDIT_TITLE                              = Редагування зображення
+IDC_STATIC_FILELIST                     = Список файлів
+IDC_BTN_START                           = Почати
+IDC_BTN_CLOSE                           = Закрити
+BTN_OPEN_DEST_FOLDER                    = Відкрити папку
+
+IDC_STATIC_RESIZE                       = Змінити розмір
+TEXT_TRANSF_RESIZE_NONE                 = Не змінювати розмір
+TEXT_TRANSF_RESIZE_KEEPRATIO            = Зберегти пропорції
+TEXT_TRANSF_RESIZE_FITWIDTH             = По ширині
+TEXT_TRANSF_RESIZE_ADD                  = Додати поля
+TEXT_TRANSF_RESIZE_CUT                  = Обрізати зображення
+TEXT_TRANSF_RESIZE_STRETCH              = Розтягнути зображення
+IDC_STATIC_RESIZE_SIZE                  = Новий розмір
+
+IDC_STATIC_SAVE                         = Кінцева папка
+IDC_RADIO_TARGETFOLDER_SAMEFOLDER       = Зберегти у кінцевій папці
+IDC_RADIO_TARGETFOLDER_PHOTOFOLDER      = Зберегти у папці з фото
+IDC_RADIO_TARGETFOLDER_CUSTOM           = Зберегти в:
+IDC_STATIC_FILENAME_HEADER              = Префікс імені файлу
+IDC_STATIC_FILENAME2SAVE                = Перегляд імені файлу
+IDC_STATIC_ROTATE                       = Поворот
+IDC_RADIO_ROTATE_NONE                   = Не повертати
+IDC_RADIO_ROTATE_LEFT                   = Повернути на 90˚ вліво
+IDC_RADIO_ROTATE_RIGHT                  = Повернути на 90˚ вправо
+IDC_RADIO_ROTATE_180                    = Повернути на 180˚
+IDC_RADIO_ROTATE_AUTO                   = Автоповорот на основі EXIF
+IDC_STATIC_FORMAT                       = Параметри формату
+IDC_STATIC_FORMAT_SELECT                = Формат:
+TEXT_TRANSF_FORMAT_TO_SAVE_AUTO         = Авто
+IDC_STATIC_FORMAT_QUALITY               = Якість:
+IDC_BTN_INIT                            = Скинути
+
+TEXT_MSG_TRANSFORM_COMPLETED            = Опрацювання завершено
+TEXT_ERR_OCCURRED                       = Сталась помилка.
+TEXT_ERR_ERROR_ONCE_OCCURRED            = Помилка
+
+[CONV_PREVIEW]
+STATIC_CONV_PREVIEW                     = Попередній перегляд
+
+[IDD_CONVFORMAT_ADVANCED]
+
+[IDD_CONVRESIZE_ADVANCED]
+RADIO_RESIZE_0                          = Без фільтра
+RADIO_RESIZE_1                          = Згладжування
+RADIO_RESIZE_2                          = Згладжування+Різкість
+
+[IDD_CONV_EDIT_PRESETSIZE]
+
+[SKIN]
+$TEXT_MESSAGEBOX_OK                     = OK
+$TT_FULLSCREEN                          = На весь екран (Alt+Enter)
+$TT_TOGGLE_ZOOM_CONTROL                 = Швидка клавіша: /
+$TT_TOGGLE_ANIMINFO_CONTROL             = Швидка клавіша: Alt+A
+$TT_PAGESELECT                          = Вибрати Зображення (Enter)
+$TT_LOCKCONTROLBAR                      = Блокування елементів управління (~)
+$TT_LOCKTITLEBAR                        = Блокування меню (`)
+$TT_COPY_EXIFINFO                       = Копіювати файл/EXIF інформацію (Ctrl+Shift+C)
+$TT_TOGGLE_EXIF                         = Показати/приховати файл/EXIF інформацію (Tab)
+$TT_LAUNCH_GPS_LOCATION                 = Переглянути місцезнаходження на картах Google.
+$TT_PLAY_SOUNDNSHOT                     = Відтворити звуковий файл (Перелистування).
+$TT_CLOSE_EXIFINFO                      = Закрити (Tab)
+$TT_PREV_BTN                            = Л.клавіша: Попереднє, П.клавіша: Попереднє 10-е
+$TT_NEXT_BTN                            = Л.клавіша: Наступне, П.клавіша: Наступне 10-е
+
+$BTN_CMD_FILE                           = Файл
+$BTN_TEXT_EXIF                          = EXIF
+$BTN_TEXT_GPS                           = GPS
+$BTN_TEXT_PLAY_SOUNDNSHOT               = Звуки
+$BTN_TEXT_PHOTOFOLDER                   = Копіювати
+$BTN_TEXT_EDIT                          = Редагування
+$BTN_TEXT_BOOKMARK                      = Закладки
+$BTN_TEXT_SLIDESHOW                     = Слайдшоу
+
+$BTN_TEXT_UPDATE                        = Доступна нова версія
+
+$TEXT_DESKTOP                           = Робочий стіл
+$TEXT_DOCUMENT                          = Документи
+$TEXT_PICTURE                           = Зображення
+$TEXT_COMPUTER                          = Комп'ютер
+
+
+[IDD_VIEW_NOTICE]
+
+[IDD_LICENSE_GUIDE]
+IDD_LICENSE_GUIDE                       = Посібник з ліцензування BandiView
+
+
+[SHELL]
+TEXT_LAUNCH_TRANSFORM_DLG               = Редагувати в BandiView (&4)
+TEXT_LAUNCH_BANDIVIEW                   = Переглянути в BandiView (&3)
+TEXT_LOADING                            = Завантаження...
+TEXT_IMAGE_LOAD_FAILED                  = Не вдалося завантажити файл
+TEXT_IMAGE_LOAD_FAIL_NOT_SUPPORTED      = Немає підтримуваних файлів для перегляду
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; text for installer
+;
+[INSTALLER]
+
+$BTN_CLOSE                              = Закрити
+$BTN_CANCEL                             = Вихід
+$BTN_INSTALL                            = Прийняти та встановити
+$BTN_UNINSTALL                          = Видалити
+$BTN_OPEN_LICENSE                       = [Ліцензійна угода]
+$BTN_HELP_LINK                          = [Допомога]
+
+$TEXT_PATH                              = Папка призначення
+$TEXT_INSTALL_STATIC                    = Встановлення...
+$TEXT_INST_COMPLETED                    = Установка завершена
+$TEXT_INST_FAILED                       = Помилка встановлення
+$TEXT_UNINSTALLING                      = Видалення...
+
+$EMAIL                                  = Адреса електронної пошти
+$PRODUCT_KEY                            = Ключ продукту
+
+
+MSG_SUCCESS                             = Встановленя завершено
+MSG_DLL_REGISTERING                     = Реєстрація розширення оболонки Explorer`a...
+MSG_DLL_UNREGISTERING                   = Скасування реєстрації розширення оболонки Explorer`a...
+MSG_ERROR                               = Виникла помилка
+MSG_ERROR_REGISTER                      = Помилка реєстрації
+MSG_STILLRUN_EXIT_PROGRAM               = BandiView запущено. Будь ласка, закрийте програму.
+MSG_ERR_ARM_NOTSUPPORT                  = Цей файл інсталяції не підтримує процесор ARM64. Будь ласка, завантажте новий файл інсталяції на веб-сайті.
+ERR_INST_FAILED                         = Помилка встановлення. Будь ласка, перезавантажте комп'ютер і повторіть спробу.
+

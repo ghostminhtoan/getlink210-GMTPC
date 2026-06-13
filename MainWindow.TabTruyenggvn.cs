@@ -248,7 +248,7 @@ namespace get_link_manga
                 return baseUrl;
             }
 
-            if (Regex.IsMatch(baseUrl, @"(?:^https?://[^/]+)?/(?:genre|nhom-dich|tac-gia|completed)(?:/|$)", RegexOptions.IgnoreCase))
+            if (IsTruyenggvnListingUrl(baseUrl))
             {
                 string cleanUrl = NormalizeTruyenggvnListingRoot(baseUrl);
                 if (Regex.IsMatch(cleanUrl, @"[?&](?:page|paged)=", RegexOptions.IgnoreCase))
@@ -312,7 +312,7 @@ namespace get_link_manga
                     return;
                 }
 
-                string html = await _httpClient.GetStringAsync(normalizedUrl);
+                string html = await FetchStringAsync(normalizedUrl, _cts?.Token ?? CancellationToken.None);
                 int maxPage = ExtractMaxTruyenggvnPage(html, normalizedUrl);
 
                 txtTruyenggvnTotalPages.Text = maxPage.ToString();
@@ -482,7 +482,7 @@ namespace get_link_manga
                         continue;
                     }
 
-                    string html = await _httpClient.GetStringAsync(pageUrl);
+                    string html = await FetchStringAsync(pageUrl, token);
                     var items = ParseTruyenggvnGalleryItemsFromHtml(html, pageUrl);
 
                     foreach (var item in items)
@@ -718,6 +718,28 @@ namespace get_link_manga
             }
         }
 
+        private bool IsTruyenggvnListingUrl(string url)
+        {
+            if (!IsTruyenggvnUrl(url) || IsTruyenggvnImageUrl(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                string path = new Uri(url).AbsolutePath.TrimEnd('/');
+                return path.Equals("/completed", StringComparison.OrdinalIgnoreCase) ||
+                       path.Equals("/genre", StringComparison.OrdinalIgnoreCase) ||
+                       path.StartsWith("/genre/", StringComparison.OrdinalIgnoreCase) ||
+                       path.StartsWith("/nhom-dich/", StringComparison.OrdinalIgnoreCase) ||
+                       path.StartsWith("/tac-gia/", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private string NormalizeTruyenggvnListingRoot(string url)
         {
             string normalized = NormalizeTruyenggvnUrl(url);
@@ -830,7 +852,7 @@ namespace get_link_manga
                 throw new Exception("Không thể bypass Cloudflare.");
             }
 
-            string html = await _httpClient.GetStringAsync(link);
+            string html = await FetchStringAsync(link, _cts?.Token ?? CancellationToken.None);
             string title = ExtractTruyenggvnTitleFromHtml(html);
             if (!string.IsNullOrWhiteSpace(title))
             {
@@ -917,7 +939,7 @@ namespace get_link_manga
                 throw new Exception("Không thể vượt qua Cloudflare captcha.");
             }
 
-            string html = await _httpClient.GetStringAsync(cleanLink);
+            string html = await FetchStringAsync(cleanLink, token);
             string title = ExtractTruyenggvnTitleFromHtml(html);
             if (!string.IsNullOrWhiteSpace(title))
             {
@@ -1049,8 +1071,11 @@ namespace get_link_manga
                     SourceDomain = TruyenggvnSiteFolder
                 };
 
-                await DownloadTruyenggvnChapterAsync(chapItem, rootFolder, token, queueItem, true);
-                MarkChapterProcessDone(rootFolder, TruyenggvnSiteFolder, item, chapLink);
+                bool chapterCompleted = await DownloadTruyenggvnChapterAsync(chapItem, rootFolder, token, queueItem, true);
+                if (chapterCompleted)
+                {
+                    MarkChapterProcessDone(rootFolder, TruyenggvnSiteFolder, item, chapLink);
+                }
 
                 if (queueItem != null)
                 {
@@ -1063,7 +1088,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadTruyenggvnChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, bool isParentQueue)
+        private async Task<bool> DownloadTruyenggvnChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, bool isParentQueue)
         {
             string normalizedLink = NormalizeTruyenggvnUrl(item.Link);
             string html = string.Empty;
@@ -1086,7 +1111,7 @@ namespace get_link_manga
                     throw new Exception("Không thể vượt qua Cloudflare captcha.");
                 }
 
-                html = await _httpClient.GetStringAsync(normalizedLink);
+                html = await FetchStringAsync(normalizedLink, token);
                 string pageTitle = ExtractTruyenggvnTitleFromHtml(html);
                 ParseTruyenggvnPageTitle(pageTitle, item.Name, normalizedLink, out cleanManga, out cleanChapter);
                 if (!string.IsNullOrWhiteSpace(item?.Name))
@@ -1101,34 +1126,28 @@ namespace get_link_manga
                 throw new Exception("Không tìm thấy ảnh nào để tải.");
             }
 
+            cleanChapter = NormalizeChapterLabel(cleanChapter);
             string safeManga = GetCanonicalBookFolderName(item, cleanManga, "SayHentai");
             string aliasSafeManga = GetSafePathName(cleanManga);
-            string safeChapter = GetSafePathName(cleanChapter);
+            string safeChapter = GetSafeChapterPathName(cleanChapter);
             string progressKey = $"sayhentai|{safeManga}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
 
             UpsertMainLogLine(progressKey, $"[sayhentai] Đang tải {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
 
-            string siteRootFolder = Path.Combine(rootFolder, TruyenggvnSiteFolder);
+            string siteRootFolder = GetSiteDownloadRoot(rootFolder, TruyenggvnSiteFolder);
             await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
 
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = BuildStableTempFolderPath(rootFolder, TruyenggvnSiteFolder, $"{safeManga}-{safeChapter}", item.Link, item.Name, cleanManga, cleanChapter);
+            string tempFolder = BuildStableChapterTempFolderPath(rootFolder, TruyenggvnSiteFolder, safeManga, safeChapter);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
             WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {cleanChapter}");
 
-            int maxThreads = 4;
-            Dispatcher.Invoke(() =>
-            {
-                if (cmbConnections.SelectedItem is ComboBoxItem selectedItem && int.TryParse(selectedItem.Content?.ToString(), out int value))
-                {
-                    maxThreads = value;
-                }
-            });
+            int maxThreads = GetCurrentConnectionLimit();
 
             if (queueItem != null && !isParentQueue)
             {
@@ -1261,7 +1280,7 @@ namespace get_link_manga
 
             string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
             var pageMap = imageUrls.Select((url, index) => new { url, index }).ToDictionary(x => x.index + 1, x => x.url);
-            ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageMap);
+            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageMap);
         }
 
         private void ParseTruyenggvnPageTitle(string pageTitle, string fallbackName, string link, out string mangaTitle, out string chapterTitle)

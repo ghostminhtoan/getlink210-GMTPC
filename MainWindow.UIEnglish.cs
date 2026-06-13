@@ -131,15 +131,15 @@ namespace get_link_manga
 
             _startupArchivePromptShown = true;
 
-            string archivePath = PortablePaths.PortableArchivePath;
+            string archivePath = GetAvailablePortableArchivePath();
             if (!System.IO.File.Exists(archivePath))
             {
                 return;
             }
 
             string message =
-                "Found archive file Comic-GMTPC.zip.\n" +
-                "Tìm thấy file nén Comic-GMTPC.zip.\n\n" +
+                $"Found archive file {System.IO.Path.GetFileName(archivePath)}.\n" +
+                $"Tìm thấy file nén {System.IO.Path.GetFileName(archivePath)}.\n\n" +
                 "Do you want to extract it now?\n" +
                 "Bạn có muốn giải nén ngay bây giờ không?";
 
@@ -339,6 +339,21 @@ namespace get_link_manga
             if (btnClearComplete != null) btnClearComplete.Content = "Hide completed";
 
             UpdateLatestChapterButtonLabel();
+        }
+
+        internal MessageBoxResult ShowLocalizedMessageBox(
+            string englishMessage,
+            string vietnameseMessage,
+            string englishTitle,
+            string vietnameseTitle,
+            MessageBoxButton buttons,
+            MessageBoxImage icon)
+        {
+            return MessageBox.Show(
+                _isVietnameseUi ? vietnameseMessage : englishMessage,
+                _isVietnameseUi ? vietnameseTitle : englishTitle,
+                buttons,
+                icon);
         }
 
         private void ApplyUiTextMappings(bool vietnamese)

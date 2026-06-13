@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -35,8 +36,15 @@ namespace get_link_manga
         private FrameworkElement _updateSection;
         private TextBlock _aboutContentText;
         private TextBlock _updateContentText;
+        private TextBlock _updateStatusText;
+        private Button _btnCheckUpdates;
+        private Button _btnInstallLatest;
+        private readonly Dictionary<string, string> _createSubfolderByDomain = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private AppSection _currentSection = AppSection.ChooseSource;
         private bool _workspaceShellInitialized;
+        private bool _createSubfolderUiReady;
+        private bool _suppressCreateSubfolderEvents;
+        private string _createSubfolderSelectedDomainKey;
         private Border _sectionHeaderBorder;
         private Border _navigationRailBorder;
 
@@ -51,6 +59,7 @@ namespace get_link_manga
             BuildScalePresetCard();
             BuildGlobalDownloadToolbar();
             BuildModernShell();
+            InitializeCreateSubfolderControls();
             ApplyInitialWindowSizing();
 
             _workspaceShellInitialized = true;
@@ -157,9 +166,8 @@ namespace get_link_manga
             }
 
             MoveToolbarElement(txtBuildInfo, new Thickness(8, 0, 12, 0));
-            MoveToolbarElement(btnStartDownload, new Thickness(0, 0, 6, 0));
-            MoveToolbarElement(btnStopDownload, new Thickness(0, 0, 6, 0));
-            MoveToolbarElement(btnRetryErrors, new Thickness(0, 0, 6, 0));
+            MoveToolbarElement(grdStartDownloadToggle, new Thickness(0, 0, 6, 0));
+            MoveToolbarElement(grdAutoRetryErrorsToggle, new Thickness(0, 0, 6, 0));
             MoveToolbarElement(btnRetryErrorLog, new Thickness(0, 0, 6, 0));
             MoveToolbarElement(btnShutdownMenu?.Parent as UIElement ?? btnShutdownMenu, new Thickness(0, 0, 6, 0));
         }
@@ -425,6 +433,295 @@ namespace get_link_manga
             return leftPanelHost;
         }
 
+        private string GetCreateSubfolderSettingsPath()
+        {
+            return Path.Combine(PortablePaths.PortableDataRoot, "create-subfolders.txt");
+        }
+
+        private void InitializeCreateSubfolderControls()
+        {
+            if (_createSubfolderUiReady || cmbCreateSubfolderDomain == null || txtCreateSubfolderName == null)
+            {
+                return;
+            }
+
+            PopulateCreateSubfolderDomainCombo();
+            LoadCreateSubfolderSettings();
+
+            _createSubfolderUiReady = true;
+            SyncCreateSubfolderDomainSelection();
+            UpdateCreateSubfolderFieldsFromSelection();
+            UpdateCreateSubfolderLanguage();
+        }
+
+        private void PopulateCreateSubfolderDomainCombo()
+        {
+            if (cmbCreateSubfolderDomain == null || cmbCreateSubfolderDomain.Items.Count > 0)
+            {
+                return;
+            }
+
+            AddCreateSubfolderDomainItem("truyenqq");
+            AddCreateSubfolderDomainItem("nettruyen");
+            AddCreateSubfolderDomainItem("daomeoden.net");
+            AddCreateSubfolderDomainItem("truyenggvn");
+            AddCreateSubfolderDomainItem("sayhentai");
+            AddCreateSubfolderDomainItem("vi-hentai.pro");
+            AddCreateSubfolderDomainItem("nhentai.xxx");
+            AddCreateSubfolderDomainItem("hentaiforce.net");
+            AddCreateSubfolderDomainItem("hentaiera.com");
+        }
+
+        private void AddCreateSubfolderDomainItem(string domainKey)
+        {
+            var item = new ComboBoxItem
+            {
+                Tag = domainKey,
+                Content = domainKey
+            };
+
+            cmbCreateSubfolderDomain.Items.Add(item);
+        }
+
+        private void LoadCreateSubfolderSettings()
+        {
+            _createSubfolderByDomain.Clear();
+
+            string settingsPath = GetCreateSubfolderSettingsPath();
+            if (!File.Exists(settingsPath))
+            {
+                return;
+            }
+
+            foreach (string line in File.ReadAllLines(settingsPath, Encoding.UTF8))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                int split = line.IndexOf('|');
+                if (split <= 0)
+                {
+                    continue;
+                }
+
+                string domainKey = line.Substring(0, split).Trim();
+                string encodedSubfolder = line.Substring(split + 1).Trim();
+                if (string.IsNullOrWhiteSpace(domainKey))
+                {
+                    continue;
+                }
+
+                string subfolder = string.Empty;
+                if (!string.IsNullOrWhiteSpace(encodedSubfolder))
+                {
+                    try
+                    {
+                        subfolder = Uri.UnescapeDataString(encodedSubfolder);
+                    }
+                    catch
+                    {
+                        subfolder = encodedSubfolder;
+                    }
+                }
+
+                _createSubfolderByDomain[domainKey] = subfolder;
+            }
+        }
+
+        private void SaveCreateSubfolderSettings()
+        {
+            string settingsPath = GetCreateSubfolderSettingsPath();
+            Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
+
+            var lines = _createSubfolderByDomain
+                .Where(pair => !string.IsNullOrWhiteSpace(pair.Key))
+                .Select(pair => $"{pair.Key}|{Uri.EscapeDataString(pair.Value ?? string.Empty)}")
+                .ToArray();
+
+            File.WriteAllLines(settingsPath, lines, Encoding.UTF8);
+        }
+
+        private string GetSelectedCreateSubfolderDomainKey()
+        {
+            if (cmbCreateSubfolderDomain?.SelectedItem is ComboBoxItem selectedItem)
+            {
+                return selectedItem.Tag as string ?? selectedItem.Content?.ToString();
+            }
+
+            return null;
+        }
+
+        private void SyncCreateSubfolderDomainSelection()
+        {
+            if (cmbCreateSubfolderDomain == null || cmbCreateSubfolderDomain.Items.Count == 0)
+            {
+                return;
+            }
+
+            string currentDomainKey = GetSelectedCreateSubfolderDomainKey();
+            if (string.IsNullOrWhiteSpace(currentDomainKey))
+            {
+                currentDomainKey = "truyenqq";
+            }
+
+            foreach (ComboBoxItem item in cmbCreateSubfolderDomain.Items)
+            {
+                if (string.Equals(item.Tag as string, currentDomainKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    _suppressCreateSubfolderEvents = true;
+                    try
+                    {
+                        cmbCreateSubfolderDomain.SelectedItem = item;
+                    }
+                    finally
+                    {
+                        _suppressCreateSubfolderEvents = false;
+                    }
+                    return;
+                }
+            }
+
+            _suppressCreateSubfolderEvents = true;
+            try
+            {
+                cmbCreateSubfolderDomain.SelectedIndex = 0;
+            }
+            finally
+            {
+                _suppressCreateSubfolderEvents = false;
+            }
+        }
+
+        private void UpdateCreateSubfolderFieldsFromSelection()
+        {
+            if (!_createSubfolderUiReady || cmbCreateSubfolderDomain == null || txtCreateSubfolderName == null)
+            {
+                return;
+            }
+
+            string domainKey = GetSelectedCreateSubfolderDomainKey();
+            if (string.IsNullOrWhiteSpace(domainKey))
+            {
+                return;
+            }
+
+            _createSubfolderSelectedDomainKey = domainKey;
+
+            string subfolder = string.Empty;
+            _createSubfolderByDomain.TryGetValue(domainKey, out subfolder);
+
+            _suppressCreateSubfolderEvents = true;
+            try
+            {
+                txtCreateSubfolderName.Text = subfolder ?? string.Empty;
+            }
+            finally
+            {
+                _suppressCreateSubfolderEvents = false;
+            }
+        }
+
+        private void PersistCreateSubfolderForDomain(string domainKey)
+        {
+            if (!_createSubfolderUiReady || string.IsNullOrWhiteSpace(domainKey))
+            {
+                return;
+            }
+
+            string subfolder = txtCreateSubfolderName?.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(subfolder))
+            {
+                _createSubfolderByDomain.Remove(domainKey);
+            }
+            else
+            {
+                _createSubfolderByDomain[domainKey] = subfolder;
+            }
+
+            SaveCreateSubfolderSettings();
+        }
+
+        private void UpdateCreateSubfolderLanguage()
+        {
+            if (txtCreateSubfolderTitle != null)
+            {
+                txtCreateSubfolderTitle.Text = _isVietnameseUi ? "TẠO THƯ MỤC CON" : "CREATE SUBFOLDER";
+            }
+
+            if (txtCreateSubfolderDomainLabel != null)
+            {
+                txtCreateSubfolderDomainLabel.Text = _isVietnameseUi ? "MIỀN" : "DOMAIN";
+            }
+
+            if (txtCreateSubfolderNameLabel != null)
+            {
+                txtCreateSubfolderNameLabel.Text = _isVietnameseUi ? "TÊN THƯ MỤC CON" : "SUBFOLDER NAME";
+            }
+
+            if (btnApplyCreateSubfolder != null)
+            {
+                btnApplyCreateSubfolder.Content = _isVietnameseUi ? "ÁP DỤNG" : "APPLY";
+            }
+        }
+
+        private void CmbCreateSubfolderDomain_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressCreateSubfolderEvents || !_createSubfolderUiReady)
+            {
+                return;
+            }
+
+            string previousDomainKey = _createSubfolderSelectedDomainKey;
+            string newDomainKey = GetSelectedCreateSubfolderDomainKey();
+            if (!string.IsNullOrWhiteSpace(previousDomainKey))
+            {
+                PersistCreateSubfolderForDomain(previousDomainKey);
+            }
+
+            _createSubfolderSelectedDomainKey = newDomainKey;
+            UpdateCreateSubfolderFieldsFromSelection();
+        }
+
+        private void TxtCreateSubfolderName_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_suppressCreateSubfolderEvents || !_createSubfolderUiReady)
+            {
+                return;
+            }
+
+            PersistCreateSubfolderForDomain(_createSubfolderSelectedDomainKey ?? GetSelectedCreateSubfolderDomainKey());
+        }
+
+        private void BtnApplyCreateSubfolder_Click(object sender, RoutedEventArgs e)
+        {
+            string domainKey = _createSubfolderSelectedDomainKey ?? GetSelectedCreateSubfolderDomainKey();
+            if (string.IsNullOrWhiteSpace(domainKey))
+            {
+                return;
+            }
+
+            PersistCreateSubfolderForDomain(domainKey);
+
+            string downloadRoot = txtDownloadPath?.Text?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(downloadRoot))
+            {
+                string targetFolder = GetConfiguredDownloadRoot(downloadRoot, domainKey);
+                if (!string.IsNullOrWhiteSpace(targetFolder))
+                {
+                    Directory.CreateDirectory(targetFolder);
+                }
+            }
+
+            string appliedSubfolder = GetCreateSubfolderPath(domainKey);
+            string suffix = string.IsNullOrWhiteSpace(appliedSubfolder) ? "(root site folder)" : appliedSubfolder;
+            Log($"[Subfolder] Applied for {domainKey}: {suffix}");
+            lblStatus.Text = _isVietnameseUi
+                ? $"Đã áp dụng subfolder cho {domainKey}: {suffix}"
+                : $"Applied subfolder for {domainKey}: {suffix}";
+        }
+
         private FrameworkElement CreateAboutSection()
         {
             var border = new Border
@@ -471,17 +768,47 @@ namespace get_link_manga
                 FontSize = 12,
                 TextWrapping = TextWrapping.Wrap
             };
-            card.Child = _updateContentText;
+            var cardStack = new StackPanel();
+            cardStack.Children.Add(_updateContentText);
+
+            _updateStatusText = new TextBlock
+            {
+                Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush") ?? (Brush)TryFindResource("CyberpunkTextBrush"),
+                FontSize = 11,
+                Margin = new Thickness(0, 12, 0, 0),
+                TextWrapping = TextWrapping.Wrap
+            };
+            cardStack.Children.Add(_updateStatusText);
+
+            card.Child = cardStack;
 
             var buttonRow = new WrapPanel
             {
                 Margin = new Thickness(0, 12, 0, 0)
             };
+            _btnCheckUpdates = new Button
+            {
+                Style = TryFindResource("CompactCyanButton") as Style,
+                MinWidth = 168
+            };
+            _btnCheckUpdates.Click += BtnCheckUpdates_Click;
+            buttonRow.Children.Add(_btnCheckUpdates);
+
+            _btnInstallLatest = new Button
+            {
+                Style = TryFindResource("CompactPinkButton") as Style,
+                MinWidth = 168
+            };
+            _btnInstallLatest.Click += BtnInstallLatest_Click;
+            buttonRow.Children.Add(_btnInstallLatest);
+
             buttonRow.Children.Add(CreatePathButton("Open app root", PortablePaths.AppRoot));
             buttonRow.Children.Add(CreatePathButton("Open download root", PortablePaths.DefaultDownloadRoot));
 
             root.Children.Add(card);
             root.Children.Add(buttonRow);
+
+            RefreshUpdateSectionContent();
 
             return root;
         }
@@ -524,6 +851,7 @@ namespace get_link_manga
             {
                 ToggleReaderFullscreen();
             }
+            StopReaderAutoRefresh();
             _currentSection = section;
             UpdateNavigationSelection();
             UpdateSectionHeader();
@@ -539,14 +867,18 @@ namespace get_link_manga
                     break;
                 case AppSection.Watch:
                     _sectionContentHost.Content = _watchSection;
+                    _readerHasUserClickedInWatch = false;
                     EnsureReaderReady();
                     RefreshReaderLibraryIfNeeded(forceRefresh: false);
+                    StartReaderAutoRefresh();
                     break;
                 case AppSection.About:
                     _sectionContentHost.Content = _aboutSection;
+                    StopReaderAutoRefresh();
                     break;
                 case AppSection.Update:
                     _sectionContentHost.Content = _updateSection;
+                    StopReaderAutoRefresh();
                     break;
             }
         }
@@ -739,6 +1071,7 @@ namespace get_link_manga
             }
 
             UpdateReaderLanguage();
+            UpdateCreateSubfolderLanguage();
             UpdateSectionHeader();
         }
 

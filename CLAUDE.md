@@ -1,9 +1,9 @@
 ﻿# CLAUDE.md - Central Guidelines Redirect
 
 ## Build Commands
-- **Restore NuGet Packages:** `nuget restore`
-- **Build Solution (Release):** `msbuild "get link manga.csproj" /p:Configuration=Release`
-- **Run Application:** Execute `bin\Release\get link manga.exe`
+- **Restore NuGet Packages:** use shared cache at `%UserProfile%\.nuget\packages`
+- **Build Solution (Release):** run `.\build.bat`
+- **Run Application:** execute `bin\Release\Comic-GMTPC.exe`
 
 ## Critical Rule for Claude Code
 Before writing, modifying, or analyzing any code in this repository, you MUST read the central workflow guidelines file in Vietnamese:

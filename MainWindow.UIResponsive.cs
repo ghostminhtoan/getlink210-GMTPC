@@ -214,6 +214,11 @@ namespace get_link_manga
                 return;
             }
 
+            if (_currentSection == AppSection.Watch)
+            {
+                return;
+            }
+
             ChangeUiZoomPreset(e.Delta > 0 ? 1 : -1);
             e.Handled = true;
         }

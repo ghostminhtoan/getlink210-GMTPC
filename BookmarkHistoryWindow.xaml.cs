@@ -16,6 +16,7 @@ namespace get_link_manga
             InitializeComponent();
             _manager = new BookmarkHistoryManager();
             RefreshBookmarks();
+            RefreshReaderPageBookmarks();
             RefreshHistory();
         }
 
@@ -31,6 +32,13 @@ namespace get_link_manga
             var history = _manager.GetHistory();
             lstHistory.ItemsSource = history;
             lblHistoryCount.Text = $"Tổng: {history.Count} mục";
+        }
+
+        public void RefreshReaderPageBookmarks()
+        {
+            var bookmarks = _manager.GetReaderPageBookmarks();
+            lstReaderPageBookmarks.ItemsSource = bookmarks;
+            lblReaderPageBookmarkCount.Text = $"Tổng: {bookmarks.Count} bookmark(s)";
         }
 
         // ===== BOOKMARKS =====
@@ -57,6 +65,45 @@ namespace get_link_manga
             if (lstBookmarks.SelectedItem is BookmarkEntry entry)
             {
                 OpenUrl(entry.Url);
+            }
+        }
+
+        private void BtnOpenReaderPageBookmark_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn &&
+                btn.DataContext is ReaderPageBookmarkEntry entry &&
+                Owner is MainWindow mainWindow)
+            {
+                mainWindow.OpenReaderPageBookmark(entry);
+            }
+        }
+
+        private void BtnDeleteReaderPageBookmark_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string bookmarkId && !string.IsNullOrEmpty(bookmarkId))
+            {
+                _manager.RemoveReaderPageBookmark(bookmarkId);
+                RefreshReaderPageBookmarks();
+            }
+        }
+
+        private void BtnClearReaderPageBookmarks_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Bạn có chắc muốn xóa toàn bộ bookmark trang?", "Xác nhận",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                _manager.ClearReaderPageBookmarks();
+                RefreshReaderPageBookmarks();
+            }
+        }
+
+        private void LstReaderPageBookmarks_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (lstReaderPageBookmarks.SelectedItem is ReaderPageBookmarkEntry entry &&
+                Owner is MainWindow mainWindow)
+            {
+                mainWindow.OpenReaderPageBookmark(entry);
             }
         }
 
@@ -236,7 +283,7 @@ namespace get_link_manga
 
         public void ApplyLanguage(bool isVietnamese)
         {
-            Title = isVietnamese ? "LỊCH SỬ & ĐÁNH DẤU" : "BOOKMARKS & HISTORY";
+            Title = isVietnamese ? "LỊCH SỬ, DOWNLOAD BOOKMARKS & COMIC BOOKMARKS" : "HISTORY, DOWNLOAD BOOKMARKS & COMIC BOOKMARKS";
         }
     }
 }

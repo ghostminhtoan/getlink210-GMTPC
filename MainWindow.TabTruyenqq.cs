@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -357,7 +357,7 @@ namespace get_link_manga
                 txtTruyenqqTagUrl.Text = normalizedUrl;
 
                 // Fetch targeted page HTML
-                string html = await _httpClient.GetStringAsync(normalizedUrl);
+                string html = await FetchStringAsync(normalizedUrl, _downloadCts?.Token ?? CancellationToken.None);
                 
                 int maxPage = 1;
                 // Parse page patterns: /trang-420 or trang-420
@@ -493,7 +493,7 @@ namespace get_link_manga
                     }
 
                     pageUrl = ResolveTruyenqqRequestUrl(pageUrl);
-                    string html = await _httpClient.GetStringAsync(pageUrl);
+                    string html = await FetchStringAsync(pageUrl, _downloadCts?.Token ?? CancellationToken.None);
                     
                     // Match all <a> tags containing /truyen-tranh/ links, parent or child (chapter) links
                     var viewMatches = Regex.Matches(html, @"<a\s+[^>]*?href=[""'](?<link>[^""']*?/truyen-tranh/[^""']+)[""'][^>]*>(?<content>[\s\S]*?)<\/a>", RegexOptions.IgnoreCase);
@@ -698,7 +698,7 @@ namespace get_link_manga
                             continue;
                         }
                         link = ResolveTruyenqqRequestUrl(link);
-                        string html = await _httpClient.GetStringAsync(link);
+                        string html = await FetchStringAsync(link, _downloadCts?.Token ?? CancellationToken.None);
                         var titleMatch = Regex.Match(html, @"<title>\s*(.*?)\s*</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
                         string title = "Manga - " + link.Split('/').Last();
                         string latestChapText = "";
@@ -884,7 +884,7 @@ namespace get_link_manga
                     throw new Exception("Không thể vượt qua Cloudflare captcha.");
                 }
                 cleanLink = ResolveTruyenqqRequestUrl(cleanLink);
-                string html = await _httpClient.GetStringAsync(cleanLink);
+                string html = await FetchStringAsync(cleanLink, _downloadCts?.Token ?? CancellationToken.None);
 
                 // Update manga title from <title> tag if available
                 var titleMatch = Regex.Match(html, @"<title>\s*(.*?)\s*</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
@@ -1046,7 +1046,7 @@ namespace get_link_manga
                 throw new Exception("Không thể vượt qua Cloudflare captcha.");
             }
             item.Link = ResolveTruyenqqRequestUrl(item.Link);
-            string html = await _httpClient.GetStringAsync(item.Link);
+            string html = await FetchStringAsync(item.Link, _downloadCts?.Token ?? CancellationToken.None);
 
             string mangaTitle = item.Name;
             string chapterTitle = "Chương 1";
@@ -1125,16 +1125,18 @@ namespace get_link_manga
                 cleanChapter = cleanChapter.Trim();
             }
 
+            cleanChapter = NormalizeChapterLabel(cleanChapter);
             string safeManga = GetSafePathName(cleanManga);
-            string safeChapter = GetSafePathName(cleanChapter);
+            string safeChapter = GetSafeChapterPathName(cleanChapter);
             string progressKey = $"truyenqq|{GetSafePathName(cleanManga)}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
             UpsertMainLogLine(progressKey, $"[truyenqq] Đang tải {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
             
             // Save inside "truyenqq" root directory
-            string unmergedPath = Path.Combine(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}");
-            string mergedPath = Path.Combine(rootFolder, "truyenqq", safeManga, safeChapter);
+            string siteRootFolder = GetSiteDownloadRoot(rootFolder, "truyenqq");
+            string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
+            string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
             string tempFolder = BuildStableTempFolderPath(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}", item.Link, item.Name, cleanManga, cleanChapter);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
@@ -1179,14 +1181,7 @@ namespace get_link_manga
             WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {cleanChapter}");
 
             // Connection count settings
-            int maxThreads = 4;
-            Dispatcher.Invoke(() =>
-            {
-                if (cmbConnections.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem && int.TryParse(selectedItem.Content.ToString(), out int val))
-                {
-                    maxThreads = val;
-                }
-            });
+            int maxThreads = GetCurrentConnectionLimit();
 
             TruyenqqLog($"Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
@@ -1237,9 +1232,9 @@ namespace get_link_manga
                             string unmergedFilePath = Path.Combine(unmergedPath, $"{index + 1:D3}{ext}");
                             string mergedFilePath = Path.Combine(mergedPath, $"{index + 1:D3}{ext}");
 
-                            if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024) ||
-                                (File.Exists(unmergedFilePath) && new FileInfo(unmergedFilePath).Length > 1024) ||
-                                (File.Exists(mergedFilePath) && new FileInfo(mergedFilePath).Length > 1024))
+                            if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 0) ||
+                                (File.Exists(unmergedFilePath) && new FileInfo(unmergedFilePath).Length > 0) ||
+                                (File.Exists(mergedFilePath) && new FileInfo(mergedFilePath).Length > 0))
                             {
                                 lock (lockObj)
                                 {

@@ -131,8 +131,13 @@ namespace get_link_manga
                 string downloadRoot = txtDownloadPath.Text.Trim();
                 if (string.IsNullOrEmpty(downloadRoot))
                 {
-                    MessageBox.Show("Vui lòng chọn thư mục lưu trước.", "Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ShowLocalizedMessageBox(
+                        "Please select a download folder first.",
+                        "Vui lòng chọn thư mục lưu trước.",
+                        "Error",
+                        "Lỗi",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
                     return;
                 }
 
@@ -228,32 +233,31 @@ namespace get_link_manga
         /// Parse the chapter selection textbox and return the filter HashSet.
         /// Returns null if empty (download all). Shows error message if invalid.
         /// </summary>
-        internal ChapterFilter GetChapterSelectionFilter()
+        internal ChapterFilter GetChapterSelectionFilterForItem(GalleryItem item)
         {
-            string input = "";
-            Dispatcher.Invoke(() => { input = txtChapterSelection?.Text?.Trim() ?? ""; });
-
-            if (string.IsNullOrEmpty(input))
-                return null; // Download all
-
-            if (ChapterRangeParser.TryParse(input, out var result, out string errorMsg))
+            string itemInput = item?.ChapterSelectionText?.Trim() ?? "";
+            if (!string.IsNullOrWhiteSpace(itemInput))
             {
-                if (result != null)
+                if (ChapterRangeParser.TryParse(itemInput, out var itemFilter, out string itemError))
                 {
-                    string display = ChapterRangeParser.ToDisplayString(result);
-                    Log($"Chapter filter applied: {display}");
+                    string display = ChapterRangeParser.ToDisplayString(itemFilter);
+                    Log($"Chapter filter applied for '{item?.Name}': {display}");
+                    return itemFilter;
                 }
-                return result;
-            }
-            else
-            {
+
                 Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show($"Cú pháp chọn chapter không hợp lệ:\n{errorMsg}\n\nVí dụ: 324-328;324.5",
-                        "Chapter Selection Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ShowLocalizedMessageBox(
+                        $"Chapter selection for '{item?.Name}' is invalid:\n{itemError}\n\nClear row filter or fix syntax.",
+                        $"Chapter selection cho '{item?.Name}' không hợp lệ:\n{itemError}\n\nHãy xóa hoặc sửa cú pháp ở ô chapter của dòng này.",
+                        "Chapter Selection Error",
+                        "Lỗi chọn chapter",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
                 });
-                return null;
             }
+
+            return null;
         }
 
         /// <summary>
@@ -310,21 +314,23 @@ namespace get_link_manga
                     
                     if (isViHentai)
                     {
-                        string safeChapter = GetSafePathName(err.ChapterName);
-                        retryUnmergedFolder = Path.Combine(queueItem.DownloadPath, "vi-hentai.pro", $"{safeManga}-{safeChapter}");
-                        retryMergedFolder = Path.Combine(queueItem.DownloadPath, "vi-hentai.pro", safeManga, safeChapter);
+                        string safeChapter = GetSafeChapterPathName(err.ChapterName);
+                        string siteRoot = GetSiteDownloadRoot(queueItem.DownloadPath, "vi-hentai.pro");
+                        retryUnmergedFolder = Path.Combine(siteRoot, $"{safeManga}-{safeChapter}");
+                        retryMergedFolder = Path.Combine(siteRoot, safeManga, safeChapter);
                         targetFolder = Directory.Exists(retryMergedFolder) ? retryMergedFolder : retryUnmergedFolder;
                     }
                     else if (isTruyenqq)
                     {
-                        string safeChapter = GetSafePathName(err.ChapterName);
-                        retryUnmergedFolder = Path.Combine(queueItem.DownloadPath, "truyenqq", $"{safeManga}-{safeChapter}");
-                        retryMergedFolder = Path.Combine(queueItem.DownloadPath, "truyenqq", safeManga, safeChapter);
+                        string safeChapter = GetSafeChapterPathName(err.ChapterName);
+                        string siteRoot = GetSiteDownloadRoot(queueItem.DownloadPath, "truyenqq");
+                        retryUnmergedFolder = Path.Combine(siteRoot, $"{safeManga}-{safeChapter}");
+                        retryMergedFolder = Path.Combine(siteRoot, safeManga, safeChapter);
                         targetFolder = Directory.Exists(retryMergedFolder) ? retryMergedFolder : retryUnmergedFolder;
                     }
                     else
                     {
-                        targetFolder = Path.Combine(queueItem.DownloadPath, queueItem.SourceDomain ?? "", safeManga);
+                        targetFolder = Path.Combine(GetConfiguredDownloadRoot(queueItem.DownloadPath, queueItem.SourceDomain ?? string.Empty), safeManga);
                     }
 
                     if (!string.IsNullOrWhiteSpace(retryUnmergedFolder) &&
@@ -399,8 +405,13 @@ namespace get_link_manga
             Log($"[Retry] Hoàn tất thử tải lại cho '{queueItem.Name}'. Thành công: {successfulRetries}/{errorsToRetry.Count}.");
             if (showMessageBox)
             {
-                MessageBox.Show($"Thử tải lại hoàn tất!\nThành công: {successfulRetries}\nThất bại: {failedRetries}", 
-                    "Retry Completed", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowLocalizedMessageBox(
+                    $"Retry complete!\nSuccess: {successfulRetries}\nFailed: {failedRetries}",
+                    $"Thử tải lại hoàn tất!\nThành công: {successfulRetries}\nThất bại: {failedRetries}",
+                    "Retry Completed",
+                    "Kết quả thử tải lại",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
         }
 
@@ -427,7 +438,7 @@ namespace get_link_manga
                 return null;
             }
 
-            string html = await _httpClient.GetStringAsync(chapterLink);
+            string html = await FetchStringAsync(chapterLink, _downloadCts?.Token ?? CancellationToken.None);
             string safeHtml = GetSafeChapterHtml(html);
             var imageUrls = ExtractTruyenqqImageUrls(safeHtml, chapterLink);
             int index = err.PageNumber - 1;

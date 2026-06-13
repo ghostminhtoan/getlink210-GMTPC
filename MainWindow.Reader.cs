@@ -1,5 +1,3 @@
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.Wpf;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +8,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace get_link_manga
 {
@@ -92,9 +93,19 @@ namespace get_link_manga
         internal ReaderFitMode _readerFitMode = ReaderFitMode.FitWidth;
         private ReaderFullscreenWindow _fullscreenWindow = null;
         private string _lastReaderLibraryRoot;
-        private bool _readerWebViewReady;
         private bool _readerSelectionGuard;
-        private WebView2 _readerWebView;
+        private ScrollViewer _readerScrollViewer;
+        private Border _readerViewportHost;
+        private StackPanel _readerStagePanel;
+        private readonly ScaleTransform _readerScaleTransform = new ScaleTransform(1d, 1d);
+        private readonly List<FrameworkElement> _readerPageElements = new List<FrameworkElement>();
+        private double _readerZoom = 1d;
+        private bool _readerSyncingFromViewport;
+        private bool _readerIsMousePanning;
+        private Point _readerMousePanStartPoint;
+        private double _readerMousePanStartHorizontalOffset;
+        private double _readerMousePanStartVerticalOffset;
+        private Cursor _readerMousePanPreviousCursor;
         private ListBox _readerMangaList;
         private ListBox _readerChapterList;
         private ComboBox _readerPageCombo;
@@ -111,6 +122,17 @@ namespace get_link_manga
         private Grid _readerRootGrid;
         private bool _isReaderFullscreen = false;
         private Button _readerHistoryOpenButton;
+        private Button _readerOtherFolderButton;
+        private string _readerLibraryRootOverride;
+        private bool _forceReaderRenderOnNextPageOpen;
+        private string _lastRenderedReaderChapterPath;
+        private ReaderFitMode _lastRenderedReaderFitMode = ReaderFitMode.FitWidth;
+        private bool _readerUsesBandiView = true;
+        private bool _readerHasUserClickedInWatch;
+        private bool _readerAutoRefreshInProgress;
+        private bool _readerSuppressAutoLaunch;
+        private DateTime _lastReaderAutoRefreshUtc = DateTime.MinValue;
+        private DispatcherTimer _readerAutoRefreshTimer;
 
         private FrameworkElement CreateWatchSection()
         {
@@ -138,7 +160,9 @@ namespace get_link_manga
 
             var watchToolbar = new WrapPanel();
             watchToolbar.Children.Add(CreateReaderMiniButton("Refresh library", (sender, args) => RefreshReaderLibraryIfNeeded(forceRefresh: true)));
-            watchToolbar.Children.Add(CreateReaderMiniButton("Open root", BtnOpenFolder_Click));
+            watchToolbar.Children.Add(CreateReaderMiniButton("Open root", OpenReaderRootFolder_Click));
+            _readerOtherFolderButton = CreateReaderMiniButton("Load other folder", OpenOtherReaderFolder_Click, 86);
+            watchToolbar.Children.Add(_readerOtherFolderButton);
             _readerHistoryOpenButton = CreateReaderMiniButton("Open latest history", OpenLatestHistoryInReader);
             watchToolbar.Children.Add(_readerHistoryOpenButton);
 
@@ -159,6 +183,7 @@ namespace get_link_manga
                 DisplayMemberPath = "DisplayLabel",
                 MinHeight = 180
             };
+            _readerMangaList.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
             _readerMangaList.SelectionChanged += ReaderMangaList_SelectionChanged;
 
             _readerChapterList = new ListBox
@@ -170,6 +195,7 @@ namespace get_link_manga
                 DisplayMemberPath = "DisplayLabel",
                 MinHeight = 180
             };
+            _readerChapterList.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
             _readerChapterList.SelectionChanged += ReaderChapterList_SelectionChanged;
 
             Grid.SetRow(watchToolbar, 0);
@@ -220,6 +246,7 @@ namespace get_link_manga
                 DisplayMemberPath = "DisplayLabel"
             };
             _readerPageCombo.SelectionChanged += ReaderPageCombo_SelectionChanged;
+            _readerPageCombo.PreviewMouseWheel += ReaderPageCombo_PreviewMouseWheel;
 
             _readerCurrentTitleText = new TextBlock
             {
@@ -239,20 +266,21 @@ namespace get_link_manga
                 Height = 22,
                 Margin = new Thickness(0, 0, 6, 4),
                 VerticalContentAlignment = VerticalAlignment.Center,
-                HorizontalContentAlignment = HorizontalAlignment.Left
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                IsEnabled = false
             };
-            _readerFitCombo.Items.Add("Fit width");
-            _readerFitCombo.Items.Add("Fit height");
-            _readerFitCombo.Items.Add("Actual");
+            _readerFitCombo.Items.Add("Bandiview");
             _readerFitCombo.Items.Add("Cuộn dọc");
             _readerFitCombo.Items.Add("left → right");
             _readerFitCombo.Items.Add("left ← right");
+            _readerFitCombo.Items.Clear();
+            _readerFitCombo.Items.Add("Bandiview");
             _readerFitCombo.SelectedIndex = 0;
             _readerFitCombo.SelectionChanged += ReaderFitCombo_SelectionChanged;
 
             _readerNextPageButton = CreateReaderMiniButton("Page >", ReaderNextPage_Click, 54);
             _readerNextChapterButton = CreateReaderMiniButton("Chap >>", ReaderNextChapter_Click, 54);
-            _readerFullscreenButton = CreateReaderMiniButton("Fullscreen", ReaderFullscreen_Click, 72);
+            _readerFullscreenButton = CreateReaderMiniButton("Open app", ReaderFullscreen_Click, 72);
 
             Grid.SetColumn(_readerPrevChapterButton, 0);
             Grid.SetColumn(_readerPrevPageButton, 1);
@@ -272,12 +300,39 @@ namespace get_link_manga
             topToolbar.Children.Add(_readerFullscreenButton);
             topToolbar.Children.Add(_readerCurrentTitleText);
 
-            _readerWebView = new WebView2
+            _readerStagePanel = new StackPanel
             {
-                Margin = new Thickness(0, 14, 0, 14),
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
+                Margin = new Thickness(12),
+                LayoutTransform = _readerScaleTransform,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top
             };
+
+            _readerViewportHost = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(0x06, 0x09, 0x0F)),
+                CornerRadius = new CornerRadius(8),
+                Margin = new Thickness(0, 14, 0, 14),
+                Child = _readerStagePanel
+            };
+            _readerViewportHost.SizeChanged += (sender, args) => UpdateReaderViewportAlignment();
+
+            _readerScrollViewer = new ScrollViewer
+            {
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                CanContentScroll = false,
+                PanningMode = PanningMode.Both,
+                Focusable = true,
+                Content = _readerViewportHost
+            };
+            _readerScrollViewer.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
+            _readerScrollViewer.ScrollChanged += ReaderScrollViewer_ScrollChanged;
+            _readerScrollViewer.PreviewMouseWheel += ReaderScrollViewer_PreviewMouseWheel;
+            _readerScrollViewer.PreviewMouseLeftButtonDown += ReaderScrollViewer_PreviewMouseLeftButtonDown;
+            _readerScrollViewer.PreviewMouseLeftButtonUp += ReaderScrollViewer_PreviewMouseLeftButtonUp;
+            _readerScrollViewer.PreviewMouseMove += ReaderScrollViewer_PreviewMouseMove;
+            _readerScrollViewer.LostMouseCapture += ReaderScrollViewer_LostMouseCapture;
 
             _readerStatusText = new TextBlock
             {
@@ -287,10 +342,10 @@ namespace get_link_manga
             };
 
             Grid.SetRow(topToolbar, 0);
-            Grid.SetRow(_readerWebView, 1);
+            Grid.SetRow(_readerScrollViewer, 1);
             Grid.SetRow(_readerStatusText, 2);
             viewerGrid.Children.Add(topToolbar);
-            viewerGrid.Children.Add(_readerWebView);
+            viewerGrid.Children.Add(_readerScrollViewer);
             viewerGrid.Children.Add(_readerStatusText);
 
             Grid.SetColumn(_readerSidebarBorder, 0);
@@ -300,8 +355,9 @@ namespace get_link_manga
 
             UpdateReaderStatus(_isVietnameseUi
                 ? "Bấm Refresh library để quét thư mục tải và bắt đầu đọc."
-                : "Use Refresh library to scan the download root and start reading.");
+                : "Use Refresh library, then pick a chapter to open it in Bandiview.");
             UpdateReaderNavigationState();
+            EnsureReaderAutoRefreshTimer();
 
             return _readerRootGrid;
         }
@@ -320,9 +376,237 @@ namespace get_link_manga
             return button;
         }
 
-        private async void EnsureReaderReady()
+        private void EnsureReaderAutoRefreshTimer()
         {
-            if (_readerWebViewReady || _readerWebView == null)
+            if (_readerAutoRefreshTimer != null)
+            {
+                return;
+            }
+
+            _readerAutoRefreshTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromSeconds(25)
+            };
+            _readerAutoRefreshTimer.Tick += async (sender, args) =>
+            {
+                if (_currentSection != AppSection.Watch ||
+                    _readerAutoRefreshInProgress ||
+                    _isReaderFullscreen)
+                {
+                    return;
+                }
+
+                if ((DateTime.UtcNow - _lastReaderAutoRefreshUtc).TotalSeconds < 20)
+                {
+                    return;
+                }
+
+                _readerAutoRefreshInProgress = true;
+                _readerSuppressAutoLaunch = true;
+                try
+                {
+                    _lastReaderAutoRefreshUtc = DateTime.UtcNow;
+                    await RefreshReaderLibraryAsync(forceRefresh: true);
+                }
+                finally
+                {
+                    _readerSuppressAutoLaunch = false;
+                    _readerAutoRefreshInProgress = false;
+                }
+            };
+        }
+
+        private void StartReaderAutoRefresh()
+        {
+            EnsureReaderAutoRefreshTimer();
+            _readerAutoRefreshTimer?.Start();
+        }
+
+        private void StopReaderAutoRefresh()
+        {
+            _readerAutoRefreshTimer?.Stop();
+        }
+
+        private string ResolveBandiViewExecutablePath()
+        {
+            string portablePath = PortablePaths.BandiViewExePath;
+            if (File.Exists(portablePath))
+            {
+                return portablePath;
+            }
+
+            string appRelativePath = Path.Combine(PortablePaths.AppRoot, "Bandiview", "BandiView.exe");
+            if (File.Exists(appRelativePath))
+            {
+                return appRelativePath;
+            }
+
+            return null;
+        }
+
+        private bool TryLaunchBandiView(string targetPath, out string errorMessage)
+        {
+            errorMessage = null;
+
+            string bandiViewExePath = ResolveBandiViewExecutablePath();
+            if (string.IsNullOrWhiteSpace(bandiViewExePath) || !File.Exists(bandiViewExePath))
+            {
+                errorMessage = _isVietnameseUi
+                    ? "Không tìm thấy BandiView.exe trong bundle portable."
+                    : "BandiView.exe was not found in the portable bundle.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(targetPath) || (!File.Exists(targetPath) && !Directory.Exists(targetPath)))
+            {
+                errorMessage = _isVietnameseUi
+                    ? "Trang hoặc chapter đã chọn không còn tồn tại."
+                    : "The selected page or chapter no longer exists.";
+                return false;
+            }
+
+            try
+            {
+                var startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = bandiViewExePath,
+                    Arguments = "\"" + targetPath + "\"",
+                    UseShellExecute = false,
+                    WorkingDirectory = Path.GetDirectoryName(bandiViewExePath)
+                };
+
+                System.Diagnostics.Process.Start(startInfo);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = (_isVietnameseUi ? "Không thể mở Bandiview: " : "Failed to open Bandiview: ") + ex.Message;
+                return false;
+            }
+        }
+
+        private void LaunchCurrentReaderTargetInBandiView(bool preferChapterFolder)
+        {
+            string targetPath = null;
+
+            if (preferChapterFolder && _currentReaderChapter != null && Directory.Exists(_currentReaderChapter.FolderPath))
+            {
+                targetPath = _currentReaderChapter.FolderPath;
+            }
+            else if (_currentReaderPage != null && File.Exists(_currentReaderPage.FilePath))
+            {
+                targetPath = _currentReaderPage.FilePath;
+            }
+            else if (_currentReaderChapter != null && Directory.Exists(_currentReaderChapter.FolderPath))
+            {
+                targetPath = _currentReaderChapter.FolderPath;
+            }
+            else if (_currentReaderManga != null && Directory.Exists(_currentReaderManga.FolderPath))
+            {
+                targetPath = _currentReaderManga.FolderPath;
+            }
+
+            if (!TryLaunchBandiView(targetPath, out string errorMessage))
+            {
+                UpdateReaderStatus(errorMessage);
+                return;
+            }
+
+            string targetLabel = preferChapterFolder
+                ? (_currentReaderChapter?.Name ?? _currentReaderManga?.Name ?? "Bandiview")
+                : (_currentReaderPage?.DisplayLabel ?? _currentReaderChapter?.Name ?? "Bandiview");
+            UpdateReaderStatus((_isVietnameseUi ? "Đã mở bằng Bandiview: " : "Opened in Bandiview: ") + targetLabel);
+        }
+
+        private void ReaderScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                return;
+            }
+
+            e.Handled = true;
+            double nextZoom = _readerZoom + (e.Delta > 0 ? 0.12d : -0.12d);
+            SetReaderZoom(nextZoom, keepCurrentPageVisible: true);
+        }
+
+        private void ReaderScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_readerScrollViewer == null || !IsReaderScrollMode())
+            {
+                return;
+            }
+
+            if (_readerScrollViewer.ScrollableWidth <= 0 && _readerScrollViewer.ScrollableHeight <= 0)
+            {
+                return;
+            }
+
+            _readerIsMousePanning = true;
+            _readerMousePanStartPoint = e.GetPosition(_readerScrollViewer);
+            _readerMousePanStartHorizontalOffset = _readerScrollViewer.HorizontalOffset;
+            _readerMousePanStartVerticalOffset = _readerScrollViewer.VerticalOffset;
+            _readerMousePanPreviousCursor = Cursor;
+            Cursor = Cursors.SizeAll;
+            _readerScrollViewer.CaptureMouse();
+            _readerScrollViewer.Focus();
+            e.Handled = true;
+        }
+
+        private void ReaderScrollViewer_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_readerIsMousePanning || _readerScrollViewer == null)
+            {
+                return;
+            }
+
+            Point currentPoint = e.GetPosition(_readerScrollViewer);
+            Vector delta = currentPoint - _readerMousePanStartPoint;
+            _readerSyncingFromViewport = true;
+            try
+            {
+                _readerScrollViewer.ScrollToHorizontalOffset(ClampOffset(_readerMousePanStartHorizontalOffset - delta.X, _readerScrollViewer.ScrollableWidth));
+                _readerScrollViewer.ScrollToVerticalOffset(ClampOffset(_readerMousePanStartVerticalOffset - delta.Y, _readerScrollViewer.ScrollableHeight));
+            }
+            finally
+            {
+                _readerSyncingFromViewport = false;
+            }
+
+            UpdateReaderPageFromViewport();
+            e.Handled = true;
+        }
+
+        private void ReaderScrollViewer_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_readerIsMousePanning)
+            {
+                return;
+            }
+
+            EndReaderMousePan();
+            e.Handled = true;
+        }
+
+        private void ReaderScrollViewer_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            EndReaderMousePan();
+        }
+
+        private void ReaderScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (_readerSyncingFromViewport || !IsReaderScrollMode() || _readerPageElements.Count == 0 || _currentReaderChapter == null)
+            {
+                return;
+            }
+
+            UpdateReaderPageFromViewport();
+        }
+
+        #if false
+        private void EnsureReaderReady()
+        {
+            if (true)
             {
                 return;
             }
@@ -341,6 +625,16 @@ namespace get_link_manga
                     _readerWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
                     _readerWebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                     _readerWebView.CoreWebView2.Settings.IsZoomControlEnabled = false;
+                    _readerWebView.CoreWebView2.WebMessageReceived += (sender, args) =>
+                    {
+                        try
+                        {
+                            HandleReaderWebMessage(args.TryGetWebMessageAsString());
+                        }
+                        catch
+                        {
+                        }
+                    };
                 }
 
                 _readerWebViewReady = true;
@@ -355,16 +649,42 @@ namespace get_link_manga
             }
         }
 
+        #endif
+
+        private void EnsureReaderReady()
+        {
+        }
+
+        private string GetCurrentReaderLibraryRoot()
+        {
+            if (!string.IsNullOrWhiteSpace(_readerLibraryRootOverride))
+            {
+                return _readerLibraryRootOverride;
+            }
+
+            return txtDownloadPath != null && !string.IsNullOrWhiteSpace(txtDownloadPath.Text)
+                ? txtDownloadPath.Text.Trim()
+                : PortablePaths.DefaultDownloadRoot;
+        }
+
         private async void RefreshReaderLibraryIfNeeded(bool forceRefresh)
+        {
+            await RefreshReaderLibraryAsync(forceRefresh);
+        }
+
+        private async Task RefreshReaderLibraryAsync(bool forceRefresh)
         {
             if (_readerMangaList == null)
             {
                 return;
             }
 
-            string root = txtDownloadPath != null && !string.IsNullOrWhiteSpace(txtDownloadPath.Text)
-                ? txtDownloadPath.Text.Trim()
-                : PortablePaths.DefaultDownloadRoot;
+            if (_readerAutoRefreshInProgress && !forceRefresh)
+            {
+                return;
+            }
+
+            string root = GetCurrentReaderLibraryRoot();
 
             if (!forceRefresh && string.Equals(root, _lastReaderLibraryRoot, StringComparison.OrdinalIgnoreCase) && _readerLibrary.Count > 0)
             {
@@ -372,6 +692,7 @@ namespace get_link_manga
             }
 
             UpdateReaderStatus(_isVietnameseUi ? "Đang quét thư mục manga..." : "Scanning manga library...");
+            _lastReaderAutoRefreshUtc = DateTime.UtcNow;
 
             List<ReaderMangaItem> library = await Task.Run(() => ScanReaderLibrary(root));
             _lastReaderLibraryRoot = root;
@@ -574,6 +895,55 @@ namespace get_link_manga
             OpenReaderPage(page);
         }
 
+        private void ReaderPageCombo_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (_readerPageCombo == null || _readerPageCombo.IsDropDownOpen)
+            {
+                return;
+            }
+
+            MoveReaderPage(e.Delta > 0 ? -1 : 1);
+            e.Handled = true;
+        }
+
+        private void OpenReaderRootFolder_Click(object sender, RoutedEventArgs e)
+        {
+            string root = GetCurrentReaderLibraryRoot();
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Thư mục watch hiện tại không tồn tại." : "Current watch folder does not exist.");
+                return;
+            }
+
+            if (!ShellFolderLauncher.TryOpenFolder(root, out string openError))
+            {
+                UpdateReaderStatus((_isVietnameseUi ? "Không thể mở thư mục: " : "Failed to open folder: ") + openError);
+            }
+        }
+
+        private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new VistaFolderBrowser
+            {
+                SelectedPath = GetCurrentReaderLibraryRoot(),
+                Title = _isVietnameseUi ? "Chọn thư mục khác cho Watch" : "Choose another Watch folder"
+            };
+
+            if (!dialog.ShowDialog(new WindowInteropHelper(this).Handle))
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(dialog.SelectedPath) || !Directory.Exists(dialog.SelectedPath))
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Thư mục đã chọn không hợp lệ." : "Selected folder is invalid.");
+                return;
+            }
+
+            _readerLibraryRootOverride = dialog.SelectedPath;
+            await RefreshReaderLibraryAsync(forceRefresh: true);
+        }
+
         private void OpenReaderManga(ReaderMangaItem manga, bool keepChapterSelection)
         {
             if (manga == null)
@@ -594,6 +964,49 @@ namespace get_link_manga
             OpenReaderChapter(nextChapter ?? manga.Chapters.FirstOrDefault(), 0);
         }
 
+        private void OpenReaderMangaChapterPage(ReaderMangaItem manga, ReaderChapterItem chapter, int pageIndex)
+        {
+            if (manga == null || chapter == null || chapter.Pages == null || chapter.Pages.Count == 0)
+            {
+                return;
+            }
+
+            int safePageIndex = Math.Max(0, Math.Min(chapter.Pages.Count - 1, pageIndex));
+
+            _currentReaderManga = manga;
+            _currentReaderChapter = chapter;
+            _currentReaderPage = chapter.Pages[safePageIndex];
+
+            _readerSelectionGuard = true;
+            _readerMangaList.SelectedItem = manga;
+            _readerChapterList.ItemsSource = manga.Chapters;
+            _readerChapterList.SelectedItem = chapter;
+            _readerPageCombo.ItemsSource = chapter.Pages;
+            _readerPageCombo.SelectedItem = _currentReaderPage;
+            _readerSelectionGuard = false;
+
+            _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} · {_currentReaderChapter?.Name}";
+            _forceReaderRenderOnNextPageOpen = true;
+            if (_readerUsesBandiView && _readerHasUserClickedInWatch && !_readerSuppressAutoLaunch)
+            {
+                RenderReaderPlaceholder();
+                LaunchCurrentReaderTargetInBandiView(preferChapterFolder: false);
+            }
+            else if (_readerUsesBandiView)
+            {
+                RenderReaderPlaceholder();
+                UpdateReaderStatus(_isVietnameseUi
+                    ? "Đã chọn chapter. Click chuột vào watch để tự mở Bandiview."
+                    : "Chapter selected. Click inside Watch to allow Bandiview auto-open.");
+            }
+            else
+            {
+                RenderReaderPage();
+                UpdateReaderStatus(BuildReaderStatusText());
+            }
+            UpdateReaderNavigationState();
+        }
+
         private void OpenReaderChapter(ReaderChapterItem chapter, int pageIndex)
         {
             if (chapter == null)
@@ -608,6 +1021,7 @@ namespace get_link_manga
             _readerSelectionGuard = false;
 
             int safePageIndex = Math.Max(0, Math.Min(chapter.Pages.Count - 1, pageIndex));
+            _forceReaderRenderOnNextPageOpen = true;
             OpenReaderPage(chapter.Pages[safePageIndex]);
         }
 
@@ -624,9 +1038,73 @@ namespace get_link_manga
             _readerSelectionGuard = false;
 
             _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} · {_currentReaderChapter?.Name}";
-            RenderReaderPage();
+            if (_readerUsesBandiView)
+            {
+                if (_readerHasUserClickedInWatch && !_readerSuppressAutoLaunch)
+                {
+                    RenderReaderPlaceholder();
+                    LaunchCurrentReaderTargetInBandiView(preferChapterFolder: false);
+                }
+                else
+                {
+                    RenderReaderPlaceholder();
+                    UpdateReaderStatus(_isVietnameseUi
+                        ? "Click chuột vào watch để tự mở Bandiview."
+                        : "Click inside Watch to allow Bandiview auto-open.");
+                }
+            }
+            else
+            {
+                RenderReaderPage();
+                UpdateReaderStatus(BuildReaderStatusText());
+            }
+            UpdateReaderNavigationState();
+        }
+
+        private void SyncCurrentReaderPageFromIndex(int pageIndex)
+        {
+            if (_currentReaderChapter == null || _currentReaderChapter.Pages == null || _currentReaderChapter.Pages.Count == 0)
+            {
+                return;
+            }
+
+            int safePageIndex = Math.Max(0, Math.Min(_currentReaderChapter.Pages.Count - 1, pageIndex));
+            ReaderPageItem page = _currentReaderChapter.Pages[safePageIndex];
+            if (page == null)
+            {
+                return;
+            }
+
+            _currentReaderPage = page;
+            _readerSelectionGuard = true;
+            _readerPageCombo.SelectedItem = page;
+            _readerSelectionGuard = false;
+
+            _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} · {_currentReaderChapter?.Name}";
             UpdateReaderNavigationState();
             UpdateReaderStatus(BuildReaderStatusText());
+        }
+
+        internal void OpenReaderPageByIndex(int pageIndex)
+        {
+            if (_currentReaderChapter == null || _currentReaderChapter.Pages == null || _currentReaderChapter.Pages.Count == 0)
+            {
+                return;
+            }
+
+            int safePageIndex = Math.Max(0, Math.Min(_currentReaderChapter.Pages.Count - 1, pageIndex));
+            ReaderPageItem page = _currentReaderChapter.Pages[safePageIndex];
+            if (page == null)
+            {
+                return;
+            }
+
+            OpenReaderPage(page);
+        }
+
+        internal void SyncReaderPageSelectionByIndex(int pageIndex)
+        {
+            SyncCurrentReaderPageFromIndex(pageIndex);
         }
 
         private string BuildReaderStatusText()
@@ -652,94 +1130,222 @@ namespace get_link_manga
 
         private void RenderReaderPage()
         {
-            if (!_readerWebViewReady || _readerWebView == null)
-            {
-                EnsureReaderReady();
-                return;
-            }
-
             if (_currentReaderPage == null)
             {
                 RenderReaderPlaceholder();
                 return;
             }
 
-            try
+            bool isScrollMode = IsReaderScrollMode();
+            bool canScrollSyncExistingChapter = isScrollMode &&
+                                               !_forceReaderRenderOnNextPageOpen &&
+                                               _currentReaderChapter != null &&
+                                               string.Equals(_lastRenderedReaderChapterPath, _currentReaderChapter.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                                               _lastRenderedReaderFitMode == _readerFitMode;
+
+            if (canScrollSyncExistingChapter)
             {
-                string tempDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".tmp");
-                if (!System.IO.Directory.Exists(tempDir))
-                {
-                    System.IO.Directory.CreateDirectory(tempDir);
-                }
-                string tempFile = System.IO.Path.Combine(tempDir, "reader.html");
-                
-                string html;
-                bool isScrollMode = _readerFitMode == ReaderFitMode.VerticalScroll ||
-                                   _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
-                                   _readerFitMode == ReaderFitMode.HorizontalScrollRTL;
-
-                if (isScrollMode && _currentReaderChapter != null)
-                {
-                    var pageUris = new List<string>();
-                    foreach (var p in _currentReaderChapter.Pages)
-                    {
-                        pageUris.Add(new Uri(p.FilePath).AbsoluteUri);
-                    }
-                    html = BuildReaderHtmlForChapter(pageUris, _readerFitMode);
-                }
-                else
-                {
-                    string pageUri = new Uri(_currentReaderPage.FilePath).AbsoluteUri;
-                    html = BuildReaderHtml(pageUri, _readerFitMode);
-                }
-
-                System.IO.File.WriteAllText(tempFile, html, System.Text.Encoding.UTF8);
-                _readerWebView.CoreWebView2.Navigate(new Uri(tempFile).AbsoluteUri);
-
-                if (_fullscreenWindow != null)
-                {
-                    _fullscreenWindow.RenderPage();
-                }
+                ScrollReaderViewportToPage(_currentReaderPage.Index);
             }
-            catch
+            else
             {
-                bool isScrollMode = _readerFitMode == ReaderFitMode.VerticalScroll ||
-                                   _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
-                                   _readerFitMode == ReaderFitMode.HorizontalScrollRTL;
+                RenderReaderNativeContent();
+            }
 
-                if (isScrollMode && _currentReaderChapter != null)
-                {
-                    var pageUris = new List<string>();
-                    foreach (var p in _currentReaderChapter.Pages)
-                    {
-                        pageUris.Add(new Uri(p.FilePath).AbsoluteUri);
-                    }
-                    _readerWebView.NavigateToString(BuildReaderHtmlForChapter(pageUris, _readerFitMode));
-                }
-                else
-                {
-                    string pageUri = new Uri(_currentReaderPage.FilePath).AbsoluteUri;
-                    _readerWebView.NavigateToString(BuildReaderHtml(pageUri, _readerFitMode));
-                }
-
-                if (_fullscreenWindow != null)
-                {
-                    _fullscreenWindow.RenderPage();
-                }
+            if (_fullscreenWindow != null)
+            {
+                _fullscreenWindow.RenderPage();
             }
         }
 
         private void RenderReaderPlaceholder()
         {
-            if (!_readerWebViewReady || _readerWebView == null)
+            if (_readerStagePanel == null)
             {
                 return;
             }
 
+            _readerPageElements.Clear();
+            _readerStagePanel.Children.Clear();
+            _readerStagePanel.Orientation = Orientation.Vertical;
+            _readerStagePanel.FlowDirection = FlowDirection.LeftToRight;
+
             string message = _isVietnameseUi
                 ? "Chọn manga và chapter ở cột trái để bắt đầu đọc."
-                : "Choose a manga and chapter from the left panel to start reading.";
-            _readerWebView.NavigateToString(BuildReaderPlaceholderHtml(message));
+                : "Watch now opens with Bandiview.\nPick a chapter or page from the left panel and the app will launch Bandiview automatically.";
+            if (_readerUsesBandiView)
+            {
+                message = _isVietnameseUi
+                    ? "Watch hiện mở bằng Bandiview.\nChọn chapter hoặc page ở cột trái, app sẽ gọi Bandiview tự động."
+                    : "Watch now opens with Bandiview.\nPick a chapter or page from the left panel and the app will launch Bandiview automatically.";
+            }
+            _readerStagePanel.Children.Add(new Border
+            {
+                Padding = new Thickness(24),
+                Child = new TextBlock
+                {
+                    Text = message,
+                    Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
+                    TextAlignment = TextAlignment.Center,
+                    TextWrapping = TextWrapping.Wrap,
+                    MaxWidth = 460
+                }
+            });
+            _readerZoom = 1d;
+            ApplyReaderZoom();
+            UpdateReaderViewportAlignment();
+        }
+
+        private void RenderReaderNativeContent()
+        {
+            if (_readerStagePanel == null || _currentReaderPage == null)
+            {
+                return;
+            }
+
+            _readerPageElements.Clear();
+            _readerStagePanel.Children.Clear();
+
+            bool isScrollMode = IsReaderScrollMode();
+            bool isSinglePageMode = !isScrollMode || _currentReaderChapter == null;
+            _readerStagePanel.Orientation = isSinglePageMode || _readerFitMode == ReaderFitMode.VerticalScroll
+                ? Orientation.Vertical
+                : Orientation.Horizontal;
+            _readerStagePanel.FlowDirection = _readerFitMode == ReaderFitMode.HorizontalScrollRTL
+                ? FlowDirection.LeftToRight
+                : FlowDirection.LeftToRight;
+
+            IEnumerable<ReaderPageItem> pagesToRender;
+            if (isSinglePageMode)
+            {
+                pagesToRender = new[] { _currentReaderPage };
+            }
+            else if (_readerFitMode == ReaderFitMode.HorizontalScrollRTL)
+            {
+                pagesToRender = _currentReaderChapter.Pages.OrderByDescending(item => item.Index);
+            }
+            else
+            {
+                pagesToRender = _currentReaderChapter.Pages;
+            }
+
+            foreach (ReaderPageItem page in pagesToRender)
+            {
+                FrameworkElement pageElement = CreateReaderPageElement(page, isSinglePageMode);
+                _readerPageElements.Add(pageElement);
+                _readerStagePanel.Children.Add(pageElement);
+            }
+
+            _forceReaderRenderOnNextPageOpen = false;
+            _lastRenderedReaderChapterPath = _currentReaderChapter != null ? _currentReaderChapter.FolderPath : null;
+            _lastRenderedReaderFitMode = _readerFitMode;
+            ApplyReaderZoom();
+            UpdateReaderViewportAlignment();
+            _readerScrollViewer?.UpdateLayout();
+            ScrollReaderViewportToPage(_currentReaderPage.Index);
+            _readerScrollViewer?.Focus();
+        }
+
+        private FrameworkElement CreateReaderPageElement(ReaderPageItem page, bool isSinglePageMode)
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.UriSource = new Uri(page.FilePath);
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            var image = new Image
+            {
+                Source = bitmap,
+                Stretch = Stretch.Uniform,
+                SnapsToDevicePixels = true,
+                Tag = page.Index
+            };
+
+            if (_readerFitMode == ReaderFitMode.FitHeight)
+            {
+                image.Height = Math.Max(120, (_readerScrollViewer?.ViewportHeight ?? 0) - 36);
+            }
+            else if (_readerFitMode == ReaderFitMode.ActualSize)
+            {
+                image.Stretch = Stretch.None;
+            }
+            else if (_readerFitMode == ReaderFitMode.FitWidth || _readerFitMode == ReaderFitMode.VerticalScroll)
+            {
+                double width = Math.Max(160, (_readerScrollViewer?.ViewportWidth ?? 0) - 40);
+                image.Width = width;
+            }
+            else
+            {
+                double viewportWidth = _readerScrollViewer?.ViewportWidth ?? 0;
+                image.Width = Math.Max(160, (viewportWidth - 72) / 2d);
+            }
+
+            var border = new Border
+            {
+                Margin = _readerFitMode == ReaderFitMode.VerticalScroll
+                    ? new Thickness(0, 0, 0, 14)
+                    : new Thickness(0, 0, 14, 0),
+                Child = image,
+                Tag = page.Index
+            };
+
+            if (isSinglePageMode)
+            {
+                border.Margin = new Thickness(0);
+            }
+
+            return border;
+        }
+
+        private void ApplyReaderZoom()
+        {
+            _readerScaleTransform.ScaleX = _readerZoom;
+            _readerScaleTransform.ScaleY = _readerZoom;
+            UpdateReaderViewportAlignment();
+        }
+
+        private void SetReaderZoom(double zoom, bool keepCurrentPageVisible)
+        {
+            double previousZoom = _readerZoom;
+            _readerZoom = Math.Max(0.35d, Math.Min(6d, zoom));
+            if (Math.Abs(_readerZoom - 1d) < 0.02d)
+            {
+                _readerZoom = 1d;
+            }
+
+            ApplyReaderZoom();
+            _readerScrollViewer?.UpdateLayout();
+            if (keepCurrentPageVisible && _currentReaderPage != null)
+            {
+                if (IsReaderScrollMode())
+                {
+                    PreserveReaderViewportCenterAfterZoom(previousZoom, _readerZoom);
+                    UpdateReaderPageFromViewport();
+                }
+                else
+                {
+                    ScrollReaderViewportToPage(_currentReaderPage.Index);
+                }
+            }
+
+            _readerScrollViewer?.Focus();
+        }
+
+        private void UpdateReaderViewportAlignment()
+        {
+            if (_readerStagePanel == null || _readerViewportHost == null || _readerScrollViewer == null)
+            {
+                return;
+            }
+
+            _readerStagePanel.HorizontalAlignment = _readerStagePanel.ActualWidth <= _readerScrollViewer.ViewportWidth
+                ? HorizontalAlignment.Center
+                : HorizontalAlignment.Left;
+            _readerStagePanel.VerticalAlignment = _readerStagePanel.ActualHeight <= _readerScrollViewer.ViewportHeight
+                ? VerticalAlignment.Center
+                : VerticalAlignment.Top;
         }
 
         private static string BuildReaderPlaceholderHtml(string message)
@@ -752,23 +1358,28 @@ namespace get_link_manga
 
         private static string BuildReaderHtml(string pageUri, ReaderFitMode fitMode)
         {
+            string containerClass;
             string imageStyle;
             switch (fitMode)
             {
                 case ReaderFitMode.FitHeight:
+                    containerClass = "fit-height";
                     imageStyle = "height:calc(100vh - 24px); width:auto; max-width:none;";
                     break;
                 case ReaderFitMode.ActualSize:
+                    containerClass = "actual-size";
                     imageStyle = "width:auto; height:auto; max-width:none;";
                     break;
                 default:
+                    containerClass = "fit-width";
                     imageStyle = "width:min(100%, 100vw - 24px); height:auto; max-width:none;";
                     break;
             }
 
-            return "<html><body style=\"margin:0;background:#06090f;overflow:auto;display:flex;justify-content:center;align-items:flex-start;\">" +
-                   $"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;{imageStyle}padding:12px 0;\"/>" +
-                   "</body></html>";
+            return BuildReaderDocument(
+                fitMode,
+                $"<div id=\"readerStage\" class=\"reader-stage single-mode {containerClass}\"><img class=\"reader-page\" data-page-index=\"0\" src=\"{EscapeHtml(pageUri)}\" style=\"display:block;{imageStyle}padding:12px 0;\"/></div>",
+                0);
         }
 
         private static string EscapeHtml(string value)
@@ -810,6 +1421,11 @@ namespace get_link_manga
                 _readerNextPageButton.IsEnabled = hasCurrentPage && (GetAdjacentPage(1) != null || GetAdjacentChapter(1) != null);
             }
 
+            if (_readerFullscreenButton != null)
+            {
+                _readerFullscreenButton.IsEnabled = hasCurrentPage || hasCurrentChapter;
+            }
+
             UpdateReaderFitButtons();
         }
 
@@ -817,6 +1433,14 @@ namespace get_link_manga
         {
             if (_readerFitCombo == null)
             {
+                return;
+            }
+            if (_readerUsesBandiView)
+            {
+                if (_readerFitCombo.SelectedIndex != 0)
+                {
+                    _readerFitCombo.SelectedIndex = 0;
+                }
                 return;
             }
             int index = 0;
@@ -932,6 +1556,665 @@ namespace get_link_manga
             OpenReaderChapter(chapter, pageIndex);
         }
 
+        private void MoveReaderChapter(int direction)
+        {
+            ReaderChapterItem chapter = GetAdjacentChapter(direction);
+            if (chapter == null)
+            {
+                return;
+            }
+
+            OpenReaderChapter(chapter, 0);
+        }
+
+        private bool IsReaderHorizontalMode()
+        {
+            return _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
+                   _readerFitMode == ReaderFitMode.HorizontalScrollRTL;
+        }
+
+        private bool IsReaderScrollMode()
+        {
+            return _readerFitMode == ReaderFitMode.VerticalScroll ||
+                   _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
+                   _readerFitMode == ReaderFitMode.HorizontalScrollRTL;
+        }
+
+        private void ExecuteReaderViewportScript(string script)
+        {
+        }
+
+        private void ScrollReaderViewportToBoundary(bool goToStart)
+        {
+            if (_readerScrollViewer == null)
+            {
+                return;
+            }
+
+            _readerSyncingFromViewport = true;
+            try
+            {
+                if (IsReaderHorizontalMode())
+                {
+                    double offset = _readerFitMode == ReaderFitMode.HorizontalScrollRTL
+                        ? (goToStart ? _readerScrollViewer.ScrollableWidth : 0)
+                        : (goToStart ? 0 : _readerScrollViewer.ScrollableWidth);
+                    _readerScrollViewer.ScrollToHorizontalOffset(offset);
+                }
+                else
+                {
+                    double offset = goToStart ? 0 : _readerScrollViewer.ScrollableHeight;
+                    _readerScrollViewer.ScrollToVerticalOffset(offset);
+                }
+            }
+            finally
+            {
+                _readerSyncingFromViewport = false;
+            }
+
+            _fullscreenWindow?.ScrollBoundary(goToStart);
+        }
+
+        private void ScrollReaderViewportToPage(int pageIndex)
+        {
+            if (pageIndex < 0 || _readerScrollViewer == null)
+            {
+                return;
+            }
+
+            FrameworkElement target = _readerPageElements.FirstOrDefault(element => Equals(element.Tag, pageIndex));
+            if (target == null)
+            {
+                _fullscreenWindow?.ScrollToPage(pageIndex);
+                return;
+            }
+
+            _readerScrollViewer.UpdateLayout();
+            Point origin = target.TranslatePoint(new Point(0, 0), _readerStagePanel);
+
+            _readerSyncingFromViewport = true;
+            try
+            {
+                if (_readerFitMode == ReaderFitMode.VerticalScroll)
+                {
+                    double verticalOffset = GetCenteredScrollOffset(origin.Y, target.ActualHeight, _readerScrollViewer.ViewportHeight, _readerScrollViewer.ScrollableHeight);
+                    double horizontalOffset = GetCenteredScrollOffset(origin.X, target.ActualWidth, _readerScrollViewer.ViewportWidth, _readerScrollViewer.ScrollableWidth);
+                    _readerScrollViewer.ScrollToVerticalOffset(verticalOffset);
+                    _readerScrollViewer.ScrollToHorizontalOffset(horizontalOffset);
+                }
+                else if (_readerFitMode == ReaderFitMode.HorizontalScrollLTR || _readerFitMode == ReaderFitMode.HorizontalScrollRTL)
+                {
+                    double horizontalOffset = GetCenteredScrollOffset(origin.X, target.ActualWidth, _readerScrollViewer.ViewportWidth, _readerScrollViewer.ScrollableWidth);
+                    double verticalOffset = GetCenteredScrollOffset(origin.Y, target.ActualHeight, _readerScrollViewer.ViewportHeight, _readerScrollViewer.ScrollableHeight);
+                    _readerScrollViewer.ScrollToHorizontalOffset(horizontalOffset);
+                    _readerScrollViewer.ScrollToVerticalOffset(verticalOffset);
+                }
+                else
+                {
+                    target.BringIntoView();
+                }
+            }
+            finally
+            {
+                _readerSyncingFromViewport = false;
+            }
+
+            _readerScrollViewer.Focus();
+            _fullscreenWindow?.ScrollToPage(pageIndex);
+        }
+
+        private void OpenReaderPageBoundary(bool openLastPage)
+        {
+            if (_currentReaderChapter == null || _currentReaderChapter.Pages == null || _currentReaderChapter.Pages.Count == 0)
+            {
+                return;
+            }
+
+            int index = openLastPage ? _currentReaderChapter.Pages.Count - 1 : 0;
+            OpenReaderPage(_currentReaderChapter.Pages[index]);
+        }
+
+        private void AddCurrentReaderPageBookmark()
+        {
+            if (_currentReaderManga == null || _currentReaderChapter == null || _currentReaderPage == null)
+            {
+                return;
+            }
+
+            _bookmarkManager.AddReaderPageBookmark(new ReaderPageBookmarkEntry
+            {
+                BookmarkId = Guid.NewGuid().ToString("N"),
+                MangaName = _currentReaderManga.Name,
+                ChapterName = _currentReaderChapter.Name,
+                PageName = _currentReaderPage.Name,
+                SourceDomain = _currentReaderManga.SourceGroup ?? "watch",
+                BookmarkedAt = DateTime.Now,
+                LibraryRoot = GetCurrentReaderLibraryRoot(),
+                SeriesFolderPath = ResolveCurrentReaderSeriesFolderPath(),
+                MangaFolderPath = _currentReaderManga.FolderPath,
+                ChapterFolderPath = _currentReaderChapter.FolderPath,
+                PageFilePath = _currentReaderPage.FilePath,
+                PageIndex = _currentReaderPage.Index + 1,
+                FitModeKey = GetReaderFitModeKey(_readerFitMode),
+                ReaderZoom = _readerZoom,
+                ViewportPageIndex = GetCurrentViewportPageIndex(),
+                ViewportPageXRatio = GetCurrentViewportPageAnchor().X,
+                ViewportPageYRatio = GetCurrentViewportPageAnchor().Y
+            });
+
+            _bookmarkHistoryWindowInstance?.RefreshReaderPageBookmarks();
+            ShowReaderSoftNotification(_isVietnameseUi
+                ? $"Đã bookmark trang {_currentReaderPage.Index + 1} của {_currentReaderManga.Name}."
+                : $"Bookmarked page {_currentReaderPage.Index + 1} of {_currentReaderManga.Name}.");
+        }
+
+        private void ShowReaderSoftNotification(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            UpdateReaderStatus(message);
+            _fullscreenWindow?.ShowToast(message);
+        }
+
+        private static double GetCenteredScrollOffset(double origin, double elementSize, double viewportSize, double scrollableSize)
+        {
+            if (viewportSize <= 0)
+            {
+                return Math.Max(0, origin);
+            }
+
+            double offset = origin - Math.Max(0, (viewportSize - elementSize) / 2d);
+            if (double.IsNaN(offset) || double.IsInfinity(offset))
+            {
+                offset = origin;
+            }
+
+            return Math.Max(0, Math.Min(scrollableSize, offset));
+        }
+
+        private void PreserveReaderViewportCenterAfterZoom(double oldZoom, double newZoom)
+        {
+            if (_readerScrollViewer == null || oldZoom <= 0 || newZoom <= 0)
+            {
+                return;
+            }
+
+            double centerX = (_readerScrollViewer.HorizontalOffset + (_readerScrollViewer.ViewportWidth / 2d)) / oldZoom;
+            double centerY = (_readerScrollViewer.VerticalOffset + (_readerScrollViewer.ViewportHeight / 2d)) / oldZoom;
+
+            _readerSyncingFromViewport = true;
+            try
+            {
+                double nextHorizontalOffset = (centerX * newZoom) - (_readerScrollViewer.ViewportWidth / 2d);
+                double nextVerticalOffset = (centerY * newZoom) - (_readerScrollViewer.ViewportHeight / 2d);
+                _readerScrollViewer.ScrollToHorizontalOffset(ClampOffset(nextHorizontalOffset, _readerScrollViewer.ScrollableWidth));
+                _readerScrollViewer.ScrollToVerticalOffset(ClampOffset(nextVerticalOffset, _readerScrollViewer.ScrollableHeight));
+            }
+            finally
+            {
+                _readerSyncingFromViewport = false;
+            }
+        }
+
+        private void UpdateReaderPageFromViewport()
+        {
+            int bestIndex = GetPageIndexFromViewportCenter(_readerPageElements, _readerScrollViewer);
+            if (bestIndex >= 0)
+            {
+                SyncCurrentReaderPageFromIndex(bestIndex);
+            }
+        }
+
+        private void EndReaderMousePan()
+        {
+            if (!_readerIsMousePanning)
+            {
+                return;
+            }
+
+            _readerIsMousePanning = false;
+            if (_readerScrollViewer != null && _readerScrollViewer.IsMouseCaptured)
+            {
+                _readerScrollViewer.ReleaseMouseCapture();
+            }
+            Cursor = _readerMousePanPreviousCursor ?? Cursors.Arrow;
+            UpdateReaderPageFromViewport();
+        }
+
+        internal static int GetPageIndexFromViewportCenter(IReadOnlyList<FrameworkElement> pageElements, ScrollViewer scrollViewer)
+        {
+            if (pageElements == null || scrollViewer == null || pageElements.Count == 0)
+            {
+                return -1;
+            }
+
+            Point viewportCenter = new Point(scrollViewer.ViewportWidth / 2d, scrollViewer.ViewportHeight / 2d);
+            int nearestIndex = -1;
+            double nearestDistance = double.MaxValue;
+
+            foreach (FrameworkElement element in pageElements)
+            {
+                if (element == null || !element.IsVisible)
+                {
+                    continue;
+                }
+
+                Point origin = element.TranslatePoint(new Point(0, 0), scrollViewer);
+                Rect elementRect = new Rect(origin.X, origin.Y, element.ActualWidth, element.ActualHeight);
+                if (elementRect.Contains(viewportCenter))
+                {
+                    return element.Tag is int taggedIndex ? taggedIndex : -1;
+                }
+
+                double nearestX = Math.Max(elementRect.Left, Math.Min(viewportCenter.X, elementRect.Right));
+                double nearestY = Math.Max(elementRect.Top, Math.Min(viewportCenter.Y, elementRect.Bottom));
+                double distance = Math.Pow(nearestX - viewportCenter.X, 2) + Math.Pow(nearestY - viewportCenter.Y, 2);
+                if (distance < nearestDistance)
+                {
+                    nearestDistance = distance;
+                    nearestIndex = element.Tag is int taggedIndex ? taggedIndex : nearestIndex;
+                }
+            }
+
+            return nearestIndex;
+        }
+
+        internal static double ClampOffset(double value, double max)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return 0;
+            }
+
+            return Math.Max(0, Math.Min(max, value));
+        }
+
+        private int GetCurrentViewportPageIndex()
+        {
+            if (!IsReaderScrollMode() || _readerScrollViewer == null || _readerPageElements.Count == 0)
+            {
+                return _currentReaderPage != null ? _currentReaderPage.Index : 0;
+            }
+
+            int pageIndex = GetPageIndexFromViewportCenter(_readerPageElements, _readerScrollViewer);
+            return pageIndex >= 0 ? pageIndex : (_currentReaderPage != null ? _currentReaderPage.Index : 0);
+        }
+
+        private Point GetCurrentViewportPageAnchor()
+        {
+            if (!IsReaderScrollMode() || _readerScrollViewer == null || _readerPageElements.Count == 0)
+            {
+                return new Point(0.5d, 0.5d);
+            }
+
+            int pageIndex = GetCurrentViewportPageIndex();
+            FrameworkElement target = _readerPageElements.FirstOrDefault(element => Equals(element.Tag, pageIndex));
+            if (target == null)
+            {
+                return new Point(0.5d, 0.5d);
+            }
+
+            Point origin = target.TranslatePoint(new Point(0, 0), _readerScrollViewer);
+            double centerX = _readerScrollViewer.ViewportWidth / 2d;
+            double centerY = _readerScrollViewer.ViewportHeight / 2d;
+            double ratioX = target.ActualWidth > 0 ? (centerX - origin.X) / target.ActualWidth : 0.5d;
+            double ratioY = target.ActualHeight > 0 ? (centerY - origin.Y) / target.ActualHeight : 0.5d;
+            return new Point(
+                Math.Max(0d, Math.Min(1d, ratioX)),
+                Math.Max(0d, Math.Min(1d, ratioY)));
+        }
+
+        private void ApplyReaderBookmarkViewport(ReaderPageBookmarkEntry entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            if (entry.ReaderZoom > 0)
+            {
+                _readerZoom = Math.Max(0.35d, Math.Min(6d, entry.ReaderZoom));
+                ApplyReaderZoom();
+                _readerScrollViewer?.UpdateLayout();
+            }
+
+            if (!IsReaderScrollMode())
+            {
+                ScrollReaderViewportToPage(Math.Max(0, entry.PageIndex - 1));
+                return;
+            }
+
+            int targetPageIndex = entry.ViewportPageIndex >= 0 ? entry.ViewportPageIndex : Math.Max(0, entry.PageIndex - 1);
+            ScrollReaderViewportToAnchor(targetPageIndex, entry.ViewportPageXRatio, entry.ViewportPageYRatio);
+            _fullscreenWindow?.ApplyBookmarkViewport(entry);
+        }
+
+        private void ScrollReaderViewportToAnchor(int pageIndex, double pageXRatio, double pageYRatio)
+        {
+            if (_readerScrollViewer == null || pageIndex < 0)
+            {
+                return;
+            }
+
+            FrameworkElement target = _readerPageElements.FirstOrDefault(element => Equals(element.Tag, pageIndex));
+            if (target == null)
+            {
+                return;
+            }
+
+            _readerScrollViewer.UpdateLayout();
+            Point origin = target.TranslatePoint(new Point(0, 0), _readerStagePanel);
+            double targetX = origin.X + (target.ActualWidth * Math.Max(0d, Math.Min(1d, pageXRatio)));
+            double targetY = origin.Y + (target.ActualHeight * Math.Max(0d, Math.Min(1d, pageYRatio)));
+
+            _readerSyncingFromViewport = true;
+            try
+            {
+                _readerScrollViewer.ScrollToHorizontalOffset(ClampOffset(targetX - (_readerScrollViewer.ViewportWidth / 2d), _readerScrollViewer.ScrollableWidth));
+                _readerScrollViewer.ScrollToVerticalOffset(ClampOffset(targetY - (_readerScrollViewer.ViewportHeight / 2d), _readerScrollViewer.ScrollableHeight));
+            }
+            finally
+            {
+                _readerSyncingFromViewport = false;
+            }
+
+            _readerScrollViewer.Focus();
+        }
+
+        private static string GetReaderFitModeKey(ReaderFitMode fitMode)
+        {
+            switch (fitMode)
+            {
+                case ReaderFitMode.FitHeight:
+                    return "fit-height";
+                case ReaderFitMode.ActualSize:
+                    return "actual-size";
+                case ReaderFitMode.VerticalScroll:
+                    return "vertical-scroll";
+                case ReaderFitMode.HorizontalScrollLTR:
+                    return "horizontal-ltr";
+                case ReaderFitMode.HorizontalScrollRTL:
+                    return "horizontal-rtl";
+                default:
+                    return "fit-width";
+            }
+        }
+
+        private static bool TryParseReaderFitModeKey(string fitModeKey, out ReaderFitMode fitMode)
+        {
+            switch ((fitModeKey ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "fit-height":
+                    fitMode = ReaderFitMode.FitHeight;
+                    return true;
+                case "actual-size":
+                    fitMode = ReaderFitMode.ActualSize;
+                    return true;
+                case "vertical-scroll":
+                    fitMode = ReaderFitMode.VerticalScroll;
+                    return true;
+                case "horizontal-ltr":
+                    fitMode = ReaderFitMode.HorizontalScrollLTR;
+                    return true;
+                case "horizontal-rtl":
+                    fitMode = ReaderFitMode.HorizontalScrollRTL;
+                    return true;
+                case "fit-width":
+                    fitMode = ReaderFitMode.FitWidth;
+                    return true;
+                default:
+                    fitMode = ReaderFitMode.FitWidth;
+                    return false;
+            }
+        }
+
+        private static string ToJavaScriptString(string value)
+        {
+            if (value == null)
+            {
+                return "''";
+            }
+
+            return "'" + value
+                .Replace("\\", "\\\\")
+                .Replace("'", "\\'")
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n") + "'";
+        }
+
+        internal async void OpenReaderPageBookmark(ReaderPageBookmarkEntry entry)
+        {
+            if (entry == null || !ReaderBookmarkHasAnyExistingPath(entry))
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Bookmark trang không còn hợp lệ." : "Page bookmark is no longer valid.");
+                return;
+            }
+
+            SelectAppSection(AppSection.Watch);
+
+            if (!string.IsNullOrWhiteSpace(entry.LibraryRoot) && Directory.Exists(entry.LibraryRoot))
+            {
+                _readerLibraryRootOverride = entry.LibraryRoot;
+                await RefreshReaderLibraryAsync(forceRefresh: true);
+            }
+
+            ReaderMangaItem manga = ResolveReaderBookmarkManga(entry, out bool usedChapterOnlyFallback);
+
+            if (manga == null)
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Không thể dựng lại manga từ bookmark trang." : "Failed to rebuild manga from page bookmark.");
+                return;
+            }
+
+            EnsureReaderLibraryContains(manga);
+
+            ReaderChapterItem chapter = manga.Chapters.FirstOrDefault(item =>
+                string.Equals(item.FolderPath, entry.ChapterFolderPath, StringComparison.OrdinalIgnoreCase));
+            if (chapter == null)
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Chapter của bookmark trang không còn tồn tại." : "Page bookmark chapter no longer exists.");
+                return;
+            }
+
+            int pageIndex = chapter.Pages.FindIndex(item =>
+                string.Equals(item.FilePath, entry.PageFilePath, StringComparison.OrdinalIgnoreCase));
+            if (pageIndex < 0)
+            {
+                pageIndex = Math.Max(0, Math.Min(chapter.Pages.Count - 1, entry.PageIndex - 1));
+            }
+
+            if (TryParseReaderFitModeKey(entry.FitModeKey, out ReaderFitMode savedFitMode))
+            {
+                _readerFitMode = savedFitMode;
+                UpdateReaderFitButtons();
+            }
+
+            OpenReaderMangaChapterPage(manga, chapter, pageIndex);
+            ApplyReaderBookmarkViewport(entry);
+            if (usedChapterOnlyFallback)
+            {
+                UpdateReaderStatus(_isVietnameseUi
+                    ? $"{BuildReaderStatusText()} · đang fallback về chap đơn."
+                    : $"{BuildReaderStatusText()} · using chapter-only fallback.");
+            }
+        }
+
+        private string ResolveCurrentReaderSeriesFolderPath()
+        {
+            if (_currentReaderManga == null)
+            {
+                return null;
+            }
+
+            if (_currentReaderChapter == null ||
+                !string.Equals(_currentReaderManga.FolderPath, _currentReaderChapter.FolderPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return _currentReaderManga.FolderPath;
+            }
+
+            string parentFolder = GetReaderParentSeriesFolderPath(_currentReaderChapter.FolderPath, _currentReaderManga.SourceGroup);
+            return string.IsNullOrWhiteSpace(parentFolder) ? _currentReaderManga.FolderPath : parentFolder;
+        }
+
+        private bool ReaderBookmarkHasAnyExistingPath(ReaderPageBookmarkEntry entry)
+        {
+            return ReaderBookmarkPathExists(entry?.SeriesFolderPath) ||
+                   ReaderBookmarkPathExists(entry?.MangaFolderPath) ||
+                   ReaderBookmarkPathExists(entry?.ChapterFolderPath) ||
+                   ReaderBookmarkPathExists(entry?.PageFilePath);
+        }
+
+        private static bool ReaderBookmarkPathExists(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            return Directory.Exists(path) || File.Exists(path);
+        }
+
+        private string GetReaderParentSeriesFolderPath(string chapterFolderPath, string sourceGroup)
+        {
+            if (string.IsNullOrWhiteSpace(chapterFolderPath) || !Directory.Exists(chapterFolderPath))
+            {
+                return null;
+            }
+
+            DirectoryInfo parent = Directory.GetParent(chapterFolderPath);
+            if (parent == null || !parent.Exists)
+            {
+                return null;
+            }
+
+            ReaderMangaItem parentManga = BuildReaderMangaItem(parent.FullName, sourceGroup);
+            if (parentManga == null)
+            {
+                return null;
+            }
+
+            return parentManga.Chapters.Any(item => string.Equals(item.FolderPath, chapterFolderPath, StringComparison.OrdinalIgnoreCase))
+                ? parent.FullName
+                : null;
+        }
+
+        private ReaderMangaItem ResolveReaderBookmarkManga(ReaderPageBookmarkEntry entry, out bool usedChapterOnlyFallback)
+        {
+            usedChapterOnlyFallback = false;
+
+            ReaderMangaItem manga = FindReaderBookmarkMangaInLibrary(entry);
+            if (manga != null)
+            {
+                return manga;
+            }
+
+            string inferredSeriesFolderPath = GetReaderParentSeriesFolderPath(entry.ChapterFolderPath, entry.SourceDomain);
+            foreach (string candidatePath in new[]
+            {
+                entry.SeriesFolderPath,
+                inferredSeriesFolderPath,
+                entry.MangaFolderPath,
+                entry.ChapterFolderPath
+            })
+            {
+                ReaderMangaItem built = BuildReaderBookmarkMangaCandidate(candidatePath, entry);
+                if (built == null)
+                {
+                    continue;
+                }
+
+                if (ReaderMangaContainsChapterFolder(built, entry.ChapterFolderPath))
+                {
+                    usedChapterOnlyFallback = string.Equals(candidatePath, entry.ChapterFolderPath, StringComparison.OrdinalIgnoreCase);
+                    return built;
+                }
+            }
+
+            return null;
+        }
+
+        private ReaderMangaItem FindReaderBookmarkMangaInLibrary(ReaderPageBookmarkEntry entry)
+        {
+            if (_readerLibrary == null || _readerLibrary.Count == 0)
+            {
+                return null;
+            }
+
+            foreach (Func<ReaderMangaItem, bool> matcher in new Func<ReaderMangaItem, bool>[]
+            {
+                item => !string.IsNullOrWhiteSpace(entry.SeriesFolderPath) &&
+                    string.Equals(item.FolderPath, entry.SeriesFolderPath, StringComparison.OrdinalIgnoreCase),
+                item => ReaderMangaContainsChapterFolder(item, entry.ChapterFolderPath),
+                item => !string.IsNullOrWhiteSpace(entry.MangaFolderPath) &&
+                    string.Equals(item.FolderPath, entry.MangaFolderPath, StringComparison.OrdinalIgnoreCase),
+                item => {
+                    string parentFolder = GetReaderParentSeriesFolderPath(entry.ChapterFolderPath, entry.SourceDomain);
+                    return !string.IsNullOrWhiteSpace(parentFolder) &&
+                        string.Equals(item.FolderPath, parentFolder, StringComparison.OrdinalIgnoreCase);
+                }
+            })
+            {
+                ReaderMangaItem match = _readerLibrary.FirstOrDefault(matcher);
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+
+            return null;
+        }
+
+        private ReaderMangaItem BuildReaderBookmarkMangaCandidate(string folderPath, ReaderPageBookmarkEntry entry)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+            {
+                return null;
+            }
+
+            return BuildReaderMangaItem(folderPath, entry.SourceDomain);
+        }
+
+        private static bool ReaderMangaContainsChapterFolder(ReaderMangaItem manga, string chapterFolderPath)
+        {
+            return manga != null &&
+                   !string.IsNullOrWhiteSpace(chapterFolderPath) &&
+                   manga.Chapters != null &&
+                   manga.Chapters.Any(item => string.Equals(item.FolderPath, chapterFolderPath, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void EnsureReaderLibraryContains(ReaderMangaItem manga)
+        {
+            if (manga == null)
+            {
+                return;
+            }
+
+            if (_readerLibrary == null)
+            {
+                _readerLibrary = new List<ReaderMangaItem>();
+            }
+
+            if (_readerLibrary.Any(item => string.Equals(item.FolderPath, manga.FolderPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                return;
+            }
+
+            _readerLibrary.Add(manga);
+            _readerLibrary = _readerLibrary
+                .OrderBy(item => item.SourceGroup ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.Name, _readerSortComparer)
+                .ToList();
+
+            if (_readerMangaList != null)
+            {
+                _readerMangaList.ItemsSource = null;
+                _readerMangaList.ItemsSource = _readerLibrary;
+            }
+        }
+
         private void ReaderFitWidth_Click(object sender, RoutedEventArgs e)
         {
             _readerFitMode = ReaderFitMode.FitWidth;
@@ -955,6 +2238,10 @@ namespace get_link_manga
 
         private void ReaderFitCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_readerUsesBandiView)
+            {
+                return;
+            }
             if (_readerFitCombo == null) return;
             switch (_readerFitCombo.SelectedIndex)
             {
@@ -982,11 +2269,16 @@ namespace get_link_manga
 
         private void ReaderFullscreen_Click(object sender, RoutedEventArgs e)
         {
-            ToggleReaderFullscreen();
+            LaunchCurrentReaderTargetInBandiView(preferChapterFolder: false);
         }
 
         public void ToggleReaderFullscreen()
         {
+            if (_readerUsesBandiView)
+            {
+                LaunchCurrentReaderTargetInBandiView(preferChapterFolder: false);
+                return;
+            }
             _isReaderFullscreen = !_isReaderFullscreen;
 
             if (_isReaderFullscreen)
@@ -1027,38 +2319,38 @@ namespace get_link_manga
             HandleReaderHotkeys(e);
         }
 
-        private static string BuildReaderHtmlForChapter(List<string> pageUris, ReaderFitMode fitMode)
+        private static string BuildReaderHtmlForChapter(List<string> pageUris, ReaderFitMode fitMode, int activePageIndex)
         {
             var sb = new StringBuilder();
             if (fitMode == ReaderFitMode.HorizontalScrollLTR)
             {
-                sb.Append("<html><body style=\"margin:0;background:#06090f;overflow-y:hidden;overflow-x:auto;display:flex;flex-direction:row;align-items:center;height:100vh;\">");
-                foreach (var pageUri in pageUris)
+                sb.Append("<div id=\"readerStage\" class=\"reader-stage chapter-mode horizontal-ltr\">");
+                for (int i = 0; i < pageUris.Count; i++)
                 {
-                    sb.Append($"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;height:100vh;width:auto;margin:0;padding:0;\"/>");
+                    sb.Append($"<img class=\"reader-page\" data-page-index=\"{i}\" src=\"{EscapeHtml(pageUris[i])}\" style=\"display:block;height:calc(100vh - 24px);width:auto;margin:0;padding:0;\"/>");
                 }
-                sb.Append("</body></html>");
+                sb.Append("</div>");
             }
             else if (fitMode == ReaderFitMode.HorizontalScrollRTL)
             {
-                sb.Append("<html><body style=\"margin:0;background:#06090f;overflow-y:hidden;overflow-x:auto;display:flex;flex-direction:row-reverse;align-items:center;height:100vh;\">");
-                foreach (var pageUri in pageUris)
+                sb.Append("<div id=\"readerStage\" class=\"reader-stage chapter-mode horizontal-rtl\">");
+                for (int i = 0; i < pageUris.Count; i++)
                 {
-                    sb.Append($"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;height:100vh;width:auto;margin:0;padding:0;\"/>");
+                    sb.Append($"<img class=\"reader-page\" data-page-index=\"{i}\" src=\"{EscapeHtml(pageUris[i])}\" style=\"display:block;height:calc(100vh - 24px);width:auto;margin:0;padding:0;\"/>");
                 }
-                sb.Append("<script>window.onload = function() { window.scrollTo(document.body.scrollWidth, 0); };</script>");
-                sb.Append("</body></html>");
+                sb.Append("</div>");
             }
             else
             {
-                sb.Append("<html><body style=\"margin:0;background:#06090f;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;\">");
-                foreach (var pageUri in pageUris)
+                sb.Append("<div id=\"readerStage\" class=\"reader-stage chapter-mode vertical-scroll\">");
+                for (int i = 0; i < pageUris.Count; i++)
                 {
-                    sb.Append($"<img src=\"{EscapeHtml(pageUri)}\" style=\"display:block;width:min(100%, 100vw - 24px);height:auto;margin:0 auto;padding:0;\"/>");
+                    sb.Append($"<img class=\"reader-page\" data-page-index=\"{i}\" src=\"{EscapeHtml(pageUris[i])}\" style=\"display:block;width:min(100%, 100vw - 24px);height:auto;margin:0 auto;padding:0;\"/>");
                 }
-                sb.Append("</body></html>");
+                sb.Append("</div>");
             }
-            return sb.ToString();
+
+            return BuildReaderDocument(fitMode, sb.ToString(), activePageIndex);
         }
 
         private void OpenLatestHistoryInReader(object sender, RoutedEventArgs e)
@@ -1098,7 +2390,44 @@ namespace get_link_manga
                 return false;
             }
 
-            if (Keyboard.Modifiers != ModifierKeys.None)
+            ModifierKeys modifiers = Keyboard.Modifiers;
+            bool ctrl = (modifiers & ModifierKeys.Control) != 0;
+            bool shift = (modifiers & ModifierKeys.Shift) != 0;
+
+            if (ctrl)
+            {
+                switch (e.Key)
+                {
+                    case Key.PageDown:
+                        MoveReaderChapter(1);
+                        e.Handled = true;
+                        return true;
+
+                    case Key.PageUp:
+                        MoveReaderChapter(-1);
+                        e.Handled = true;
+                        return true;
+
+                    case Key.B:
+                        if (shift)
+                        {
+                            OpenBookmarkHistoryWindow(2);
+                        }
+                        else
+                        {
+                            AddCurrentReaderPageBookmark();
+                        }
+                        e.Handled = true;
+                        return true;
+
+                    case Key.H:
+                        OpenBookmarkHistoryWindow(0);
+                        e.Handled = true;
+                        return true;
+                }
+            }
+
+            if (modifiers != ModifierKeys.None)
             {
                 return false;
             }
@@ -1106,37 +2435,66 @@ namespace get_link_manga
             switch (e.Key)
             {
                 case Key.Left:
+                case Key.Up:
                 case Key.PageUp:
-                    if (_readerFitMode == ReaderFitMode.VerticalScroll ||
-                        _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
-                        _readerFitMode == ReaderFitMode.HorizontalScrollRTL)
-                    {
-                        return false;
-                    }
+                case Key.Back:
                     MoveReaderPage(-1);
                     e.Handled = true;
                     return true;
 
                 case Key.Right:
+                case Key.Down:
                 case Key.PageDown:
                 case Key.Space:
-                    if (_readerFitMode == ReaderFitMode.VerticalScroll ||
-                        _readerFitMode == ReaderFitMode.HorizontalScrollLTR ||
-                        _readerFitMode == ReaderFitMode.HorizontalScrollRTL)
-                    {
-                        return false;
-                    }
                     MoveReaderPage(1);
                     e.Handled = true;
                     return true;
 
-                case Key.Up:
-                    ReaderPrevChapter_Click(this, new RoutedEventArgs());
+                case Key.Home:
+                    if (IsReaderHorizontalMode())
+                    {
+                        ScrollReaderViewportToBoundary(goToStart: true);
+                    }
+                    else
+                    {
+                        OpenReaderPageBoundary(openLastPage: false);
+                    }
                     e.Handled = true;
                     return true;
 
-                case Key.Down:
-                    ReaderNextChapter_Click(this, new RoutedEventArgs());
+                case Key.End:
+                    if (IsReaderHorizontalMode())
+                    {
+                        ScrollReaderViewportToBoundary(goToStart: false);
+                    }
+                    else
+                    {
+                        OpenReaderPageBoundary(openLastPage: true);
+                    }
+                    e.Handled = true;
+                    return true;
+
+                case Key.F:
+                case Key.F11:
+                    ToggleReaderFullscreen();
+                    e.Handled = true;
+                    return true;
+
+                case Key.Add:
+                case Key.OemPlus:
+                    SetReaderZoom(_readerZoom + 0.12d, keepCurrentPageVisible: true);
+                    e.Handled = true;
+                    return true;
+
+                case Key.Subtract:
+                case Key.OemMinus:
+                    SetReaderZoom(_readerZoom - 0.12d, keepCurrentPageVisible: true);
+                    e.Handled = true;
+                    return true;
+
+                case Key.D0:
+                case Key.NumPad0:
+                    SetReaderZoom(1d, keepCurrentPageVisible: true);
                     e.Handled = true;
                     return true;
 
@@ -1159,11 +2517,412 @@ namespace get_link_manga
             return false;
         }
 
+        internal void HandleReaderWebMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            if (message.StartsWith("reader:setPage:", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(message.Substring("reader:setPage:".Length), out int pageIndex))
+                {
+                    SyncCurrentReaderPageFromIndex(pageIndex);
+                }
+                return;
+            }
+
+            switch (message)
+            {
+                case "reader:prevPage":
+                    MoveReaderPage(-1);
+                    break;
+                case "reader:nextPage":
+                    MoveReaderPage(1);
+                    break;
+                case "reader:firstPage":
+                    OpenReaderPageBoundary(openLastPage: false);
+                    break;
+                case "reader:lastPage":
+                    OpenReaderPageBoundary(openLastPage: true);
+                    break;
+                case "reader:nextChapter":
+                    MoveReaderChapter(1);
+                    break;
+                case "reader:prevChapter":
+                    MoveReaderChapter(-1);
+                    break;
+                case "reader:addPageBookmark":
+                    AddCurrentReaderPageBookmark();
+                    break;
+                case "reader:showPageBookmarks":
+                    OpenBookmarkHistoryWindow(2);
+                    break;
+                case "reader:showHistory":
+                    OpenBookmarkHistoryWindow(0);
+                    break;
+            }
+        }
+
+        private static string BuildReaderDocument(ReaderFitMode fitMode, string contentHtml, int activePageIndex)
+        {
+            string fitModeName = fitMode == ReaderFitMode.HorizontalScrollLTR
+                ? "horizontal-ltr"
+                : fitMode == ReaderFitMode.HorizontalScrollRTL
+                    ? "horizontal-rtl"
+                    : fitMode == ReaderFitMode.VerticalScroll
+                        ? "vertical-scroll"
+                        : fitMode == ReaderFitMode.FitHeight
+                            ? "fit-height"
+                            : fitMode == ReaderFitMode.ActualSize
+                                ? "actual-size"
+                                : "fit-width";
+
+            string script = @"
+(() => {
+  const viewport = document.getElementById('readerViewport');
+  const stage = document.getElementById('readerStage');
+  const mode = document.body.dataset.fitMode || 'fit-width';
+  const activePageIndex = parseInt(document.body.dataset.activePageIndex || '0', 10) || 0;
+  if (!viewport || !stage) return;
+
+  let scale = 1;
+  const minScale = 0.5;
+  const maxScale = 6;
+  let drag = null;
+  let lastReportedPageIndex = -1;
+  let traceScheduled = false;
+  let initialRestoreDone = false;
+
+  const isHorizontalRtl = mode === 'horizontal-rtl';
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function applyScale() {
+    stage.style.transform = 'scale(' + scale + ')';
+    updateViewportAlignment();
+  }
+
+  function showToast(message) {
+    if (!message) return;
+
+    let toast = document.getElementById('readerToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'readerToast';
+      toast.style.position = 'fixed';
+      toast.style.top = '14px';
+      toast.style.right = '14px';
+      toast.style.zIndex = '9999';
+      toast.style.maxWidth = '420px';
+      toast.style.padding = '10px 14px';
+      toast.style.borderRadius = '10px';
+      toast.style.background = 'rgba(10, 16, 30, 0.92)';
+      toast.style.border = '1px solid rgba(0, 240, 255, 0.65)';
+      toast.style.boxShadow = '0 0 18px rgba(0, 240, 255, 0.25)';
+      toast.style.color = '#d7e2ec';
+      toast.style.font = '600 12px/1.45 Segoe UI, sans-serif';
+      toast.style.pointerEvents = 'none';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-6px)';
+      toast.style.transition = 'opacity 160ms ease, transform 160ms ease';
+      toast.style.backdropFilter = 'blur(4px)';
+      document.body.appendChild(toast);
+    }
+
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+
+    clearTimeout(window.__readerToastTimer);
+    window.__readerToastTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-6px)';
+    }, 1800);
+  }
+
+  function post(message) {
+    if (window.chrome && window.chrome.webview) {
+      window.chrome.webview.postMessage(message);
+    }
+  }
+
+  function scrollBoundary(direction) {
+    const goStart = direction === 'start';
+    if (mode === 'horizontal-rtl') {
+      viewport.scrollLeft = goStart ? viewport.scrollWidth : 0;
+      return;
+    }
+
+    if (mode === 'horizontal-ltr') {
+      viewport.scrollLeft = goStart ? 0 : viewport.scrollWidth;
+      return;
+    }
+
+    viewport.scrollTop = goStart ? 0 : viewport.scrollHeight;
+  }
+
+  function scrollToPage(index) {
+    const target = stage.querySelector('[data-page-index=' + index + ']');
+    if (!target) return;
+    const options = mode === 'vertical-scroll'
+      ? { block: 'start', inline: 'nearest' }
+      : mode === 'horizontal-rtl'
+        ? { block: 'nearest', inline: 'end' }
+        : { block: 'nearest', inline: 'start' };
+    target.scrollIntoView(options);
+    reportCurrentPage(index);
+    scheduleTraceVisiblePage();
+  }
+
+  function centerVerticalViewport() {
+    if (mode !== 'vertical-scroll') return;
+    viewport.scrollLeft = Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2);
+  }
+
+  function updateViewportAlignment() {
+    const stageRect = stage.getBoundingClientRect();
+    const canCenterHorizontally = stageRect.width < viewport.clientWidth;
+    const canCenterVertically = stageRect.height < viewport.clientHeight;
+
+    viewport.style.display = 'flex';
+    viewport.style.justifyContent = canCenterHorizontally ? 'center' : 'flex-start';
+    viewport.style.alignItems = canCenterVertically ? 'center' : 'flex-start';
+  }
+
+  function reportCurrentPage(index) {
+    if (index === lastReportedPageIndex || index < 0) return;
+    lastReportedPageIndex = index;
+    post('reader:setPage:' + index);
+  }
+
+  function traceVisiblePage() {
+    traceScheduled = false;
+    if (!initialRestoreDone) return;
+    const pages = stage.querySelectorAll('[data-page-index]');
+    if (!pages || pages.length === 0) return;
+
+    const viewportRect = viewport.getBoundingClientRect();
+    let bestIndex = -1;
+    let bestVisibleArea = -1;
+
+    pages.forEach((page) => {
+      const rect = page.getBoundingClientRect();
+      const visibleWidth = Math.max(0, Math.min(rect.right, viewportRect.right) - Math.max(rect.left, viewportRect.left));
+      const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportRect.bottom) - Math.max(rect.top, viewportRect.top));
+      const visibleArea = visibleWidth * visibleHeight;
+      if (visibleArea > bestVisibleArea) {
+        bestVisibleArea = visibleArea;
+        bestIndex = parseInt(page.dataset.pageIndex || '-1', 10);
+      }
+    });
+
+    if (bestIndex >= 0) {
+      reportCurrentPage(bestIndex);
+    }
+  }
+
+  function scheduleTraceVisiblePage() {
+    if (traceScheduled) return;
+    traceScheduled = true;
+    window.requestAnimationFrame(traceVisiblePage);
+  }
+
+  function zoomAt(clientX, clientY, deltaY) {
+    const rect = viewport.getBoundingClientRect();
+    const beforeX = (viewport.scrollLeft + (clientX - rect.left)) / scale;
+    const beforeY = (viewport.scrollTop + (clientY - rect.top)) / scale;
+    const step = deltaY < 0 ? 0.12 : -0.12;
+    scale = clamp(scale + step, minScale, maxScale);
+    if (Math.abs(scale - 1) < 0.02) scale = 1;
+    applyScale();
+    if (mode === 'vertical-scroll') {
+      centerVerticalViewport();
+    } else {
+      viewport.scrollLeft = beforeX * scale - (clientX - rect.left);
+    }
+    viewport.scrollTop = beforeY * scale - (clientY - rect.top);
+    updateViewportAlignment();
+    scheduleTraceVisiblePage();
+  }
+
+  viewport.addEventListener('wheel', (event) => {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+
+    zoomAt(event.clientX, event.clientY, event.deltaY);
+  }, { passive: false });
+
+  viewport.addEventListener('mousedown', (event) => {
+    if (event.button !== 0) return;
+    drag = {
+      x: event.clientX,
+      y: event.clientY,
+      left: viewport.scrollLeft,
+      top: viewport.scrollTop
+    };
+    viewport.classList.add('dragging');
+    event.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (event) => {
+    if (!drag) return;
+    viewport.scrollLeft = drag.left - (event.clientX - drag.x);
+    viewport.scrollTop = drag.top - (event.clientY - drag.y);
+    scheduleTraceVisiblePage();
+  });
+
+  function stopDrag() {
+    drag = null;
+    viewport.classList.remove('dragging');
+  }
+
+  window.addEventListener('mouseup', stopDrag);
+  window.addEventListener('mouseleave', stopDrag);
+  viewport.addEventListener('scroll', scheduleTraceVisiblePage, { passive: true });
+  window.addEventListener('resize', () => {
+    updateViewportAlignment();
+    scheduleTraceVisiblePage();
+  });
+
+  window.readerApi = {
+    scrollBoundary,
+    scrollToPage,
+    showToast
+  };
+
+  window.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.key === 'PageDown') {
+      event.preventDefault();
+      post('reader:nextChapter');
+      return;
+    }
+
+    if (event.ctrlKey && event.key === 'PageUp') {
+      event.preventDefault();
+      post('reader:prevChapter');
+      return;
+    }
+
+    if (event.ctrlKey && !event.shiftKey && (event.key === 'b' || event.key === 'B')) {
+      event.preventDefault();
+      post('reader:addPageBookmark');
+      return;
+    }
+
+    if (event.ctrlKey && event.shiftKey && (event.key === 'b' || event.key === 'B')) {
+      event.preventDefault();
+      post('reader:showPageBookmarks');
+      return;
+    }
+
+    if (event.ctrlKey && (event.key === 'h' || event.key === 'H')) {
+      event.preventDefault();
+      post('reader:showHistory');
+      return;
+    }
+
+    switch (event.key) {
+      case 'Home':
+        event.preventDefault();
+        if (mode === 'horizontal-ltr' || mode === 'horizontal-rtl') {
+          scrollBoundary('start');
+        } else {
+          post('reader:firstPage');
+        }
+        break;
+      case 'End':
+        event.preventDefault();
+        if (mode === 'horizontal-ltr' || mode === 'horizontal-rtl') {
+          scrollBoundary('end');
+        } else {
+          post('reader:lastPage');
+        }
+        break;
+    }
+  });
+
+  function restoreInitialHorizontalRtlPosition() {
+    if (!isHorizontalRtl) return;
+
+    requestAnimationFrame(() => {
+      viewport.scrollLeft = viewport.scrollWidth;
+
+      requestAnimationFrame(() => {
+        if (activePageIndex <= 0) {
+          viewport.scrollLeft = viewport.scrollWidth;
+        } else {
+          scrollToPage(activePageIndex);
+        }
+
+        requestAnimationFrame(() => {
+          initialRestoreDone = true;
+          scheduleTraceVisiblePage();
+        });
+      });
+    });
+  }
+
+  function restoreInitialNonHorizontalPosition() {
+    requestAnimationFrame(() => {
+      centerVerticalViewport();
+      scrollToPage(activePageIndex);
+
+      requestAnimationFrame(() => {
+        initialRestoreDone = true;
+        scheduleTraceVisiblePage();
+      });
+    });
+  }
+
+  window.addEventListener('load', () => {
+    applyScale();
+    document.body.focus();
+    if (isHorizontalRtl) {
+      restoreInitialHorizontalRtlPosition();
+      return;
+    }
+
+    restoreInitialNonHorizontalPosition();
+  });
+})();
+";
+
+            return "<html><head><meta charset=\"utf-8\"/><style>" +
+                   "html,body{margin:0;padding:0;background:#06090f;overflow:hidden;height:100%;}" +
+                   "body{color:#d7e2ec;font-family:'Segoe UI',sans-serif;}" +
+                   "#readerViewport{width:100vw;height:100vh;overflow:auto;cursor:grab;overscroll-behavior:none;}" +
+                   "#readerViewport.dragging{cursor:grabbing;}" +
+                   ".reader-stage{transform-origin:0 0;will-change:transform;box-sizing:border-box;padding:12px;}" +
+                   ".reader-stage img{-webkit-user-drag:none;user-select:none;pointer-events:none;}" +
+                   "#readerToast{backdrop-filter:blur(4px);}" +
+                   ".single-mode{min-width:100%;min-height:100%;display:flex;justify-content:center;align-items:flex-start;}" +
+                   ".chapter-mode.vertical-scroll{width:100%;display:flex;flex-direction:column;align-items:center;transform-origin:top center;}" +
+                   ".chapter-mode.horizontal-ltr,.chapter-mode.horizontal-rtl{width:max-content;min-height:100%;display:flex;align-items:flex-start;}" +
+                   ".chapter-mode.horizontal-ltr{flex-direction:row;}" +
+                   ".chapter-mode.horizontal-rtl{flex-direction:row-reverse;}" +
+                   "</style></head>" +
+                   $"<body tabindex=\"0\" data-fit-mode=\"{fitModeName}\" data-active-page-index=\"{activePageIndex}\">" +
+                   "<div id=\"readerViewport\">" +
+                   contentHtml +
+                   "</div><script>" +
+                   script +
+                   "</script></body></html>";
+        }
+
         private void UpdateReaderLanguage()
         {
             if (_readerHistoryOpenButton != null)
             {
                 _readerHistoryOpenButton.Content = _isVietnameseUi ? "Mở history mới nhất" : "Open latest history";
+            }
+
+            if (_readerOtherFolderButton != null)
+            {
+                _readerOtherFolderButton.Content = _isVietnameseUi ? "Mở thư mục khác" : "Load other folder";
             }
 
             if (_readerFullscreenButton != null)
@@ -1185,8 +2944,46 @@ namespace get_link_manga
                 UpdateReaderStatus(BuildReaderStatusText());
             }
         }
+
+        internal ReaderFitMode GetReaderFitMode()
+        {
+            return _readerFitMode;
+        }
+
+        internal int GetCurrentReaderPageIndex()
+        {
+            return _currentReaderPage != null ? _currentReaderPage.Index : 0;
+        }
+
+        internal double GetCurrentReaderZoom()
+        {
+            return _readerZoom;
+        }
+
+        internal string GetCurrentReaderTitle()
+        {
+            return _readerCurrentTitleText != null ? _readerCurrentTitleText.Text : string.Empty;
+        }
+
+        internal List<ReaderPageItem> GetCurrentReaderPagesSnapshot()
+        {
+            if (_currentReaderChapter == null || _currentReaderChapter.Pages == null)
+            {
+                return new List<ReaderPageItem>();
+            }
+
+            return _currentReaderChapter.Pages
+                .Select(page => new ReaderPageItem
+                {
+                    FilePath = page.FilePath,
+                    Index = page.Index,
+                    Name = page.Name
+                })
+                .ToList();
+        }
     }
 
+    #if false
     internal class ReaderFullscreenWindow : Window
     {
         private readonly MainWindow _mainWindow;
@@ -1233,6 +3030,16 @@ namespace get_link_manga
                     _webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
                     _webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
                     _webView.CoreWebView2.Settings.IsZoomControlEnabled = false;
+                    _webView.CoreWebView2.WebMessageReceived += (webViewSender, args) =>
+                    {
+                        try
+                        {
+                            _mainWindow.HandleReaderWebMessage(args.TryGetWebMessageAsString());
+                        }
+                        catch
+                        {
+                        }
+                    };
                 }
 
                 _webView.PreviewKeyDown += (s, args) =>
@@ -1269,6 +3076,22 @@ namespace get_link_manga
             }
         }
 
+        public void ExecuteScript(string script)
+        {
+            if (!_webViewReady || _webView?.CoreWebView2 == null || string.IsNullOrWhiteSpace(script))
+            {
+                return;
+            }
+
+            try
+            {
+                _webView.ExecuteScriptAsync(script);
+            }
+            catch
+            {
+            }
+        }
+
         private void ReaderFullscreenWindow_Closed(object sender, EventArgs e)
         {
             _mainWindow.OnFullscreenClosed();
@@ -1277,6 +3100,503 @@ namespace get_link_manga
         private void ReaderFullscreenWindow_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
+            {
+                Close();
+                e.Handled = true;
+                return;
+            }
+
+            _mainWindow.HandleFullscreenHotkey(e);
+        }
+    }
+    #endif
+
+    internal class ReaderFullscreenWindow : Window
+    {
+        private readonly MainWindow _mainWindow;
+        private readonly ScrollViewer _scrollViewer;
+        private readonly Border _viewportHost;
+        private readonly StackPanel _stagePanel;
+        private readonly ScaleTransform _scaleTransform = new ScaleTransform(1d, 1d);
+        private readonly TextBlock _titleText;
+        private readonly List<FrameworkElement> _pageElements = new List<FrameworkElement>();
+        private double _zoom = 1d;
+        private bool _syncingFromViewport;
+        private bool _isMousePanning;
+        private Point _mousePanStartPoint;
+        private double _mousePanStartHorizontalOffset;
+        private double _mousePanStartVerticalOffset;
+        private Cursor _mousePanPreviousCursor;
+
+        public ReaderFullscreenWindow(MainWindow mainWindow)
+        {
+            _mainWindow = mainWindow;
+            Title = "Manga Reader - Fullscreen";
+            Background = new SolidColorBrush(Color.FromRgb(0x06, 0x09, 0x0F));
+            WindowStyle = WindowStyle.None;
+            WindowState = WindowState.Maximized;
+            Topmost = true;
+
+            var root = new Grid();
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            _titleText = new TextBlock
+            {
+                Margin = new Thickness(16, 12, 16, 10),
+                Foreground = Brushes.White,
+                FontSize = 14,
+                FontWeight = FontWeights.Bold,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+
+            _stagePanel = new StackPanel
+            {
+                Margin = new Thickness(12),
+                LayoutTransform = _scaleTransform,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top
+            };
+
+            _viewportHost = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(0x06, 0x09, 0x0F)),
+                Child = _stagePanel
+            };
+            _viewportHost.SizeChanged += (sender, args) => UpdateViewportAlignment();
+
+            _scrollViewer = new ScrollViewer
+            {
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                CanContentScroll = false,
+                PanningMode = PanningMode.Both,
+                Focusable = true,
+                Content = _viewportHost
+            };
+            _scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
+            _scrollViewer.PreviewMouseWheel += ScrollViewer_PreviewMouseWheel;
+            _scrollViewer.PreviewMouseLeftButtonDown += ScrollViewer_PreviewMouseLeftButtonDown;
+            _scrollViewer.PreviewMouseLeftButtonUp += ScrollViewer_PreviewMouseLeftButtonUp;
+            _scrollViewer.PreviewMouseMove += ScrollViewer_PreviewMouseMove;
+            _scrollViewer.LostMouseCapture += ScrollViewer_LostMouseCapture;
+
+            Grid.SetRow(_titleText, 0);
+            Grid.SetRow(_scrollViewer, 1);
+            root.Children.Add(_titleText);
+            root.Children.Add(_scrollViewer);
+            Content = root;
+
+            Loaded += (sender, args) => RenderPage();
+            Closed += ReaderFullscreenWindow_Closed;
+            KeyDown += ReaderFullscreenWindow_KeyDown;
+        }
+
+        public void RenderPage()
+        {
+            List<ReaderPageItem> pages = _mainWindow.GetCurrentReaderPagesSnapshot();
+            if (pages.Count == 0)
+            {
+                return;
+            }
+
+            MainWindow.ReaderFitMode fitMode = _mainWindow.GetReaderFitMode();
+            int activePageIndex = _mainWindow.GetCurrentReaderPageIndex();
+            _titleText.Text = _mainWindow.GetCurrentReaderTitle();
+            _zoom = _mainWindow.GetCurrentReaderZoom();
+
+            _pageElements.Clear();
+            _stagePanel.Children.Clear();
+            _stagePanel.Orientation = fitMode == MainWindow.ReaderFitMode.VerticalScroll ||
+                                      fitMode == MainWindow.ReaderFitMode.FitWidth ||
+                                      fitMode == MainWindow.ReaderFitMode.FitHeight ||
+                                      fitMode == MainWindow.ReaderFitMode.ActualSize
+                ? Orientation.Vertical
+                : Orientation.Horizontal;
+
+            IEnumerable<ReaderPageItem> pagesToRender;
+            if (fitMode == MainWindow.ReaderFitMode.VerticalScroll)
+            {
+                pagesToRender = pages;
+            }
+            else if (fitMode == MainWindow.ReaderFitMode.HorizontalScrollRTL)
+            {
+                pagesToRender = pages.OrderByDescending(item => item.Index);
+            }
+            else if (fitMode == MainWindow.ReaderFitMode.HorizontalScrollLTR)
+            {
+                pagesToRender = pages;
+            }
+            else
+            {
+                pagesToRender = pages.Where(item => item.Index == activePageIndex);
+            }
+
+            foreach (ReaderPageItem page in pagesToRender)
+            {
+                FrameworkElement element = CreatePageElement(page, fitMode);
+                _pageElements.Add(element);
+                _stagePanel.Children.Add(element);
+            }
+
+            ApplyZoom();
+            UpdateViewportAlignment();
+            _scrollViewer.UpdateLayout();
+            ScrollToPage(activePageIndex);
+            _scrollViewer.Focus();
+        }
+
+        public void ExecuteScript(string script)
+        {
+        }
+
+        public void ScrollBoundary(bool goToStart)
+        {
+            _syncingFromViewport = true;
+            try
+            {
+                MainWindow.ReaderFitMode fitMode = _mainWindow.GetReaderFitMode();
+                if (fitMode == MainWindow.ReaderFitMode.HorizontalScrollLTR || fitMode == MainWindow.ReaderFitMode.HorizontalScrollRTL)
+                {
+                    double offset = fitMode == MainWindow.ReaderFitMode.HorizontalScrollRTL
+                        ? (goToStart ? _scrollViewer.ScrollableWidth : 0)
+                        : (goToStart ? 0 : _scrollViewer.ScrollableWidth);
+                    _scrollViewer.ScrollToHorizontalOffset(offset);
+                }
+                else
+                {
+                    _scrollViewer.ScrollToVerticalOffset(goToStart ? 0 : _scrollViewer.ScrollableHeight);
+                }
+            }
+            finally
+            {
+                _syncingFromViewport = false;
+            }
+        }
+
+        public void ShowToast(string message)
+        {
+        }
+
+        public void ApplyBookmarkViewport(ReaderPageBookmarkEntry entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            if (entry.ReaderZoom > 0)
+            {
+                _zoom = Math.Max(0.35d, Math.Min(6d, entry.ReaderZoom));
+                ApplyZoom();
+                _scrollViewer.UpdateLayout();
+            }
+
+            int pageIndex = entry.ViewportPageIndex >= 0 ? entry.ViewportPageIndex : Math.Max(0, entry.PageIndex - 1);
+            ScrollToAnchor(pageIndex, entry.ViewportPageXRatio, entry.ViewportPageYRatio);
+        }
+
+        private FrameworkElement CreatePageElement(ReaderPageItem page, MainWindow.ReaderFitMode fitMode)
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.UriSource = new Uri(page.FilePath);
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            var image = new Image
+            {
+                Source = bitmap,
+                Stretch = Stretch.Uniform,
+                SnapsToDevicePixels = true,
+                Tag = page.Index
+            };
+
+            if (fitMode == MainWindow.ReaderFitMode.FitHeight)
+            {
+                image.Height = Math.Max(120, _scrollViewer.ViewportHeight - 36);
+            }
+            else if (fitMode == MainWindow.ReaderFitMode.ActualSize)
+            {
+                image.Stretch = Stretch.None;
+            }
+            else if (fitMode == MainWindow.ReaderFitMode.FitWidth || fitMode == MainWindow.ReaderFitMode.VerticalScroll)
+            {
+                image.Width = Math.Max(160, _scrollViewer.ViewportWidth - 40);
+            }
+            else
+            {
+                image.Width = Math.Max(160, (_scrollViewer.ViewportWidth - 72) / 2d);
+            }
+
+            return new Border
+            {
+                Margin = fitMode == MainWindow.ReaderFitMode.VerticalScroll
+                    ? new Thickness(0, 0, 0, 14)
+                    : new Thickness(0, 0, 14, 0),
+                Child = image,
+                Tag = page.Index
+            };
+        }
+
+        private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                return;
+            }
+
+            e.Handled = true;
+            double previousZoom = _zoom;
+            _zoom = Math.Max(0.35d, Math.Min(6d, _zoom + (e.Delta > 0 ? 0.12d : -0.12d)));
+            if (Math.Abs(_zoom - 1d) < 0.02d)
+            {
+                _zoom = 1d;
+            }
+
+            ApplyZoom();
+            _scrollViewer.UpdateLayout();
+            if (_mainWindow.GetReaderFitMode() == MainWindow.ReaderFitMode.VerticalScroll ||
+                _mainWindow.GetReaderFitMode() == MainWindow.ReaderFitMode.HorizontalScrollLTR ||
+                _mainWindow.GetReaderFitMode() == MainWindow.ReaderFitMode.HorizontalScrollRTL)
+            {
+                PreserveViewportCenterAfterZoom(previousZoom, _zoom);
+                UpdatePageFromViewport();
+            }
+            else
+            {
+                ScrollToPage(_mainWindow.GetCurrentReaderPageIndex());
+            }
+        }
+
+        private void ScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            MainWindow.ReaderFitMode fitMode = _mainWindow.GetReaderFitMode();
+            if (fitMode != MainWindow.ReaderFitMode.VerticalScroll &&
+                fitMode != MainWindow.ReaderFitMode.HorizontalScrollLTR &&
+                fitMode != MainWindow.ReaderFitMode.HorizontalScrollRTL)
+            {
+                return;
+            }
+
+            if (_scrollViewer.ScrollableWidth <= 0 && _scrollViewer.ScrollableHeight <= 0)
+            {
+                return;
+            }
+
+            _isMousePanning = true;
+            _mousePanStartPoint = e.GetPosition(_scrollViewer);
+            _mousePanStartHorizontalOffset = _scrollViewer.HorizontalOffset;
+            _mousePanStartVerticalOffset = _scrollViewer.VerticalOffset;
+            _mousePanPreviousCursor = Cursor;
+            Cursor = Cursors.SizeAll;
+            _scrollViewer.CaptureMouse();
+            _scrollViewer.Focus();
+            e.Handled = true;
+        }
+
+        private void ScrollViewer_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isMousePanning)
+            {
+                return;
+            }
+
+            Point currentPoint = e.GetPosition(_scrollViewer);
+            Vector delta = currentPoint - _mousePanStartPoint;
+            _syncingFromViewport = true;
+            try
+            {
+                _scrollViewer.ScrollToHorizontalOffset(MainWindow.ClampOffset(_mousePanStartHorizontalOffset - delta.X, _scrollViewer.ScrollableWidth));
+                _scrollViewer.ScrollToVerticalOffset(MainWindow.ClampOffset(_mousePanStartVerticalOffset - delta.Y, _scrollViewer.ScrollableHeight));
+            }
+            finally
+            {
+                _syncingFromViewport = false;
+            }
+
+            UpdatePageFromViewport();
+            e.Handled = true;
+        }
+
+        private void ScrollViewer_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_isMousePanning)
+            {
+                return;
+            }
+
+            EndMousePan();
+            e.Handled = true;
+        }
+
+        private void ScrollViewer_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            EndMousePan();
+        }
+
+        private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (_syncingFromViewport || _pageElements.Count == 0)
+            {
+                return;
+            }
+
+            UpdatePageFromViewport();
+        }
+
+        public void ScrollToPage(int pageIndex)
+        {
+            FrameworkElement target = _pageElements.FirstOrDefault(element => Equals(element.Tag, pageIndex));
+            if (target == null)
+            {
+                return;
+            }
+
+            MainWindow.ReaderFitMode fitMode = _mainWindow.GetReaderFitMode();
+            _syncingFromViewport = true;
+            try
+            {
+                Point origin = target.TranslatePoint(new Point(0, 0), _stagePanel);
+                if (fitMode == MainWindow.ReaderFitMode.VerticalScroll)
+                {
+                    double verticalOffset = GetCenteredScrollOffset(origin.Y, target.ActualHeight, _scrollViewer.ViewportHeight, _scrollViewer.ScrollableHeight);
+                    double horizontalOffset = GetCenteredScrollOffset(origin.X, target.ActualWidth, _scrollViewer.ViewportWidth, _scrollViewer.ScrollableWidth);
+                    _scrollViewer.ScrollToVerticalOffset(verticalOffset);
+                    _scrollViewer.ScrollToHorizontalOffset(horizontalOffset);
+                }
+                else if (fitMode == MainWindow.ReaderFitMode.HorizontalScrollLTR || fitMode == MainWindow.ReaderFitMode.HorizontalScrollRTL)
+                {
+                    double horizontalOffset = GetCenteredScrollOffset(origin.X, target.ActualWidth, _scrollViewer.ViewportWidth, _scrollViewer.ScrollableWidth);
+                    double verticalOffset = GetCenteredScrollOffset(origin.Y, target.ActualHeight, _scrollViewer.ViewportHeight, _scrollViewer.ScrollableHeight);
+                    _scrollViewer.ScrollToHorizontalOffset(horizontalOffset);
+                    _scrollViewer.ScrollToVerticalOffset(verticalOffset);
+                }
+                else
+                {
+                    target.BringIntoView();
+                }
+            }
+            finally
+            {
+                _syncingFromViewport = false;
+            }
+        }
+
+        private void ScrollToAnchor(int pageIndex, double pageXRatio, double pageYRatio)
+        {
+            FrameworkElement target = _pageElements.FirstOrDefault(element => Equals(element.Tag, pageIndex));
+            if (target == null)
+            {
+                return;
+            }
+
+            _syncingFromViewport = true;
+            try
+            {
+                Point origin = target.TranslatePoint(new Point(0, 0), _stagePanel);
+                double targetX = origin.X + (target.ActualWidth * Math.Max(0d, Math.Min(1d, pageXRatio)));
+                double targetY = origin.Y + (target.ActualHeight * Math.Max(0d, Math.Min(1d, pageYRatio)));
+                _scrollViewer.ScrollToHorizontalOffset(MainWindow.ClampOffset(targetX - (_scrollViewer.ViewportWidth / 2d), _scrollViewer.ScrollableWidth));
+                _scrollViewer.ScrollToVerticalOffset(MainWindow.ClampOffset(targetY - (_scrollViewer.ViewportHeight / 2d), _scrollViewer.ScrollableHeight));
+            }
+            finally
+            {
+                _syncingFromViewport = false;
+            }
+        }
+
+        private void ApplyZoom()
+        {
+            _scaleTransform.ScaleX = _zoom;
+            _scaleTransform.ScaleY = _zoom;
+            UpdateViewportAlignment();
+        }
+
+        private void UpdateViewportAlignment()
+        {
+            _stagePanel.HorizontalAlignment = _stagePanel.ActualWidth <= _scrollViewer.ViewportWidth
+                ? HorizontalAlignment.Center
+                : HorizontalAlignment.Left;
+            _stagePanel.VerticalAlignment = _stagePanel.ActualHeight <= _scrollViewer.ViewportHeight
+                ? VerticalAlignment.Center
+                : VerticalAlignment.Top;
+        }
+
+        private static double GetCenteredScrollOffset(double origin, double elementSize, double viewportSize, double scrollableSize)
+        {
+            if (viewportSize <= 0)
+            {
+                return Math.Max(0, origin);
+            }
+
+            double offset = origin - Math.Max(0, (viewportSize - elementSize) / 2d);
+            if (double.IsNaN(offset) || double.IsInfinity(offset))
+            {
+                offset = origin;
+            }
+
+            return Math.Max(0, Math.Min(scrollableSize, offset));
+        }
+
+        private void PreserveViewportCenterAfterZoom(double oldZoom, double newZoom)
+        {
+            if (oldZoom <= 0 || newZoom <= 0)
+            {
+                return;
+            }
+
+            double centerX = (_scrollViewer.HorizontalOffset + (_scrollViewer.ViewportWidth / 2d)) / oldZoom;
+            double centerY = (_scrollViewer.VerticalOffset + (_scrollViewer.ViewportHeight / 2d)) / oldZoom;
+
+            _syncingFromViewport = true;
+            try
+            {
+                double nextHorizontalOffset = (centerX * newZoom) - (_scrollViewer.ViewportWidth / 2d);
+                double nextVerticalOffset = (centerY * newZoom) - (_scrollViewer.ViewportHeight / 2d);
+                _scrollViewer.ScrollToHorizontalOffset(MainWindow.ClampOffset(nextHorizontalOffset, _scrollViewer.ScrollableWidth));
+                _scrollViewer.ScrollToVerticalOffset(MainWindow.ClampOffset(nextVerticalOffset, _scrollViewer.ScrollableHeight));
+            }
+            finally
+            {
+                _syncingFromViewport = false;
+            }
+        }
+
+        private void UpdatePageFromViewport()
+        {
+            int bestIndex = MainWindow.GetPageIndexFromViewportCenter(_pageElements, _scrollViewer);
+            if (bestIndex >= 0)
+            {
+                _mainWindow.SyncReaderPageSelectionByIndex(bestIndex);
+            }
+        }
+
+        private void EndMousePan()
+        {
+            if (!_isMousePanning)
+            {
+                return;
+            }
+
+            _isMousePanning = false;
+            if (_scrollViewer.IsMouseCaptured)
+            {
+                _scrollViewer.ReleaseMouseCapture();
+            }
+            Cursor = _mousePanPreviousCursor ?? Cursors.Arrow;
+            UpdatePageFromViewport();
+        }
+
+        private void ReaderFullscreenWindow_Closed(object sender, EventArgs e)
+        {
+            _mainWindow.OnFullscreenClosed();
+        }
+
+        private void ReaderFullscreenWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape || e.Key == Key.F11 || e.Key == Key.F)
             {
                 Close();
                 e.Handled = true;

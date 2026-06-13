@@ -875,8 +875,11 @@ namespace get_link_manga
                 string chapLink = chapterLinks[idx];
 
                 var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
-                await DownloadViHentaiChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
-                MarkChapterProcessDone(rootFolder, "vi-hentai.pro", item, chapLink);
+                bool chapterCompleted = await DownloadViHentaiChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
+                if (chapterCompleted)
+                {
+                    MarkChapterProcessDone(rootFolder, "vi-hentai.pro", item, chapLink);
+                }
 
                 if (queueItem != null)
                 {
@@ -890,7 +893,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadViHentaiChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
+        private async Task<bool> DownloadViHentaiChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
         {
             string html = await GetViHentaiStringWithRetryAsync(item.Link, token, $"load chapter page '{item.Link}'");
 
@@ -942,20 +945,21 @@ namespace get_link_manga
                 catch {}
             }
 
+            chapterTitle = NormalizeChapterLabel(chapterTitle);
             string safeManga = GetCanonicalBookFolderName(item, mangaTitle, "Unknown Manga");
             string aliasSafeManga = GetSafePathName(mangaTitle);
-            string safeChapter = GetSafePathName(chapterTitle);
+            string safeChapter = GetSafeChapterPathName(chapterTitle);
             string progressKey = $"vi-hentai.pro|{safeManga}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
             UpsertMainLogLine(progressKey, $"[vi-hentai.pro] Đang tải {mangaTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
 
-            string siteRootFolder = Path.Combine(rootFolder, "vi-hentai.pro");
+            string siteRootFolder = GetSiteDownloadRoot(rootFolder, "vi-hentai.pro");
             await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
 
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = BuildStableTempFolderPath(rootFolder, "vi-hentai.pro", $"{safeManga}-{safeChapter}", item.Link, item.Name, safeManga, safeChapter);
+            string tempFolder = BuildStableChapterTempFolderPath(rootFolder, "vi-hentai.pro", safeManga, safeChapter);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);
 
@@ -999,14 +1003,7 @@ namespace get_link_manga
 
             WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {chapterTitle}");
 
-            int maxThreads = 2;
-            Dispatcher.Invoke(() =>
-            {
-                if (cmbConnections.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem && int.TryParse(selectedItem.Content.ToString(), out int val))
-                {
-                    maxThreads = Math.Max(1, Math.Min(val, 2));
-                }
-            });
+            int maxThreads = GetCurrentConnectionLimit();
 
             ViHentaiLog($"Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
@@ -1019,7 +1016,7 @@ namespace get_link_manga
                 });
             }
 
-            using (var semaphore = new DynamicSemaphore(maxThreads, () => Math.Max(1, Math.Min(GetCurrentConnectionLimit(), 2))))
+            using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
                 var tasks = new System.Collections.Generic.List<Task>();
                 int completedPages = 0;
@@ -1155,7 +1152,7 @@ namespace get_link_manga
 
                 // Check for missing files
                 string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-                ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, chapterTitle);
+                return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, chapterTitle);
             }
         }
     }
