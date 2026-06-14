@@ -81,7 +81,7 @@ if exist "%TARGET_DIR%\Comic-GMTPC-old.exe" (
 :: BƯỚC 3: CHẠY LỆNH MSBUILD
 :: ------------------------------------------
 echo [3/4] Dang tien hanh Build du an...
-"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe" "C:\Users\Admin\source\repos\ghostminhtoan\get link manga\Comic-GMTPC.csproj" /p:Configuration=Release /p:Platform=AnyCPU
+"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe" "r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\Comic-GMTPC.csproj" /t:Rebuild /p:Configuration=Release /p:Platform=AnyCPU /p:AutoStampBuildInfo=true /p:AutoPublishRelease=true
 
 :: Bắt mã lỗi (Error Level) của MSBuild ngay lập tức
 set BUILD_STATUS=%ERRORLEVEL%

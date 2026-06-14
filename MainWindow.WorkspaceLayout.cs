@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -16,6 +16,7 @@ namespace get_link_manga
         {
             ChooseSource,
             Download,
+            DownloadLightNovel,
             Watch,
             About,
             Update
@@ -31,6 +32,7 @@ namespace get_link_manga
         private readonly Dictionary<AppSection, Button> _navigationButtons = new Dictionary<AppSection, Button>();
         private FrameworkElement _chooseSourceSection;
         private FrameworkElement _downloadSection;
+        private FrameworkElement _downloadLightNovelSection;
         private FrameworkElement _watchSection;
         private FrameworkElement _aboutSection;
         private FrameworkElement _updateSection;
@@ -337,6 +339,7 @@ namespace get_link_manga
 
             AddNavigationButton(AppSection.ChooseSource, "Choose source of paste link");
             AddNavigationButton(AppSection.Download, "Download");
+            AddNavigationButton(AppSection.DownloadLightNovel, "Copy text light novel");
             AddNavigationButton(AppSection.Watch, "Watch");
             AddNavigationButton(AppSection.About, "About");
             AddNavigationButton(AppSection.Update, "Update");
@@ -424,6 +427,7 @@ namespace get_link_manga
         {
             _chooseSourceSection = CreateChooseSourceSection();
             _downloadSection = borderRightPanel;
+            _downloadLightNovelSection = CreateLightNovelDownloadSection();
             _watchSection = CreateWatchSection();
             _aboutSection = CreateAboutSection();
             _updateSection = CreateUpdateSection();
@@ -466,6 +470,7 @@ namespace get_link_manga
             AddCreateSubfolderDomainItem("truyenqq");
             AddCreateSubfolderDomainItem("nettruyen");
             AddCreateSubfolderDomainItem("daomeoden.net");
+            AddCreateSubfolderDomainItem("ln.hako.vn");
             AddCreateSubfolderDomainItem("truyenggvn");
             AddCreateSubfolderDomainItem("sayhentai");
             AddCreateSubfolderDomainItem("vi-hentai.pro");
@@ -845,6 +850,7 @@ namespace get_link_manga
             {
                 ToggleReaderFullscreen();
             }
+
             StopReaderAutoRefresh();
             _currentSection = section;
             UpdateNavigationSelection();
@@ -858,6 +864,9 @@ namespace get_link_manga
                     break;
                 case AppSection.Download:
                     _sectionContentHost.Content = _downloadSection;
+                    break;
+                case AppSection.DownloadLightNovel:
+                    _sectionContentHost.Content = _downloadLightNovelSection;
                     break;
                 case AppSection.Watch:
                     _sectionContentHost.Content = _watchSection;
@@ -879,6 +888,13 @@ namespace get_link_manga
 
         private void PrepareSectionLayout(AppSection section)
         {
+            if (floatingDownloadActionsHost != null)
+            {
+                floatingDownloadActionsHost.Visibility = section == AppSection.Download
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+
             if (section == AppSection.ChooseSource)
             {
                 return;
@@ -927,6 +943,12 @@ namespace get_link_manga
                         ? "Kiểm tra danh sách, chọn chapter, theo dõi trạng thái, rồi tải hàng loạt với cơ chế resume hiện có."
                         : "Review queue, set chapter filters, track status, and download in bulk with the existing resume-safe pipeline.";
                     break;
+                case AppSection.DownloadLightNovel:
+                    _sectionTitleText.Text = isVietnamese ? "Copy text light novel" : "Copy text light novel";
+                    _sectionHintText.Text = isVietnamese
+                        ? "Luồng riêng chỉ để copy text. Paste book link, lấy toàn bộ child chapter link, copy plain text, rồi convert sang .md."
+                        : "Dedicated text lane. Paste a book link, collect all child chapter links, copy plain text, then convert to .md.";
+                    break;
                 case AppSection.Watch:
                     _sectionTitleText.Text = isVietnamese ? "Đọc truyện offline" : "Watch offline";
                     _sectionHintText.Text = isVietnamese
@@ -947,7 +969,6 @@ namespace get_link_manga
                     break;
             }
         }
-
         private static void RemoveFromParent(FrameworkElement element)
         {
             if (element == null)
@@ -1016,6 +1037,11 @@ namespace get_link_manga
                 _navigationButtons[AppSection.Update].Content = _isVietnameseUi ? "Cập nhật" : "Update";
             }
 
+            if (_navigationButtons.ContainsKey(AppSection.DownloadLightNovel))
+            {
+                _navigationButtons[AppSection.DownloadLightNovel].Content = _isVietnameseUi ? "Copy text light novel" : "Copy text light novel";
+            }
+
             if (txtHeaderTitle != null)
             {
                 txtHeaderTitle.Text = _isVietnameseUi ? "Manga Offline Desk" : "Manga Offline Desk";
@@ -1060,7 +1086,7 @@ namespace get_link_manga
                                           (_isVietnameseUi ? "Download root mặc định" : "Default download root") + $": {PortablePaths.DefaultDownloadRoot}\n" +
                                           (_isVietnameseUi ? "WebView2 portable data" : "Portable WebView2 data") + $": {PortablePaths.WebView2UserDataFolder}\n\n" +
                                           (_isVietnameseUi
-                                              ? "Checklist nhanh: build xong, quét Watch, mở thử vài chapter, rồi mới đóng gói."
+                                                ? "Checklist nhanh: build xong, quét Watch, mở thử vài chapter, rồi mới đóng gói."
                                               : "Quick checklist: build clean, refresh Watch, test a few chapter transitions, then package.");
             }
 

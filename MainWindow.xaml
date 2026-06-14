@@ -712,6 +712,119 @@
                     </TabControl>
                 </TabItem>
 
+                <TabItem x:Name="tabLightNovelRootItem" Header="LIGHT NOVEL" Style="{StaticResource CyberpunkTabItem}" Visibility="Collapsed">
+                    <TabItem.Tag>
+                        <SolidColorBrush Color="#ffe066"/>
+                    </TabItem.Tag>
+                    <TabControl Name="tabLightNovel" Style="{StaticResource TabControlInLine}" Background="Transparent" BorderThickness="0">
+                        <TabItem x:Name="tabHakoItem" Header="hako" Style="{StaticResource CyberpunkTabItem}">
+                            <TabItem.Tag>
+                                <SolidColorBrush Color="#66f2ff"/>
+                            </TabItem.Tag>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True" Background="Transparent" BorderThickness="0" Padding="0">
+                                <Grid Margin="0,6,0,0">
+                                    <Border Name="borderHakoLeftPanel" Style="{StaticResource CyberpunkCard}" Padding="15">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="0"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+
+                                            <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                                                <TextBlock Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                <WrapPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                                    <Button Name="btnOpenHomepageHako" Tag="hako" Content="🏠 HOMEPAGE" Click="BtnOpenHomepage_Click" Style="{StaticResource CompactCyanButton}" MinWidth="86" Padding="8,0" FontWeight="Bold"/>
+                                                    <Button Content="📜 HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CompactCyanButton}" MinWidth="78" Padding="8,0" FontWeight="Bold"/>
+                                                    <Button Content="📌 BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CompactCyanButton}" MinWidth="94" Padding="8,0" FontWeight="Bold"/>
+                                                </WrapPanel>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                                                <TextBlock Text="TARGET TAG URL" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                <TextBox Name="txtHakoTagUrl"
+                                                         Text="https://ln.hako.vn/the-loai/action"
+                                                         Background="#0e121a"
+                                                         BorderBrush="{StaticResource CyberpunkBorderBrush}"
+                                                         Foreground="{StaticResource CyberpunkTextBrush}"
+                                                         CaretBrush="{StaticResource CyberpunkCyanBrush}"
+                                                         Height="32"/>
+                                            </StackPanel>
+
+                                            <Grid Grid.Row="2" Margin="0,0,0,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button Grid.Column="0" Name="btnHakoFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnHakoFetchInfo_Click" Style="{StaticResource TabFetchPrimaryButton}"/>
+                                                <Button Grid.Column="2" Name="btnHakoFetchCaptcha" Content="DELETE COOKIE" Click="BtnCaptcha_Click" Style="{StaticResource TabFetchSecondaryButton}"/>
+                                            </Grid>
+
+                                            <Grid Grid.Row="3" Margin="0,0,0,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="8"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="8"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="TOTAL PAGES" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                    <TextBox Name="txtHakoTotalPages" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkYellowBrush}" CaretBrush="{StaticResource CyberpunkYellowBrush}" FontSize="13" FontWeight="Bold" Height="32" HorizontalContentAlignment="Center" TextChanged="TxtHakoTotalPages_TextChanged"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="FROM PAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                    <TextBox Name="txtHakoPageFrom" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkTextBrush}" CaretBrush="{StaticResource CyberpunkCyanBrush}" Height="32" HorizontalContentAlignment="Center"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="4">
+                                                    <TextBlock Text="TO PAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                    <TextBox Name="txtHakoPageTo" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkTextBrush}" CaretBrush="{StaticResource CyberpunkCyanBrush}" Height="32" HorizontalContentAlignment="Center"/>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <Grid Grid.Row="4" Height="0" Margin="0"/>
+
+                                            <Grid Grid.Row="5" Margin="0,15,0,15">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="10"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button Grid.Column="0" Name="btnHakoScrape" Content="GET LINK" Click="BtnHakoScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                                <Button Grid.Column="2" Name="btnHakoCrawlMore" Content="GET MORE" Click="BtnHakoCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                                <Button Grid.Column="4" Name="btnHakoPasteDirect" Content="PASTE DIRECT LINK" Click="BtnHakoPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
+                                            </Grid>
+
+                                            <Grid Grid.Row="6">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
+                                                <Border Grid.Row="0" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" Padding="12" CornerRadius="3" Margin="0,0,0,10">
+                                                    <TextBlock Text="Light Novel tab only extracts chapter text and saves each chapter as .md. It does not download images, and it ignores end-of-chapter promo links inside chapter-content." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                                </Border>
+                                                <Grid Grid.Row="1" Visibility="Collapsed">
+                                                    <RichTextBox Name="txtHakoLog" VerticalScrollBarVisibility="Auto" Background="Transparent" BorderThickness="0" Foreground="#a8ffb2" FontFamily="Consolas, Courier New" FontSize="11" IsReadOnly="True" Padding="10"/>
+                                                </Grid>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </ScrollViewer>
+                        </TabItem>
+                    </TabControl>
+                </TabItem>
+
                 <!-- HENTAI Parent Tab -->
                 <TabItem Header="HENTAI" Style="{StaticResource CyberpunkTabItem}" Tag="{StaticResource CyberpunkPinkBrush}">
                     <TabControl Name="tabHentai" Style="{StaticResource TabControlInLine}" Background="Transparent" BorderThickness="0">

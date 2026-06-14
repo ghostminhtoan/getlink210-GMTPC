@@ -84,6 +84,11 @@ namespace get_link_manga
                     return "daomeoden.net";
                 }
 
+                if (host.Contains("ln.hako.vn") || host.Contains("docln.net") || host.Contains("hako.re"))
+                {
+                    return "ln.hako.vn";
+                }
+
                 if (host.Contains("truyenggvn"))
                 {
                     return "truyenggvn";
@@ -526,6 +531,11 @@ namespace get_link_manga
                 if (host.Contains("daomeoden"))
                 {
                     return "daomeoden.net";
+                }
+
+                if (host.Contains("ln.hako.vn") || host.Contains("docln.net") || host.Contains("hako.re"))
+                {
+                    return "ln.hako.vn";
                 }
 
                 if (host.Contains("hentaiera"))
@@ -1322,6 +1332,12 @@ namespace get_link_manga
             if (IsDaomeodenUrl(item.Link) || IsDaomeodenImageRedirectUrl(item.Link))
             {
                 await DownloadDaomeodenGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
+                return;
+            }
+
+            if (IsHakoUrl(item.Link))
+            {
+                await DownloadHakoNovelAsync(item, rootFolder, token, queueItem, chapterFilter);
                 return;
             }
 

@@ -109,6 +109,9 @@
     <Compile Include="GalleryItem.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="LightNovelModels.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ReaderLibraryModels.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -135,6 +138,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="MainWindow.SystemFirecrawl.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="MainWindow.SystemUpdate.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -144,6 +151,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="MainWindow.TabDaomeoden.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.TabHako.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
@@ -208,6 +219,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="MainWindow.WorkspaceLayout.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.LightNovelDesk.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>

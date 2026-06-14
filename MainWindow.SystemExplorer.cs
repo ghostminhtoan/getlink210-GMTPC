@@ -209,6 +209,15 @@ namespace get_link_manga
                 }
                 else if (tabLeftPanel.SelectedIndex == 1)
                 {
+                    if (tabLightNovel != null && tabLightNovel.SelectedItem is System.Windows.Controls.TabItem selectedLightNovelTab)
+                    {
+                        string header = selectedLightNovelTab.Header?.ToString().ToLower() ?? "";
+                        if (header.Contains("hako"))
+                            siteKey = "ln.hako.vn";
+                    }
+                }
+                else if (tabLeftPanel.SelectedIndex == 2)
+                {
                     if (tabHentai != null && tabHentai.SelectedItem is System.Windows.Controls.TabItem selectedHentaiTab)
                     {
                         string header = selectedHentaiTab.Header?.ToString().ToLower() ?? "";

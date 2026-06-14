@@ -246,6 +246,9 @@ namespace get_link_manga
                 case "daomeoden":
                     url = "https://daomeoden.net/";
                     break;
+                case "hako":
+                    url = "https://ln.hako.vn/";
+                    break;
                 case "vihentai":
                     url = "https://vi-hentai.pro/";
                     break;

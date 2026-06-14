@@ -23,11 +23,13 @@ namespace get_link_manga
         private static readonly string _defaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
         private static readonly SemaphoreSlim _captchaSemaphore = new SemaphoreSlim(1, 1);
         private static volatile bool _isCaptchaWindowActive = false;
+        private bool _hakoCaptchaSessionReady;
         internal string _truyenqqPreferredBaseUrl;
         private CancellationTokenSource _cts;
         private int _detectedMaxPage = 1;
         private bool _usePagePathSegment = false;
         internal ObservableCollection<GalleryItem> _scrapedItems = new ObservableCollection<GalleryItem>();
+        internal ObservableCollection<GalleryItem> _lightNovelItems = new ObservableCollection<GalleryItem>();
         internal DuplicateWindow _duplicateWindowInstance;
         internal BookmarkHistoryManager _bookmarkManager = new BookmarkHistoryManager();
         private BookmarkHistoryWindow _bookmarkHistoryWindowInstance;
@@ -302,6 +304,10 @@ namespace get_link_manga
                     if (chkAutoScrollNettruyenLog?.IsChecked == true)
                         ScrollTextBoxToEnd(txtNettruyenLog);
                 }
+                if (txtHakoLog != null)
+                {
+                    AppendLogLine(txtHakoLog, logLine, isError);
+                }
                 if (txtTruyenggvnLog != null)
                 {
                     AppendLogLine(txtTruyenggvnLog, logLine, isError);
@@ -406,6 +412,7 @@ namespace get_link_manga
             else if (btn == btnViHentaiFetchCaptcha) url = txtViHentaiTagUrl.Text;
             else if (btn == btnTruyenqqFetchCaptcha) url = txtTruyenqqTagUrl.Text;
             else if (btn == btnNettruyenFetchCaptcha) url = txtNettruyenTagUrl.Text;
+            else if (btnHakoFetchCaptcha != null && btn == btnHakoFetchCaptcha) url = txtHakoTagUrl.Text;
             else if (btn == btnTruyenggvnFetchCaptcha) url = txtTruyenggvnTagUrl.Text;
             else if (btnHentaieraFetchCaptcha != null && btn == btnHentaieraFetchCaptcha) url = txtHentaieraTagUrl.Text;
 
@@ -480,6 +487,7 @@ namespace get_link_manga
             try
             {
                 InitializeHttpClientState();
+                _hakoCaptchaSessionReady = false;
                 if (IsTruyenqqUrl(url))
                 {
                     _truyenqqPreferredBaseUrl = null;
