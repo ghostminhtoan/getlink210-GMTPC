@@ -90,7 +90,7 @@ namespace get_link_manga
             return snapshot?.Html;
         }
 
-        private async Task<FirecrawlPageSnapshot> TryFetchHakoPageByFirecrawlAsync(string normalizedUrl, CancellationToken token)
+        private async Task<FirecrawlPageSnapshot> TryFetchHakoPageByFirecrawlAsync(string normalizedUrl, CancellationToken token, bool preferFastChapterList = false)
         {
             if (!IsHakoUrl(normalizedUrl))
             {
@@ -105,7 +105,7 @@ namespace get_link_manga
 
             foreach (string candidateUrl in BuildPreferredHakoFirecrawlUrls(normalizedUrl))
             {
-                FirecrawlPageSnapshot snapshot = await TryScrapePageByFirecrawlAsync(candidateUrl, apiKey, token);
+                FirecrawlPageSnapshot snapshot = await TryScrapePageByFirecrawlAsync(candidateUrl, apiKey, token, preferFastChapterList);
                 if (snapshot != null && (!string.IsNullOrWhiteSpace(snapshot.Html) || (snapshot.Links != null && snapshot.Links.Count > 0)))
                 {
                     HakoLog($"Firecrawl da tra ve du lieu cho Hako tu {candidateUrl}.");
@@ -116,7 +116,7 @@ namespace get_link_manga
             return null;
         }
 
-        private async Task<FirecrawlPageSnapshot> TryScrapePageByFirecrawlAsync(string url, string apiKey, CancellationToken token)
+        private async Task<FirecrawlPageSnapshot> TryScrapePageByFirecrawlAsync(string url, string apiKey, CancellationToken token, bool preferFastChapterList)
         {
             string endpoint = GetFirecrawlApiBaseUrl() + "/v2/scrape";
             var payload = new FirecrawlScrapeRequest
@@ -125,8 +125,8 @@ namespace get_link_manga
                 Formats = new List<string> { "html", "links" },
                 OnlyMainContent = false,
                 OnlyCleanContent = false,
-                WaitFor = 1200,
-                Timeout = 60000,
+                WaitFor = preferFastChapterList ? 0 : 1200,
+                Timeout = preferFastChapterList ? 15000 : 60000,
                 BlockAds = true,
                 Proxy = "auto"
             };

@@ -10,6 +10,9 @@ namespace get_link_manga
         private string _plainText;
         private string _markdownText;
         private string _markdownFilePath;
+        private string _volumeTitle;
+        private int _volumeOrder;
+        private int _sequenceIndex;
 
         public string ChapterTitle
         {
@@ -20,6 +23,7 @@ namespace get_link_manga
                 {
                     _chapterTitle = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(DisplayTitle));
                 }
             }
         }
@@ -74,6 +78,59 @@ namespace get_link_manga
                     _markdownFilePath = value;
                     OnPropertyChanged();
                 }
+            }
+        }
+
+        public string VolumeTitle
+        {
+            get => _volumeTitle;
+            set
+            {
+                if (_volumeTitle != value)
+                {
+                    _volumeTitle = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DisplayTitle));
+                }
+            }
+        }
+
+        public int VolumeOrder
+        {
+            get => _volumeOrder;
+            set
+            {
+                if (_volumeOrder != value)
+                {
+                    _volumeOrder = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int SequenceIndex
+        {
+            get => _sequenceIndex;
+            set
+            {
+                if (_sequenceIndex != value)
+                {
+                    _sequenceIndex = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string DisplayTitle
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_volumeTitle))
+                {
+                    return _chapterTitle ?? string.Empty;
+                }
+
+                return $"[{_volumeTitle}] {_chapterTitle}";
             }
         }
 

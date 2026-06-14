@@ -21,8 +21,6 @@ namespace get_link_manga
             new ObservableCollection<LightNovelChapterRecord>();
         private readonly HashSet<string> _lightNovelChapterWarmupInFlight =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _lightNovelChapterPrefetchInFlight =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _lightNovelCopyCts;
         private CancellationTokenSource _lightNovelPreviewCts;
         private CancellationTokenSource _lightNovelScrapeCts;
@@ -335,7 +333,7 @@ namespace get_link_manga
             stackFactory.SetValue(StackPanel.MarginProperty, new Thickness(0, 0, 0, 6));
 
             var titleFactory = new FrameworkElementFactory(typeof(TextBlock));
-            titleFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(LightNovelChapterRecord.ChapterTitle)));
+            titleFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(LightNovelChapterRecord.DisplayTitle)));
             titleFactory.SetValue(TextBlock.FontWeightProperty, FontWeights.Bold);
             titleFactory.SetValue(TextBlock.ForegroundProperty, Application.Current.TryFindResource("CyberpunkCyanBrush"));
             stackFactory.AppendChild(titleFactory);
@@ -600,6 +598,11 @@ namespace get_link_manga
         {
             _selectedLightNovelBook = _dgLightNovelBooks?.SelectedItem as GalleryItem;
             RefreshLightNovelDetail(_selectedLightNovelBook);
+
+            if (_selectedLightNovelBook != null)
+            {
+                _ = WarmLightNovelChapterCacheAsync(_selectedLightNovelBook);
+            }
         }
 
         private async void LbLightNovelChapters_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -728,8 +731,34 @@ namespace get_link_manga
                     return;
                 }
 
+                Dispatcher.Invoke(() =>
+                {
+                    if (ReferenceEquals(_selectedLightNovelBook, item))
+                    {
+                        lblStatus.Text = $"Đang tải danh sách chapter cho {item.Name}";
+                        if (_txtLightNovelSelectedChapter != null)
+                        {
+                            _txtLightNovelSelectedChapter.Text = "Đang tải danh sách chapter...";
+                        }
+                    }
+                });
+
                 List<LightNovelChapterRecord> loaded = await BuildLightNovelChapterRecordsAsync(item, CancellationToken.None, firecrawlOnly: true);
                 Dispatcher.Invoke(() => SetLightNovelChapterList(item, loaded));
+
+                Dispatcher.Invoke(() =>
+                {
+                    if (ReferenceEquals(_selectedLightNovelBook, item))
+                    {
+                        lblStatus.Text = loaded.Count > 0
+                            ? $"Đã tải {loaded.Count} chapter cho {item.Name}"
+                            : $"Không tìm thấy chapter cho {item.Name}";
+                        if (_txtLightNovelSelectedChapter != null && _lightNovelChapterView.Count == 0)
+                        {
+                            _txtLightNovelSelectedChapter.Text = string.Empty;
+                        }
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -759,7 +788,8 @@ namespace get_link_manga
                     new LightNovelChapterRecord
                     {
                         ChapterTitle = NormalizeChapterLabel(chapterTitle),
-                        ChapterLink = canonicalChapterUrl
+                        ChapterLink = canonicalChapterUrl,
+                        SequenceIndex = 1
                     }
                 };
             }
@@ -768,7 +798,7 @@ namespace get_link_manga
             List<string> firecrawlLinks = null;
             if (firecrawlOnly)
             {
-                FirecrawlPageSnapshot page = await TryFetchHakoPageByFirecrawlAsync(item.Link, token);
+                FirecrawlPageSnapshot page = await TryFetchHakoPageByFirecrawlAsync(item.Link, token, preferFastChapterList: true);
                 html = page?.Html;
                 firecrawlLinks = page?.Links;
             }
@@ -801,7 +831,10 @@ namespace get_link_manga
                 .Select(chapter => new LightNovelChapterRecord
                 {
                     ChapterTitle = NormalizeChapterLabel(chapter.Title),
-                    ChapterLink = chapter.Link
+                    ChapterLink = chapter.Link,
+                    VolumeTitle = chapter.VolumeTitle,
+                    VolumeOrder = chapter.VolumeOrder,
+                    SequenceIndex = chapter.SequenceIndex
                 })
                 .ToList();
         }
@@ -845,14 +878,12 @@ namespace get_link_manga
                     BookTitle = ExtractHakoBookTitle(string.Empty),
                     Link = link,
                     Title = string.IsNullOrWhiteSpace(title) ? link : title,
-                    ChapterNumber = TryExtractHakoChapterNumber(title, link)
+                    ChapterNumber = TryExtractHakoChapterNumber(title, link),
+                    SequenceIndex = chapters.Count + 1
                 });
             }
 
-            return chapters
-                .OrderBy(ch => ch.ChapterNumber ?? double.MaxValue)
-                .ThenBy(ch => ch.Link, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            return chapters;
         }
 
         private async Task ImportLightNovelDirectLinksAsync(List<string> links)
@@ -952,7 +983,8 @@ namespace get_link_manga
             Directory.CreateDirectory(targetFolder);
 
             string normalizedChapterTitle = NormalizeChapterLabel(chapterTitle);
-            string chapterFilePath = Path.Combine(targetFolder, GetSafeChapterPathName(normalizedChapterTitle) + ".md");
+            string chapterFolder = GetHakoVolumeFolderPath(targetFolder, record.VolumeTitle, record.VolumeOrder);
+            string chapterFilePath = Path.Combine(chapterFolder, BuildHakoChapterFileName(normalizedChapterTitle, record.SequenceIndex));
             File.WriteAllText(chapterFilePath, markdown, new System.Text.UTF8Encoding(true));
 
             record.ChapterTitle = normalizedChapterTitle;
@@ -1153,17 +1185,6 @@ namespace get_link_manga
                     double progress = ((double)(page - pageFrom + 1) / totalPages) * 100;
                     lblStatus.Text = $"Đang quét trang {page}/{pageTo} ({progress:0}%) - +{totalAdded}";
                     await Task.Yield();
-                }
-
-                var sortedItems = _lightNovelItems
-                    .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                    .ThenBy(item => item.OriginalIndex)
-                    .ToList();
-
-                _lightNovelItems.Clear();
-                foreach (GalleryItem item in sortedItems)
-                {
-                    _lightNovelItems.Add(item);
                 }
 
                 RefreshLightNovelSummary();
