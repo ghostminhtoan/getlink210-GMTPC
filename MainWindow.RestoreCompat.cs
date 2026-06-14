@@ -154,6 +154,16 @@ namespace get_link_manga
 
         private void GalleryItem_AutosavePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (sender is GalleryItem item &&
+                !string.IsNullOrWhiteSpace(e?.PropertyName) &&
+                (string.Equals(e.PropertyName, nameof(GalleryItem.Status), StringComparison.Ordinal) ||
+                 string.Equals(e.PropertyName, nameof(GalleryItem.CurrentProcess), StringComparison.Ordinal) ||
+                 string.Equals(e.PropertyName, nameof(GalleryItem.CompletedChapters), StringComparison.Ordinal) ||
+                 string.Equals(e.PropertyName, nameof(GalleryItem.DownloadingChapter), StringComparison.Ordinal) ||
+                 string.Equals(e.PropertyName, nameof(GalleryItem.DownloadingPageProgress), StringComparison.Ordinal)))
+            {
+            }
+
             RequestGalleryListAutosave();
         }
 
@@ -519,14 +529,15 @@ namespace get_link_manga
                     _isVietnameseUi ? "Không có lỗi để hiển thị." : "No error logs available.",
                     "Information",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                MessageBoxImage.Information);
                 return;
             }
 
-            var summary = string.Join(
-                Environment.NewLine,
-                erroredItems.Select(item => $"{item.Name}: {item.GetUniqueErrorCount()} error(s)"));
-            MessageBox.Show(summary, "Error Log", MessageBoxButton.OK, MessageBoxImage.Information);
+            var logWindow = new ErrorLogWindow(erroredItems, this)
+            {
+                Owner = this
+            };
+            logWindow.ShowDialog();
         }
 
         private void BtnOpenFolderInRow_Click_LegacyDoNotUse(object sender, RoutedEventArgs e)
@@ -573,17 +584,18 @@ namespace get_link_manga
                         continue;
                     }
 
-                    try
-                    {
-                        List<GalleryItem> currentLoaded;
-                        if (string.Equals(Path.GetExtension(candidate), ".md", StringComparison.OrdinalIgnoreCase))
+                        try
                         {
-                            string content = File.ReadAllText(candidate, Encoding.UTF8);
-                            currentLoaded = LoadGalleryItemsFromMarkdown(content);
-                        }
-                        else
-                        {
-                            currentLoaded = File.ReadAllLines(candidate, Encoding.UTF8)
+                            List<GalleryItem> currentLoaded;
+                            if (string.Equals(Path.GetExtension(candidate), ".md", StringComparison.OrdinalIgnoreCase))
+                            {
+                                string content = File.ReadAllText(candidate, Encoding.UTF8);
+                                ApplyGalleryMarkdownSettings(content);
+                                currentLoaded = LoadGalleryItemsFromMarkdown(content);
+                            }
+                            else
+                            {
+                                currentLoaded = File.ReadAllLines(candidate, Encoding.UTF8)
                                 .Select(ParseGallerySnapshot)
                                 .Where(item => item != null)
                                 .ToList();

@@ -8,7 +8,7 @@ namespace get_link_manga
     internal static class PortableArchiveBootstrap
     {
         private const string SevenZipResourcePrefix = "7-Zip/";
-        private const string BandiViewResourcePrefix = "Bandiview/";
+        private const string FastStoneResourcePrefix = "FastStone Image Viewer/";
 
         internal static void EnsurePortableSevenZip()
         {
@@ -23,16 +23,16 @@ namespace get_link_manga
             }
         }
 
-        internal static void EnsurePortableBandiView()
+        internal static void EnsurePortableFastStone()
         {
             try
             {
-                ExtractEmbeddedResourceTree(BandiViewResourcePrefix, PortablePaths.BandiViewRoot);
+                ExtractEmbeddedResourceTree(FastStoneResourcePrefix, PortablePaths.FastStoneRoot);
             }
             catch
             {
                 // Best effort only. Reader actions will validate the tool again
-                // when the user opens Bandiview.
+                // when the user opens FastStone Image Viewer.
             }
         }
 

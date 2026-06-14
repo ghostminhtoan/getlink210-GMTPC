@@ -85,7 +85,7 @@ function Test-ImportantPath {
     param([string]$RelativePath)
 
     $normalizedPath = Normalize-GitPath $RelativePath
-    $ignoredPrefixes = @(".vs/", ".tmp/", ".agents/", ".nuget/", "bin/", "build_verify/", "build_verify_ui/", "build_verify_ui2/", "build_verify_ui3/", "build_verify_ui4/", "build_verify_ui5/", "obj/", "release/")
+    $ignoredPrefixes = @(".vs/", ".tmp/", ".agents/", ".nuget/", "bin/", "build_verify/", "build_verify_ui/", "build_verify_ui2/", "build_verify_ui3/", "build_verify_ui4/", "build_verify_ui5/", "obj/", "release/", "Bandiview/")
     foreach ($ignoredPrefix in $ignoredPrefixes) {
         if ($normalizedPath.StartsWith($ignoredPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
             return $false

@@ -354,7 +354,7 @@ namespace get_link_manga
             var button = new Button
             {
                 Width = 110,
-                Height = 38,
+                MinHeight = 52,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Style = TryFindResource("SidebarMenuButton") as Style
             };
@@ -364,6 +364,8 @@ namespace get_link_manga
                 Text = text,
                 TextWrapping = TextWrapping.Wrap,
                 TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
                 FontSize = 9.8
             };
 
@@ -477,7 +479,8 @@ namespace get_link_manga
             var item = new ComboBoxItem
             {
                 Tag = domainKey,
-                Content = domainKey
+                Content = domainKey,
+                Style = FindResource("CyberpunkComboBoxItemStyle") as Style
             };
 
             cmbCreateSubfolderDomain.Items.Add(item);
@@ -485,13 +488,13 @@ namespace get_link_manga
 
         private void LoadCreateSubfolderSettings()
         {
-            _createSubfolderByDomain.Clear();
-
             string settingsPath = GetCreateSubfolderSettingsPath();
             if (!File.Exists(settingsPath))
             {
                 return;
             }
+
+            var loadedSettings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (string line in File.ReadAllLines(settingsPath, Encoding.UTF8))
             {
@@ -526,7 +529,15 @@ namespace get_link_manga
                     }
                 }
 
-                _createSubfolderByDomain[domainKey] = subfolder;
+                loadedSettings[domainKey] = subfolder;
+            }
+
+            foreach (var pair in loadedSettings)
+            {
+                if (!_createSubfolderByDomain.ContainsKey(pair.Key))
+                {
+                    _createSubfolderByDomain[pair.Key] = pair.Value;
+                }
             }
         }
 
@@ -666,23 +677,6 @@ namespace get_link_manga
             }
         }
 
-        private void CmbCreateSubfolderDomain_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_suppressCreateSubfolderEvents || !_createSubfolderUiReady)
-            {
-                return;
-            }
-
-            string previousDomainKey = _createSubfolderSelectedDomainKey;
-            string newDomainKey = GetSelectedCreateSubfolderDomainKey();
-            if (!string.IsNullOrWhiteSpace(previousDomainKey))
-            {
-                PersistCreateSubfolderForDomain(previousDomainKey);
-            }
-
-            _createSubfolderSelectedDomainKey = newDomainKey;
-            UpdateCreateSubfolderFieldsFromSelection();
-        }
 
         private void TxtCreateSubfolderName_TextChanged(object sender, TextChangedEventArgs e)
         {

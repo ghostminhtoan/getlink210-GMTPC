@@ -10,7 +10,8 @@ namespace get_link_manga
         {
             var dialog = new VistaFolderBrowser
             {
-                Title = "Chọn thư mục lưu truyện (Select Download Folder)"
+                Title = "Chá»n thÆ° má»¥c lÆ°u truyá»‡n (Select Download Folder)",
+                InitialFolder = PortablePaths.PortableDataRoot
             };
 
             IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
@@ -26,7 +27,7 @@ namespace get_link_manga
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
             {
-                MessageBox.Show("Vui lòng chọn thư mục lưu trước (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Vui lÃ²ng chá»n thÆ° má»¥c lÆ°u trÆ°á»›c (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -35,8 +36,30 @@ namespace get_link_manga
 
             if (!ShellFolderLauncher.TryOpenFolder(targetFolder, out string openError))
             {
-                MessageBox.Show($"Không thể mở thư mục: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"KhÃ´ng thá»ƒ má»Ÿ thÆ° má»¥c: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void BtnClearTemp_Click(object sender, RoutedEventArgs e)
+        {
+            string downloadRoot = txtDownloadPath?.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(downloadRoot))
+            {
+                MessageBox.Show("Vui lÃ²ng chá»n thÆ° má»¥c táº£i trÆ°á»›c.", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string tempRoot = Path.Combine(GetEffectiveDownloadRoot(downloadRoot), ".tmp");
+            if (!Directory.Exists(tempRoot))
+            {
+                Log($"Temp root not found: {tempRoot}");
+                lblStatus.Text = "Temp Ä‘Ã£ sáº¡ch.";
+                return;
+            }
+
+            ClearTempRootFolder(tempRoot);
+            Log($"Cleared temp root: {tempRoot}");
+            lblStatus.Text = "Temp Ä‘Ã£ Ä‘Æ°á»£c xÃ³a.";
         }
 
         private void BtnOpenFolderInRow_Click(object sender, RoutedEventArgs e)
@@ -50,19 +73,19 @@ namespace get_link_manga
             string targetFolder = ResolveBestFolderForGalleryItem(item);
             if (string.IsNullOrWhiteSpace(targetFolder))
             {
-                MessageBox.Show("Chưa xác định được thư mục của truyện này.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("ChÆ°a xÃ¡c Ä‘á»‹nh Ä‘Æ°á»£c thÆ° má»¥c cá»§a truyá»‡n nÃ y.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!Directory.Exists(targetFolder))
             {
-                MessageBox.Show($"Thư mục không tồn tại:\n{targetFolder}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show($"ThÆ° má»¥c khÃ´ng tá»“n táº¡i:\n{targetFolder}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!ShellFolderLauncher.TryOpenFolder(targetFolder, out string error))
             {
-                MessageBox.Show($"Không thể mở thư mục: {error}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show($"KhÃ´ng thá»ƒ má»Ÿ thÆ° má»¥c: {error}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -74,6 +97,50 @@ namespace get_link_manga
             }
 
             Directory.CreateDirectory(path);
+        }
+
+        private void ClearTempRootFolder(string tempRoot)
+        {
+            try
+            {
+                foreach (string file in Directory.GetFiles(tempRoot))
+                {
+                    TryDeletePath(file);
+                }
+
+                foreach (string directory in Directory.GetDirectories(tempRoot))
+                {
+                    if (string.Equals(Path.GetFileName(directory), ".process", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    TryDeletePath(directory);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to clear temp root '{tempRoot}': {ex.Message}");
+            }
+        }
+
+        private void TryDeletePath(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+                else if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Temp cleanup skip '{path}': {ex.Message}");
+            }
         }
 
         private string ResolveBestFolderForGalleryItem(GalleryItem item)

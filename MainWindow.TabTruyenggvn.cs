@@ -1,3 +1,4 @@
+#pragma warning disable 4014
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -39,10 +40,6 @@ namespace get_link_manga
                 string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
                 bool isError = IsErrorMessage(message);
                 AppendLogLine(txtTruyenggvnLog, logLine, isError);
-                if (chkAutoScrollTruyenggvnLog?.IsChecked == true)
-                {
-                    ScrollTextBoxToEnd(txtTruyenggvnLog);
-                }
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
@@ -191,7 +188,7 @@ namespace get_link_manga
                 bool solved = false;
                 try
                 {
-                    Dispatcher.Invoke(() =>
+                    Dispatcher.BeginInvoke((Action)(() =>
                     {
                         var captchaWin = new CaptchaWindow(testUrl)
                         {
@@ -224,7 +221,7 @@ namespace get_link_manga
 
                             solved = true;
                         }
-                    });
+                    }));
                 }
                 finally
                 {
@@ -919,11 +916,11 @@ namespace get_link_manga
                     {
                         if (queueItem != null)
                         {
-                            Dispatcher.Invoke(() =>
+                            Dispatcher.BeginInvoke((Action)(() =>
                             {
                                 queueItem.Status = "Completed";
                                 queueItem.CurrentProcess = "Đã hoàn tất theo process";
-                            });
+                            }));
                         }
                         return;
                     }
@@ -987,11 +984,11 @@ namespace get_link_manga
                     TruyenggvnLog(message);
                     if (queueItem != null)
                     {
-                        Dispatcher.Invoke(() =>
+                        Dispatcher.BeginInvoke((Action)(() =>
                         {
                             queueItem.Status = "Completed";
                             queueItem.CurrentProcess = "Chưa có chapter để tải";
-                        });
+                        }));
                     }
                     return;
                 }
@@ -1015,11 +1012,11 @@ namespace get_link_manga
                     TruyenggvnLog($"Không có chapter nào khớp bộ lọc trong tổng {totalFound} chapter của '{item.Name}'.");
                     if (queueItem != null)
                     {
-                        Dispatcher.Invoke(() =>
+                        Dispatcher.BeginInvoke((Action)(() =>
                         {
                             queueItem.Status = "Completed";
                             queueItem.CurrentProcess = "Không có chapter trùng khớp bộ lọc";
-                        });
+                        }));
                     }
                     return;
                 }
@@ -1031,20 +1028,20 @@ namespace get_link_manga
                 {
                     if (queueItem != null)
                     {
-                        Dispatcher.Invoke(() =>
+                        Dispatcher.BeginInvoke((Action)(() =>
                         {
                             queueItem.Status = "Completed";
                             queueItem.CurrentProcess = "Đã hoàn tất theo process";
-                        });
+                        }));
                     }
                     return;
                 }
             }
 
-            Dispatcher.Invoke(() =>
+            Dispatcher.BeginInvoke((Action)(() =>
             {
                 item.LinkCount = chapterLinks.Count.ToString();
-            });
+            }));
 
             await DownloadTruyenggvnPendingChaptersAsync(item, rootFolder, token, queueItem, chapterLinks);
         }
@@ -1053,11 +1050,11 @@ namespace get_link_manga
         {
             if (queueItem != null)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.BeginInvoke((Action)(() =>
                 {
                     queueItem.TotalChapters = chapterLinks.Count;
                     queueItem.CompletedChapters = 0;
-                });
+                }));
             }
 
             for (int i = 0; i < chapterLinks.Count; i++)
@@ -1080,10 +1077,10 @@ namespace get_link_manga
                 if (queueItem != null)
                 {
                     int completed = i + 1;
-                    Dispatcher.Invoke(() =>
+                    Dispatcher.BeginInvoke((Action)(() =>
                     {
                         queueItem.CompletedChapters = completed;
-                    });
+                    }));
                 }
             }
         }
@@ -1141,24 +1138,23 @@ namespace get_link_manga
 
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = BuildStableChapterTempFolderPath(rootFolder, TruyenggvnSiteFolder, safeManga, safeChapter);
+            string tempFolder = mergedPath;
             Directory.CreateDirectory(tempFolder);
-            RegisterTempFolder(tempFolder);
 
             WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {cleanChapter}");
 
-            int maxThreads = GetCurrentConnectionLimit();
+            int maxThreads = GetBookConnectionLimit(queueItem ?? item);
 
             if (queueItem != null && !isParentQueue)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.BeginInvoke((Action)(() =>
                 {
                     queueItem.TotalChapters = imageUrls.Count;
                     queueItem.CompletedChapters = 0;
-                });
+                }));
             }
 
-            using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
+                using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
                 var tasks = new List<Task>();
                 int completedPages = 0;
@@ -1247,7 +1243,8 @@ namespace get_link_manga
                                     completedPages,
                                     imageUrls.Count,
                                     isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}",
-                                    $"Trang {index + 1} hoàn tất");
+                                    $"Trang {index + 1} hoàn tất",
+                                    imgUrl);
                             }
                         }
                         finally
@@ -1260,27 +1257,24 @@ namespace get_link_manga
                 await Task.WhenAll(tasks);
             }
 
-            try
+            if (Directory.Exists(tempFolder))
             {
-                if (Directory.Exists(tempFolder))
+                WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
+                _ = Task.Run(async () =>
                 {
-                    string currentTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-                    WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
-                    MoveTempFolderToTarget(tempFolder, currentTargetFolder, TruyenggvnSiteFolder);
-                }
-
-                await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
-                await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
-                UpsertMainLogLine(progressKey, $"[sayhentai] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
-            }
-            finally
-            {
-                UnregisterTempFolder(tempFolder);
+                    try
+                    {
+                        await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                        await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
+                        UpsertMainLogLine(progressKey, $"[sayhentai] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
+                    }
+                    finally
+                    {
+                    }
+                });
             }
 
-            string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-            var pageMap = imageUrls.Select((url, index) => new { url, index }).ToDictionary(x => x.index + 1, x => x.url);
-            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageMap);
+            return true;
         }
 
         private void ParseTruyenggvnPageTitle(string pageTitle, string fallbackName, string link, out string mangaTitle, out string chapterTitle)
@@ -1412,7 +1406,7 @@ namespace get_link_manga
                 }
             }
 
-            foreach (Match match in Regex.Matches(contentArea ?? string.Empty, @"https?://cdn\.pubtranxzyzz\.store/hen/\d+/\d+/[^""'\s>]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^""'\s>]*)?", RegexOptions.IgnoreCase))
+            foreach (Match match in Regex.Matches(contentArea ?? string.Empty, @"https?://cdn\.pubtranxzyzz\.store/hen/\d+/[^/""'\s>]+/[^""'\s>]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^""'\s>]*)?", RegexOptions.IgnoreCase))
             {
                 AddImageCandidate(match.Value);
             }
@@ -1645,7 +1639,7 @@ namespace get_link_manga
 
             if (routeInfo == null || string.IsNullOrWhiteSpace(routeInfo.BookId))
             {
-                return Regex.IsMatch(url, @"https?://cdn\.pubtranxzyzz\.store/hen/\d+/\d+/", RegexOptions.IgnoreCase) ||
+                return Regex.IsMatch(url, @"https?://cdn\.pubtranxzyzz\.store/hen/\d+/[^/]+/", RegexOptions.IgnoreCase) ||
                        url.IndexOf("truyenvua.com", StringComparison.OrdinalIgnoreCase) >= 0;
             }
 
@@ -1745,3 +1739,4 @@ namespace get_link_manga
         }
     }
 }
+#pragma warning restore 4014

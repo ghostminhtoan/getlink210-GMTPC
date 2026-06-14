@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
+#pragma warning disable 4014
 namespace get_link_manga
 {
     public partial class MainWindow : Window
@@ -23,8 +24,6 @@ namespace get_link_manga
                 string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
                 bool isError = IsErrorMessage(message);
                 AppendLogLine(txtViHentaiLog, logLine, isError);
-                if (chkAutoScrollViHentaiLog?.IsChecked == true)
-                    ScrollTextBoxToEnd(txtViHentaiLog);
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
@@ -959,9 +958,8 @@ namespace get_link_manga
 
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = BuildStableChapterTempFolderPath(rootFolder, "vi-hentai.pro", safeManga, safeChapter);
+            string tempFolder = mergedPath;
             Directory.CreateDirectory(tempFolder);
-            RegisterTempFolder(tempFolder);
 
             var evalIndex = html.IndexOf("eval(function(h,u,n,t,e,r)");
             if (evalIndex == -1)
@@ -1076,7 +1074,7 @@ namespace get_link_manga
                                             }
                                         }));
                                     }
-                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn");
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn", imgUrl);
                                 }
                                 return;
                             }
@@ -1116,7 +1114,7 @@ namespace get_link_manga
                                         }
                                     }));
                                 }
-                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất");
+                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất", imgUrl);
                             }
                         }
                         finally
@@ -1132,9 +1130,7 @@ namespace get_link_manga
                 {
                     if (Directory.Exists(tempFolder))
                     {
-                        string currentTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
                         WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
-                        MoveTempFolderToTarget(tempFolder, currentTargetFolder, "vi-hentai");
                     }
 
                     await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
@@ -1147,7 +1143,6 @@ namespace get_link_manga
                 }
                 finally
                 {
-                    UnregisterTempFolder(tempFolder);
                 }
 
                 // Check for missing files
@@ -1157,3 +1152,4 @@ namespace get_link_manga
         }
     }
 }
+#pragma warning restore 4014

@@ -11,7 +11,8 @@ namespace get_link_manga
 
         internal void RegisterTempFolder(string path)
         {
-            if (!string.IsNullOrEmpty(path))
+            if (!string.IsNullOrEmpty(path) &&
+                path.IndexOf(@"\.tmp\", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 _activeTempFolders.TryAdd(path, 0);
             }
@@ -19,7 +20,8 @@ namespace get_link_manga
 
         internal void UnregisterTempFolder(string path)
         {
-            if (!string.IsNullOrEmpty(path))
+            if (!string.IsNullOrEmpty(path) &&
+                path.IndexOf(@"\.tmp\", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 _activeTempFolders.TryRemove(path, out _);
             }
@@ -31,7 +33,9 @@ namespace get_link_manga
             {
                 try
                 {
-                    if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
+                    if (!string.IsNullOrWhiteSpace(path) &&
+                        path.IndexOf(@"\.tmp\", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                        System.IO.Directory.Exists(path))
                     {
                         System.IO.Directory.Delete(path, true);
                         Log($"[Cleanup] Đã xóa thư mục tạm tải dở: {path}");

@@ -164,6 +164,7 @@ namespace get_link_manga
 
             Loaded += (s, e) =>
             {
+                StyleComboBoxPopup(cmbCreateSubfolderDomain);
                 StyleComboBoxPopup(cmbNhentaiSort);
                 StyleComboBoxPopup(cmbConnections);
                 StyleComboBoxPopup(cmbMultiDownload);
@@ -217,17 +218,7 @@ namespace get_link_manga
         // Scroll a TextBox/RichTextBox to the end WITHOUT needing keyboard focus.
         private static void ScrollTextBoxToEnd(TextBoxBase textBox)
         {
-            if (textBox == null) return;
-            // Walk visual tree to find the embedded ScrollViewer
-            var sv = FindVisualChild<System.Windows.Controls.ScrollViewer>(textBox);
-            if (sv != null)
-            {
-                sv.ScrollToEnd();
-            }
-            else
-            {
-                textBox.ScrollToEnd();
-            }
+            // Auto scroll disabled.
         }
 
         public static double ExtractNumber(string input)
@@ -420,14 +411,14 @@ namespace get_link_manga
 
             if (string.IsNullOrWhiteSpace(url))
             {
-                MessageBox.Show("Vui lòng nhập TARGET TAG URL trước.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowWarning("Vui lòng nhập TARGET TAG URL trước.", "Thông báo");
                 return;
             }
 
             if (btn == btnNhentaiFetchCaptcha)
             {
                 ResetCookiesForCaptcha(url);
-                MessageBox.Show("Đã xóa cookie cho nhentai.xxx. Site này không cần captcha nữa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowInfo("Đã xóa cookie cho nhentai.xxx. Site này không cần captcha nữa.", "Thông báo");
                 return;
             }
 
@@ -479,7 +470,7 @@ namespace get_link_manga
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Lỗi lưu cookie: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ShowError($"Lỗi lưu cookie: {ex.Message}", "Lỗi");
                 }
             }
         }
@@ -511,7 +502,7 @@ namespace get_link_manga
 
             if (toRemove.Count == 0)
             {
-                MessageBox.Show("Không có truyện nào hoàn thành để xóa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowInfo("Không có truyện nào hoàn thành để xóa.", "Thông báo");
                 return;
             }
 

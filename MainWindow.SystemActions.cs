@@ -13,6 +13,8 @@ namespace get_link_manga
     {
         private const string GalleryStateBeginMarker = "<!-- COMIC_GMTPC_STATE_BEGIN -->";
         private const string GalleryStateEndMarker = "<!-- COMIC_GMTPC_STATE_END -->";
+        private const string GallerySettingsBeginMarker = "<!-- COMIC_GMTPC_SETTINGS_BEGIN -->";
+        private const string GallerySettingsEndMarker = "<!-- COMIC_GMTPC_SETTINGS_END -->";
 
         [DataContract]
         private sealed class GalleryItemState
@@ -100,6 +102,13 @@ namespace get_link_manga
             public string ImageUrl { get; set; }
         }
 
+        [DataContract]
+        private sealed class GalleryMarkdownSettingsState
+        {
+            [DataMember(Order = 1)]
+            public Dictionary<string, string> CreateSubfolderByDomain { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
         private List<GalleryItem> GetItemsToExport()
         {
             var checkedItems = _scrapedItems.Where(item => item.IsChecked).ToList();
@@ -136,6 +145,13 @@ namespace get_link_manga
                 sb.AppendLine($"| {i + 1} | {checkedStr} | {safeName} | {safeLink} | {chapter} | {page} | {status} | {process} | {item.GetUniqueErrorCount()} |");
             }
 
+            sb.AppendLine();
+            sb.AppendLine("## Download Settings");
+            sb.AppendLine(GallerySettingsBeginMarker);
+            sb.AppendLine("```json");
+            sb.AppendLine(SerializeGalleryMarkdownSettings());
+            sb.AppendLine("```");
+            sb.AppendLine(GallerySettingsEndMarker);
             sb.AppendLine();
             sb.AppendLine("## Full State");
             sb.AppendLine(GalleryStateBeginMarker);
@@ -280,6 +296,7 @@ namespace get_link_manga
             try
             {
                 string content = File.ReadAllText(PortablePaths.PortableGalleryListPath, Encoding.UTF8);
+                ApplyGalleryMarkdownSettings(content);
                 List<GalleryItem> loadedItems = LoadGalleryItemsFromMarkdown(content);
 
                 if (loadedItems.Any())
@@ -462,6 +479,23 @@ namespace get_link_manga
             }
         }
 
+        private string SerializeGalleryMarkdownSettings()
+        {
+            var settings = new GalleryMarkdownSettingsState
+            {
+                CreateSubfolderByDomain = _createSubfolderByDomain
+                    .Where(pair => !string.IsNullOrWhiteSpace(pair.Key) && !string.IsNullOrWhiteSpace(pair.Value))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)
+            };
+
+            var serializer = new DataContractJsonSerializer(typeof(GalleryMarkdownSettingsState));
+            using (var ms = new MemoryStream())
+            {
+                serializer.WriteObject(ms, settings);
+                return Encoding.UTF8.GetString(ms.ToArray());
+            }
+        }
+
         private GalleryItemState CreateGalleryItemState(GalleryItem item, int index)
         {
             return new GalleryItemState
@@ -485,7 +519,7 @@ namespace get_link_manga
                 IsStopped = item.IsStopped,
                 DownloadingChapter = item.DownloadingChapter,
                 DownloadingPageProgress = item.DownloadingPageProgress,
-                ConnectionCount = GetComboBoxSelectedInt(cmbConnections, 4),
+                ConnectionCount = item.ConnectionCount,
                 MultiDownloadCount = GetComboBoxSelectedInt(cmbMultiDownload, 2),
                 Errors = item.GetUniqueErrors().Select(error => new ErrorState
                 {
@@ -528,7 +562,7 @@ namespace get_link_manga
                 CurrentProcess = restoredProcess,
                 DownloadPath = state.DownloadPath,
                 ProgressPercent = state.ProgressPercent,
-                ConnectionCount = state.ConnectionCount,
+                ConnectionCount = state.ConnectionCount > 0 ? Math.Min(16, Math.Max(1, state.ConnectionCount)) : GetCurrentConnectionLimit(),
                 MultiDownloadCount = state.MultiDownloadCount,
                 IsPaused = state.IsPaused,
                 IsStopped = state.IsStopped,
@@ -614,12 +648,85 @@ namespace get_link_manga
 
             if (stateSource.ConnectionCount > 0)
             {
-                SetComboBoxSelectedInt(cmbConnections, stateSource.ConnectionCount);
+                SetComboBoxSelectedInt(cmbConnections, Math.Min(16, Math.Max(1, stateSource.ConnectionCount)));
             }
 
             if (stateSource.MultiDownloadCount > 0)
             {
                 SetComboBoxSelectedInt(cmbMultiDownload, stateSource.MultiDownloadCount);
+            }
+        }
+
+        private void ApplyGalleryMarkdownSettings(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return;
+            }
+
+            int beginMarkerIndex = content.IndexOf(GallerySettingsBeginMarker, StringComparison.Ordinal);
+            if (beginMarkerIndex < 0)
+            {
+                return;
+            }
+
+            int jsonFenceStart = content.IndexOf("```json", beginMarkerIndex, StringComparison.OrdinalIgnoreCase);
+            if (jsonFenceStart < 0)
+            {
+                return;
+            }
+
+            jsonFenceStart = content.IndexOf('\n', jsonFenceStart);
+            if (jsonFenceStart < 0)
+            {
+                return;
+            }
+
+            jsonFenceStart++;
+            int jsonFenceEnd = content.IndexOf("```", jsonFenceStart, StringComparison.Ordinal);
+            if (jsonFenceEnd < 0)
+            {
+                return;
+            }
+
+            string json = content.Substring(jsonFenceStart, jsonFenceEnd - jsonFenceStart).Trim();
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            try
+            {
+                var serializer = new DataContractJsonSerializer(typeof(GalleryMarkdownSettingsState));
+                using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    var settings = serializer.ReadObject(ms) as GalleryMarkdownSettingsState;
+                    if (settings?.CreateSubfolderByDomain == null || settings.CreateSubfolderByDomain.Count == 0)
+                    {
+                        return;
+                    }
+
+                    _createSubfolderByDomain.Clear();
+                    foreach (var pair in settings.CreateSubfolderByDomain)
+                    {
+                        if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+                        {
+                            continue;
+                        }
+
+                        _createSubfolderByDomain[pair.Key.Trim()] = pair.Value.Trim();
+                    }
+
+                    SaveCreateSubfolderSettings();
+                    if (_createSubfolderUiReady)
+                    {
+                        UpdateCreateSubfolderFieldsFromSelection();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to parse saved markdown settings: {ex.Message}");
             }
         }
 

@@ -19,8 +19,6 @@ namespace get_link_manga
                 string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
                 bool isError = IsErrorMessage(message);
                 AppendLogLine(txtHentaieraLog, logLine, isError);
-                if (chkAutoScrollHentaieraLog?.IsChecked == true)
-                    ScrollTextBoxToEnd(txtHentaieraLog);
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
 

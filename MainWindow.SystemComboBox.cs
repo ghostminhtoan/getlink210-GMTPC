@@ -1,0 +1,81 @@
+using System;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace get_link_manga
+{
+    public partial class MainWindow : Window
+    {
+        private void CmbConnections_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cmbConnections == null || cmbConnections.SelectedItem == null)
+            {
+                return;
+            }
+
+            int newLimit = GetCurrentConnectionLimit();
+
+            foreach (var item in _scrapedItems)
+            {
+                item.ConnectionCount = newLimit;
+            }
+
+            _activeBookSemaphore?.AdjustLimit();
+            Log($"[Connection] Đã cập nhật số trang song song mỗi book thành {newLimit}.");
+        }
+
+        private void CmbMultiDownload_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cmbMultiDownload == null || cmbMultiDownload.SelectedItem == null) return;
+            var selectedItem = cmbMultiDownload.SelectedItem as ComboBoxItem;
+            if (selectedItem == null) return;
+            if (!int.TryParse(selectedItem.Content.ToString(), out int newVal)) return;
+
+            _currentMaxParallelBooks = newVal;
+            Log($"[Multi Download] Số luồng tải song song được chỉnh thành {newVal}.");
+            _activeBookSemaphore?.AdjustLimit();
+        }
+
+        private void CmbCreateSubfolderDomain_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressCreateSubfolderEvents || !_createSubfolderUiReady)
+            {
+                return;
+            }
+
+            string previousDomainKey = _createSubfolderSelectedDomainKey;
+            string newDomainKey = GetSelectedCreateSubfolderDomainKey();
+            if (!string.IsNullOrWhiteSpace(previousDomainKey))
+            {
+                PersistCreateSubfolderForDomain(previousDomainKey);
+            }
+
+            _createSubfolderSelectedDomainKey = newDomainKey;
+            UpdateCreateSubfolderFieldsFromSelection();
+        }
+
+        private void CmbNhentaiSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isUpdatingNhentaiUrl) return;
+            if (txtNhentaiTagUrl == null) return;
+
+            if (cmbNhentaiSort.SelectedItem is ComboBoxItem selectedItem)
+            {
+                string sortVal = selectedItem.Tag?.ToString();
+                if (!string.IsNullOrEmpty(sortVal))
+                {
+                    _isUpdatingNhentaiUrl = true;
+                    try
+                    {
+                        txtNhentaiTagUrl.Text = UpdateNhentaiUrlSort(txtNhentaiTagUrl.Text, sortVal);
+                    }
+                    finally
+                    {
+                        _isUpdatingNhentaiUrl = false;
+                    }
+                }
+            }
+        }
+    }
+}

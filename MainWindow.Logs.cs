@@ -27,7 +27,6 @@ namespace get_link_manga
         {
             public string Key { get; set; }
             public RichTextBox Box { get; set; }
-            public ToggleButton AutoScrollToggle { get; set; }
             public LogFilterMode Mode { get; set; } = LogFilterMode.All;
             public List<LogEntry> Entries { get; } = new List<LogEntry>();
             public Dictionary<string, int> KeyedEntries { get; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -42,15 +41,15 @@ namespace get_link_manga
 
         private void InitializeLogPanels()
         {
-            RegisterLogPanel("main", txtLog, chkAutoScrollLog);
-            RegisterLogPanel("nhentai", txtNhentaiLog, chkAutoScrollNhentaiLog);
-            RegisterLogPanel("vihentai", txtViHentaiLog, chkAutoScrollViHentaiLog);
-            RegisterLogPanel("truyenqq", txtTruyenqqLog, chkAutoScrollTruyenqqLog);
-            RegisterLogPanel("nettruyen", txtNettruyenLog, chkAutoScrollNettruyenLog);
-            RegisterLogPanel("hentaiera", txtHentaieraLog, chkAutoScrollHentaieraLog);
+            RegisterLogPanel("main", txtLog);
+            RegisterLogPanel("nhentai", txtNhentaiLog);
+            RegisterLogPanel("vihentai", txtViHentaiLog);
+            RegisterLogPanel("truyenqq", txtTruyenqqLog);
+            RegisterLogPanel("nettruyen", txtNettruyenLog);
+            RegisterLogPanel("hentaiera", txtHentaieraLog);
         }
 
-        private void RegisterLogPanel(string key, RichTextBox box, ToggleButton autoScrollToggle)
+        private void RegisterLogPanel(string key, RichTextBox box)
         {
             if (box == null || string.IsNullOrWhiteSpace(key))
             {
@@ -60,8 +59,7 @@ namespace get_link_manga
             var state = new LogPanelState
             {
                 Key = key,
-                Box = box,
-                AutoScrollToggle = autoScrollToggle
+                Box = box
             };
 
             _logPanels[key] = state;
@@ -125,10 +123,6 @@ namespace get_link_manga
                 AppendLogLineToDocument(state.Box, entry.Text, entry.IsError);
             }
 
-            if (state.AutoScrollToggle?.IsChecked == true)
-            {
-                ScrollTextBoxToEnd(state.Box);
-            }
         }
 
         internal void AppendLogLineWithFilter(RichTextBox rtb, string text, bool isError)
@@ -152,10 +146,6 @@ namespace get_link_manga
             }
 
             AppendLogLineToDocument(rtb, text, isError);
-            if (state.AutoScrollToggle?.IsChecked == true)
-            {
-                ScrollTextBoxToEnd(rtb);
-            }
         }
 
         private static string BuildCheckErrorKey(string source, string bookName, string chapterName, int pageNumber, string errorMessage)
@@ -253,10 +243,6 @@ namespace get_link_manga
                 if (state == null || string.IsNullOrWhiteSpace(entryKey))
                 {
                     AppendLogLineToDocument(txtLog, $"[{DateTime.Now:HH:mm:ss}] {message}\r\n", isError);
-                    if (chkAutoScrollLog?.IsChecked == true)
-                    {
-                        ScrollTextBoxToEnd(txtLog);
-                    }
                     return;
                 }
 

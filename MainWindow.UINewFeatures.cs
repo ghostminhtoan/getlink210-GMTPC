@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
+#pragma warning disable 4014
 namespace get_link_manga
 {
     /// <summary>
@@ -272,20 +273,21 @@ namespace get_link_manga
             if (errorsToRetry.Count == 0)
                 return;
 
+            string originalStatus = queueItem.Status;
             // Clear current errors before retrying so we can track new ones
             Dispatcher.Invoke(() => {
                 queueItem.Name = FormatGalleryTitle(queueItem.Name);
                 queueItem.Errors.Clear();
                 queueItem.ErrorCount = 0;
                 queueItem.Status = "Downloading";
-                queueItem.CurrentProcess = "Retrying errors...";
+                queueItem.CurrentProcess = BuildRetryProcessText(0, errorsToRetry.Count, 0, 0, false);
             });
 
             Log($"[Retry] Đang thử tải lại {errorsToRetry.Count} trang bị lỗi của '{queueItem.Name}'...");
 
             int successfulRetries = 0;
             int failedRetries = 0;
-            bool wasDownloading = string.Equals(queueItem.Status, "Downloading", StringComparison.OrdinalIgnoreCase);
+            bool wasDownloading = string.Equals(originalStatus, "Downloading", StringComparison.OrdinalIgnoreCase);
             var chapterFoldersToFinalize = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var err in errorsToRetry)
@@ -364,15 +366,18 @@ namespace get_link_manga
                 {
                     failedRetries++;
                     Log($"[Retry] Thất bại khi tải {err.ChapterName}, Trang {err.PageNumber}: {ex.Message}");
-                    Dispatcher.Invoke(() => {
+                    Dispatcher.BeginInvoke((Action)(() =>
+                    {
                         queueItem.AddError(err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl);
-                    });
+                    }));
                     RecordCheckError(queueItem.SourceDomain ?? "retry", queueItem.Name, err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl);
                 }
 
-                Dispatcher.Invoke(() => {
-                    queueItem.CurrentProcess = $"Retry: {successfulRetries} ok, {failedRetries} fail";
-                });
+                int retryIndex = successfulRetries + failedRetries;
+                Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    queueItem.CurrentProcess = BuildRetryProcessText(retryIndex, errorsToRetry.Count, successfulRetries, failedRetries, false);
+                }));
             }
 
             foreach (var pair in chapterFoldersToFinalize)
@@ -391,11 +396,11 @@ namespace get_link_manga
                 if (wasDownloading)
                 {
                     queueItem.Status = "Downloading";
-                    queueItem.CurrentProcess = $"Retrying errors... ({successfulRetries} ok, {failedRetries} fail)";
+                    queueItem.CurrentProcess = BuildRetryProcessText(errorsToRetry.Count, errorsToRetry.Count, successfulRetries, failedRetries, true);
                 }
                 else
                 {
-                    queueItem.Status = queueItem.GetUniqueErrorCount() > 0 ? "Error" : "Completed";
+                    queueItem.Status = queueItem.GetUniqueErrorCount() > 0 ? "Error" : "Done";
                     queueItem.CurrentProcess = queueItem.GetUniqueErrorCount() > 0 ? "Done with errors" : "Done";
                 }
             });
@@ -413,6 +418,14 @@ namespace get_link_manga
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
+        }
+
+        private static string BuildRetryProcessText(int current, int total, int ok, int fail, bool finished)
+        {
+            int safeCurrent = Math.Max(0, Math.Min(current, total));
+            int safeTotal = Math.Max(0, total);
+            string prefix = finished ? "Retrying errors" : "Retrying";
+            return $"{prefix} {safeCurrent}/{safeTotal} errors ({ok} ok, {fail} fail)";
         }
 
         private async Task FinalizeRetryChapterFolderAsync(string unmergedPath, string mergedPath, CancellationToken token)
@@ -498,3 +511,4 @@ namespace get_link_manga
         }
     }
 }
+#pragma warning restore 4014

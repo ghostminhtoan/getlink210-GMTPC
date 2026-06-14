@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -121,28 +121,7 @@ namespace get_link_manga
             }
         }
 
-        private void CmbNhentaiSort_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isUpdatingNhentaiUrl) return;
-            if (txtNhentaiTagUrl == null) return;
 
-            if (cmbNhentaiSort.SelectedItem is ComboBoxItem selectedItem)
-            {
-                string sortVal = selectedItem.Tag?.ToString();
-                if (!string.IsNullOrEmpty(sortVal))
-                {
-                    _isUpdatingNhentaiUrl = true;
-                    try
-                    {
-                        txtNhentaiTagUrl.Text = UpdateNhentaiUrlSort(txtNhentaiTagUrl.Text, sortVal);
-                    }
-                    finally
-                    {
-                        _isUpdatingNhentaiUrl = false;
-                    }
-                }
-            }
-        }
 
         private async void BtnNhentaiFetchInfo_Click(object sender, RoutedEventArgs e)
         {

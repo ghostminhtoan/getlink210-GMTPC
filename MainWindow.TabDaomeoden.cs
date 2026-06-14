@@ -728,10 +728,9 @@ namespace get_link_manga
             string safeChapter = GetSafeChapterPathName(info.ChapterTitle);
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, DaomeodenSiteFolder);
             string targetFolder = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = BuildStableChapterTempFolderPath(rootFolder, DaomeodenSiteFolder, safeManga, safeChapter);
+            string tempFolder = targetFolder;
 
             Directory.CreateDirectory(tempFolder);
-            RegisterTempFolder(tempFolder);
 
             try
             {
@@ -753,8 +752,9 @@ namespace get_link_manga
                 for (int i = 0; i < imageUrls.Count; i++)
                 {
                     token.ThrowIfCancellationRequested();
-                    string filePath = Path.Combine(tempFolder, $"{i + 1:D3}{GetDaomeodenImageExtension(imageUrls[i])}");
-                    await DownloadUrlToFileWithRefererAsync(imageUrls[i], info.RefererUrl, filePath, token);
+                    string pageUrl = imageUrls[i];
+                    string filePath = Path.Combine(tempFolder, $"{i + 1:D3}{GetDaomeodenImageExtension(pageUrl)}");
+                    await DownloadUrlToFileWithRefererAsync(pageUrl, info.RefererUrl, filePath, token);
 
                     if (queueItem != null)
                     {
@@ -766,7 +766,6 @@ namespace get_link_manga
                     }
                 }
 
-                MoveTempFolderToTarget(tempFolder, targetFolder, "daomeoden");
                 var pageMap = imageUrls
                     .Select((url, index) => new { url, index })
                     .ToDictionary(x => x.index + 1, x => x.url);
@@ -774,7 +773,6 @@ namespace get_link_manga
             }
             finally
             {
-                UnregisterTempFolder(tempFolder);
             }
         }
 

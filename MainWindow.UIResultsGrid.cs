@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -180,16 +180,48 @@ namespace get_link_manga
 
             if (dgResults.Items.Count == 0) return;
 
-            if (e.Key == Key.Home)
+            if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
-                dgResults.SelectedIndex = 0;
-                dgResults.ScrollIntoView(dgResults.SelectedItem);
+                MenuCopySelectedLinks_Click(null, null);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Home)
+            {
+                if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                {
+                    int anchorIndex = dgResults.SelectedIndex;
+                    if (anchorIndex < 0) anchorIndex = 0;
+                    dgResults.SelectedItems.Clear();
+                    for (int i = 0; i <= anchorIndex; i++)
+                    {
+                        dgResults.SelectedItems.Add(dgResults.Items[i]);
+                    }
+                }
+                else
+                {
+                    dgResults.SelectedIndex = 0;
+                }
+                dgResults.ScrollIntoView(dgResults.Items[0]);
                 e.Handled = true;
             }
             else if (e.Key == Key.End)
             {
-                dgResults.SelectedIndex = dgResults.Items.Count - 1;
-                dgResults.ScrollIntoView(dgResults.SelectedItem);
+                int lastIndex = dgResults.Items.Count - 1;
+                if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                {
+                    int anchorIndex = dgResults.SelectedIndex;
+                    if (anchorIndex < 0) anchorIndex = 0;
+                    dgResults.SelectedItems.Clear();
+                    for (int i = anchorIndex; i <= lastIndex; i++)
+                    {
+                        dgResults.SelectedItems.Add(dgResults.Items[i]);
+                    }
+                }
+                else
+                {
+                    dgResults.SelectedIndex = lastIndex;
+                }
+                dgResults.ScrollIntoView(dgResults.Items[lastIndex]);
                 e.Handled = true;
             }
             else if (e.Key == Key.Delete)
@@ -474,18 +506,18 @@ namespace get_link_manga
             var items = dgResults.SelectedItems.Cast<GalleryItem>().ToList();
             if (!items.Any())
             {
-                MessageBox.Show("Vui lòng bôi đen chọn ít nhất 1 dòng để tải (Please select at least one highlighted line to download).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowNoSelectedItemsError();
                 return;
             }
             await StartDownloadProcessAsync(items);
         }
-
+ 
         private async void MenuDownloadChecked_Click(object sender, RoutedEventArgs e)
         {
             var items = dgResults.Items.Cast<GalleryItem>().Where(item => item.IsChecked).ToList();
             if (!items.Any())
             {
-                MessageBox.Show("Vui lòng tích chọn ít nhất 1 truyện để tải (Please check at least one gallery to download).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowNoCheckedItemsError();
                 return;
             }
             await StartDownloadProcessAsync(items);
@@ -499,6 +531,35 @@ namespace get_link_manga
         private void ProcessCell_Click(object sender, MouseButtonEventArgs e)
         {
             // Intentionally left blank: clicking process text no longer auto-filters by chapter/page.
+        }
+
+        internal void ScrollResultsItemIntoView(GalleryItem item)
+        {
+            if (item == null || dgResults == null)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (dgResults == null || !_scrapedItems.Contains(item))
+                {
+                    return;
+                }
+
+                dgResults.SelectedItem = item;
+                dgResults.ScrollIntoView(item);
+            }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        internal void DisableDownloadQueueAutoScrollFromStop()
+        {
+            // Auto-scroll removed from queue UI.
+        }
+
+        internal void TryAutoScrollDownloadQueue(GalleryItem updatedItem)
+        {
+            // Auto scroll disabled.
         }
     }
 }

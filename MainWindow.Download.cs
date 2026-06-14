@@ -334,7 +334,7 @@ namespace get_link_manga
             await NormalizeBookFolderAliasAsync(siteRootFolder, preferredSafeBook, aliasSafeBook, token);
         }
 
-        private void WriteTempProgressLog(string tempFolder, GalleryItem item, string status, int completedPages, int totalPages, string currentProcess, string note = null)
+        private void WriteTempProgressLog(string tempFolder, GalleryItem item, string status, int completedPages, int totalPages, string currentProcess, string note = null, string imageUrl = null)
         {
             try
             {
@@ -378,6 +378,10 @@ namespace get_link_manga
                 if (!string.IsNullOrWhiteSpace(note))
                 {
                     sb.AppendLine($"| Note | {EscapeMarkdownTableValue(note)} |");
+                }
+                if (!string.IsNullOrWhiteSpace(imageUrl))
+                {
+                    sb.AppendLine($"| ImageUrl | {EscapeMarkdownTableValue(imageUrl)} |");
                 }
 
                 CleanupTempProgressLogs(tempFolder);
@@ -2609,6 +2613,11 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             return val;
         }
 
+        private int GetBookConnectionLimit(GalleryItem item)
+        {
+            return GetCurrentConnectionLimit();
+        }
+
         private string GetBookIdentifier(string url)
         {
             if (string.IsNullOrWhiteSpace(url)) return url;
@@ -2822,28 +2831,6 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 return false;
             }
         }
-
-        private void CmbConnections_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            if (cmbConnections == null || cmbConnections.SelectedItem == null)
-            {
-                return;
-            }
-
-            Log($"[Connection] Đã cập nhật số kết nối thành {GetCurrentConnectionLimit()}.");
-        }
-
-        private void CmbMultiDownload_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            if (cmbMultiDownload == null || cmbMultiDownload.SelectedItem == null) return;
-            var selectedItem = cmbMultiDownload.SelectedItem as System.Windows.Controls.ComboBoxItem;
-            if (selectedItem == null) return;
-            if (!int.TryParse(selectedItem.Content.ToString(), out int newVal)) return;
-
-            _currentMaxParallelBooks = newVal;
-            Log($"[Multi Download] Số luồng tải song song được chỉnh thành {newVal}.");
-            _activeBookSemaphore?.AdjustLimit();
-        }
     }
 
 
@@ -2851,6 +2838,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
     {
         public string SelectedPath { get; set; }
         public string Title { get; set; }
+        public string InitialFolder { get; set; }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+        private static extern void SHCreateItemFromParsingName(
+            [MarshalAs(UnmanagedType.LPWStr)] string pszPath,
+            IntPtr pbc,
+            ref Guid riid,
+            [MarshalAs(UnmanagedType.Interface)] out IShellItem ppsi);
 
         public bool ShowDialog(IntPtr owner)
         {
@@ -2863,6 +2858,23 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 if (!string.IsNullOrEmpty(Title))
                 {
                     dialog.SetTitle(Title);
+                }
+
+                if (!string.IsNullOrEmpty(InitialFolder) && Directory.Exists(InitialFolder))
+                {
+                    try
+                    {
+                        Guid riid = new Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE");
+                        IShellItem initialFolderItem;
+                        SHCreateItemFromParsingName(InitialFolder, IntPtr.Zero, ref riid, out initialFolderItem);
+                        if (initialFolderItem != null)
+                        {
+                            dialog.SetFolder(initialFolderItem);
+                        }
+                    }
+                    catch
+                    {
+                    }
                 }
 
                 int hr = dialog.Show(owner);

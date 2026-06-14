@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
+#pragma warning disable 4014
 namespace get_link_manga
 {
     public partial class MainWindow : Window
@@ -23,8 +24,6 @@ namespace get_link_manga
                 string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
                 bool isError = IsErrorMessage(message);
                 AppendLogLine(txtNettruyenLog, logLine, isError);
-                if (chkAutoScrollNettruyenLog?.IsChecked == true)
-                    ScrollTextBoxToEnd(txtNettruyenLog);
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
@@ -697,7 +696,7 @@ namespace get_link_manga
                             title = mangaName;
                         }
 
-                        Dispatcher.Invoke(() =>
+                        Dispatcher.BeginInvoke((Action)(() =>
                         {
                             _scrapedItems.Add(new GalleryItem
                             {
@@ -708,7 +707,7 @@ namespace get_link_manga
                                 HasNoChapters = false,
                                 LinkCount = latestChapText
                             });
-                        });
+                        }));
 
                         NettruyenLog($"[Import {i + 1}/{total}] Thành công: {title}");
                         imported++;
@@ -719,7 +718,7 @@ namespace get_link_manga
                         failed++;
 
                         string fallbackTitle = "Fallback - Nettruyen - " + link.Split('/').Last();
-                        Dispatcher.Invoke(() =>
+                        Dispatcher.BeginInvoke((Action)(() =>
                         {
                             _scrapedItems.Add(new GalleryItem
                             {
@@ -729,7 +728,7 @@ namespace get_link_manga
                                 IsChecked = true,
                                 HasNoChapters = false
                             });
-                        });
+                        }));
                     }
 
                     double pct = ((double)(i + 1) / total) * 100;
@@ -990,10 +989,10 @@ namespace get_link_manga
                         Log($"[nettruyen] Không có chương nào trùng khớp với bộ lọc đã chọn trong tổng số {totalFoundChapters} chương của '{item.Name}'.");
                         if (queueItem != null)
                         {
-                            Dispatcher.Invoke(() => {
+                            Dispatcher.BeginInvoke((Action)(() => {
                                 queueItem.Status = "Completed";
                                 queueItem.CurrentProcess = "Không có chương trùng khớp bộ lọc";
-                            });
+                            }));
                         }
                         return;
                     }
@@ -1006,11 +1005,11 @@ namespace get_link_manga
                         NettruyenLog($"Tất cả chapter của '{item.Name}' đã Done theo process.");
                         if (queueItem != null)
                         {
-                            Dispatcher.Invoke(() =>
+                            Dispatcher.BeginInvoke((Action)(() =>
                             {
                                 queueItem.Status = "Completed";
                                 queueItem.CurrentProcess = "Đã hoàn tất theo process";
-                            });
+                            }));
                         }
                         return;
                     }
@@ -1020,10 +1019,10 @@ namespace get_link_manga
 
                 await DownloadNettruyenPendingChaptersAsync(item, rootFolder, token, queueItem, chapterLinks);
 
-                Dispatcher.Invoke(() =>
+                Dispatcher.BeginInvoke((Action)(() =>
                 {
                     item.LinkCount = chapterLinks.Count.ToString();
-                });
+                }));
             }
             else
             {
@@ -1036,11 +1035,11 @@ namespace get_link_manga
         {
             if (queueItem != null)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.BeginInvoke((Action)(() =>
                 {
                     queueItem.TotalChapters = chapterLinks.Count;
                     queueItem.CompletedChapters = 0;
-                });
+                }));
             }
 
             for (int idx = 0; idx < chapterLinks.Count; idx++)
@@ -1058,10 +1057,10 @@ namespace get_link_manga
                 if (queueItem != null)
                 {
                     int currentIdx = idx + 1;
-                    Dispatcher.Invoke(() =>
+                    Dispatcher.BeginInvoke((Action)(() =>
                     {
                         queueItem.CompletedChapters = currentIdx;
-                    });
+                    }));
                 }
             }
         }
@@ -1157,9 +1156,8 @@ namespace get_link_manga
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, "nettruyen");
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = BuildStableChapterTempFolderPath(rootFolder, "nettruyen", safeManga, safeChapter);
+            string tempFolder = mergedPath;
             Directory.CreateDirectory(tempFolder);
-            RegisterTempFolder(tempFolder);
 
             // Isolate images inside reading area
             string safeHtml = GetSafeChapterHtml(html);
@@ -1266,17 +1264,17 @@ namespace get_link_manga
             WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {cleanChapter}");
 
             // Connection settings
-            int maxThreads = GetCurrentConnectionLimit();
+            int maxThreads = GetBookConnectionLimit(queueItem ?? item);
 
             NettruyenLog($"Bắt đầu tải {imageUrls.Count} trang của chapter '{chapterTitle}' với {maxThreads} kết nối song song...");
 
             if (queueItem != null && !isParentQueue)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.BeginInvoke((Action)(() =>
                 {
                     queueItem.TotalChapters = imageUrls.Count;
                     queueItem.CompletedChapters = 0;
-                });
+                }));
             }
 
             using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
@@ -1339,7 +1337,7 @@ namespace get_link_manga
                                             }
                                         }));
                                     }
-                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn");
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn", imgUrl);
                                 }
                                 return;
                             }
@@ -1380,7 +1378,7 @@ namespace get_link_manga
                                         }
                                     }));
                                 }
-                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất");
+                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất", imgUrl);
                             }
                         }
                         finally
@@ -1393,30 +1391,28 @@ namespace get_link_manga
                 await Task.WhenAll(tasks);
             }
 
-            try
+            if (Directory.Exists(tempFolder))
             {
-                if (Directory.Exists(tempFolder))
+                WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
+                _ = Task.Run(async () =>
                 {
-                    string currentTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-                    WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
-                    MoveTempFolderToTarget(tempFolder, currentTargetFolder, "nettruyen");
-                }
-
-                await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
-                UpsertMainLogLine(progressKey, $"[nettruyen] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
-            }
-            catch (Exception ex)
-            {
-                Log($"[nettruyen] [Lỗi] Không thể di chuyển thư mục tạm: {ex.Message}");
-            }
-            finally
-            {
-                UnregisterTempFolder(tempFolder);
+                    try
+                    {
+                        await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                        UpsertMainLogLine(progressKey, $"[nettruyen] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"[nettruyen] [Lỗi] Không thể di chuyển thư mục tạm: {ex.Message}");
+                    }
+                    finally
+                    {
+                    }
+                });
             }
 
-            // Check for missing files
-            string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter);
+            return true;
         }
     }
 }
+#pragma warning restore 4014

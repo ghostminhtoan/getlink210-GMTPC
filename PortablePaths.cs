@@ -21,7 +21,7 @@ namespace get_link_manga
 
         internal static string RuntimeRoot => Path.Combine(AppRoot, "runtimes");
 
-        internal static string DefaultDownloadRoot => Path.Combine(AppRoot, "image downloader GMTPC");
+        internal static string DefaultDownloadRoot => Path.Combine(AppRoot, "root");
 
         internal static string PortableGalleryListPath => Path.Combine(AppRoot, "save gallery.md");
 
@@ -29,9 +29,9 @@ namespace get_link_manga
 
         internal static string SevenZipExePath => Path.Combine(SevenZipRoot, "7z.exe");
 
-        internal static string BandiViewRoot => Path.Combine(PortableDataRoot, "Bandiview");
+        internal static string FastStoneRoot => Path.Combine(PortableDataRoot, "FastStone Image Viewer");
 
-        internal static string BandiViewExePath => Path.Combine(BandiViewRoot, "BandiView.exe");
+        internal static string FastStoneExePath => Path.Combine(FastStoneRoot, "FSViewer.exe");
 
         internal static string PortableArchivePath => Path.Combine(AppRoot, "Comic-GMTPC.zip");
 

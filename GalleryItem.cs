@@ -172,6 +172,7 @@ namespace get_link_manga
         private bool _isStopped;
         private string _downloadingChapter;
         private string _downloadingPageProgress;
+        private string _downloadingPageLink;
         private int _nhentaiTotalPagesHint;
 
         public bool HasNoChapters
@@ -375,10 +376,22 @@ namespace get_link_manga
                             ? DownloadingPageProgress
                             : $"{DownloadingChapter} | {DownloadingPageProgress}";
                     }
-                    else if (value.StartsWith("Retry:"))
+                    else if (value.StartsWith("Retrying", StringComparison.OrdinalIgnoreCase) ||
+                             value.StartsWith("Retry:", StringComparison.OrdinalIgnoreCase))
                     {
                         DownloadingChapter = "Retrying errors";
-                        DownloadingPageProgress = value.Replace("Retry:", "").Trim();
+                        if (value.StartsWith("Retry:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            DownloadingPageProgress = value.Replace("Retry:", "").Trim();
+                        }
+                        else if (value.StartsWith("Retrying errors", StringComparison.OrdinalIgnoreCase))
+                        {
+                            DownloadingPageProgress = value.Substring("Retrying errors".Length).Trim();
+                        }
+                        else
+                        {
+                            DownloadingPageProgress = value.Substring("Retrying".Length).Trim();
+                        }
                         _currentProcess = $"{DownloadingChapter} | {DownloadingPageProgress}";
                     }
                     else
@@ -432,7 +445,15 @@ namespace get_link_manga
         public int ConnectionCount
         {
             get => _connectionCount;
-            set { if (_connectionCount != value) { _connectionCount = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_connectionCount != value)
+                {
+                    _connectionCount = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ConnectionDisplayText));
+                }
+            }
         }
 
         public int MultiDownloadCount
@@ -446,6 +467,8 @@ namespace get_link_manga
             get => _errors;
             set { if (_errors != value) { _errors = value; OnPropertyChanged(); } }
         }
+
+        public string ConnectionDisplayText => $"{ConnectionCount} conn";
 
         public bool IsPaused
         {
@@ -572,6 +595,19 @@ namespace get_link_manga
                         return IsVietnameseUiEnabled() ? "⛔ Đã dừng" : "⛔ Stopped";
                     default:
                         return string.IsNullOrWhiteSpace(_status) ? string.Empty : _status;
+                }
+            }
+        }
+
+        public string DownloadingPageLink
+        {
+            get => _downloadingPageLink;
+            set
+            {
+                if (_downloadingPageLink != value)
+                {
+                    _downloadingPageLink = value;
+                    OnPropertyChanged();
                 }
             }
         }

@@ -1,7 +1,7 @@
 <Window x:Class="get_link_manga.ErrorReportWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ERROR REPORT" Height="500" Width="650"
+        Title="ERROR REPORT" Height="560" Width="820"
         Background="{StaticResource CyberpunkDarkBrush}"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
@@ -13,22 +13,25 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <TextBlock Name="lblErrorTitle" Text="ERROR REPORT" 
-                       FontSize="18" FontWeight="ExtraBold" 
+            <TextBlock Name="lblErrorTitle"
+                       Text="ERROR REPORT"
+                       FontSize="18"
+                       FontWeight="ExtraBold"
                        Style="{StaticResource CyberpunkHeader}"/>
-            <TextBlock Name="lblErrorSubtitle" 
-                       Foreground="{StaticResource CyberpunkMutedTextBrush}" 
-                       FontSize="12" Margin="0,4,0,0"/>
+            <TextBlock Name="lblErrorSubtitle"
+                       Foreground="{StaticResource CyberpunkMutedTextBrush}"
+                       FontSize="12"
+                       Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- Error List -->
-        <Border Grid.Row="1" Background="#06090e" 
-                BorderBrush="{StaticResource CyberpunkBorderBrush}" 
-                BorderThickness="1" CornerRadius="3">
-            <DataGrid Name="dgErrors" 
-                      AutoGenerateColumns="False" 
+        <Border Grid.Row="1"
+                Background="#06090e"
+                BorderBrush="{StaticResource CyberpunkBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="3">
+            <DataGrid Name="dgErrors"
+                      AutoGenerateColumns="False"
                       IsReadOnly="True"
                       Background="#06090e"
                       RowBackground="#06090e"
@@ -55,10 +58,27 @@
                 </DataGrid.ColumnHeaderStyle>
 
                 <DataGrid.Columns>
-                    <!-- Icon -->
-                    <DataGridTextColumn Header="⚠️" Binding="{Binding Icon}" Width="35"/>
-                    <!-- Chapter -->
-                    <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="120">
+                    <DataGridTextColumn Header="⚠" Binding="{Binding Icon}" Width="35"/>
+
+                    <DataGridTemplateColumn Header="COMIC" Width="240">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding ComicName}"
+                                        Tag="{Binding ComicUrl}"
+                                        Click="BtnOpenComicLink_Click"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Foreground="{StaticResource CyberpunkCyanBrush}"
+                                        FontWeight="Bold"
+                                        HorizontalContentAlignment="Left"
+                                        Padding="4,2"
+                                        Cursor="Hand"
+                                        ToolTip="Open comic link"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="130">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{StaticResource CyberpunkYellowBrush}"/>
@@ -66,8 +86,8 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <!-- Page -->
-                    <DataGridTextColumn Header="PAGE" Binding="{Binding PageNumber}" Width="60">
+
+                    <DataGridTextColumn Header="PAGE" Binding="{Binding PageNumber}" Width="65">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
@@ -75,7 +95,7 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <!-- Error Message -->
+
                     <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
@@ -89,7 +109,6 @@
             </DataGrid>
         </Border>
 
-        <!-- Footer Buttons -->
         <Grid Grid.Row="2" Margin="0,15,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -99,18 +118,30 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0" Name="btnRetryFailed" Content="🔄 RETRY FAILED" 
+            <Button Grid.Column="0"
+                    Name="btnRetryFailed"
+                    Content="🔄 RETRY FAILED"
                     Click="BtnRetryFailed_Click"
-                    Style="{StaticResource CyberpunkButtonPink}" 
-                    Height="35" Width="140" FontSize="11"/>
-            <Button Grid.Column="2" Name="btnCopyErrors" Content="📋 COPY ERRORS" 
+                    Style="{StaticResource CyberpunkButtonPink}"
+                    Height="35"
+                    Width="140"
+                    FontSize="11"/>
+            <Button Grid.Column="2"
+                    Name="btnCopyErrors"
+                    Content="📋 COPY ERRORS"
                     Click="BtnCopyErrors_Click"
-                    Style="{StaticResource CyberpunkButtonCyan}" 
-                    Height="35" Width="140" FontSize="11"/>
-            <Button Grid.Column="4" Name="btnClose" Content="CLOSE" 
+                    Style="{StaticResource CyberpunkButtonCyan}"
+                    Height="35"
+                    Width="140"
+                    FontSize="11"/>
+            <Button Grid.Column="4"
+                    Name="btnClose"
+                    Content="CLOSE"
                     Click="BtnClose_Click"
-                    Style="{StaticResource CyberpunkButtonCyan}" 
-                    Height="35" Width="80" FontSize="11"/>
+                    Style="{StaticResource CyberpunkButtonCyan}"
+                    Height="35"
+                    Width="80"
+                    FontSize="11"/>
         </Grid>
     </Grid>
 </Window>

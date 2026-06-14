@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
+#pragma warning disable 4014
 namespace get_link_manga
 {
     public partial class MainWindow : Window
@@ -21,8 +22,6 @@ namespace get_link_manga
                 string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}\r\n";
                 bool isError = IsErrorMessage(message);
                 AppendLogLine(txtTruyenqqLog, logLine, isError);
-                if (chkAutoScrollTruyenqqLog?.IsChecked == true)
-                    ScrollTextBoxToEnd(txtTruyenqqLog);
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
@@ -1137,9 +1136,8 @@ namespace get_link_manga
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, "truyenqq");
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = BuildStableTempFolderPath(rootFolder, "truyenqq", $"{safeManga}-{safeChapter}", item.Link, item.Name, cleanManga, cleanChapter);
+            string tempFolder = mergedPath;
             Directory.CreateDirectory(tempFolder);
-            RegisterTempFolder(tempFolder);
 
             // Isolate images using Safe Chapter HTML (no comments section)
             string safeHtml = GetSafeChapterHtml(html);
@@ -1254,7 +1252,7 @@ namespace get_link_manga
                                             }
                                         }));
                                     }
-                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn");
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn", imgUrl);
                                 }
                                 return;
                             }
@@ -1294,7 +1292,7 @@ namespace get_link_manga
                                         }
                                     }));
                                 }
-                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất");
+                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất", imgUrl);
                             }
                         }
                         finally
@@ -1311,9 +1309,7 @@ namespace get_link_manga
             {
                 if (Directory.Exists(tempFolder))
                 {
-                    string currentTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
                     WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
-                    MoveTempFolderToTarget(tempFolder, currentTargetFolder, "truyenqq");
                 }
 
                 await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
@@ -1325,7 +1321,6 @@ namespace get_link_manga
             }
             finally
             {
-                UnregisterTempFolder(tempFolder);
             }
 
             // Check for missing files
@@ -1452,4 +1447,5 @@ namespace get_link_manga
         }
     }
 }
+#pragma warning restore 4014
 

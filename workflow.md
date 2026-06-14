@@ -1,4 +1,4 @@
-﻿# Hướng Dẫn Phát Triển & Quy Tắc Code - Dự Án "get link manga"
+# Hướng Dẫn Phát Triển & Quy Tắc Code - Dự Án "get link manga"
 
 Tài liệu này chứa toàn bộ quy tắc code, cấu trúc dự án, hướng dẫn thiết kế giao diện và quy trình làm việc. **Tất cả các Agent AI (như Antigravity, Claude, Cursor, Copilot...) BẮT BUỘC phải đọc file này trước khi thực hiện bất kỳ chỉnh sửa nào.**
 
@@ -168,6 +168,14 @@ Update log git commit -> commit -> push -> bàn giao
   - TextBlock / Label: Tiền tố `lbl` (Ví dụ: `lblStatus`, `lblLinkCount`)
   - ProgressBar: `progressBar`
 - **Book list / DataGrid kết quả:** Mọi cột trong danh sách book list bắt buộc hỗ trợ sort hai chiều `tăng dần / giảm dần`. Agent không được chỉ bật sort cho một vài cột rồi bỏ sót cột còn lại. Khi thêm cột mới sau này, phải tự nối cột đó vào cơ chế sort chung.
+- **Quy tắc phong cách ComboBox (Style & File code-behind):**
+  - Mọi ComboBox trên giao diện bắt buộc phải sử dụng Style `{StaticResource CyberpunkComboBox}` để đồng bộ giao diện.
+  - Khi chưa drop down (ComboBox đóng): Nền mặc định bắt buộc là màu trắng (`White`), chữ có màu xanh đậm (`#163A61`). Khi đã drop down (mở menu): Chữ hiển thị sáng theo đúng quy chuẩn cyberpunk.
+  - Toàn bộ các phương thức xử lý sự kiện `SelectionChanged` của toàn bộ các ComboBox trên ứng dụng bắt buộc phải đặt trong file partial tách biệt [MainWindow.SystemComboBox.cs](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/MainWindow.SystemComboBox.cs). Không rải rác code ở các file logic khác.
+- **Quy tắc quản lý MessageBox (Hộp thoại thông báo & File code-behind):**
+  - Tuyệt đối không gọi trực tiếp `MessageBox.Show` rải rác trong mã nguồn để tránh lỗi hiển thị sai encoding (mojibake).
+  - Tất cả các hộp thoại thông báo bắt buộc phải đi qua các phương thức helper tập trung trong file [MainWindow.SystemMessageBox.cs](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/MainWindow.SystemMessageBox.cs) như `ShowInfo`, `ShowWarning`, `ShowError`, `ShowConfirm`.
+  - Đảm bảo file [MainWindow.SystemMessageBox.cs](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/MainWindow.SystemMessageBox.cs) được lưu ở định dạng UTF-8 with BOM để hiển thị tiếng Việt chính xác 100%.
 
 ---
 
