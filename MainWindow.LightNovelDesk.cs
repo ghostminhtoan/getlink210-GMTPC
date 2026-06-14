@@ -64,7 +64,8 @@ namespace get_link_manga
             actionRow.Children.Add(CreateLightNovelActionButton("GET LINK", BtnLightNovelGetLink_Click, "CompactCyanButton", 96));
             actionRow.Children.Add(CreateLightNovelActionButton("GET MORE", BtnLightNovelGetMore_Click, "CompactCyanButton", 96));
             actionRow.Children.Add(CreateLightNovelActionButton("PASTE DIRECT LINK", BtnLightNovelPasteDirect_Click, "CompactCyanButton", 148));
-            actionRow.Children.Add(CreateLightNovelActionButton("COPY TEXT", BtnStartLightNovelCopy_Click, "CompactPinkButton", 110));
+            actionRow.Children.Add(CreateLightNovelActionButton("AUTO COPY TEXT CTRL F2", BtnStartLightNovelCopy_Click, "CompactPinkButton", 166));
+            actionRow.Children.Add(CreateLightNovelActionButton("STOP COPY TEXT ALT F2", BtnStopLightNovelCopy_Click, "CompactCyanButton", 162));
             actionRow.Children.Add(CreateLightNovelActionButton("CLEAR", BtnClearLightNovelQueue_Click, "CompactCyanButton", 82));
             actionRow.Children.Add(CreateLightNovelActionButton("OPEN FOLDER", BtnOpenLightNovelFolder_Click, "CompactCyanButton", 108));
             Grid.SetRow(actionRow, 0);
@@ -952,7 +953,13 @@ namespace get_link_manga
             }
 
             string chapterUrl = NormalizeHakoUrl(record.ChapterLink);
-            string chapterHtml = await FetchHakoHtmlAsync(chapterUrl, token);
+            lblStatus.Text = $"Đang mở WebView2 cho {record.ChapterTitle}";
+            string chapterHtml = await TryFetchHakoChapterHtmlViaWebViewAsync(chapterUrl, token);
+            if (string.IsNullOrWhiteSpace(chapterHtml))
+            {
+                HakoLog("WebView2 không lấy được chapter html. Fallback sang Firecrawl/browser lane.");
+                chapterHtml = await FetchHakoHtmlAsync(chapterUrl, token);
+            }
             string chapterTitle = ExtractHakoTitleTopText(chapterHtml);
             if (string.IsNullOrWhiteSpace(chapterTitle))
             {
@@ -1210,7 +1217,9 @@ namespace get_link_manga
         {
             if (_lightNovelCopyCts != null)
             {
-                _lightNovelCopyCts.Cancel();
+                lblStatus.Text = _isVietnameseUi
+                    ? "Auto copy text đang chạy. Bấm STOP COPY TEXT ALT F2 để dừng."
+                    : "Auto copy text already running. Use STOP COPY TEXT ALT F2 to stop.";
                 return;
             }
 
@@ -1281,6 +1290,22 @@ namespace get_link_manga
                 _lightNovelCopyCts = null;
                 RefreshLightNovelSummary();
             }
+        }
+
+        private void BtnStopLightNovelCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lightNovelCopyCts == null)
+            {
+                lblStatus.Text = _isVietnameseUi
+                    ? "Chưa có tiến trình auto copy text để dừng."
+                    : "No auto copy text process is running.";
+                return;
+            }
+
+            _lightNovelCopyCts.Cancel();
+            lblStatus.Text = _isVietnameseUi
+                ? "Đang dừng auto copy text..."
+                : "Stopping auto copy text...";
         }
     }
 }

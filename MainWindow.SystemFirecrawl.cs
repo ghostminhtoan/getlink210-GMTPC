@@ -103,7 +103,7 @@ namespace get_link_manga
                 return null;
             }
 
-            foreach (string candidateUrl in BuildPreferredHakoFirecrawlUrls(normalizedUrl))
+            foreach (string candidateUrl in BuildPreferredHakoFirecrawlUrls(normalizedUrl, preferFastChapterList))
             {
                 FirecrawlPageSnapshot snapshot = await TryScrapePageByFirecrawlAsync(candidateUrl, apiKey, token, preferFastChapterList);
                 if (snapshot != null && (!string.IsNullOrWhiteSpace(snapshot.Html) || (snapshot.Links != null && snapshot.Links.Count > 0)))
@@ -157,16 +157,42 @@ namespace get_link_manga
             }
         }
 
-        private static IEnumerable<string> BuildPreferredHakoFirecrawlUrls(string normalizedUrl)
+        private static IEnumerable<string> BuildPreferredHakoFirecrawlUrls(string normalizedUrl, bool preferFastChapterList)
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string candidate in new[]
+            List<string> candidates = new List<string>();
+
+            if (Uri.TryCreate(normalizedUrl, UriKind.Absolute, out Uri uri))
             {
-                ReplaceHost(normalizedUrl, "ln.hako.vn"),
-                ReplaceHost(normalizedUrl, "docln.net"),
-                ReplaceHost(normalizedUrl, "ln.hako.re"),
-                normalizedUrl
-            })
+                candidates.Add(uri.AbsoluteUri);
+
+                if (!string.Equals(uri.Host, "docln.net", StringComparison.OrdinalIgnoreCase))
+                {
+                    candidates.Add(ReplaceHost(normalizedUrl, "docln.net"));
+                }
+
+                if (!string.Equals(uri.Host, "ln.hako.vn", StringComparison.OrdinalIgnoreCase))
+                {
+                    candidates.Add(ReplaceHost(normalizedUrl, "ln.hako.vn"));
+                }
+
+                if (!preferFastChapterList && !string.Equals(uri.Host, "ln.hako.re", StringComparison.OrdinalIgnoreCase))
+                {
+                    candidates.Add(ReplaceHost(normalizedUrl, "ln.hako.re"));
+                }
+            }
+            else
+            {
+                candidates.Add(normalizedUrl);
+                candidates.Add(ReplaceHost(normalizedUrl, "docln.net"));
+                candidates.Add(ReplaceHost(normalizedUrl, "ln.hako.vn"));
+                if (!preferFastChapterList)
+                {
+                    candidates.Add(ReplaceHost(normalizedUrl, "ln.hako.re"));
+                }
+            }
+
+            foreach (string candidate in candidates)
             {
                 if (!string.IsNullOrWhiteSpace(candidate) && seen.Add(candidate))
                 {

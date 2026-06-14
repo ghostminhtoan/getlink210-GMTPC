@@ -17,6 +17,10 @@ namespace get_link_manga
     /// </summary>
     public partial class MainWindow : Window
     {
+        private static readonly RoutedUICommand StartLightNovelAutoCopyCommand =
+            new RoutedUICommand("Start light novel auto copy", "StartLightNovelAutoCopy", typeof(MainWindow));
+        private static readonly RoutedUICommand StopLightNovelAutoCopyCommand =
+            new RoutedUICommand("Stop light novel auto copy", "StopLightNovelAutoCopy", typeof(MainWindow));
         private static CookieContainer _cookieContainer;
         private static HttpClientHandler _httpHandler;
         private static HttpClient _httpClient;
@@ -174,9 +178,13 @@ namespace get_link_manga
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.New, WindowNew_Executed));
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, WindowSave_Executed));
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, WindowOpen_Executed));
+                CommandBindings.Add(new CommandBinding(StartLightNovelAutoCopyCommand, BtnStartLightNovelCopy_Click));
+                CommandBindings.Add(new CommandBinding(StopLightNovelAutoCopyCommand, BtnStopLightNovelCopy_Click));
                 InputBindings.Add(new KeyBinding(ApplicationCommands.New, new KeyGesture(Key.N, ModifierKeys.Control)));
                 InputBindings.Add(new KeyBinding(ApplicationCommands.Save, new KeyGesture(Key.S, ModifierKeys.Control)));
                 InputBindings.Add(new KeyBinding(ApplicationCommands.Open, new KeyGesture(Key.O, ModifierKeys.Control)));
+                InputBindings.Add(new KeyBinding(StartLightNovelAutoCopyCommand, new KeyGesture(Key.F2, ModifierKeys.Control)));
+                InputBindings.Add(new KeyBinding(StopLightNovelAutoCopyCommand, new KeyGesture(Key.F2, ModifierKeys.Alt)));
 
                 var view = ResultsView;
                 if (view != null && view.SortDescriptions.Count == 0)

@@ -109,6 +109,9 @@
     <Compile Include="GalleryItem.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="HakoChapterCaptureWindow.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="LightNovelModels.cs">
       <SubType>Code</SubType>
     </Compile>

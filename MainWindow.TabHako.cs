@@ -496,6 +496,53 @@ namespace get_link_manga
             return visibleHtml;
         }
 
+        private async Task<string> TryFetchHakoChapterHtmlViaWebViewAsync(string chapterUrl, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            HakoChapterCaptureResult capture = await HakoChapterCaptureWindow.CaptureAsync(this, chapterUrl, _isVietnameseUi, token);
+            token.ThrowIfCancellationRequested();
+            if (capture == null || string.IsNullOrWhiteSpace(capture.ContentHtml))
+            {
+                return null;
+            }
+
+            return BuildHakoChapterHtmlFromCapture(chapterUrl, capture);
+        }
+
+        private string BuildHakoChapterHtmlFromCapture(string chapterUrl, HakoChapterCaptureResult capture)
+        {
+            string bookLink = "#";
+            string fallbackBookTitle = string.Empty;
+            if (TryParseHakoChapterUrl(chapterUrl, out string bookId, out string bookSlug, out _, out _, out string canonicalChapterUrl) &&
+                Uri.TryCreate(canonicalChapterUrl, UriKind.Absolute, out Uri chapterUri))
+            {
+                string section = chapterUri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "truyen";
+                bookLink = $"{chapterUri.Scheme}://{chapterUri.Host}/{section}/{bookId}-{bookSlug}/";
+                fallbackBookTitle = HumanizeHakoSlug(bookSlug);
+            }
+
+            string title = string.IsNullOrWhiteSpace(capture.ChapterTitle) ? string.Empty : WebUtility.HtmlEncode(capture.ChapterTitle.Trim());
+            string bookTitle = string.IsNullOrWhiteSpace(capture.BookTitle)
+                ? WebUtility.HtmlEncode(fallbackBookTitle)
+                : WebUtility.HtmlEncode(capture.BookTitle.Trim());
+
+            var sb = new StringBuilder();
+            sb.Append("<html><body>");
+            sb.Append("<div class=\"title-top\"><h4>");
+            sb.Append(title);
+            sb.Append("</h4></div>");
+            sb.Append("<a href=\"");
+            sb.Append(WebUtility.HtmlEncode(bookLink));
+            sb.Append("\">");
+            sb.Append(bookTitle);
+            sb.Append("</a>");
+            sb.Append("<div id=\"chapter-content\" class=\"long-text no-select text-justify\">");
+            sb.Append(capture.ContentHtml ?? string.Empty);
+            sb.Append("</div>");
+            sb.Append("</body></html>");
+            return sb.ToString();
+        }
+
         private async void BtnHakoFetchInfo_Click(object sender, RoutedEventArgs e)
         {
             string rawUrl = txtHakoTagUrl.Text.Trim();
