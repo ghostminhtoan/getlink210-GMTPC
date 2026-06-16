@@ -2,6 +2,7 @@
 
 Tài liệu này ghi lại lịch sử các commit gần đây của dự án, sắp xếp từ mới nhất ở trên xuống cũ hơn ở dưới.
 
+- **Commit**: `6b7a2bb` | **Build Time**: 2026-06-16 ∕ 09.17.27 AM Tuesday | **Message**: docs: merge workflownovel.md and workflowpicture.md into workflow.md
 - **Commit**: `24e2499` | **Build Time**: 2026-06-14 ∕ 09.18.36 AM Sunday | **Message**: style(combobox): implement custom ControlTemplate for CyberpunkComboBoxItemStyle to fix selected/hover background color
 - **Commit**: `24e2499` | **Build Time**: 2026-06-14 ∕ 09.08.02 AM Sunday | **Message**: feat(messagebox): separate MessageBox logic into MainWindow.SystemMessageBox.cs and fix encoding issues
 - **Commit**: `24e2499` | **Build Time**: 2026-06-14 ∕ 08.42.44 AM Sunday | **Message**: feat(combobox): separate event handlers to MainWindow.SystemComboBox.cs and enforce style guidelines
