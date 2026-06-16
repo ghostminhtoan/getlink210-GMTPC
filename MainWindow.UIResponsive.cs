@@ -76,9 +76,9 @@ namespace get_link_manga
                         : new Thickness(16);
             }
 
-            if (_shellRootGrid != null)
+            if (gridMainContent != null)
             {
-                SetLayoutScale(_shellRootGrid, _uiZoomPercent / 100.0);
+                SetLayoutScale(gridMainContent, _uiZoomPercent / 100.0);
             }
 
             if (gridMainContent != null && gridMainContent.ColumnDefinitions.Count >= 3)
