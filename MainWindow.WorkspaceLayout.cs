@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -16,7 +16,6 @@ namespace get_link_manga
         {
             ChooseSource,
             Download,
-            DownloadLightNovel,
             Watch,
             About,
             Update
@@ -32,7 +31,6 @@ namespace get_link_manga
         private readonly Dictionary<AppSection, Button> _navigationButtons = new Dictionary<AppSection, Button>();
         private FrameworkElement _chooseSourceSection;
         private FrameworkElement _downloadSection;
-        private FrameworkElement _downloadLightNovelSection;
         private FrameworkElement _watchSection;
         private FrameworkElement _aboutSection;
         private FrameworkElement _updateSection;
@@ -44,6 +42,7 @@ namespace get_link_manga
         private readonly Dictionary<string, string> _createSubfolderByDomain = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private AppSection _currentSection = AppSection.ChooseSource;
         private bool _workspaceShellInitialized;
+        private Button _showFloatRailButton;
         private bool _createSubfolderUiReady;
         private bool _suppressCreateSubfolderEvents;
         private string _createSubfolderSelectedDomainKey;
@@ -330,16 +329,25 @@ namespace get_link_manga
                 FontWeight = FontWeights.Bold
             };
 
+            _showFloatRailButton = new Button
+            {
+                Width = 110,
+                MinHeight = 32,
+                Margin = new Thickness(0, 8, 0, 8),
+                Style = TryFindResource("SidebarMenuButton") as Style
+            };
+            _showFloatRailButton.Click += BtnShowLightNovelFloatButton_Click;
+
             _navigationButtonHost = new StackPanel { HorizontalAlignment = HorizontalAlignment.Stretch };
             _sidebarToolsHost = new StackPanel { Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
 
             navStack.Children.Add(brandTitle);
+            navStack.Children.Add(_showFloatRailButton);
             navStack.Children.Add(_navigationButtonHost);
             navStack.Children.Add(_sidebarToolsHost);
 
             AddNavigationButton(AppSection.ChooseSource, "Choose source of paste link");
             AddNavigationButton(AppSection.Download, "Download");
-            AddNavigationButton(AppSection.DownloadLightNovel, "Copy text light novel");
             AddNavigationButton(AppSection.Watch, "Watch");
             AddNavigationButton(AppSection.About, "About");
             AddNavigationButton(AppSection.Update, "Update");
@@ -427,7 +435,7 @@ namespace get_link_manga
         {
             _chooseSourceSection = CreateChooseSourceSection();
             _downloadSection = borderRightPanel;
-            _downloadLightNovelSection = CreateLightNovelDownloadSection();
+            InitializeLightNovelDesk();
             _watchSection = CreateWatchSection();
             _aboutSection = CreateAboutSection();
             _updateSection = CreateUpdateSection();
@@ -865,9 +873,6 @@ namespace get_link_manga
                 case AppSection.Download:
                     _sectionContentHost.Content = _downloadSection;
                     break;
-                case AppSection.DownloadLightNovel:
-                    _sectionContentHost.Content = _downloadLightNovelSection;
-                    break;
                 case AppSection.Watch:
                     _sectionContentHost.Content = _watchSection;
                     _readerHasUserClickedInWatch = false;
@@ -942,12 +947,6 @@ namespace get_link_manga
                     _sectionHintText.Text = isVietnamese
                         ? "Kiểm tra danh sách, chọn chapter, theo dõi trạng thái, rồi tải hàng loạt với cơ chế resume hiện có."
                         : "Review queue, set chapter filters, track status, and download in bulk with the existing resume-safe pipeline.";
-                    break;
-                case AppSection.DownloadLightNovel:
-                    _sectionTitleText.Text = isVietnamese ? "Copy text light novel" : "Copy text light novel";
-                    _sectionHintText.Text = isVietnamese
-                        ? "Luồng riêng chỉ để copy text. Paste book link, lấy toàn bộ child chapter link, copy plain text, rồi convert sang .md."
-                        : "Dedicated text lane. Paste a book link, collect all child chapter links, copy plain text, then convert to .md.";
                     break;
                 case AppSection.Watch:
                     _sectionTitleText.Text = isVietnamese ? "Đọc truyện offline" : "Watch offline";
@@ -1028,6 +1027,26 @@ namespace get_link_manga
 
         private void UpdateWorkspaceShellLanguage()
         {
+            if (tabMangaSourceRootItem != null)
+            {
+                tabMangaSourceRootItem.Header = _isVietnameseUi ? "Nguồn Manga" : "Manga Source";
+            }
+            if (tabLightNovelRootItem != null)
+            {
+                tabLightNovelRootItem.Header = _isVietnameseUi ? "Nguồn Novel" : "Novel Source";
+            }
+            if (tabDownloadRoot != null && tabDownloadRoot.Items.Count >= 2)
+            {
+                if (tabDownloadRoot.Items[0] is TabItem mangaTab)
+                {
+                    mangaTab.Header = _isVietnameseUi ? "Tải Manga" : "Download Manga";
+                }
+                if (tabDownloadRoot.Items[1] is TabItem novelTab)
+                {
+                    novelTab.Header = _isVietnameseUi ? "Tải Novel" : "Download Novel";
+                }
+            }
+
             if (_navigationButtons.Count > 0)
             {
                 _navigationButtons[AppSection.ChooseSource].Content = _isVietnameseUi ? "Chọn nguồn / dán link" : "Choose source of paste link";
@@ -1037,10 +1056,24 @@ namespace get_link_manga
                 _navigationButtons[AppSection.Update].Content = _isVietnameseUi ? "Cập nhật" : "Update";
             }
 
-            if (_navigationButtons.ContainsKey(AppSection.DownloadLightNovel))
+            if (_showFloatRailButton != null)
             {
-                _navigationButtons[AppSection.DownloadLightNovel].Content = _isVietnameseUi ? "Copy text light novel" : "Copy text light novel";
+                _showFloatRailButton.Background = new SolidColorBrush(Color.FromRgb(0x3A, 0x1A, 0x00));
+                _showFloatRailButton.BorderBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xA6, 0x00));
+                _showFloatRailButton.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD4, 0x6A));
+                _showFloatRailButton.Content = new TextBlock
+                {
+                    Text = _isVietnameseUi ? "Float button" : "Float button",
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    FontSize = 10.2,
+                    FontWeight = FontWeights.Bold
+                };
             }
+
+
 
             if (txtHeaderTitle != null)
             {
@@ -1095,12 +1128,64 @@ namespace get_link_manga
             UpdateSectionHeader();
         }
 
+        private void RefreshWindowBoundsForCurrentDisplay(bool preserveWindowState)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(() => RefreshWindowBoundsForCurrentDisplay(preserveWindowState));
+                return;
+            }
+
+            Rect workArea = SystemParameters.WorkArea;
+            bool portrait = workArea.Height > workArea.Width;
+
+            MinWidth = portrait ? 860 : 1180;
+            MinHeight = 720;
+            MaxWidth = workArea.Width;
+            MaxHeight = workArea.Height;
+
+            bool wasMaximized = WindowState == WindowState.Maximized;
+            if (wasMaximized)
+            {
+                if (preserveWindowState)
+                {
+                    WindowState = WindowState.Normal;
+                    Width = Math.Max(MinWidth, Math.Min(workArea.Width, workArea.Width - 16));
+                    Height = Math.Max(MinHeight, Math.Min(workArea.Height, workArea.Height - 16));
+                    Left = workArea.Left;
+                    Top = workArea.Top;
+                    WindowState = WindowState.Maximized;
+                }
+
+                ApplyAdaptiveLayout(new Size(workArea.Width, workArea.Height));
+                return;
+            }
+
+            if (WindowState != WindowState.Normal)
+            {
+                return;
+            }
+
+            Width = Math.Max(MinWidth, Math.Min(Width, workArea.Width));
+            Height = Math.Max(MinHeight, Math.Min(Height, workArea.Height));
+            Left = Math.Min(Math.Max(Left, workArea.Left), Math.Max(workArea.Left, workArea.Right - Width));
+            Top = Math.Min(Math.Max(Top, workArea.Top), Math.Max(workArea.Top, workArea.Bottom - Height));
+            ApplyAdaptiveLayout(new Size(ActualWidth > 0 ? ActualWidth : Width, ActualHeight > 0 ? ActualHeight : Height));
+        }
+
         private void MainWindow_StateChanged(object sender, EventArgs e)
         {
+            HandleFocusTrayWindowStateChanged();
             if (WindowState == WindowState.Maximized || WindowState == WindowState.Normal)
             {
+                RefreshWindowBoundsForCurrentDisplay(preserveWindowState: false);
                 ApplyAdaptiveLayout(new Size(ActualWidth, ActualHeight));
             }
+        }
+
+        private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() => RefreshWindowBoundsForCurrentDisplay(preserveWindowState: true)));
         }
     }
 }

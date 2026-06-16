@@ -366,10 +366,10 @@ namespace get_link_manga
                 {
                     failedRetries++;
                     Log($"[Retry] Thất bại khi tải {err.ChapterName}, Trang {err.PageNumber}: {ex.Message}");
-                    Dispatcher.BeginInvoke((Action)(() =>
+                    Dispatcher.Invoke(() =>
                     {
                         queueItem.AddError(err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl);
-                    }));
+                    });
                     RecordCheckError(queueItem.SourceDomain ?? "retry", queueItem.Name, err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl);
                 }
 
@@ -400,8 +400,8 @@ namespace get_link_manga
                 }
                 else
                 {
-                    queueItem.Status = queueItem.GetUniqueErrorCount() > 0 ? "Error" : "Done";
-                    queueItem.CurrentProcess = queueItem.GetUniqueErrorCount() > 0 ? "Done with errors" : "Done";
+                    queueItem.Status = queueItem.HasAnyErrors() ? "Error" : "Completed";
+                    queueItem.CurrentProcess = queueItem.HasAnyErrors() ? "Done with errors" : "Done";
                 }
             });
 
@@ -453,7 +453,26 @@ namespace get_link_manga
 
             string html = await FetchStringAsync(chapterLink, _downloadCts?.Token ?? CancellationToken.None);
             string safeHtml = GetSafeChapterHtml(html);
-            var imageUrls = ExtractTruyenqqImageUrls(safeHtml, chapterLink);
+            int startIndex = -1;
+            foreach (string marker in new[]
+            {
+                "class=\"story-see-content\"",
+                "class=\"chapter_content\"",
+                "class=\"chapter-content\"",
+                "class=\"reading-detail\"",
+                "id=\"chapter_content\""
+            })
+            {
+                int markerIndex = safeHtml.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                if (markerIndex != -1)
+                {
+                    startIndex = markerIndex;
+                    break;
+                }
+            }
+
+            string contentArea = startIndex >= 0 ? safeHtml.Substring(startIndex) : safeHtml;
+            var imageUrls = ExtractTruyenqqImageUrls(contentArea, chapterLink);
             int index = err.PageNumber - 1;
             if (index < 0 || index >= imageUrls.Count)
             {

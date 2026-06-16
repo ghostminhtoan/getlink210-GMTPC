@@ -59,10 +59,21 @@ namespace get_link_manga
             _isGalleryAutosaveInitialized = true;
             _galleryAutosaveTimer = new Timer(_ => SaveActiveGalleryListSnapshot(), null, Timeout.Infinite, Timeout.Infinite);
             _scrapedItems.CollectionChanged += ScrapedItems_CollectionChanged;
+            _lightNovelItems.CollectionChanged += LightNovelItems_CollectionChanged;
 
             foreach (var item in _scrapedItems)
             {
                 SubscribeGalleryItemAutosave(item);
+            }
+
+            foreach (var item in _lightNovelItems)
+            {
+                SubscribeLightNovelItemAutosave(item);
+            }
+
+            foreach (var chapters in _lightNovelChapterMap.Values)
+            {
+                TrackLightNovelChapterAutosave(chapters);
             }
 
             RunWithGalleryAutosaveSuspended(() =>
@@ -131,6 +142,27 @@ namespace get_link_manga
             RequestGalleryListAutosave(0);
         }
 
+        private void LightNovelItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e?.OldItems != null)
+            {
+                foreach (var item in e.OldItems.OfType<GalleryItem>())
+                {
+                    UnsubscribeLightNovelItemAutosave(item);
+                }
+            }
+
+            if (e?.NewItems != null)
+            {
+                foreach (var item in e.NewItems.OfType<GalleryItem>())
+                {
+                    SubscribeLightNovelItemAutosave(item);
+                }
+            }
+
+            RequestGalleryListAutosave(0);
+        }
+
         private void SubscribeGalleryItemAutosave(GalleryItem item)
         {
             if (item == null)
@@ -150,6 +182,95 @@ namespace get_link_manga
             }
 
             item.PropertyChanged -= GalleryItem_AutosavePropertyChanged;
+        }
+
+        private void SubscribeLightNovelItemAutosave(GalleryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.PropertyChanged -= LightNovelItem_AutosavePropertyChanged;
+            item.PropertyChanged += LightNovelItem_AutosavePropertyChanged;
+        }
+
+        private void UnsubscribeLightNovelItemAutosave(GalleryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.PropertyChanged -= LightNovelItem_AutosavePropertyChanged;
+        }
+
+        private void LightNovelItem_AutosavePropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            RequestGalleryListAutosave();
+        }
+
+        private void TrackLightNovelChapterAutosave(System.Collections.ObjectModel.ObservableCollection<LightNovelChapterRecord> chapters)
+        {
+            if (chapters == null)
+            {
+                return;
+            }
+
+            chapters.CollectionChanged -= LightNovelChapters_CollectionChanged;
+            chapters.CollectionChanged += LightNovelChapters_CollectionChanged;
+
+            foreach (var chapter in chapters)
+            {
+                SubscribeLightNovelChapterAutosave(chapter);
+            }
+        }
+
+        private void LightNovelChapters_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e?.OldItems != null)
+            {
+                foreach (var chapter in e.OldItems.OfType<LightNovelChapterRecord>())
+                {
+                    UnsubscribeLightNovelChapterAutosave(chapter);
+                }
+            }
+
+            if (e?.NewItems != null)
+            {
+                foreach (var chapter in e.NewItems.OfType<LightNovelChapterRecord>())
+                {
+                    SubscribeLightNovelChapterAutosave(chapter);
+                }
+            }
+
+            RequestGalleryListAutosave();
+        }
+
+        private void SubscribeLightNovelChapterAutosave(LightNovelChapterRecord chapter)
+        {
+            if (chapter == null)
+            {
+                return;
+            }
+
+            chapter.PropertyChanged -= LightNovelChapter_AutosavePropertyChanged;
+            chapter.PropertyChanged += LightNovelChapter_AutosavePropertyChanged;
+        }
+
+        private void UnsubscribeLightNovelChapterAutosave(LightNovelChapterRecord chapter)
+        {
+            if (chapter == null)
+            {
+                return;
+            }
+
+            chapter.PropertyChanged -= LightNovelChapter_AutosavePropertyChanged;
+        }
+
+        private void LightNovelChapter_AutosavePropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            RequestGalleryListAutosave();
         }
 
         private void GalleryItem_AutosavePropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -446,11 +567,13 @@ namespace get_link_manga
         private void BtnAutoRetryErrors_Checked(object sender, RoutedEventArgs e)
         {
             StartAutoRetryLoopAsync();
+            UpdateLightNovelFloatingControlState();
         }
 
         private void BtnAutoRetryErrors_Unchecked(object sender, RoutedEventArgs e)
         {
             StopAutoRetryLoop();
+            UpdateLightNovelFloatingControlState();
         }
 
         private void StartAutoRetryLoopAsync()
@@ -570,7 +693,7 @@ namespace get_link_manga
                 return;
             }
 
-            SaveGalleryItemsMarkdownFile(path, _scrapedItems.ToList(), "Gallery Autosave Snapshot");
+            SaveGalleryItemsMarkdownFile(path, _scrapedItems.ToList(), "Gallery And Light Novel Snapshot");
         }
 
         private void TryLoadGalleryListFile(string path, bool showMessage)
@@ -579,6 +702,7 @@ namespace get_link_manga
             {
                 string[] candidates = ResolveGalleryListLoadCandidates(path);
                 List<GalleryItem> loaded = null;
+                List<LightNovelBookState> loadedLightNovels = null;
 
                 foreach (string candidate in candidates)
                 {
@@ -590,11 +714,13 @@ namespace get_link_manga
                         try
                         {
                             List<GalleryItem> currentLoaded;
+                            List<LightNovelBookState> currentLoadedLightNovels = null;
                             if (string.Equals(Path.GetExtension(candidate), ".md", StringComparison.OrdinalIgnoreCase))
                             {
                                 string content = File.ReadAllText(candidate, Encoding.UTF8);
                                 ApplyGalleryMarkdownSettings(content);
                                 currentLoaded = LoadGalleryItemsFromMarkdown(content);
+                                currentLoadedLightNovels = LoadLightNovelBooksFromMarkdown(content);
                             }
                             else
                             {
@@ -602,20 +728,23 @@ namespace get_link_manga
                                 .Select(ParseGallerySnapshot)
                                 .Where(item => item != null)
                                 .ToList();
-                        }
+                            }
 
-                        if (currentLoaded != null && currentLoaded.Count > 0)
-                        {
-                            loaded = currentLoaded;
-                            break;
-                        }
+                            if ((currentLoaded != null && currentLoaded.Count > 0) ||
+                                (currentLoadedLightNovels != null && currentLoadedLightNovels.Count > 0))
+                            {
+                                loaded = currentLoaded;
+                                loadedLightNovels = currentLoadedLightNovels;
+                                break;
+                            }
                     }
                     catch
                     {
                     }
                 }
 
-                if (loaded == null || loaded.Count == 0)
+                if ((loaded == null || loaded.Count == 0) &&
+                    (loadedLightNovels == null || loadedLightNovels.Count == 0))
                 {
                     return;
                 }
@@ -623,14 +752,17 @@ namespace get_link_manga
                 RunWithGalleryAutosaveSuspended(() =>
                 {
                     _scrapedItems.Clear();
-                    foreach (var item in loaded)
+                    foreach (var item in loaded ?? Enumerable.Empty<GalleryItem>())
                     {
                         _scrapedItems.Add(item);
                     }
+
+                    ApplyLoadedLightNovelBooks(loadedLightNovels ?? new List<LightNovelBookState>());
                 });
 
                 lblLinkCount.Text = _scrapedItems.Count.ToString();
                 RecalculateDuplicates();
+                RefreshLightNovelSummary();
                 RequestGalleryListAutosave(0);
 
                 if (showMessage)

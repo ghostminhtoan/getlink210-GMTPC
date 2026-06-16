@@ -691,6 +691,18 @@ namespace get_link_manga
             return GetUniqueErrors().Count;
         }
 
+        public bool HasAnyErrors()
+        {
+            return GetUniqueErrorCount() > 0;
+        }
+
+        public bool IsSuccessfullyCompleted()
+        {
+            return string.Equals(Status, "Completed", StringComparison.OrdinalIgnoreCase) &&
+                   !HasAnyErrors() &&
+                   !string.Equals(CurrentProcess, "Done with errors", StringComparison.OrdinalIgnoreCase);
+        }
+
         public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null)
         {
             if (Errors == null)

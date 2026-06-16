@@ -27,6 +27,19 @@ namespace get_link_manga
             HorizontalScrollRTL
         }
 
+        private enum ReaderWatchSortField
+        {
+            DateModified,
+            Name
+        }
+
+        private sealed class ReaderWatchSortState
+        {
+            public ReaderWatchSortField Field { get; set; }
+
+            public bool Ascending { get; set; }
+        }
+
         private sealed class ReaderSortKeyComparer : IComparer<string>
         {
             public int Compare(string x, string y)
@@ -86,6 +99,10 @@ namespace get_link_manga
         }
 
         private readonly ReaderSortKeyComparer _readerSortComparer = new ReaderSortKeyComparer();
+        private readonly ReaderWatchSortState _readerMangaDomainSortState = new ReaderWatchSortState { Field = ReaderWatchSortField.DateModified, Ascending = false };
+        private readonly ReaderWatchSortState _readerMangaBookSortState = new ReaderWatchSortState { Field = ReaderWatchSortField.DateModified, Ascending = false };
+        private readonly ReaderWatchSortState _readerNovelDomainSortState = new ReaderWatchSortState { Field = ReaderWatchSortField.DateModified, Ascending = false };
+        private readonly ReaderWatchSortState _readerNovelBookSortState = new ReaderWatchSortState { Field = ReaderWatchSortField.DateModified, Ascending = false };
         private List<ReaderMangaItem> _readerLibrary = new List<ReaderMangaItem>();
         private List<ReaderDomainItem> _readerDomains = new List<ReaderDomainItem>();
         private ReaderDomainItem _currentReaderDomain;
@@ -123,11 +140,16 @@ namespace get_link_manga
         private Button _readerNextChapterButton;
         private ComboBox _readerFitCombo;
         private Button _readerFullscreenButton;
+        private Button _readerMangaDomainSortDateButton;
+        private Button _readerMangaDomainSortNameButton;
+        private Button _readerMangaBookSortDateButton;
+        private Button _readerMangaBookSortNameButton;
         private Border _readerSidebarBorder;
         private Grid _readerRootGrid;
 #pragma warning restore 0649,0169
         private bool _isReaderFullscreen = false;
         private Button _readerOtherFolderButton;
+        private Button _readerRootFolderButton;
         private string _readerLibraryRootOverride;
         private bool _forceReaderRenderOnNextPageOpen;
         private string _lastRenderedReaderChapterPath;
@@ -138,15 +160,185 @@ namespace get_link_manga
         private bool _readerSuppressAutoLaunch;
         private DateTime _lastReaderAutoRefreshUtc = DateTime.MinValue;
         private DispatcherTimer _readerAutoRefreshTimer;
+        private List<ReaderNovelBookItem> _readerNovelLibrary = new List<ReaderNovelBookItem>();
+        private List<ReaderNovelDomainItem> _readerNovelDomains = new List<ReaderNovelDomainItem>();
+        private ReaderNovelDomainItem _currentReaderNovelDomain;
+        private ReaderNovelBookItem _currentReaderNovelBook;
+        private ReaderNovelChapterItem _currentReaderNovelChapter;
+        private ReaderMarkdownItem _currentReaderNovelFile;
+        private ListBox _readerNovelDomainList;
+        private ListBox _readerNovelBookList;
+        private ListBox _readerNovelChapterList;
+        private ListBox _readerNovelFileList;
+        private TextBlock _readerNovelSummaryText;
+        private TextBlock _readerNovelStatusText;
+        private TextBlock _readerNovelCurrentTitleText;
+        private Button _readerNovelOtherFolderButton;
+        private Button _readerNovelRootFolderButton;
+        private Button _readerNovelInstallMdReaderButton;
+        private Button _readerNovelDomainSortDateButton;
+        private Button _readerNovelDomainSortNameButton;
+        private Button _readerNovelBookSortDateButton;
+        private Button _readerNovelBookSortNameButton;
+        private string _readerNovelLibraryRootOverride;
+        private TextBox _readerNovelPreviewTextBox;
 
         private FrameworkElement CreateWatchSection()
         {
             _readerRootGrid = new Grid();
-            _readerRootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            _readerRootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            _readerRootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-            var mainCard = new Border
+            var watchTabs = new TabControl
+            {
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Margin = new Thickness(0)
+            };
+
+            watchTabs.Items.Add(new TabItem
+            {
+                Header = "Watch manga",
+                Content = CreateWatchMangaTabContent()
+            });
+
+            watchTabs.Items.Add(new TabItem
+            {
+                Header = "Watch novel",
+                Content = CreateWatchNovelTabContent()
+            });
+
+            _readerRootGrid.Children.Add(watchTabs);
+
+            UpdateReaderStatus(_isVietnameseUi
+                ? "Bấm Refresh library để quét root manga."
+                : "Use Refresh library to scan manga root.");
+            UpdateReaderNovelStatus(_isVietnameseUi
+                ? "Bấm Refresh library để quét root novel."
+                : "Use Refresh library to scan novel root.");
+            UpdateReaderNavigationState();
+            EnsureReaderAutoRefreshTimer();
+
+            return _readerRootGrid;
+        }
+
+        private FrameworkElement CreateWatchMangaTabContent()
+        {
+            var mainCard = CreateWatchMainCard();
+            var mainGrid = CreateWatchContentGrid();
+            mainCard.Child = mainGrid;
+
+            var watchToolbar = CreateWatchToolbar(
+                () => RefreshReaderLibraryIfNeeded(forceRefresh: true),
+                out _readerOtherFolderButton,
+                OpenOtherReaderFolder_Click,
+                OpenRootReaderFolder_Click,
+                out _readerRootFolderButton,
+                out _readerCurrentTitleText);
+
+            _readerSummaryText = CreateWatchSummaryText();
+            _readerDomainList = CreateWatchListBox();
+            _readerMangaList = CreateWatchListBox();
+            _readerChapterList = CreateWatchListBox();
+            _readerFileList = CreateWatchListBox();
+
+            _readerDomainList.SelectionChanged += ReaderDomainList_SelectionChanged;
+            _readerMangaList.SelectionChanged += ReaderMangaList_SelectionChanged;
+            _readerChapterList.SelectionChanged += ReaderChapterList_SelectionChanged;
+            _readerFileList.SelectionChanged += ReaderFileList_SelectionChanged;
+            _readerFileList.MouseDoubleClick += ReaderFileList_MouseDoubleClick;
+
+            _readerMangaDomainSortDateButton = CreateWatchSortButton("DATE", ReaderMangaDomainSortDate_Click);
+            _readerMangaDomainSortNameButton = CreateWatchSortButton("NAME", ReaderMangaDomainSortName_Click);
+            _readerMangaBookSortDateButton = CreateWatchSortButton("DATE", ReaderMangaBookSortDate_Click);
+            _readerMangaBookSortNameButton = CreateWatchSortButton("NAME", ReaderMangaBookSortName_Click);
+            RefreshReaderSortButtonLabel(_readerMangaDomainSortDateButton, _readerMangaDomainSortState, ReaderWatchSortField.DateModified, "DATE");
+            RefreshReaderSortButtonLabel(_readerMangaDomainSortNameButton, _readerMangaDomainSortState, ReaderWatchSortField.Name, "NAME");
+            RefreshReaderSortButtonLabel(_readerMangaBookSortDateButton, _readerMangaBookSortState, ReaderWatchSortField.DateModified, "DATE");
+            RefreshReaderSortButtonLabel(_readerMangaBookSortNameButton, _readerMangaBookSortState, ReaderWatchSortField.Name, "NAME");
+
+            var panelBoard = CreateWatchPanelBoard(
+                CreateReaderWatchPanel("Root / Domain", _readerDomainList, _readerMangaDomainSortDateButton, _readerMangaDomainSortNameButton),
+                CreateReaderWatchPanel("Domain / Book", _readerMangaList, _readerMangaBookSortDateButton, _readerMangaBookSortNameButton),
+                CreateReaderWatchPanel("Book / Chapter", _readerChapterList),
+                CreateReaderWatchPanel("Chapter / Image", _readerFileList));
+
+            _readerFullscreenButton = CreateReaderMiniButton("Open FastStone", ReaderFullscreen_Click, 92);
+            _readerStatusText = CreateWatchStatusText();
+
+            Grid.SetRow(watchToolbar, 0);
+            Grid.SetRow(_readerSummaryText, 1);
+            Grid.SetRow(panelBoard, 2);
+            Grid.SetRow(_readerStatusText, 3);
+            mainGrid.Children.Add(watchToolbar);
+            mainGrid.Children.Add(_readerSummaryText);
+            mainGrid.Children.Add(panelBoard);
+            mainGrid.Children.Add(_readerStatusText);
+            return mainCard;
+        }
+
+        private FrameworkElement CreateWatchNovelTabContent()
+        {
+            var mainCard = CreateWatchMainCard();
+            var mainGrid = CreateWatchContentGrid();
+            mainCard.Child = mainGrid;
+
+            var watchToolbar = CreateWatchToolbar(
+                () => RefreshReaderNovelLibraryIfNeeded(forceRefresh: true),
+                out _readerNovelOtherFolderButton,
+                OpenOtherReaderNovelFolder_Click,
+                OpenRootReaderNovelFolder_Click,
+                out _readerNovelRootFolderButton,
+                out _readerNovelCurrentTitleText);
+
+            _readerNovelInstallMdReaderButton = CreateReaderMiniButton("CÀI MD READER", InstallMdReader_Click, 134);
+            Grid.SetColumn(_readerNovelInstallMdReaderButton, 3);
+            _readerNovelInstallMdReaderButton.HorizontalAlignment = HorizontalAlignment.Left;
+            _readerNovelInstallMdReaderButton.Margin = new Thickness(0, 0, 6, 4);
+            watchToolbar.Children.Add(_readerNovelInstallMdReaderButton);
+
+            _readerNovelSummaryText = CreateWatchSummaryText();
+            _readerNovelDomainList = CreateWatchListBox();
+            _readerNovelBookList = CreateWatchListBox();
+            _readerNovelChapterList = CreateWatchListBox();
+            _readerNovelFileList = CreateWatchListBox();
+            _readerNovelPreviewTextBox = CreateWatchPreviewTextBox();
+
+            _readerNovelDomainList.SelectionChanged += ReaderNovelDomainList_SelectionChanged;
+            _readerNovelBookList.SelectionChanged += ReaderNovelBookList_SelectionChanged;
+            _readerNovelChapterList.SelectionChanged += ReaderNovelChapterList_SelectionChanged;
+            _readerNovelFileList.SelectionChanged += ReaderNovelFileList_SelectionChanged;
+            _readerNovelFileList.MouseDoubleClick += ReaderNovelFileList_MouseDoubleClick;
+
+            _readerNovelDomainSortDateButton = CreateWatchSortButton("DATE", ReaderNovelDomainSortDate_Click);
+            _readerNovelDomainSortNameButton = CreateWatchSortButton("NAME", ReaderNovelDomainSortName_Click);
+            _readerNovelBookSortDateButton = CreateWatchSortButton("DATE", ReaderNovelBookSortDate_Click);
+            _readerNovelBookSortNameButton = CreateWatchSortButton("NAME", ReaderNovelBookSortName_Click);
+            RefreshReaderSortButtonLabel(_readerNovelDomainSortDateButton, _readerNovelDomainSortState, ReaderWatchSortField.DateModified, "DATE");
+            RefreshReaderSortButtonLabel(_readerNovelDomainSortNameButton, _readerNovelDomainSortState, ReaderWatchSortField.Name, "NAME");
+            RefreshReaderSortButtonLabel(_readerNovelBookSortDateButton, _readerNovelBookSortState, ReaderWatchSortField.DateModified, "DATE");
+            RefreshReaderSortButtonLabel(_readerNovelBookSortNameButton, _readerNovelBookSortState, ReaderWatchSortField.Name, "NAME");
+
+            var panelBoard = CreateWatchPanelBoard(
+                CreateReaderWatchPanel("Root / Domain", _readerNovelDomainList, _readerNovelDomainSortDateButton, _readerNovelDomainSortNameButton),
+                CreateReaderWatchPanel("Domain / Book", _readerNovelBookList, _readerNovelBookSortDateButton, _readerNovelBookSortNameButton),
+                CreateReaderWatchPanel("Book / Chapter", _readerNovelChapterList),
+                CreateReaderWatchPanel("Chapter / MD", CreateWatchNovelPreviewPanel()));
+
+            _readerNovelStatusText = CreateWatchStatusText();
+
+            Grid.SetRow(watchToolbar, 0);
+            Grid.SetRow(_readerNovelSummaryText, 1);
+            Grid.SetRow(panelBoard, 2);
+            Grid.SetRow(_readerNovelStatusText, 3);
+            mainGrid.Children.Add(watchToolbar);
+            mainGrid.Children.Add(_readerNovelSummaryText);
+            mainGrid.Children.Add(panelBoard);
+            mainGrid.Children.Add(_readerNovelStatusText);
+            return mainCard;
+        }
+
+        private Border CreateWatchMainCard()
+        {
+            return new Border
             {
                 Background = (Brush)TryFindResource("CyberpunkCardBrush") ?? new SolidColorBrush(Color.FromRgb(0x0D, 0x12, 0x1F)),
                 BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
@@ -156,17 +348,20 @@ namespace get_link_manga
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Stretch
             };
-            Grid.SetRow(mainCard, 0);
-            Grid.SetRowSpan(mainCard, 3);
-            _readerRootGrid.Children.Add(mainCard);
+        }
 
+        private Grid CreateWatchContentGrid()
+        {
             var mainGrid = new Grid();
             mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            mainCard.Child = mainGrid;
+            return mainGrid;
+        }
 
+        private Grid CreateWatchToolbar(Action refreshAction, out Button otherFolderButton, RoutedEventHandler otherFolderClick, RoutedEventHandler rootFolderClick, out Button rootFolderButton, out TextBlock titleText)
+        {
             var watchToolbar = new Grid
             {
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -175,18 +370,23 @@ namespace get_link_manga
             };
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            var refreshLibraryButton = CreateReaderMiniButton("Refresh library", (sender, args) => RefreshReaderLibraryIfNeeded(forceRefresh: true), 118);
+            var refreshLibraryButton = CreateReaderMiniButton("Refresh library", (sender, args) => refreshAction(), 118);
             Grid.SetColumn(refreshLibraryButton, 0);
             watchToolbar.Children.Add(refreshLibraryButton);
 
-            _readerOtherFolderButton = CreateReaderMiniButton("Load other folder", OpenOtherReaderFolder_Click, 132);
-            Grid.SetColumn(_readerOtherFolderButton, 1);
-            watchToolbar.Children.Add(_readerOtherFolderButton);
+            otherFolderButton = CreateReaderMiniButton("Load other folder", otherFolderClick, 132);
+            Grid.SetColumn(otherFolderButton, 1);
+            watchToolbar.Children.Add(otherFolderButton);
 
-            _readerCurrentTitleText = new TextBlock
+            rootFolderButton = CreateReaderMiniButton(_isVietnameseUi ? "Mở thư mục gốc" : "Load root folder", rootFolderClick, 132);
+            Grid.SetColumn(rootFolderButton, 2);
+            watchToolbar.Children.Add(rootFolderButton);
+
+            titleText = new TextBlock
             {
                 Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
                 FontSize = 11,
@@ -197,18 +397,58 @@ namespace get_link_manga
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 Margin = new Thickness(12, 0, 0, 4)
             };
-            Grid.SetColumn(_readerCurrentTitleText, 3);
-            watchToolbar.Children.Add(_readerCurrentTitleText);
+            Grid.SetColumn(titleText, 4);
+            watchToolbar.Children.Add(titleText);
+            return watchToolbar;
+        }
 
-            _readerSummaryText = new TextBlock
+        private Button CreateWatchSortButton(string label, RoutedEventHandler clickHandler)
+        {
+            var button = CreateReaderMiniButton(label, clickHandler, 74);
+            button.Margin = new Thickness(4, 0, 0, 4);
+            button.Padding = new Thickness(6, 2, 6, 2);
+            button.ToolTip = label;
+            return button;
+        }
+
+        private void RefreshReaderSortButtonLabel(Button button, ReaderWatchSortState state, ReaderWatchSortField field, string label)
+        {
+            if (button == null || state == null)
+            {
+                return;
+            }
+
+            bool isActive = state.Field == field;
+            string direction = !isActive ? "⇅" : (state.Ascending ? "↑" : "↓");
+            button.Content = label + " " + direction;
+            button.Opacity = isActive ? 1d : 0.8d;
+            button.ToolTip = label + (field == ReaderWatchSortField.DateModified ? " modified time" : " name");
+        }
+
+        private TextBlock CreateWatchSummaryText()
+        {
+            return new TextBlock
             {
                 Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush"),
                 FontSize = 10,
                 Margin = new Thickness(0, 10, 0, 10),
                 TextWrapping = TextWrapping.Wrap
             };
+        }
 
-            _readerDomainList = new ListBox
+        private TextBlock CreateWatchStatusText()
+        {
+            return new TextBlock
+            {
+                Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush"),
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap
+            };
+        }
+
+        private ListBox CreateWatchListBox()
+        {
+            var listBox = new ListBox
             {
                 Background = new SolidColorBrush(Color.FromRgb(0x09, 0x0D, 0x16)),
                 BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
@@ -217,57 +457,50 @@ namespace get_link_manga
                 DisplayMemberPath = "DisplayLabel",
                 MinHeight = 140
             };
-            ScrollViewer.SetHorizontalScrollBarVisibility(_readerDomainList, ScrollBarVisibility.Auto);
-            ScrollViewer.SetVerticalScrollBarVisibility(_readerDomainList, ScrollBarVisibility.Auto);
-            ScrollViewer.SetCanContentScroll(_readerDomainList, false);
-            _readerDomainList.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
-            _readerDomainList.SelectionChanged += ReaderDomainList_SelectionChanged;
+            ScrollViewer.SetHorizontalScrollBarVisibility(listBox, ScrollBarVisibility.Auto);
+            ScrollViewer.SetVerticalScrollBarVisibility(listBox, ScrollBarVisibility.Auto);
+            ScrollViewer.SetCanContentScroll(listBox, false);
+            listBox.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
+            return listBox;
+        }
 
-            _readerMangaList = new ListBox
+        private TextBox CreateWatchPreviewTextBox()
+        {
+            return new TextBox
             {
                 Background = new SolidColorBrush(Color.FromRgb(0x09, 0x0D, 0x16)),
                 BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
                 BorderThickness = new Thickness(1),
                 Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                DisplayMemberPath = "DisplayLabel",
-                MinHeight = 140
+                IsReadOnly = true,
+                AcceptsReturn = true,
+                AcceptsTab = true,
+                TextWrapping = TextWrapping.Wrap,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 12,
+                MinHeight = 120
             };
-            ScrollViewer.SetHorizontalScrollBarVisibility(_readerMangaList, ScrollBarVisibility.Auto);
-            ScrollViewer.SetVerticalScrollBarVisibility(_readerMangaList, ScrollBarVisibility.Auto);
-            ScrollViewer.SetCanContentScroll(_readerMangaList, false);
-            _readerMangaList.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
-            _readerMangaList.SelectionChanged += ReaderMangaList_SelectionChanged;
+        }
 
-            _readerChapterList = new ListBox
-            {
-                Background = new SolidColorBrush(Color.FromRgb(0x09, 0x0D, 0x16)),
-                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
-                BorderThickness = new Thickness(1),
-                Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                DisplayMemberPath = "DisplayLabel",
-                MinHeight = 140
-            };
-            ScrollViewer.SetHorizontalScrollBarVisibility(_readerChapterList, ScrollBarVisibility.Auto);
-            ScrollViewer.SetVerticalScrollBarVisibility(_readerChapterList, ScrollBarVisibility.Auto);
-            ScrollViewer.SetCanContentScroll(_readerChapterList, false);
-            _readerChapterList.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
-            _readerChapterList.SelectionChanged += ReaderChapterList_SelectionChanged;
+        private UIElement CreateWatchNovelPreviewPanel()
+        {
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(110) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-            _readerFileList = new ListBox
-            {
-                Background = new SolidColorBrush(Color.FromRgb(0x09, 0x0D, 0x16)),
-                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
-                BorderThickness = new Thickness(1),
-                Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                DisplayMemberPath = "DisplayLabel",
-                MinHeight = 140
-            };
-            ScrollViewer.SetHorizontalScrollBarVisibility(_readerFileList, ScrollBarVisibility.Auto);
-            ScrollViewer.SetVerticalScrollBarVisibility(_readerFileList, ScrollBarVisibility.Auto);
-            ScrollViewer.SetCanContentScroll(_readerFileList, false);
-            _readerFileList.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
-            _readerFileList.SelectionChanged += ReaderFileList_SelectionChanged;
+            Grid.SetRow(_readerNovelFileList, 0);
+            grid.Children.Add(_readerNovelFileList);
 
+            Grid.SetRow(_readerNovelPreviewTextBox, 2);
+            grid.Children.Add(_readerNovelPreviewTextBox);
+            return grid;
+        }
+
+        private Grid CreateWatchPanelBoard(Border rootDomainPanel, Border domainBookPanel, Border bookChapterPanel, Border chapterFilePanel)
+        {
             var panelBoard = new Grid
             {
                 Margin = new Thickness(0)
@@ -277,51 +510,20 @@ namespace get_link_manga
             panelBoard.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             panelBoard.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var rootDomainPanel = CreateReaderWatchPanel("Root / Domain", _readerDomainList);
-            var domainBookPanel = CreateReaderWatchPanel("Domain / Book", _readerMangaList);
-            var bookChapterPanel = CreateReaderWatchPanel("Book / Chapter", _readerChapterList);
-            var chapterImagePanel = CreateReaderWatchPanel("Chapter / Image", _readerFileList);
-
             Grid.SetRow(rootDomainPanel, 0);
             Grid.SetColumn(rootDomainPanel, 0);
             Grid.SetRow(domainBookPanel, 0);
             Grid.SetColumn(domainBookPanel, 1);
             Grid.SetRow(bookChapterPanel, 1);
             Grid.SetColumn(bookChapterPanel, 0);
-            Grid.SetRow(chapterImagePanel, 1);
-            Grid.SetColumn(chapterImagePanel, 1);
+            Grid.SetRow(chapterFilePanel, 1);
+            Grid.SetColumn(chapterFilePanel, 1);
 
             panelBoard.Children.Add(rootDomainPanel);
             panelBoard.Children.Add(domainBookPanel);
             panelBoard.Children.Add(bookChapterPanel);
-            panelBoard.Children.Add(chapterImagePanel);
-
-            Grid.SetRow(watchToolbar, 0);
-            Grid.SetRow(_readerSummaryText, 1);
-            Grid.SetRow(panelBoard, 2);
-            mainGrid.Children.Add(watchToolbar);
-            mainGrid.Children.Add(_readerSummaryText);
-            mainGrid.Children.Add(panelBoard);
-
-            _readerFullscreenButton = CreateReaderMiniButton("Open FastStone", ReaderFullscreen_Click, 92);
-
-            _readerStatusText = new TextBlock
-            {
-                Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush"),
-                FontSize = 11,
-                TextWrapping = TextWrapping.Wrap
-            };
-
-            Grid.SetRow(_readerStatusText, 3);
-            mainGrid.Children.Add(_readerStatusText);
-
-            UpdateReaderStatus(_isVietnameseUi
-                ? "Bấm Refresh library để quét root. Chọn domain, book, chapter, hoặc ảnh."
-                : "Use Refresh library to scan the download root and start reading.");
-            UpdateReaderNavigationState();
-            EnsureReaderAutoRefreshTimer();
-
-            return _readerRootGrid;
+            panelBoard.Children.Add(chapterFilePanel);
+            return panelBoard;
         }
 
         private Button CreateReaderMiniButton(string text, RoutedEventHandler clickHandler, double minWidth = 54)
@@ -369,6 +571,7 @@ namespace get_link_manga
                 {
                     _lastReaderAutoRefreshUtc = DateTime.UtcNow;
                     await RefreshReaderLibraryAsync(forceRefresh: true);
+                    await RefreshReaderNovelLibraryAsync(forceRefresh: true);
                 }
                 finally
                 {
@@ -634,6 +837,11 @@ namespace get_link_manga
             await RefreshReaderLibraryAsync(forceRefresh);
         }
 
+        private async void RefreshReaderNovelLibraryIfNeeded(bool forceRefresh)
+        {
+            await RefreshReaderNovelLibraryAsync(forceRefresh);
+        }
+
         private async Task RefreshReaderLibraryAsync(bool forceRefresh)
         {
             if (_readerMangaList == null)
@@ -660,7 +868,7 @@ namespace get_link_manga
             _lastReaderLibraryRoot = root;
             _readerLibrary = library;
             _readerDomains = BuildReaderDomainItems(_readerLibrary);
-            UpdateReaderDomainListItems(_readerDomains);
+            ApplyReaderMangaWatchSorts(keepSelection: true);
             _readerSummaryText.Text = _isVietnameseUi
                 ? $"Root: {root}\nTìm thấy {_readerDomains.Count} domain / {_readerLibrary.Count} book."
                 : $"Root: {root}\nFound {_readerDomains.Count} domains / {_readerLibrary.Count} books.";
@@ -700,6 +908,59 @@ namespace get_link_manga
             }
 
             OpenReaderDomain(selectedDomain, keepBookSelection: true);
+        }
+
+        private string GetCurrentReaderNovelLibraryRoot()
+        {
+            if (!string.IsNullOrWhiteSpace(_readerNovelLibraryRootOverride))
+            {
+                return _readerNovelLibraryRootOverride;
+            }
+
+            return txtDownloadPath != null && !string.IsNullOrWhiteSpace(txtDownloadPath.Text)
+                ? txtDownloadPath.Text.Trim()
+                : PortablePaths.DefaultDownloadRoot;
+        }
+
+        private async Task RefreshReaderNovelLibraryAsync(bool forceRefresh)
+        {
+            if (_readerNovelBookList == null)
+            {
+                return;
+            }
+
+            string root = GetCurrentReaderNovelLibraryRoot();
+            UpdateReaderNovelStatus(_isVietnameseUi ? "Đang quét root/domain/book novel..." : "Scanning novel root/domain/book...");
+
+            List<ReaderNovelBookItem> library = await Task.Run(() => ScanReaderNovelLibrary(root));
+            _readerNovelLibrary = library;
+            _readerNovelDomains = BuildReaderNovelDomainItems(_readerNovelLibrary);
+            ApplyReaderNovelWatchSorts(keepSelection: true);
+            _readerNovelSummaryText.Text = _isVietnameseUi
+                ? $"Root: {root}\nTìm thấy {_readerNovelDomains.Count} domain / {_readerNovelLibrary.Count} book."
+                : $"Root: {root}\nFound {_readerNovelDomains.Count} domains / {_readerNovelLibrary.Count} books.";
+
+            if (_readerNovelLibrary.Count == 0)
+            {
+                ClearReaderNovelDomainList();
+                ClearReaderNovelBookList();
+                ClearReaderNovelChapterList();
+                ClearReaderNovelFileList();
+                _currentReaderNovelDomain = null;
+                _currentReaderNovelBook = null;
+                _currentReaderNovelChapter = null;
+                _currentReaderNovelFile = null;
+                UpdateReaderNovelStatus(_isVietnameseUi
+                    ? "Chưa tìm thấy thư mục novel có file .md."
+                    : "No novel folders with .md files were found.");
+                return;
+            }
+
+            ReaderNovelDomainItem selectedDomain = _currentReaderNovelDomain != null
+                ? _readerNovelDomains.FirstOrDefault(item => string.Equals(item.Name, _currentReaderNovelDomain.Name, StringComparison.OrdinalIgnoreCase))
+                : _readerNovelDomains.FirstOrDefault();
+
+            OpenReaderNovelDomain(selectedDomain, keepBookSelection: true);
         }
 
         private List<ReaderMangaItem> ScanReaderLibrary(string root)
@@ -807,6 +1068,7 @@ namespace get_link_manga
                 Name = bookName,
                 SourceGroup = sourceGroup,
                 FolderPath = folderPath,
+                LastModifiedUtc = chapters.Max(item => item.LastModifiedUtc),
                 Chapters = chapters,
                 IsCompleted = isCompleted
             };
@@ -830,7 +1092,8 @@ namespace get_link_manga
                 {
                     Index = index,
                     Name = Path.GetFileName(path),
-                    FilePath = path
+                    FilePath = path,
+                    LastModifiedUtc = SafeGetLastWriteTimeUtc(path)
                 })
                 .ToList();
 
@@ -838,8 +1101,376 @@ namespace get_link_manga
             {
                 Name = chapterName,
                 FolderPath = folderPath,
+                LastModifiedUtc = pages.Max(item => item.LastModifiedUtc),
                 Pages = pages
             };
+        }
+
+        private List<ReaderNovelDomainItem> BuildReaderNovelDomainItems(IReadOnlyList<ReaderNovelBookItem> books)
+        {
+            var domains = new List<ReaderNovelDomainItem>();
+            if (books == null || books.Count == 0)
+            {
+                return domains;
+            }
+
+            IEnumerable<IGrouping<string, ReaderNovelBookItem>> groupedBooks = books
+                .GroupBy(item => string.IsNullOrWhiteSpace(item.SourceGroup) ? "root" : item.SourceGroup, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase);
+
+            foreach (IGrouping<string, ReaderNovelBookItem> group in groupedBooks)
+            {
+                List<ReaderNovelBookItem> domainBooks = group.ToList();
+                domains.Add(new ReaderNovelDomainItem
+                {
+                    Name = group.Key,
+                    FolderPath = GetReaderCommonParentFolder(domainBooks.Select(item => item.FolderPath)),
+                    LastModifiedUtc = domainBooks.Count == 0 ? DateTime.MinValue : domainBooks.Max(item => item.LastModifiedUtc),
+                    Books = domainBooks
+                });
+            }
+
+            return domains;
+        }
+
+        private void ToggleReaderSort(ReaderWatchSortState state, ReaderWatchSortField field)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            if (state.Field == field)
+            {
+                state.Ascending = !state.Ascending;
+            }
+            else
+            {
+                state.Field = field;
+                state.Ascending = field == ReaderWatchSortField.Name;
+            }
+        }
+
+        private List<ReaderDomainItem> SortReaderDomains(IEnumerable<ReaderDomainItem> domains)
+        {
+            return SortReaderDomainItems(domains, _readerMangaDomainSortState);
+        }
+
+        private List<ReaderDomainItem> SortReaderDomainItems(IEnumerable<ReaderDomainItem> domains, ReaderWatchSortState state)
+        {
+            return OrderReaderItems(
+                domains,
+                state,
+                item => item?.LastModifiedUtc ?? DateTime.MinValue,
+                item => item?.Name);
+        }
+
+        private List<ReaderMangaItem> SortReaderBooks(IEnumerable<ReaderMangaItem> books)
+        {
+            return OrderReaderItems(
+                books,
+                _readerMangaBookSortState,
+                item => item?.LastModifiedUtc ?? DateTime.MinValue,
+                item => item?.Name);
+        }
+
+        private List<ReaderNovelDomainItem> SortReaderNovelDomains(IEnumerable<ReaderNovelDomainItem> domains)
+        {
+            return OrderReaderItems(
+                domains,
+                _readerNovelDomainSortState,
+                item => item?.LastModifiedUtc ?? DateTime.MinValue,
+                item => item?.Name);
+        }
+
+        private List<ReaderNovelBookItem> SortReaderNovelBooks(IEnumerable<ReaderNovelBookItem> books)
+        {
+            return OrderReaderItems(
+                books,
+                _readerNovelBookSortState,
+                item => item?.LastModifiedUtc ?? DateTime.MinValue,
+                item => item?.Name);
+        }
+
+        private List<T> OrderReaderItems<T>(IEnumerable<T> items, ReaderWatchSortState state, Func<T, DateTime> modifiedSelector, Func<T, string> nameSelector)
+        {
+            IEnumerable<T> source = items ?? Enumerable.Empty<T>();
+            IOrderedEnumerable<T> ordered;
+
+            if (state != null && state.Field == ReaderWatchSortField.DateModified)
+            {
+                ordered = state.Ascending
+                    ? source.OrderBy(modifiedSelector).ThenBy(nameSelector, _readerSortComparer)
+                    : source.OrderByDescending(modifiedSelector).ThenBy(nameSelector, _readerSortComparer);
+            }
+            else
+            {
+                ordered = state != null && state.Ascending
+                    ? source.OrderBy(nameSelector, _readerSortComparer).ThenByDescending(modifiedSelector)
+                    : source.OrderByDescending(nameSelector, _readerSortComparer).ThenByDescending(modifiedSelector);
+            }
+
+            return ordered.ToList();
+        }
+
+        private void ApplyReaderMangaWatchSorts(bool keepSelection)
+        {
+            _readerDomains = SortReaderDomains(_readerDomains);
+            foreach (ReaderDomainItem domain in _readerDomains)
+            {
+                domain.Books = SortReaderBooks(domain.Books);
+                domain.LastModifiedUtc = domain.Books.Count == 0 ? DateTime.MinValue : domain.Books.Max(item => item.LastModifiedUtc);
+            }
+
+            UpdateReaderDomainListItems(_readerDomains);
+            if (_currentReaderDomain != null)
+            {
+                _currentReaderDomain = _readerDomains.FirstOrDefault(item => string.Equals(item.Name, _currentReaderDomain.Name, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (_currentReaderDomain != null)
+            {
+                OpenReaderDomain(_currentReaderDomain, keepBookSelection: keepSelection);
+            }
+            else
+            {
+                SyncReaderDomainListSelection(null);
+                ClearReaderBookList();
+            }
+
+            RefreshReaderSortButtonLabel(_readerMangaDomainSortDateButton, _readerMangaDomainSortState, ReaderWatchSortField.DateModified, "DATE");
+            RefreshReaderSortButtonLabel(_readerMangaDomainSortNameButton, _readerMangaDomainSortState, ReaderWatchSortField.Name, "NAME");
+            RefreshReaderSortButtonLabel(_readerMangaBookSortDateButton, _readerMangaBookSortState, ReaderWatchSortField.DateModified, "DATE");
+            RefreshReaderSortButtonLabel(_readerMangaBookSortNameButton, _readerMangaBookSortState, ReaderWatchSortField.Name, "NAME");
+        }
+
+        private void ApplyReaderNovelWatchSorts(bool keepSelection)
+        {
+            _readerNovelDomains = SortReaderNovelDomains(_readerNovelDomains);
+            foreach (ReaderNovelDomainItem domain in _readerNovelDomains)
+            {
+                domain.Books = SortReaderNovelBooks(domain.Books);
+                domain.LastModifiedUtc = domain.Books.Count == 0 ? DateTime.MinValue : domain.Books.Max(item => item.LastModifiedUtc);
+            }
+
+            UpdateReaderNovelDomainListItems(_readerNovelDomains);
+            if (_currentReaderNovelDomain != null)
+            {
+                _currentReaderNovelDomain = _readerNovelDomains.FirstOrDefault(item => string.Equals(item.Name, _currentReaderNovelDomain.Name, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (_currentReaderNovelDomain != null)
+            {
+                OpenReaderNovelDomain(_currentReaderNovelDomain, keepBookSelection: keepSelection);
+            }
+            else
+            {
+                SyncReaderNovelDomainListSelection(null);
+                ClearReaderNovelBookList();
+            }
+
+            RefreshReaderSortButtonLabel(_readerNovelDomainSortDateButton, _readerNovelDomainSortState, ReaderWatchSortField.DateModified, "DATE");
+            RefreshReaderSortButtonLabel(_readerNovelDomainSortNameButton, _readerNovelDomainSortState, ReaderWatchSortField.Name, "NAME");
+            RefreshReaderSortButtonLabel(_readerNovelBookSortDateButton, _readerNovelBookSortState, ReaderWatchSortField.DateModified, "DATE");
+            RefreshReaderSortButtonLabel(_readerNovelBookSortNameButton, _readerNovelBookSortState, ReaderWatchSortField.Name, "NAME");
+        }
+
+        private void ReaderMangaDomainSortDate_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderSort(_readerMangaDomainSortState, ReaderWatchSortField.DateModified);
+            ApplyReaderMangaWatchSorts(keepSelection: true);
+        }
+
+        private void ReaderMangaDomainSortName_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderSort(_readerMangaDomainSortState, ReaderWatchSortField.Name);
+            ApplyReaderMangaWatchSorts(keepSelection: true);
+        }
+
+        private void ReaderMangaBookSortDate_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderSort(_readerMangaBookSortState, ReaderWatchSortField.DateModified);
+            ApplyReaderMangaWatchSorts(keepSelection: true);
+        }
+
+        private void ReaderMangaBookSortName_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderSort(_readerMangaBookSortState, ReaderWatchSortField.Name);
+            ApplyReaderMangaWatchSorts(keepSelection: true);
+        }
+
+        private void ReaderNovelDomainSortDate_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderSort(_readerNovelDomainSortState, ReaderWatchSortField.DateModified);
+            ApplyReaderNovelWatchSorts(keepSelection: true);
+        }
+
+        private void ReaderNovelDomainSortName_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderSort(_readerNovelDomainSortState, ReaderWatchSortField.Name);
+            ApplyReaderNovelWatchSorts(keepSelection: true);
+        }
+
+        private void ReaderNovelBookSortDate_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderSort(_readerNovelBookSortState, ReaderWatchSortField.DateModified);
+            ApplyReaderNovelWatchSorts(keepSelection: true);
+        }
+
+        private void ReaderNovelBookSortName_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleReaderSort(_readerNovelBookSortState, ReaderWatchSortField.Name);
+            ApplyReaderNovelWatchSorts(keepSelection: true);
+        }
+
+        private List<ReaderNovelBookItem> ScanReaderNovelLibrary(string root)
+        {
+            var result = new List<ReaderNovelBookItem>();
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+            {
+                return result;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string domainFolder in SafeGetDirectories(root))
+            {
+                string domainName = Path.GetFileName(domainFolder);
+                if (string.IsNullOrWhiteSpace(domainName) || domainName.StartsWith(".", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                foreach (string bookFolder in SafeGetDirectories(domainFolder))
+                {
+                    TryAddReaderNovelBook(bookFolder, domainName, seen, result);
+                }
+
+                if (!result.Any(item => string.Equals(item.SourceGroup, domainName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    TryAddReaderNovelBook(domainFolder, domainName, seen, result);
+                }
+            }
+
+            return result
+                .OrderBy(item => item.SourceGroup ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.Name, _readerSortComparer)
+                .ToList();
+        }
+
+        private void TryAddReaderNovelBook(string folderPath, string sourceGroup, ISet<string> seen, ICollection<ReaderNovelBookItem> result)
+        {
+            if (seen.Contains(folderPath))
+            {
+                return;
+            }
+
+            string folderName = Path.GetFileName(folderPath);
+            if (string.IsNullOrWhiteSpace(folderName) || folderName.StartsWith(".", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            bool folderHasMarkdown = DirectoryContainsMarkdown(folderPath);
+            bool hasChapterDirectories = Directory.GetDirectories(folderPath).Any(DirectoryContainsMarkdown);
+            if (!folderHasMarkdown && !hasChapterDirectories)
+            {
+                return;
+            }
+
+            ReaderNovelBookItem book = BuildReaderNovelBookItem(folderPath, sourceGroup);
+            if (book == null || book.Chapters.Count == 0)
+            {
+                return;
+            }
+
+            seen.Add(folderPath);
+            result.Add(book);
+        }
+
+        private ReaderNovelBookItem BuildReaderNovelBookItem(string folderPath, string sourceGroup)
+        {
+            var chapters = new List<ReaderNovelChapterItem>();
+            string bookName = Path.GetFileName(folderPath);
+
+            if (DirectoryContainsMarkdown(folderPath))
+            {
+                ReaderNovelChapterItem rootChapter = BuildReaderNovelChapterItem(folderPath, Path.GetFileName(folderPath));
+                if (rootChapter != null)
+                {
+                    chapters.Add(rootChapter);
+                }
+            }
+
+            foreach (string chapterDir in Directory.GetDirectories(folderPath).OrderBy(path => Path.GetFileName(path), _readerSortComparer))
+            {
+                if (!DirectoryContainsMarkdown(chapterDir))
+                {
+                    continue;
+                }
+
+                ReaderNovelChapterItem chapter = BuildReaderNovelChapterItem(chapterDir, Path.GetFileName(chapterDir));
+                if (chapter != null)
+                {
+                    chapters.Add(chapter);
+                }
+            }
+
+            if (chapters.Count == 0)
+            {
+                return null;
+            }
+
+            return new ReaderNovelBookItem
+            {
+                Name = bookName,
+                SourceGroup = sourceGroup,
+                FolderPath = folderPath,
+                LastModifiedUtc = chapters.Max(item => item.LastModifiedUtc),
+                Chapters = chapters
+            };
+        }
+
+        private ReaderNovelChapterItem BuildReaderNovelChapterItem(string folderPath, string chapterName)
+        {
+            string[] markdownFiles = Directory.GetFiles(folderPath, "*.md", SearchOption.TopDirectoryOnly)
+                .OrderBy(path => Path.GetFileNameWithoutExtension(path), _readerSortComparer)
+                .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (markdownFiles.Length == 0)
+            {
+                return null;
+            }
+
+            var files = markdownFiles
+                .Select((path, index) => new ReaderMarkdownItem
+                {
+                    Index = index,
+                    Name = Path.GetFileName(path),
+                    FilePath = path,
+                    LastModifiedUtc = SafeGetLastWriteTimeUtc(path)
+                })
+                .ToList();
+
+            return new ReaderNovelChapterItem
+            {
+                Name = chapterName,
+                FolderPath = folderPath,
+                LastModifiedUtc = files.Max(item => item.LastModifiedUtc),
+                Files = files
+            };
+        }
+
+        private static bool DirectoryContainsMarkdown(string folderPath)
+        {
+            try
+            {
+                return Directory.EnumerateFiles(folderPath, "*.md", SearchOption.TopDirectoryOnly).Any();
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static bool DirectoryContainsImages(string folderPath)
@@ -852,6 +1483,27 @@ namespace get_link_manga
             {
                 return false;
             }
+        }
+
+        private static DateTime SafeGetLastWriteTimeUtc(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    return File.GetLastWriteTimeUtc(path);
+                }
+
+                if (Directory.Exists(path))
+                {
+                    return Directory.GetLastWriteTimeUtc(path);
+                }
+            }
+            catch
+            {
+            }
+
+            return DateTime.MinValue;
         }
 
         private static bool IsSupportedReaderImageFile(string filePath)
@@ -1121,7 +1773,7 @@ namespace get_link_manga
                 return;
             }
 
-            OpenReaderChapter(chapter, 0);
+            SelectReaderChapter(chapter);
         }
 
         private void ReaderFileList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1131,9 +1783,82 @@ namespace get_link_manga
                 return;
             }
 
-            OpenReaderPage(page);
+            OpenReaderPage(page, launchFastStone: false);
         }
-private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
+
+        private void ReaderNovelDomainList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_readerSelectionGuard || !(_readerNovelDomainList?.SelectedItem is ReaderNovelDomainItem domain))
+            {
+                return;
+            }
+
+            OpenReaderNovelDomain(domain, keepBookSelection: false);
+        }
+
+        private void ReaderNovelBookList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_readerSelectionGuard || !(_readerNovelBookList?.SelectedItem is ReaderNovelBookItem book))
+            {
+                return;
+            }
+
+            OpenReaderNovelBook(book, keepChapterSelection: false);
+        }
+
+        private void ReaderNovelChapterList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_readerSelectionGuard || !(_readerNovelChapterList?.SelectedItem is ReaderNovelChapterItem chapter))
+            {
+                return;
+            }
+
+            SelectReaderNovelChapter(chapter);
+        }
+
+        private void ReaderNovelFileList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_readerSelectionGuard || !(_readerNovelFileList?.SelectedItem is ReaderMarkdownItem file))
+            {
+                return;
+            }
+
+            OpenReaderNovelFile(file, openInBrowser: false);
+        }
+
+        private void ReaderFileList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!(_readerFileList?.SelectedItem is ReaderPageItem page) || !IsSupportedReaderImageFile(page.FilePath))
+            {
+                return;
+            }
+
+            OpenReaderPage(page, launchFastStone: true);
+        }
+
+        private void ReaderNovelFileList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!(_readerNovelFileList?.SelectedItem is ReaderMarkdownItem file) || !IsMarkdownFile(file.FilePath))
+            {
+                return;
+            }
+
+            OpenReaderNovelFile(file, openInBrowser: true);
+        }
+
+        private async void OpenRootReaderFolder_Click(object sender, RoutedEventArgs e)
+        {
+            _readerLibraryRootOverride = null;
+            await RefreshReaderLibraryAsync(forceRefresh: true);
+        }
+
+        private async void OpenRootReaderNovelFolder_Click(object sender, RoutedEventArgs e)
+        {
+            _readerNovelLibraryRootOverride = null;
+            await RefreshReaderNovelLibraryAsync(forceRefresh: true);
+        }
+
+        private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new VistaFolderBrowser
             {
@@ -1154,6 +1879,47 @@ private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
 
             _readerLibraryRootOverride = dialog.SelectedPath;
             await RefreshReaderLibraryAsync(forceRefresh: true);
+        }
+
+        private async void OpenOtherReaderNovelFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new VistaFolderBrowser
+            {
+                SelectedPath = GetCurrentReaderNovelLibraryRoot(),
+                Title = _isVietnameseUi ? "Chọn thư mục khác cho Watch novel" : "Choose another Watch novel folder"
+            };
+
+            if (!dialog.ShowDialog(new WindowInteropHelper(this).Handle))
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(dialog.SelectedPath) || !Directory.Exists(dialog.SelectedPath))
+            {
+                UpdateReaderNovelStatus(_isVietnameseUi ? "Thư mục đã chọn không hợp lệ." : "Selected folder is invalid.");
+                return;
+            }
+
+            _readerNovelLibraryRootOverride = dialog.SelectedPath;
+            await RefreshReaderNovelLibraryAsync(forceRefresh: true);
+        }
+
+        private void InstallMdReader_Click(object sender, RoutedEventArgs e)
+        {
+            const string mdReaderUrl = "https://chromewebstore.google.com/detail/markdown-reader/medapdbncneneejhbgcjceippjlfkmkg";
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = mdReaderUrl,
+                    UseShellExecute = true
+                });
+                UpdateReaderNovelStatus(_isVietnameseUi ? "Đã mở link cài MD Reader." : "Opened MD Reader install link.");
+            }
+            catch (Exception ex)
+            {
+                UpdateReaderNovelStatus((_isVietnameseUi ? "Không thể mở link MD Reader: " : "Failed to open MD Reader link: ") + ex.Message);
+            }
         }
 
         private void OpenReaderManga(ReaderMangaItem manga, bool keepChapterSelection)
@@ -1233,6 +1999,207 @@ private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
             OpenReaderManga(nextBook, keepChapterSelection: keepBookSelection);
         }
 
+        private void OpenReaderNovelDomain(ReaderNovelDomainItem domain, bool keepBookSelection)
+        {
+            if (domain == null)
+            {
+                return;
+            }
+
+            _currentReaderNovelDomain = domain;
+            _readerSelectionGuard = true;
+            SyncReaderNovelDomainListSelection(domain);
+            UpdateReaderNovelBookListItems(domain.Books);
+
+            ReaderNovelBookItem nextBook = keepBookSelection && _currentReaderNovelBook != null
+                ? domain.Books.FirstOrDefault(item => string.Equals(item.FolderPath, _currentReaderNovelBook.FolderPath, StringComparison.OrdinalIgnoreCase))
+                : domain.Books.FirstOrDefault();
+
+            _readerSelectionGuard = false;
+
+            if (nextBook == null)
+            {
+                ClearReaderNovelBookList();
+                ClearReaderNovelChapterList();
+                ClearReaderNovelFileList();
+                _currentReaderNovelBook = null;
+                _currentReaderNovelChapter = null;
+                _currentReaderNovelFile = null;
+                return;
+            }
+
+            OpenReaderNovelBook(nextBook, keepChapterSelection: keepBookSelection);
+        }
+
+        private void OpenReaderNovelBook(ReaderNovelBookItem book, bool keepChapterSelection)
+        {
+            if (book == null)
+            {
+                return;
+            }
+
+            _currentReaderNovelBook = book;
+            _currentReaderNovelDomain = _readerNovelDomains.FirstOrDefault(item =>
+                item.Books.Any(candidate => string.Equals(candidate.FolderPath, book.FolderPath, StringComparison.OrdinalIgnoreCase)));
+            if (_currentReaderNovelDomain != null)
+            {
+                SyncReaderNovelDomainListSelection(_currentReaderNovelDomain);
+                UpdateReaderNovelBookListItems(_currentReaderNovelDomain.Books);
+            }
+
+            _readerSelectionGuard = true;
+            _readerNovelBookList.SelectedItem = book;
+            _readerNovelChapterList.ItemsSource = book.Chapters;
+
+            ReaderNovelChapterItem nextChapter = keepChapterSelection && _currentReaderNovelChapter != null
+                ? book.Chapters.FirstOrDefault(item => string.Equals(item.FolderPath, _currentReaderNovelChapter.FolderPath, StringComparison.OrdinalIgnoreCase))
+                : book.Chapters.FirstOrDefault();
+
+            _readerNovelChapterList.SelectedItem = nextChapter;
+            if (nextChapter != null)
+            {
+                UpdateReaderNovelFileListItems(nextChapter.Files);
+            }
+            else
+            {
+                ClearReaderNovelFileList();
+            }
+            _readerSelectionGuard = false;
+            _currentReaderNovelChapter = null;
+            _currentReaderNovelFile = null;
+            _readerNovelCurrentTitleText.Text = _currentReaderNovelBook?.Name ?? string.Empty;
+            _readerNovelPreviewTextBox.Text = string.Empty;
+            if (nextChapter != null)
+            {
+                SelectReaderNovelChapter(nextChapter);
+            }
+            else
+            {
+                _currentReaderNovelChapter = null;
+                _currentReaderNovelFile = null;
+                UpdateReaderNovelStatus(_isVietnameseUi
+                    ? "Chọn chapter hoặc file .md để mở."
+                    : "Choose a chapter or .md file to open.");
+            }
+        }
+
+        private void SelectReaderNovelChapter(ReaderNovelChapterItem chapter)
+        {
+            if (chapter == null)
+            {
+                return;
+            }
+
+            _currentReaderNovelChapter = chapter;
+            _currentReaderNovelFile = null;
+            _readerSelectionGuard = true;
+            _readerNovelChapterList.SelectedItem = chapter;
+            UpdateReaderNovelFileListItems(chapter.Files);
+            _readerNovelFileList.SelectedItem = null;
+            _readerSelectionGuard = false;
+            _readerNovelCurrentTitleText.Text = $"{_currentReaderNovelBook?.Name} - {_currentReaderNovelChapter?.Name}";
+            _readerNovelPreviewTextBox.Text = string.Empty;
+            UpdateReaderNovelStatus(chapter.Files.Count > 0
+                ? (_isVietnameseUi ? "Đã chọn chapter. Click file .md để xem preview, double-click để mở trình duyệt." : "Chapter selected. Click .md for preview, double-click to open in browser.")
+                : (_isVietnameseUi ? "Chapter này chưa có file .md." : "This chapter has no .md file."));
+        }
+
+        private void OpenReaderNovelChapter(ReaderNovelChapterItem chapter)
+        {
+            if (chapter == null)
+            {
+                return;
+            }
+
+            _currentReaderNovelChapter = chapter;
+            _readerSelectionGuard = true;
+            _readerNovelChapterList.SelectedItem = chapter;
+            UpdateReaderNovelFileListItems(chapter.Files);
+            ReaderMarkdownItem firstFile = chapter.Files.FirstOrDefault();
+            _readerNovelFileList.SelectedItem = firstFile;
+            _readerSelectionGuard = false;
+            _readerNovelCurrentTitleText.Text = $"{_currentReaderNovelBook?.Name} - {_currentReaderNovelChapter?.Name}";
+            if (firstFile != null)
+            {
+                OpenReaderNovelFile(firstFile, openInBrowser: false);
+            }
+            else
+            {
+                _currentReaderNovelFile = null;
+                _readerNovelPreviewTextBox.Text = string.Empty;
+                UpdateReaderNovelStatus(_isVietnameseUi
+                    ? "Chapter này chưa có file .md."
+                    : "This chapter has no .md file.");
+            }
+        }
+
+        private void OpenReaderNovelFile(ReaderMarkdownItem file, bool openInBrowser)
+        {
+            if (file == null)
+            {
+                return;
+            }
+
+            _currentReaderNovelFile = file;
+            _readerSelectionGuard = true;
+            SyncReaderNovelFileListSelection(file);
+            _readerSelectionGuard = false;
+            _readerNovelCurrentTitleText.Text = $"{_currentReaderNovelBook?.Name} - {_currentReaderNovelChapter?.Name}";
+            if (string.IsNullOrWhiteSpace(file.FilePath) || !File.Exists(file.FilePath))
+            {
+                _readerNovelPreviewTextBox.Text = string.Empty;
+                UpdateReaderNovelStatus(_isVietnameseUi ? "File .md không còn tồn tại." : ".md file no longer exists.");
+                return;
+            }
+
+            try
+            {
+                _readerNovelPreviewTextBox.Text = File.ReadAllText(file.FilePath, Encoding.UTF8);
+                _readerNovelPreviewTextBox.ScrollToHome();
+                if (!openInBrowser)
+                {
+                    UpdateReaderNovelStatus((_isVietnameseUi ? "Đã chọn file .md. Double-click để mở trình duyệt: " : "Selected .md file. Double-click to open in browser: ") + file.Name);
+                    return;
+                }
+                TryOpenReaderNovelFileInBrowser(file.FilePath, out string browserError);
+                UpdateReaderNovelStatus(string.IsNullOrWhiteSpace(browserError)
+                    ? ((_isVietnameseUi ? "Đã mở .md bằng trình duyệt: " : "Opened .md in browser: ") + file.Name)
+                    : ((_isVietnameseUi ? "Đã nạp preview nhưng mở trình duyệt lỗi: " : "Preview loaded but browser open failed: ") + browserError));
+            }
+            catch (Exception ex)
+            {
+                _readerNovelPreviewTextBox.Text = string.Empty;
+                UpdateReaderNovelStatus((_isVietnameseUi ? "Không thể đọc file .md: " : "Failed to read .md file: ") + ex.Message);
+            }
+        }
+
+        private bool TryOpenReaderNovelFileInBrowser(string filePath, out string errorMessage)
+        {
+            errorMessage = null;
+
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                errorMessage = _isVietnameseUi ? "File .md không còn tồn tại." : ".md file no longer exists.";
+                return false;
+            }
+
+            try
+            {
+                var fileUri = new Uri(Path.GetFullPath(filePath)).AbsoluteUri;
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = fileUri,
+                    UseShellExecute = true
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
         private void OpenReaderMangaChapterPage(ReaderMangaItem manga, ReaderChapterItem chapter, int pageIndex)
         {
             if (manga == null || chapter == null || chapter.Pages == null || chapter.Pages.Count == 0)
@@ -1296,6 +2263,28 @@ private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
             OpenReaderPage(chapter.Pages[safePageIndex], launchFastStone: false);
         }
 
+        private void SelectReaderChapter(ReaderChapterItem chapter)
+        {
+            if (chapter == null)
+            {
+                return;
+            }
+
+            _currentReaderChapter = chapter;
+            _currentReaderPage = null;
+            _readerSelectionGuard = true;
+            _readerChapterList.SelectedItem = chapter;
+            UpdateReaderFileListItems(chapter.Pages);
+            _readerFileList.SelectedItem = null;
+            _readerSelectionGuard = false;
+            _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} - {_currentReaderChapter?.Name}";
+            RenderReaderPlaceholder();
+            UpdateReaderStatus(chapter.Pages.Count > 0
+                ? (_isVietnameseUi ? "Đã chọn chapter. Double-click ảnh để mở bằng FastStone." : "Chapter selected. Double-click image to open in FastStone.")
+                : (_isVietnameseUi ? "Chapter này chưa có ảnh." : "This chapter has no images."));
+            UpdateReaderNavigationState();
+        }
+
         private void OpenReaderPage(ReaderPageItem page, bool launchFastStone = true)
         {
             if (page == null)
@@ -1330,6 +2319,12 @@ private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
                 UpdateReaderStatus(BuildReaderStatusText());
             }
             UpdateReaderNavigationState();
+        }
+
+        private static bool IsMarkdownFile(string filePath)
+        {
+            return !string.IsNullOrWhiteSpace(filePath) &&
+                   string.Equals(Path.GetExtension(filePath), ".md", StringComparison.OrdinalIgnoreCase);
         }
 
         private void SyncCurrentReaderPageFromIndex(int pageIndex)
@@ -1396,6 +2391,14 @@ private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
             if (_readerStatusText != null)
             {
                 _readerStatusText.Text = text;
+            }
+        }
+
+        private void UpdateReaderNovelStatus(string text)
+        {
+            if (_readerNovelStatusText != null)
+            {
+                _readerNovelStatusText.Text = text;
             }
         }
 
@@ -2478,12 +3481,8 @@ private async void OpenOtherReaderFolder_Click(object sender, RoutedEventArgs e)
                 .OrderBy(item => item.SourceGroup ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(item => item.Name, _readerSortComparer)
                 .ToList();
-
-            if (_readerMangaList != null)
-            {
-                _readerMangaList.ItemsSource = null;
-                _readerMangaList.ItemsSource = _readerLibrary;
-            }
+            _readerDomains = BuildReaderDomainItems(_readerLibrary);
+            ApplyReaderMangaWatchSorts(keepSelection: true);
         }
 
         private void ReaderFitWidth_Click(object sender, RoutedEventArgs e)
@@ -3161,6 +4160,11 @@ private bool HandleReaderHotkeys(KeyEventArgs e)
                 _readerOtherFolderButton.Content = _isVietnameseUi ? "Mở thư mục khác" : "Load other folder";
             }
 
+            if (_readerRootFolderButton != null)
+            {
+                _readerRootFolderButton.Content = _isVietnameseUi ? "Mở thư mục gốc" : "Load root folder";
+            }
+
             if (_readerFullscreenButton != null)
             {
                 _readerFullscreenButton.Content = _isReaderFullscreen 
@@ -3169,6 +4173,7 @@ private bool HandleReaderHotkeys(KeyEventArgs e)
             }
 
             UpdateReaderFitButtons();
+            UpdateReaderNovelLanguageState();
             if (_currentReaderPage == null)
             {
                 UpdateReaderStatus(_isVietnameseUi
@@ -3178,6 +4183,30 @@ private bool HandleReaderHotkeys(KeyEventArgs e)
             else
             {
                 UpdateReaderStatus(BuildReaderStatusText());
+            }
+        }
+
+        private void UpdateReaderNovelLanguageState()
+        {
+            if (_readerNovelOtherFolderButton != null)
+            {
+                _readerNovelOtherFolderButton.Content = _isVietnameseUi ? "Mở thư mục khác" : "Load other folder";
+            }
+
+            if (_readerNovelRootFolderButton != null)
+            {
+                _readerNovelRootFolderButton.Content = _isVietnameseUi ? "Mở thư mục gốc" : "Load root folder";
+            }
+
+            if (_currentReaderNovelFile == null)
+            {
+                UpdateReaderNovelStatus(_isVietnameseUi
+                    ? "Bấm Refresh library để quét thư mục tải novel."
+                    : "Use Refresh library to scan the novel download root.");
+            }
+            else
+            {
+                UpdateReaderNovelStatus((_isVietnameseUi ? "Đã chọn file .md: " : "Selected .md file: ") + _currentReaderNovelFile.Name);
             }
         }
 

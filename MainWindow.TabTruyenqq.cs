@@ -1000,7 +1000,11 @@ namespace get_link_manga
             else
             {
                 // Direct Chapter page
-                await DownloadTruyenqqChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
+                bool chapterCompleted = await DownloadTruyenqqChapterAsync(item, rootFolder, token, queueItem, isParentQueue: false);
+                if (!chapterCompleted)
+                {
+                    throw new Exception($"Truyenqq chapter '{item.Name}' tải không hoàn tất.");
+                }
             }
         }
 
@@ -1021,8 +1025,11 @@ namespace get_link_manga
                 string chapLink = chapterLinks[idx];
 
                 var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
-                await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
-                MarkChapterProcessDone(rootFolder, "truyenqq", item, chapLink);
+                bool chapterCompleted = await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
+                if (chapterCompleted)
+                {
+                    MarkChapterProcessDone(rootFolder, "truyenqq", item, chapLink);
+                }
 
                 if (queueItem != null)
                 {
@@ -1035,7 +1042,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadTruyenqqChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
+        private async Task<bool> DownloadTruyenqqChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
         {
             item.Link = ResolveTruyenqqRequestUrl(item.Link);
 
@@ -1328,13 +1335,25 @@ namespace get_link_manga
             var pageImageUrls = imageUrls
                 .Select((url, index) => new { Page = index + 1, Url = url })
                 .ToDictionary(x => x.Page, x => x.Url);
-            ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageImageUrls);
+            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageImageUrls);
         }
 
         private List<string> ExtractTruyenqqImageUrls(string contentArea, string pageUrl)
         {
             var imageUrls = new List<string>();
-            var imgTags = Regex.Matches(contentArea ?? string.Empty, @"<img\s+[^>]*>", RegexOptions.IgnoreCase);
+            string html = contentArea ?? string.Empty;
+            string extractionScope = html;
+
+            var pageBlocks = Regex.Matches(
+                html,
+                @"<div[^>]+id=[""']page_\d+[""'][^>]*class=[""'][^""']*page-chapter[^""']*[""'][^>]*>.*?(?=<div[^>]+id=[""']page_\d+[""']|$)",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (pageBlocks.Count > 0)
+            {
+                extractionScope = string.Join(Environment.NewLine, pageBlocks.Cast<Match>().Select(match => match.Value));
+            }
+
+            var imgTags = Regex.Matches(extractionScope, @"<(?:img|source)\s+[^>]*>", RegexOptions.IgnoreCase);
 
             foreach (Match imgTag in imgTags)
             {
@@ -1348,6 +1367,31 @@ namespace get_link_manga
                 }
                 else
                 {
+                    var dataCdnMatch = Regex.Match(tag, @"data-cdn=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
+                    if (dataCdnMatch.Success)
+                    {
+                        imgUrl = dataCdnMatch.Groups["url"].Value;
+                    }
+                    else
+                    {
+                        var dataLazySrcMatch = Regex.Match(tag, @"data-lazy-src=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
+                        if (dataLazySrcMatch.Success)
+                        {
+                            imgUrl = dataLazySrcMatch.Groups["url"].Value;
+                        }
+                        else
+                        {
+                            var dataImageMatch = Regex.Match(tag, @"data-image=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
+                            if (dataImageMatch.Success)
+                            {
+                                imgUrl = dataImageMatch.Groups["url"].Value;
+                            }
+                        }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(imgUrl))
+                {
                     var dataSrcMatch = Regex.Match(tag, @"data-src=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
                     if (dataSrcMatch.Success)
                     {
@@ -1360,6 +1404,15 @@ namespace get_link_manga
                         {
                             imgUrl = srcMatch.Groups["url"].Value;
                         }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(imgUrl))
+                {
+                    var srcSetMatch = Regex.Match(tag, @"srcset=[""'](?<url>[^,""']+)", RegexOptions.IgnoreCase);
+                    if (srcSetMatch.Success)
+                    {
+                        imgUrl = srcSetMatch.Groups["url"].Value;
                     }
                 }
 
@@ -1395,6 +1448,30 @@ namespace get_link_manga
                 if (!imageUrls.Contains(imgUrl))
                 {
                     imageUrls.Add(imgUrl);
+                }
+            }
+
+            if (imageUrls.Count == 0)
+            {
+                foreach (Match match in Regex.Matches(
+                    extractionScope,
+                    @"https?://[^""'\s>]+?\.(?:jpg|jpeg|png|gif|webp|bmp)(?:\?[^""'\s>]*)?",
+                    RegexOptions.IgnoreCase))
+                {
+                    string imgUrl = match.Value.Trim();
+                    if (string.IsNullOrWhiteSpace(imgUrl) ||
+                        imgUrl.Contains("avatar") ||
+                        imgUrl.Contains("logo") ||
+                        imgUrl.Contains("banner") ||
+                        imgUrl.Contains("no_image"))
+                    {
+                        continue;
+                    }
+
+                    if (!imageUrls.Contains(imgUrl))
+                    {
+                        imageUrls.Add(imgUrl);
+                    }
                 }
             }
 

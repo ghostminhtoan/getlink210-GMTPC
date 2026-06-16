@@ -207,9 +207,9 @@ namespace get_link_manga
             return normalized;
         }
 
-        private string GetSafeChapterPathName(string chapterTitle)
+        private string GetSafeChapterPathName(string chapterTitle, int maxLength = 120)
         {
-            return GetSafePathName(NormalizeChapterLabel(chapterTitle));
+            return GetSafePathName(NormalizeChapterLabel(chapterTitle), maxLength);
         }
 
         private static string ZeroPadChapterNumberToken(string numberToken)
@@ -271,7 +271,7 @@ namespace get_link_manga
             }
         }
 
-        private string GetCanonicalBookFolderName(GalleryItem item, string fallbackTitle, string defaultTitle = "item")
+        private string GetCanonicalBookFolderName(GalleryItem item, string fallbackTitle, string defaultTitle = "item", int maxLength = 120)
         {
             string preferredTitle = CompactSingleLine(item?.Name);
             if (string.IsNullOrWhiteSpace(preferredTitle))
@@ -279,10 +279,10 @@ namespace get_link_manga
                 preferredTitle = CompactSingleLine(fallbackTitle);
             }
 
-            string safeName = GetSafePathName(preferredTitle);
+            string safeName = GetSafePathName(preferredTitle, maxLength);
             if (string.IsNullOrWhiteSpace(safeName))
             {
-                safeName = GetSafePathName(defaultTitle);
+                safeName = GetSafePathName(defaultTitle, maxLength);
             }
 
             return string.IsNullOrWhiteSpace(safeName) ? "item" : safeName;
@@ -773,7 +773,7 @@ namespace get_link_manga
             if (string.IsNullOrEmpty(downloadRoot))
             {
                 SetDownloadToggleState(false);
-                MessageBox.Show("Vui lÃ²ng chá»n thÆ° má»¥c lÆ°u (Please select a download folder).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Vui lòng chọn thư mục lưu (Please select a download folder).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -781,7 +781,7 @@ namespace get_link_manga
             if (!itemsToDownload.Any())
             {
                 SetDownloadToggleState(false);
-                MessageBox.Show("Vui lÃ²ng tÃ­ch chá»n Ã­t nháº¥t 1 truyá»‡n Ä‘á»ƒ táº£i (Please check at least one gallery to download).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng tích chọn ít nhất 1 truyện để tải (Please check at least one gallery to download).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -790,11 +790,11 @@ namespace get_link_manga
                 int addedCount = QueueDownloadsForCurrentSession(itemsToDownload, preserveExistingState: true);
                 if (addedCount <= 0)
                 {
-                    MessageBox.Show("KhÃ´ng cÃ³ truyá»‡n má»›i nÃ o Ä‘á»ƒ thÃªm vÃ o hÃ ng táº£i hiá»‡n táº¡i.\nThere are no new checked books to add to the current queue.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Không có truyện mới nào để thêm vào hàng tải hiện tại.\nThere are no new checked books to add to the current queue.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
-                Log($"[Download] ÄÃ£ thÃªm {addedCount} truyá»‡n vÃ o hÃ ng táº£i hiá»‡n táº¡i.");
+                Log($"[Download] Đã thêm {addedCount} truyện vào hàng tải hiện tại.");
                 lblStatus.Text = $"Added {addedCount} books to active queue...";
                 return;
             }
@@ -802,8 +802,6 @@ namespace get_link_manga
             SetDownloadToggleState(true);
             await StartDownloadProcessAsync(itemsToDownload, preserveExistingState: true);
         }
-
-
 
         private async void BtnStartDownload_Click(object sender, RoutedEventArgs e)
         {
@@ -875,6 +873,8 @@ namespace get_link_manga
                 // Best-effort cleanup so a new Start doesn't inherit leftover temp folders.
                 CleanupActiveTempFolders();
             }
+
+            UpdateLightNovelFloatingControlState();
         }
 
         internal async Task StartDownloadProcessAsync(System.Collections.Generic.List<GalleryItem> itemsToDownload, bool preserveExistingState = false)
@@ -911,6 +911,7 @@ namespace get_link_manga
             _downloadCts = new CancellationTokenSource();
             CancellationToken token = _downloadCts.Token;
             _isDownloadPaused = false;
+            UpdateLightNovelFloatingControlState();
             _activeDownloadRoot = downloadRoot;
             _downloadSessionTotalGalleries = 0;
             _downloadSessionCompletedGalleries = 0;
@@ -1013,6 +1014,8 @@ namespace get_link_manga
                 {
                     CleanupActiveTempFolders();
                 }
+
+                UpdateLightNovelFloatingControlState();
             }
         }
 
@@ -1166,11 +1169,14 @@ namespace get_link_manga
                             await RetryAllDownloadQueueItemErrorsAsync(item, token);
                         }
 
-                        Dispatcher.Invoke(() =>
+                        await Dispatcher.InvokeAsync(() =>
                         {
-                            item.Status = item.ErrorCount > 0 ? "Error" : "Completed";
-                            item.IsChecked = false;
+                            bool hasErrors = item.HasAnyErrors();
+                            item.Status = hasErrors ? "Error" : "Completed";
+                            item.CurrentProcess = hasErrors ? "Done with errors" : "Done";
+                            item.IsChecked = hasErrors ? item.IsChecked : false;
                         });
+                        await RefreshReaderLibraryAsync(forceRefresh: true);
 
                         Log($"[Download] Hoàn thành truyện: {item.Name}");
 
@@ -2593,12 +2599,12 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
         }
 
-        private string GetSafePathName(string name)
+        private string GetSafePathName(string name, int maxLength = 120)
         {
             if (string.IsNullOrEmpty(name)) return "Unnamed";
             
             var invalid = Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()).Distinct();
-            string safeName = name;
+            string safeName = Regex.Replace(name, @"\s*[:：]\s*", " - ");
             foreach (var c in invalid)
             {
                 safeName = safeName.Replace(c, ' ');
@@ -2606,7 +2612,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
             // Remove multiple consecutive spaces
             safeName = Regex.Replace(safeName, @"\s+", " ");
-            return safeName.Trim();
+            safeName = safeName.Trim().TrimEnd('.');
+
+            if (maxLength > 8 && safeName.Length > maxLength)
+            {
+                safeName = safeName.Substring(0, maxLength).TrimEnd(' ', '.', '-');
+            }
+
+            return string.IsNullOrWhiteSpace(safeName) ? "Unnamed" : safeName;
         }
 
         private int GetCurrentConnectionLimit()
@@ -3252,17 +3265,17 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             if (tagMatch.Success)
             {
                 string imgTag = tagMatch.Value;
-                var srcMatch = Regex.Match(imgTag, @"src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
-                if (srcMatch.Success)
+                var dataSrcMatch = Regex.Match(imgTag, @"data-src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
+                if (dataSrcMatch.Success && !dataSrcMatch.Groups["url"].Value.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
                 {
-                    imgUrl = srcMatch.Groups["url"].Value;
+                    imgUrl = dataSrcMatch.Groups["url"].Value;
                 }
                 else
                 {
-                    var dataSrcMatch = Regex.Match(imgTag, @"data-src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
-                    if (dataSrcMatch.Success)
+                    var srcMatch = Regex.Match(imgTag, @"src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
+                    if (srcMatch.Success && !srcMatch.Groups["url"].Value.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
                     {
-                        imgUrl = dataSrcMatch.Groups["url"].Value;
+                        imgUrl = srcMatch.Groups["url"].Value;
                     }
                 }
             }
@@ -3274,14 +3287,18 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 if (lazyMatch.Success)
                 {
                     string imgTag = lazyMatch.Value;
-                    var srcMatch = Regex.Match(imgTag, @"data-src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
-                    if (!srcMatch.Success)
+                    var dataSrcMatch = Regex.Match(imgTag, @"data-src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
+                    if (dataSrcMatch.Success && !dataSrcMatch.Groups["url"].Value.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
                     {
-                        srcMatch = Regex.Match(imgTag, @"src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
+                        imgUrl = dataSrcMatch.Groups["url"].Value;
                     }
-                    if (srcMatch.Success)
+                    else
                     {
-                        imgUrl = srcMatch.Groups["url"].Value;
+                        var srcMatch = Regex.Match(imgTag, @"src=['""](?<url>[^'""]+?)['""]", RegexOptions.IgnoreCase);
+                        if (srcMatch.Success && !srcMatch.Groups["url"].Value.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            imgUrl = srcMatch.Groups["url"].Value;
+                        }
                     }
                 }
             }

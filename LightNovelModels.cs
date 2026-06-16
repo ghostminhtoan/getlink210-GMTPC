@@ -13,6 +13,7 @@ namespace get_link_manga
         private string _volumeTitle;
         private int _volumeOrder;
         private int _sequenceIndex;
+        private bool _isChecked = true;
 
         public string ChapterTitle
         {
@@ -116,6 +117,19 @@ namespace get_link_manga
                 if (_sequenceIndex != value)
                 {
                     _sequenceIndex = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool IsChecked
+        {
+            get => _isChecked;
+            set
+            {
+                if (_isChecked != value)
+                {
+                    _isChecked = value;
                     OnPropertyChanged();
                 }
             }

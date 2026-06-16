@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows;
@@ -9,7 +10,7 @@ namespace get_link_manga
 {
     public partial class MainWindow : Window
     {
-        private Border CreateReaderWatchPanel(string title, UIElement content)
+        private Border CreateReaderWatchPanel(string title, UIElement content, params Button[] sortButtons)
         {
             if (content is FrameworkElement element)
             {
@@ -34,18 +35,57 @@ namespace get_link_manga
                     },
                     Children =
                     {
-                        new TextBlock
+                        new Grid
                         {
-                            Text = title,
-                            Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                            FontSize = 11,
-                            FontWeight = FontWeights.Bold,
-                            Margin = new Thickness(0, 0, 0, 8)
+                            Margin = new Thickness(0, 0, 0, 8),
+                            ColumnDefinitions =
+                            {
+                                new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                                new ColumnDefinition { Width = GridLength.Auto }
+                            },
+                            Children =
+                            {
+                                new TextBlock
+                                {
+                                    Text = title,
+                                    Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
+                                    FontSize = 11,
+                                    FontWeight = FontWeights.Bold,
+                                    VerticalAlignment = VerticalAlignment.Center
+                                }
+                            }
                         },
                         content
                     }
                 }
             };
+
+            if (sortButtons != null && sortButtons.Length > 0)
+            {
+                var headerGrid = panel.Child as Grid;
+                var header = headerGrid != null && headerGrid.Children.Count > 0 ? headerGrid.Children[0] as Grid : null;
+                if (header != null)
+                {
+                    var sortHost = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right
+                    };
+                    Grid.SetColumn(sortHost, 1);
+
+                    foreach (Button sortButton in sortButtons)
+                    {
+                        if (sortButton == null)
+                        {
+                            continue;
+                        }
+
+                        sortHost.Children.Add(sortButton);
+                    }
+
+                    header.Children.Add(sortHost);
+                }
+            }
 
             if (content != null)
             {
@@ -69,12 +109,13 @@ namespace get_link_manga
 
             foreach (IGrouping<string, ReaderMangaItem> group in groupedBooks)
             {
+                List<ReaderMangaItem> domainBooks = group.ToList();
                 domains.Add(new ReaderDomainItem
                 {
                     Name = group.Key,
-                    Books = group
-                        .OrderBy(item => item.Name, _readerSortComparer)
-                        .ToList()
+                    FolderPath = GetReaderCommonParentFolder(domainBooks.Select(item => item.FolderPath)),
+                    LastModifiedUtc = domainBooks.Count == 0 ? DateTime.MinValue : domainBooks.Max(item => item.LastModifiedUtc),
+                    Books = domainBooks
                 });
             }
 
@@ -211,6 +252,172 @@ namespace get_link_manga
 
             _readerFileList.ItemsSource = null;
             _readerFileList.SelectedItem = null;
+        }
+
+        private void UpdateReaderNovelDomainListItems(IList<ReaderNovelDomainItem> domains)
+        {
+            if (_readerNovelDomainList == null)
+            {
+                return;
+            }
+
+            _readerNovelDomainList.ItemsSource = domains;
+        }
+
+        private static string GetReaderCommonParentFolder(IEnumerable<string> paths)
+        {
+            if (paths == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (string path in paths)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    DirectoryInfo parent = Directory.GetParent(path);
+                    if (parent != null)
+                    {
+                        return parent.FullName;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private void SyncReaderNovelDomainListSelection(ReaderNovelDomainItem domain)
+        {
+            if (_readerNovelDomainList == null)
+            {
+                return;
+            }
+
+            _readerSelectionGuard = true;
+            _readerNovelDomainList.SelectedItem = domain;
+            _readerSelectionGuard = false;
+        }
+
+        private void ClearReaderNovelDomainList()
+        {
+            if (_readerNovelDomainList == null)
+            {
+                return;
+            }
+
+            _readerNovelDomainList.ItemsSource = null;
+            _readerNovelDomainList.SelectedItem = null;
+        }
+
+        private void UpdateReaderNovelBookListItems(IList<ReaderNovelBookItem> books)
+        {
+            if (_readerNovelBookList == null)
+            {
+                return;
+            }
+
+            _readerNovelBookList.ItemsSource = books;
+        }
+
+        private void SyncReaderNovelBookListSelection(ReaderNovelBookItem book)
+        {
+            if (_readerNovelBookList == null)
+            {
+                return;
+            }
+
+            _readerSelectionGuard = true;
+            _readerNovelBookList.SelectedItem = book;
+            _readerSelectionGuard = false;
+        }
+
+        private void ClearReaderNovelBookList()
+        {
+            if (_readerNovelBookList == null)
+            {
+                return;
+            }
+
+            _readerNovelBookList.ItemsSource = null;
+            _readerNovelBookList.SelectedItem = null;
+        }
+
+        private void UpdateReaderNovelChapterListItems(IList<ReaderNovelChapterItem> chapters)
+        {
+            if (_readerNovelChapterList == null)
+            {
+                return;
+            }
+
+            _readerNovelChapterList.ItemsSource = chapters;
+        }
+
+        private void SyncReaderNovelChapterListSelection(ReaderNovelChapterItem chapter)
+        {
+            if (_readerNovelChapterList == null)
+            {
+                return;
+            }
+
+            _readerSelectionGuard = true;
+            _readerNovelChapterList.SelectedItem = chapter;
+            _readerSelectionGuard = false;
+        }
+
+        private void ClearReaderNovelChapterList()
+        {
+            if (_readerNovelChapterList == null)
+            {
+                return;
+            }
+
+            _readerNovelChapterList.ItemsSource = null;
+            _readerNovelChapterList.SelectedItem = null;
+        }
+
+        private void UpdateReaderNovelFileListItems(IList<ReaderMarkdownItem> files)
+        {
+            if (_readerNovelFileList == null)
+            {
+                return;
+            }
+
+            _readerNovelFileList.ItemsSource = files;
+        }
+
+        private void SyncReaderNovelFileListSelection(ReaderMarkdownItem file)
+        {
+            if (_readerNovelFileList == null)
+            {
+                return;
+            }
+
+            _readerSelectionGuard = true;
+            _readerNovelFileList.SelectedItem = file;
+            _readerSelectionGuard = false;
+        }
+
+        private void ClearReaderNovelFileList()
+        {
+            if (_readerNovelFileList == null)
+            {
+                return;
+            }
+
+            _readerNovelFileList.ItemsSource = null;
+            _readerNovelFileList.SelectedItem = null;
+            if (_readerNovelPreviewTextBox != null)
+            {
+                _readerNovelPreviewTextBox.Text = string.Empty;
+            }
         }
     }
 }

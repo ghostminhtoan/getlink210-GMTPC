@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Input;
 
 namespace get_link_manga
 {
@@ -36,381 +37,47 @@ namespace get_link_manga
         private TextBlock _txtLightNovelCount;
         private GalleryItem _selectedLightNovelBook;
         private LightNovelChapterRecord _selectedLightNovelChapter;
+        private LightNovelFloatingControlWindow _lightNovelFloatingControlWindow;
+        private bool _lightNovelAutoFocusEnabled = false;
+        private bool _lightNovelCopyBackoffActive;
+        private bool _lightNovelFocusStealthActive;
+        private bool _lightNovelFocusRestoreOverride;
+        private bool _lightNovelFocusTrayHidden;
+        private bool _lightNovelFloatingWasVisibleBeforeFocusTray;
+        private double _lightNovelSavedWindowOpacity = 1d;
+        private bool _lightNovelSavedShowInTaskbar = true;
+        private System.Windows.Forms.NotifyIcon _lightNovelFocusTrayIcon;
 
-        private FrameworkElement CreateLightNovelDownloadSection()
+        private void InitializeLightNovelDesk()
         {
-            var root = new Grid();
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            _dgLightNovelBooks = dgLightNovelBooks;
+            _lbLightNovelChapters = lbLightNovelChapters;
+            _txtLightNovelSelectedChapter = txtLightNovelSelectedChapter;
+            _txtLightNovelPlainText = txtLightNovelPlainText;
+            _txtLightNovelMarkdown = txtLightNovelMarkdown;
+            _txtLightNovelTagUrl = txtHakoTagUrl;
+            _txtLightNovelTotalPages = txtHakoTotalPages;
+            _txtLightNovelPageFrom = txtHakoPageFrom;
+            _txtLightNovelPageTo = txtHakoPageTo;
+            _txtLightNovelCount = txtLightNovelCount;
 
-            var topCard = new Border
+            if (_dgLightNovelBooks != null)
             {
-                Background = (Brush)TryFindResource("CyberpunkCardBrush") ?? new SolidColorBrush(Color.FromRgb(0x0D, 0x12, 0x1F)),
-                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(12),
-                Padding = new Thickness(16),
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var topGrid = new Grid();
-            for (int i = 0; i < 5; i++)
-            {
-                topGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                _dgLightNovelBooks.ItemsSource = _lightNovelItems;
+                _dgLightNovelBooks.SelectionChanged += DgLightNovelBooks_SelectionChanged;
+                _dgLightNovelBooks.PreviewKeyDown += DgLightNovelBooks_PreviewKeyDown;
+                _dgLightNovelBooks.ContextMenu = BuildLightNovelBookContextMenu();
             }
 
-            var actionRow = new WrapPanel { Margin = new Thickness(0, 0, 0, 10) };
-            actionRow.Children.Add(CreateLightNovelActionButton("ANALYZE TARGET PAGE", BtnLightNovelAnalyze_Click, "CompactCyanButton", 170));
-            actionRow.Children.Add(CreateLightNovelActionButton("GET LINK", BtnLightNovelGetLink_Click, "CompactCyanButton", 96));
-            actionRow.Children.Add(CreateLightNovelActionButton("GET MORE", BtnLightNovelGetMore_Click, "CompactCyanButton", 96));
-            actionRow.Children.Add(CreateLightNovelActionButton("PASTE DIRECT LINK", BtnLightNovelPasteDirect_Click, "CompactCyanButton", 148));
-            actionRow.Children.Add(CreateLightNovelActionButton("AUTO COPY TEXT CTRL F2", BtnStartLightNovelCopy_Click, "CompactPinkButton", 166));
-            actionRow.Children.Add(CreateLightNovelActionButton("STOP COPY TEXT ALT F2", BtnStopLightNovelCopy_Click, "CompactCyanButton", 162));
-            actionRow.Children.Add(CreateLightNovelActionButton("CLEAR", BtnClearLightNovelQueue_Click, "CompactCyanButton", 82));
-            actionRow.Children.Add(CreateLightNovelActionButton("OPEN FOLDER", BtnOpenLightNovelFolder_Click, "CompactCyanButton", 108));
-            Grid.SetRow(actionRow, 0);
-            topGrid.Children.Add(actionRow);
-
-            var targetRow = new Grid { Margin = new Thickness(0, 0, 0, 10) };
-            targetRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            targetRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            targetRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            targetRow.Children.Add(new TextBlock
+            if (_lbLightNovelChapters != null)
             {
-                Text = "TARGET URL",
-                Style = TryFindResource("InputLabelStyle") as Style,
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            _txtLightNovelTagUrl = new TextBox
-            {
-                Style = TryFindResource("SurfaceTextBox") as Style,
-                Text = "https://docln.net/the-loai/action"
-            };
-            Grid.SetColumn(_txtLightNovelTagUrl, 2);
-            targetRow.Children.Add(_txtLightNovelTagUrl);
-            Grid.SetRow(targetRow, 1);
-            topGrid.Children.Add(targetRow);
-
-            var pageRow = new Grid { Margin = new Thickness(0, 0, 0, 10) };
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(82) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(82) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(82) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
-            pageRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            AddPageField(pageRow, 0, "TOTAL", out _txtLightNovelTotalPages, "1");
-            AddPageField(pageRow, 4, "FROM", out _txtLightNovelPageFrom, "1");
-            AddPageField(pageRow, 8, "TO", out _txtLightNovelPageTo, "1");
-
-            _txtLightNovelCount = new TextBlock
-            {
-                Foreground = (Brush)TryFindResource("CyberpunkYellowBrush"),
-                FontSize = 11,
-                FontWeight = FontWeights.Bold,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(_txtLightNovelCount, 12);
-            pageRow.Children.Add(_txtLightNovelCount);
-            Grid.SetRow(pageRow, 2);
-            topGrid.Children.Add(pageRow);
-
-            var pathRow = new Grid { Margin = new Thickness(0, 0, 0, 10) };
-            pathRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            pathRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            pathRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            pathRow.Children.Add(new TextBlock
-            {
-                Text = "DOWNLOAD PATH",
-                Style = TryFindResource("InputLabelStyle") as Style,
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            var pathBox = new TextBox
-            {
-                IsReadOnly = true,
-                Style = TryFindResource("SurfaceTextBox") as Style
-            };
-            pathBox.SetBinding(TextBox.TextProperty, new Binding("Text")
-            {
-                Source = txtDownloadPath,
-                Mode = BindingMode.OneWay
-            });
-            Grid.SetColumn(pathBox, 2);
-            pathRow.Children.Add(pathBox);
-            Grid.SetRow(pathRow, 3);
-            topGrid.Children.Add(pathRow);
-
-            var hint = new TextBlock
-            {
-                Text = "Text-only lane. Paste a Hako book link, get all child chapter links, copy title + content into plain text, then convert to .md.",
-                Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush"),
-                FontSize = 11,
-                TextWrapping = TextWrapping.Wrap
-            };
-            Grid.SetRow(hint, 4);
-            topGrid.Children.Add(hint);
-
-            topCard.Child = topGrid;
-            Grid.SetRow(topCard, 0);
-            root.Children.Add(topCard);
-
-            var mainGrid = new Grid();
-            mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            mainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            mainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            var bookPanel = CreateLightNovelPanel("PANEL 1 · BOOK");
-            _dgLightNovelBooks = new DataGrid
-            {
-                AutoGenerateColumns = false,
-                CanUserAddRows = false,
-                CanUserDeleteRows = false,
-                SelectionMode = DataGridSelectionMode.Single,
-                SelectionUnit = DataGridSelectionUnit.FullRow,
-                HeadersVisibility = DataGridHeadersVisibility.Column,
-                EnableRowVirtualization = true,
-                EnableColumnVirtualization = true,
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-                RowHeaderWidth = 0,
-                GridLinesVisibility = DataGridGridLinesVisibility.Horizontal,
-                HorizontalGridLinesBrush = new SolidColorBrush(Color.FromRgb(0x1F, 0x29, 0x3D)),
-                VerticalGridLinesBrush = new SolidColorBrush(Color.FromRgb(0x1F, 0x29, 0x3D)),
-                Foreground = (Brush)TryFindResource("CyberpunkCyanBrush"),
-                ColumnHeaderStyle = TryFindResource("CyberpunkDataGridColumnHeader") as Style,
-                RowStyle = TryFindResource("CyberpunkDataGridRow") as Style,
-                CellStyle = TryFindResource("CyberpunkDataGridCell") as Style,
-                Margin = new Thickness(0)
-            };
-            _dgLightNovelBooks.Columns.Add(new DataGridCheckBoxColumn
-            {
-                Header = "✓",
-                Binding = new Binding(nameof(GalleryItem.IsChecked)),
-                Width = 38
-            });
-            _dgLightNovelBooks.Columns.Add(new DataGridTextColumn
-            {
-                Header = "BOOK",
-                Binding = new Binding(nameof(GalleryItem.Name)),
-                ElementStyle = CreateLightNovelTextStyle("CyberpunkCyanBrush"),
-                Width = new DataGridLength(2, DataGridLengthUnitType.Star)
-            });
-            _dgLightNovelBooks.Columns.Add(new DataGridTextColumn
-            {
-                Header = "STATUS",
-                Binding = new Binding(nameof(GalleryItem.DisplayStatusText)),
-                ElementStyle = CreateLightNovelTextStyle("CyberpunkCyanBrush"),
-                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-            });
-            _dgLightNovelBooks.Columns.Add(new DataGridTextColumn
-            {
-                Header = "PROCESS",
-                Binding = new Binding(nameof(GalleryItem.CurrentProcess)),
-                ElementStyle = CreateLightNovelTextStyle("CyberpunkCyanBrush"),
-                Width = new DataGridLength(1.2, DataGridLengthUnitType.Star)
-            });
-            _dgLightNovelBooks.ItemsSource = _lightNovelItems;
-            _dgLightNovelBooks.SelectionChanged += DgLightNovelBooks_SelectionChanged;
-            SetPanelContent(bookPanel, _dgLightNovelBooks);
-            Grid.SetColumn(bookPanel, 0);
-            Grid.SetRow(bookPanel, 0);
-            bookPanel.Margin = new Thickness(0, 0, 5, 5);
-            mainGrid.Children.Add(bookPanel);
-
-            var chapterPanel = CreateLightNovelPanel("PANEL 2 · CHAPTER");
-            _lbLightNovelChapters = new ListBox
-            {
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-                Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                ItemTemplate = BuildLightNovelChapterTemplate()
-            };
-            _lbLightNovelChapters.SelectionChanged += LbLightNovelChapters_SelectionChanged;
-            _lbLightNovelChapters.ItemsSource = _lightNovelChapterView;
-            SetPanelContent(chapterPanel, _lbLightNovelChapters);
-            Grid.SetColumn(chapterPanel, 1);
-            Grid.SetRow(chapterPanel, 0);
-            chapterPanel.Margin = new Thickness(5, 0, 0, 5);
-            mainGrid.Children.Add(chapterPanel);
-
-            var plainPanel = CreateLightNovelPanel("PANEL 3 · PLAIN TEXT");
-            var plainGrid = new Grid();
-            plainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            plainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
-            plainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
-            _txtLightNovelSelectedChapter = new TextBox
-            {
-                IsReadOnly = true,
-                Style = TryFindResource("SurfaceTextBox") as Style
-            };
-            Grid.SetRow(_txtLightNovelSelectedChapter, 0);
-            plainGrid.Children.Add(_txtLightNovelSelectedChapter);
-
-            _txtLightNovelPlainText = new TextBox
-            {
-                IsReadOnly = true,
-                AcceptsReturn = true,
-                TextWrapping = TextWrapping.Wrap,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-                Background = new SolidColorBrush(Color.FromRgb(0x0E, 0x12, 0x1A)),
-                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
-                Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 12,
-                Padding = new Thickness(10)
-            };
-            Grid.SetRow(_txtLightNovelPlainText, 2);
-            plainGrid.Children.Add(_txtLightNovelPlainText);
-            SetPanelContent(plainPanel, plainGrid);
-            Grid.SetColumn(plainPanel, 0);
-            Grid.SetRow(plainPanel, 1);
-            plainPanel.Margin = new Thickness(0, 5, 5, 0);
-            mainGrid.Children.Add(plainPanel);
-
-            var markdownPanel = CreateLightNovelPanel("PANEL 4 · .MD");
-            _txtLightNovelMarkdown = new TextBox
-            {
-                IsReadOnly = true,
-                AcceptsReturn = true,
-                TextWrapping = TextWrapping.Wrap,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Background = new SolidColorBrush(Color.FromRgb(0x0E, 0x12, 0x1A)),
-                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
-                Foreground = (Brush)TryFindResource("CyberpunkYellowBrush"),
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 12,
-                Padding = new Thickness(10)
-            };
-            SetPanelContent(markdownPanel, _txtLightNovelMarkdown);
-            Grid.SetColumn(markdownPanel, 1);
-            Grid.SetRow(markdownPanel, 1);
-            markdownPanel.Margin = new Thickness(5, 5, 0, 0);
-            mainGrid.Children.Add(markdownPanel);
-
-            Grid.SetRow(mainGrid, 1);
-            root.Children.Add(mainGrid);
+                _lbLightNovelChapters.ItemsSource = _lightNovelChapterView;
+                _lbLightNovelChapters.SelectionChanged += LbLightNovelChapters_SelectionChanged;
+                _lbLightNovelChapters.PreviewKeyDown += LbLightNovelChapters_PreviewKeyDown;
+                _lbLightNovelChapters.ContextMenu = BuildLightNovelChapterContextMenu();
+            }
 
             RefreshLightNovelSummary();
-            return root;
-        }
-
-        private Button CreateLightNovelActionButton(string text, RoutedEventHandler onClick, string styleKey, double minWidth)
-        {
-            var button = new Button
-            {
-                Content = text,
-                Style = TryFindResource(styleKey) as Style,
-                MinWidth = minWidth,
-                FontWeight = FontWeights.Bold
-            };
-            button.Click += onClick;
-            return button;
-        }
-
-        private static void SetPanelContent(Border panel, UIElement content)
-        {
-            if (panel.Child is DockPanel dock)
-            {
-                dock.Children.Add(content);
-            }
-        }
-
-        private static DataTemplate BuildLightNovelChapterTemplate()
-        {
-            var template = new DataTemplate(typeof(LightNovelChapterRecord));
-
-            var stackFactory = new FrameworkElementFactory(typeof(StackPanel));
-            stackFactory.SetValue(StackPanel.MarginProperty, new Thickness(0, 0, 0, 6));
-
-            var titleFactory = new FrameworkElementFactory(typeof(TextBlock));
-            titleFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(LightNovelChapterRecord.DisplayTitle)));
-            titleFactory.SetValue(TextBlock.FontWeightProperty, FontWeights.Bold);
-            titleFactory.SetValue(TextBlock.ForegroundProperty, Application.Current.TryFindResource("CyberpunkCyanBrush"));
-            stackFactory.AppendChild(titleFactory);
-
-            var previewFactory = new FrameworkElementFactory(typeof(TextBlock));
-            previewFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(LightNovelChapterRecord.PreviewText)));
-            previewFactory.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
-            previewFactory.SetValue(TextBlock.FontSizeProperty, 11.0);
-            previewFactory.SetValue(TextBlock.MarginProperty, new Thickness(0, 2, 0, 0));
-            stackFactory.AppendChild(previewFactory);
-
-            template.VisualTree = stackFactory;
-            return template;
-        }
-
-        private static Style CreateLightNovelTextStyle(string brushKey)
-        {
-            var style = new Style(typeof(TextBlock));
-            if (Application.Current?.TryFindResource(brushKey) is Brush brush)
-            {
-                style.Setters.Add(new Setter(TextBlock.ForegroundProperty, brush));
-            }
-
-            return style;
-        }
-
-        private Border CreateLightNovelPanel(string title)
-        {
-            var border = new Border
-            {
-                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(12),
-                Padding = new Thickness(14),
-                Background = (Brush)TryFindResource("CyberpunkCardBrush") ?? new SolidColorBrush(Color.FromRgb(0x0D, 0x12, 0x1F))
-            };
-
-            var root = new DockPanel();
-            var titleBlock = new TextBlock
-            {
-                Text = title,
-                Foreground = (Brush)TryFindResource("CyberpunkCyanBrush"),
-                FontSize = 14,
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-            DockPanel.SetDock(titleBlock, Dock.Top);
-            root.Children.Add(titleBlock);
-            border.Child = root;
-            return border;
-        }
-
-        private void AddPageField(Grid host, int startColumn, string label, out TextBox box, string defaultValue)
-        {
-            var labelBlock = new TextBlock
-            {
-                Text = label,
-                Style = TryFindResource("InputLabelStyle") as Style,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(labelBlock, startColumn);
-            host.Children.Add(labelBlock);
-
-            box = new TextBox
-            {
-                Text = defaultValue,
-                Background = new SolidColorBrush(Color.FromRgb(0x0E, 0x12, 0x1A)),
-                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
-                Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                CaretBrush = (Brush)TryFindResource("CyberpunkCyanBrush"),
-                Height = 28,
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(box, startColumn + 2);
-            host.Children.Add(box);
         }
 
         internal bool AddLightNovelQueueItem(GalleryItem item)
@@ -500,6 +167,7 @@ namespace get_link_manga
             }
 
             _lightNovelChapterMap[GetLightNovelItemKey(item)] = new ObservableCollection<LightNovelChapterRecord>();
+            TrackLightNovelChapterAutosave(_lightNovelChapterMap[GetLightNovelItemKey(item)]);
             if (ReferenceEquals(_selectedLightNovelBook, item))
             {
                 RefreshLightNovelDetail(item);
@@ -518,6 +186,7 @@ namespace get_link_manga
             {
                 chapters = new ObservableCollection<LightNovelChapterRecord>();
                 _lightNovelChapterMap[key] = chapters;
+                TrackLightNovelChapterAutosave(chapters);
             }
 
             LightNovelChapterRecord existing = chapters.FirstOrDefault(record =>
@@ -561,6 +230,8 @@ namespace get_link_manga
                 int chapterCount = _lightNovelChapterMap.Values.Sum(value => value.Count);
                 _txtLightNovelCount.Text = $"Books:{_lightNovelItems.Count} | Chapters:{chapterCount}";
             }
+
+            RequestGalleryListAutosave();
         }
 
         private void RefreshLightNovelDetail(GalleryItem item)
@@ -595,6 +266,37 @@ namespace get_link_manga
             }
         }
 
+        private ContextMenu BuildLightNovelBookContextMenu()
+        {
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateMenuItem("Check selected", (s, e) => SetCheckedForSelectedLightNovelBooks(true)));
+            menu.Items.Add(CreateMenuItem("Uncheck selected", (s, e) => SetCheckedForSelectedLightNovelBooks(false)));
+            menu.Items.Add(CreateMenuItem("Invert checked", (s, e) => InvertCheckedForLightNovelBooks()));
+            menu.Items.Add(new Separator());
+            menu.Items.Add(CreateMenuItem("Copy selected links", (s, e) => CopySelectedLightNovelBookLinks()));
+            menu.Items.Add(CreateMenuItem("Delete selected", (s, e) => DeleteSelectedLightNovelBooks()));
+            return menu;
+        }
+
+        private ContextMenu BuildLightNovelChapterContextMenu()
+        {
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateMenuItem("Check selected", (s, e) => SetCheckedForSelectedLightNovelChapters(true)));
+            menu.Items.Add(CreateMenuItem("Uncheck selected", (s, e) => SetCheckedForSelectedLightNovelChapters(false)));
+            menu.Items.Add(CreateMenuItem("Invert checked", (s, e) => InvertCheckedForLightNovelChapters()));
+            menu.Items.Add(new Separator());
+            menu.Items.Add(CreateMenuItem("Copy selected links", (s, e) => CopySelectedLightNovelChapterLinks()));
+            menu.Items.Add(CreateMenuItem("Delete selected", (s, e) => DeleteSelectedLightNovelChapters()));
+            return menu;
+        }
+
+        private static MenuItem CreateMenuItem(string header, RoutedEventHandler onClick)
+        {
+            var item = new MenuItem { Header = header };
+            item.Click += onClick;
+            return item;
+        }
+
         private void DgLightNovelBooks_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             _selectedLightNovelBook = _dgLightNovelBooks?.SelectedItem as GalleryItem;
@@ -603,6 +305,35 @@ namespace get_link_manga
             if (_selectedLightNovelBook != null)
             {
                 _ = WarmLightNovelChapterCacheAsync(_selectedLightNovelBook);
+            }
+        }
+
+        private void DgLightNovelBooks_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (IsTypingInEditableTextBox() || _dgLightNovelBooks == null || _dgLightNovelBooks.Items.Count == 0)
+            {
+                return;
+            }
+
+            if (e.Key == Key.Space)
+            {
+                ToggleSelectedLightNovelBooksChecked();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Home)
+            {
+                SelectLightNovelBookRange(toStart: true, extend: (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.End)
+            {
+                SelectLightNovelBookRange(toStart: false, extend: (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Delete)
+            {
+                DeleteSelectedLightNovelBooks();
+                e.Handled = true;
             }
         }
 
@@ -648,6 +379,35 @@ namespace get_link_manga
             }
         }
 
+        private void LbLightNovelChapters_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (IsTypingInEditableTextBox() || _lbLightNovelChapters == null || _lbLightNovelChapters.Items.Count == 0)
+            {
+                return;
+            }
+
+            if (e.Key == Key.Space)
+            {
+                ToggleSelectedLightNovelChaptersChecked();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Home)
+            {
+                SelectLightNovelChapterRange(toStart: true, extend: (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.End)
+            {
+                SelectLightNovelChapterRange(toStart: false, extend: (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Delete)
+            {
+                DeleteSelectedLightNovelChapters();
+                e.Handled = true;
+            }
+        }
+
         private void BtnClearLightNovelQueue_Click(object sender, RoutedEventArgs e)
         {
             ClearLightNovelQueue();
@@ -667,6 +427,39 @@ namespace get_link_manga
             {
                 ShowWarning("Không mở được thư mục: " + error, "Thông báo");
             }
+        }
+
+        private async void BtnMergeLightNovelBookMarkdown_Click(object sender, RoutedEventArgs e)
+        {
+            List<GalleryItem> targetItems = _lightNovelItems.Where(item => item.IsChecked).ToList();
+            if (targetItems.Count == 0 && _selectedLightNovelBook != null)
+            {
+                targetItems.Add(_selectedLightNovelBook);
+            }
+
+            if (targetItems.Count == 0)
+            {
+                ShowWarning("Chưa có book nào để merge .md.", "Thông báo");
+                return;
+            }
+
+            int mergedCount = 0;
+            int failedCount = 0;
+            foreach (GalleryItem item in targetItems)
+            {
+                try
+                {
+                    await MergeLightNovelBookMarkdownAsync(item);
+                    mergedCount++;
+                }
+                catch (Exception ex)
+                {
+                    failedCount++;
+                    HakoLog("Merge md book lỗi: " + ex.Message);
+                }
+            }
+
+            lblStatus.Text = $"Merge md xong. OK:{mergedCount} | Fail:{failedCount}";
         }
 
         private void BtnLightNovelPasteDirect_Click(object sender, RoutedEventArgs e)
@@ -690,12 +483,30 @@ namespace get_link_manga
                 return;
             }
 
+            Dictionary<string, bool> checkedStates = _lightNovelChapterMap.TryGetValue(GetLightNovelItemKey(item), out ObservableCollection<LightNovelChapterRecord> existing)
+                ? existing.ToDictionary(
+                    record => record.ChapterLink ?? record.ChapterTitle ?? string.Empty,
+                    record => record.IsChecked,
+                    StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
             var records = new ObservableCollection<LightNovelChapterRecord>(
                 (chapters ?? Enumerable.Empty<LightNovelChapterRecord>())
                 .GroupBy(record => record.ChapterLink ?? record.ChapterTitle ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First()));
+                .Select(group =>
+                {
+                    LightNovelChapterRecord record = group.First();
+                    string key = record.ChapterLink ?? record.ChapterTitle ?? string.Empty;
+                    if (checkedStates.TryGetValue(key, out bool wasChecked))
+                    {
+                        record.IsChecked = wasChecked;
+                    }
+
+                    return record;
+                }));
 
             _lightNovelChapterMap[GetLightNovelItemKey(item)] = records;
+            TrackLightNovelChapterAutosave(records);
 
             if (ReferenceEquals(_selectedLightNovelBook, item))
             {
@@ -703,6 +514,184 @@ namespace get_link_manga
             }
 
             RefreshLightNovelSummary();
+        }
+
+        private void SetCheckedForSelectedLightNovelBooks(bool isChecked)
+        {
+            foreach (GalleryItem item in _dgLightNovelBooks?.SelectedItems.Cast<GalleryItem>().ToList() ?? Enumerable.Empty<GalleryItem>())
+            {
+                item.IsChecked = isChecked;
+            }
+        }
+
+        private void InvertCheckedForLightNovelBooks()
+        {
+            foreach (GalleryItem item in _lightNovelItems)
+            {
+                item.IsChecked = !item.IsChecked;
+            }
+        }
+
+        private void ToggleSelectedLightNovelBooksChecked()
+        {
+            List<GalleryItem> selected = _dgLightNovelBooks?.SelectedItems.Cast<GalleryItem>().ToList() ?? new List<GalleryItem>();
+            if (selected.Count == 0)
+            {
+                return;
+            }
+
+            bool shouldCheck = selected.Any(item => !item.IsChecked);
+            foreach (GalleryItem item in selected)
+            {
+                item.IsChecked = shouldCheck;
+            }
+        }
+
+        private void DeleteSelectedLightNovelBooks()
+        {
+            List<GalleryItem> selected = _dgLightNovelBooks?.SelectedItems.Cast<GalleryItem>().ToList() ?? new List<GalleryItem>();
+            foreach (GalleryItem item in selected)
+            {
+                _lightNovelChapterMap.Remove(GetLightNovelItemKey(item));
+                _lightNovelItems.Remove(item);
+            }
+
+            RefreshLightNovelDetail(_dgLightNovelBooks?.SelectedItem as GalleryItem);
+            RefreshLightNovelSummary();
+        }
+
+        private void CopySelectedLightNovelBookLinks()
+        {
+            List<string> links = _dgLightNovelBooks?.SelectedItems.Cast<GalleryItem>()
+                .Select(item => item.Link)
+                .Where(link => !string.IsNullOrWhiteSpace(link))
+                .ToList() ?? new List<string>();
+            if (links.Count > 0)
+            {
+                Clipboard.SetText(string.Join("\r\n", links));
+            }
+        }
+
+        private void SelectLightNovelBookRange(bool toStart, bool extend)
+        {
+            if (_dgLightNovelBooks == null || _dgLightNovelBooks.Items.Count == 0)
+            {
+                return;
+            }
+
+            int targetIndex = toStart ? 0 : _dgLightNovelBooks.Items.Count - 1;
+            if (extend)
+            {
+                int anchorIndex = _dgLightNovelBooks.SelectedIndex < 0 ? 0 : _dgLightNovelBooks.SelectedIndex;
+                _dgLightNovelBooks.SelectedItems.Clear();
+                int start = Math.Min(anchorIndex, targetIndex);
+                int end = Math.Max(anchorIndex, targetIndex);
+                for (int i = start; i <= end; i++)
+                {
+                    _dgLightNovelBooks.SelectedItems.Add(_dgLightNovelBooks.Items[i]);
+                }
+            }
+            else
+            {
+                _dgLightNovelBooks.SelectedIndex = targetIndex;
+            }
+
+            _dgLightNovelBooks.ScrollIntoView(_dgLightNovelBooks.Items[targetIndex]);
+        }
+
+        private void SetCheckedForSelectedLightNovelChapters(bool isChecked)
+        {
+            foreach (LightNovelChapterRecord record in _lbLightNovelChapters?.SelectedItems.Cast<LightNovelChapterRecord>().ToList() ?? Enumerable.Empty<LightNovelChapterRecord>())
+            {
+                record.IsChecked = isChecked;
+            }
+
+            UpdateLightNovelBookCheckedState(_selectedLightNovelBook);
+        }
+
+        private void InvertCheckedForLightNovelChapters()
+        {
+            foreach (LightNovelChapterRecord record in _lightNovelChapterView)
+            {
+                record.IsChecked = !record.IsChecked;
+            }
+
+            UpdateLightNovelBookCheckedState(_selectedLightNovelBook);
+        }
+
+        private void ToggleSelectedLightNovelChaptersChecked()
+        {
+            List<LightNovelChapterRecord> selected = _lbLightNovelChapters?.SelectedItems.Cast<LightNovelChapterRecord>().ToList() ?? new List<LightNovelChapterRecord>();
+            if (selected.Count == 0)
+            {
+                return;
+            }
+
+            bool shouldCheck = selected.Any(record => !record.IsChecked);
+            foreach (LightNovelChapterRecord record in selected)
+            {
+                record.IsChecked = shouldCheck;
+            }
+
+            UpdateLightNovelBookCheckedState(_selectedLightNovelBook);
+        }
+
+        private void DeleteSelectedLightNovelChapters()
+        {
+            if (_selectedLightNovelBook == null ||
+                !_lightNovelChapterMap.TryGetValue(GetLightNovelItemKey(_selectedLightNovelBook), out ObservableCollection<LightNovelChapterRecord> records))
+            {
+                return;
+            }
+
+            List<LightNovelChapterRecord> selected = _lbLightNovelChapters?.SelectedItems.Cast<LightNovelChapterRecord>().ToList() ?? new List<LightNovelChapterRecord>();
+            foreach (LightNovelChapterRecord record in selected)
+            {
+                records.Remove(record);
+            }
+
+            RefreshLightNovelDetail(_selectedLightNovelBook);
+            UpdateLightNovelBookCheckedState(_selectedLightNovelBook);
+            RefreshLightNovelSummary();
+        }
+
+        private void CopySelectedLightNovelChapterLinks()
+        {
+            List<string> links = _lbLightNovelChapters?.SelectedItems.Cast<LightNovelChapterRecord>()
+                .Select(record => record.ChapterLink)
+                .Where(link => !string.IsNullOrWhiteSpace(link))
+                .ToList() ?? new List<string>();
+            if (links.Count > 0)
+            {
+                Clipboard.SetText(string.Join("\r\n", links));
+            }
+        }
+
+        private void SelectLightNovelChapterRange(bool toStart, bool extend)
+        {
+            if (_lbLightNovelChapters == null || _lbLightNovelChapters.Items.Count == 0)
+            {
+                return;
+            }
+
+            int targetIndex = toStart ? 0 : _lbLightNovelChapters.Items.Count - 1;
+            if (extend)
+            {
+                int anchorIndex = _lbLightNovelChapters.SelectedIndex < 0 ? 0 : _lbLightNovelChapters.SelectedIndex;
+                _lbLightNovelChapters.SelectedItems.Clear();
+                int start = Math.Min(anchorIndex, targetIndex);
+                int end = Math.Max(anchorIndex, targetIndex);
+                for (int i = start; i <= end; i++)
+                {
+                    _lbLightNovelChapters.SelectedItems.Add(_lbLightNovelChapters.Items[i]);
+                }
+            }
+            else
+            {
+                _lbLightNovelChapters.SelectedIndex = targetIndex;
+            }
+
+            _lbLightNovelChapters.ScrollIntoView(_lbLightNovelChapters.Items[targetIndex]);
         }
 
         private async Task WarmLightNovelChapterCacheAsync(GalleryItem item)
@@ -954,11 +943,19 @@ namespace get_link_manga
 
             string chapterUrl = NormalizeHakoUrl(record.ChapterLink);
             lblStatus.Text = $"Đang mở WebView2 cho {record.ChapterTitle}";
-            string chapterHtml = await TryFetchHakoChapterHtmlViaWebViewAsync(chapterUrl, token);
+            string chapterHtml = await TryFetchHakoChapterHtmlViaWebViewAsync(chapterUrl, token, _lightNovelAutoFocusEnabled);
             if (string.IsNullOrWhiteSpace(chapterHtml))
             {
                 HakoLog("WebView2 không lấy được chapter html. Fallback sang Firecrawl/browser lane.");
                 chapterHtml = await FetchHakoHtmlAsync(chapterUrl, token);
+            }
+            if (IsHakoTooManyRequestsHtml(chapterHtml))
+            {
+                throw new InvalidOperationException("429 too many requests");
+            }
+            if (IsHakoForbiddenChapterHtml(chapterHtml))
+            {
+                throw new InvalidOperationException("403 chapter forbidden");
             }
             string chapterTitle = ExtractHakoTitleTopText(chapterHtml);
             if (string.IsNullOrWhiteSpace(chapterTitle))
@@ -975,6 +972,7 @@ namespace get_link_manga
             }
 
             string plainText = BuildHakoChapterPlainText(chapterHtml);
+            EnsureHakoChapterHasText(plainText);
             var chapterInfo = new HakoChapterInfo
             {
                 BookTitle = bookTitle,
@@ -985,7 +983,7 @@ namespace get_link_manga
             string markdown = BuildHakoChapterMarkdown(item, chapterInfo, chapterHtml);
 
             string resolvedRoot = GetConfiguredDownloadRoot(rootFolder, item);
-            string safeBookTitle = GetCanonicalBookFolderName(item, bookTitle, "hako-book");
+            string safeBookTitle = GetCanonicalBookFolderName(item, bookTitle, "hako-book", 72);
             string targetFolder = Path.Combine(resolvedRoot, safeBookTitle);
             Directory.CreateDirectory(targetFolder);
 
@@ -1047,7 +1045,22 @@ namespace get_link_manga
                 rootFolder = PortablePaths.DefaultDownloadRoot;
             }
 
-            await CopyLightNovelChapterAsync(item, record, rootFolder, token);
+            try
+            {
+                await CopyLightNovelChapterAsync(item, record, rootFolder, token);
+            }
+            catch (Exception ex) when (IsSkippableHakoChapterError(ex))
+            {
+                if (ReferenceEquals(_selectedLightNovelChapter, record))
+                {
+                    _txtLightNovelSelectedChapter.Text = record.ChapterTitle ?? string.Empty;
+                    _txtLightNovelPlainText.Text = "[SKIP] Chapter không lấy được text, bỏ qua.";
+                    _txtLightNovelMarkdown.Text = string.Empty;
+                }
+
+                lblStatus.Text = $"Skip {record.ChapterTitle}";
+                return;
+            }
             token.ThrowIfCancellationRequested();
 
             if (ReferenceEquals(_selectedLightNovelChapter, record))
@@ -1080,22 +1093,64 @@ namespace get_link_manga
                     : new ObservableCollection<LightNovelChapterRecord>();
             }
 
-            item.TotalChapters = chapters.Count;
-            item.CompletedChapters = 0;
-            item.CurrentProcess = $"0/{chapters.Count} chapters";
+            List<LightNovelChapterRecord> chaptersToCopy = chapters.Where(chapter => chapter.IsChecked).ToList();
+            if (chaptersToCopy.Count == 0)
+            {
+                item.TotalChapters = 0;
+                item.CompletedChapters = 0;
+                item.CurrentProcess = "0/0 chapters";
+                item.IsChecked = false;
+                return;
+            }
 
-            for (int index = 0; index < chapters.Count; index++)
+            item.TotalChapters = chaptersToCopy.Count;
+            item.CompletedChapters = 0;
+            item.CurrentProcess = $"0/{chaptersToCopy.Count} chapters";
+
+            for (int index = 0; index < chaptersToCopy.Count; index++)
             {
                 token.ThrowIfCancellationRequested();
-                LightNovelChapterRecord chapter = chapters[index];
+                LightNovelChapterRecord chapter = chaptersToCopy[index];
                 item.DownloadingChapter = chapter.ChapterTitle;
-                item.DownloadingPageProgress = $"{index + 1}/{chapters.Count}";
-                item.CurrentProcess = $"{index}/{chapters.Count} chapters";
+                item.DownloadingPageProgress = $"{index + 1}/{chaptersToCopy.Count}";
+                item.CurrentProcess = $"{index}/{chaptersToCopy.Count} chapters";
 
-                await CopyLightNovelChapterAsync(item, chapter, rootFolder, token);
+                try
+                {
+                    await CopyLightNovelChapterAsync(item, chapter, rootFolder, token);
+                }
+                catch (Exception ex) when (IsHakoRateLimitError(ex))
+                {
+                    _lightNovelCopyBackoffActive = true;
+                    item.Status = "RateLimit";
+                    item.CurrentProcess = "429 wait 10s";
+                    lblStatus.Text = $"429 ở {chapter.ChapterTitle}. Nghỉ 10 giây rồi thử lại...";
+                    HakoLog($"429 chapter: {chapter.ChapterTitle} - {chapter.ChapterLink}. Wait 10s then retry.");
+                    UpdateLightNovelFloatingControlState();
+                    await Task.Delay(TimeSpan.FromSeconds(10), token);
+                    _lightNovelCopyBackoffActive = false;
+                    item.Status = "Copying";
+                    item.CurrentProcess = $"{index}/{chaptersToCopy.Count} chapters";
+                    lblStatus.Text = $"Thử lại {chapter.ChapterTitle} sau 429...";
+                    UpdateLightNovelFloatingControlState();
+                    index--;
+                    continue;
+                }
+                catch (Exception ex) when (IsSkippableHakoChapterError(ex))
+                {
+                    item.ErrorCount++;
+                    item.AddError(item.Name, 0, $"Skip chapter: {chapter.ChapterTitle}");
+                    item.CurrentProcess = $"Skip {index + 1}/{chaptersToCopy.Count}";
+                    HakoLog($"Skip chapter: {chapter.ChapterTitle} - {chapter.ChapterLink} - {ex.Message}");
+                    chapter.IsChecked = false;
+                    UpdateLightNovelBookCheckedState(item);
+                    continue;
+                }
 
                 item.CompletedChapters = index + 1;
-                item.CurrentProcess = $"{index + 1}/{chapters.Count} chapters";
+                item.CurrentProcess = $"{index + 1}/{chaptersToCopy.Count} chapters";
+                chapter.IsChecked = false;
+                UpdateLightNovelBookCheckedState(item);
             }
         }
 
@@ -1215,11 +1270,38 @@ namespace get_link_manga
 
         private async void BtnStartLightNovelCopy_Click(object sender, RoutedEventArgs e)
         {
+            await StartLightNovelAutoCopyAsync();
+        }
+
+        private void BtnShowLightNovelFloatButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lightNovelFocusTrayHidden)
+            {
+                RestoreMainWindowFromFocusTray(activateWindow: true);
+            }
+
+            EnsureLightNovelFloatingControlWindow();
+            if (_lightNovelFloatingControlWindow.WindowState == WindowState.Minimized)
+            {
+                _lightNovelFloatingControlWindow.WindowState = WindowState.Normal;
+            }
+            if (!_lightNovelFloatingControlWindow.IsVisible)
+            {
+                _lightNovelFloatingControlWindow.Show();
+            }
+            _lightNovelFloatingControlWindow.Activate();
+            UpdateLightNovelFloatingControlState();
+            lblStatus.Text = "Đã mở float auto copy text.";
+        }
+
+        private async System.Threading.Tasks.Task StartLightNovelAutoCopyAsync()
+        {
             if (_lightNovelCopyCts != null)
             {
                 lblStatus.Text = _isVietnameseUi
-                    ? "Auto copy text đang chạy. Bấm STOP COPY TEXT ALT F2 để dừng."
-                    : "Auto copy text already running. Use STOP COPY TEXT ALT F2 to stop.";
+                    ? "Auto copy text đang chạy. Dùng float button để điều khiển."
+                    : "Auto copy text already running. Use floating button to control it.";
+                UpdateLightNovelFloatingControlState();
                 return;
             }
 
@@ -1244,6 +1326,9 @@ namespace get_link_manga
 
             _lightNovelCopyCts = new CancellationTokenSource();
             CancellationToken token = _lightNovelCopyCts.Token;
+            EnsureLightNovelFloatingControlWindow();
+            UpdateLightNovelFocusVisibilityState();
+            UpdateLightNovelFloatingControlState();
 
             try
             {
@@ -1262,6 +1347,7 @@ namespace get_link_manga
                         await CopyLightNovelItemAsync(item, rootFolder, token);
                         item.Status = "Completed";
                         item.DownloadPath = ResolveBestFolderForGalleryItem(item);
+                        await RefreshReaderNovelLibraryAsync(forceRefresh: true);
                     }
                     catch (OperationCanceledException)
                     {
@@ -1288,17 +1374,26 @@ namespace get_link_manga
             {
                 _lightNovelCopyCts.Dispose();
                 _lightNovelCopyCts = null;
+                _lightNovelCopyBackoffActive = false;
+                UpdateLightNovelFocusVisibilityState();
+                UpdateLightNovelFloatingControlState();
                 RefreshLightNovelSummary();
             }
         }
 
         private void BtnStopLightNovelCopy_Click(object sender, RoutedEventArgs e)
         {
+            StopLightNovelAutoCopy();
+        }
+
+        private void StopLightNovelAutoCopy()
+        {
             if (_lightNovelCopyCts == null)
             {
                 lblStatus.Text = _isVietnameseUi
                     ? "Chưa có tiến trình auto copy text để dừng."
                     : "No auto copy text process is running.";
+                UpdateLightNovelFloatingControlState();
                 return;
             }
 
@@ -1306,6 +1401,518 @@ namespace get_link_manga
             lblStatus.Text = _isVietnameseUi
                 ? "Đang dừng auto copy text..."
                 : "Stopping auto copy text...";
+            UpdateLightNovelFloatingControlState();
+        }
+
+        private void EnsureLightNovelFloatingControlWindow()
+        {
+            if (_lightNovelFloatingControlWindow != null)
+            {
+                return;
+            }
+
+            _lightNovelFloatingControlWindow = new LightNovelFloatingControlWindow(
+                _isVietnameseUi,
+                () => Dispatcher.BeginInvoke(new Action(async () => await StartLightNovelAutoCopyAsync())),
+                () => Dispatcher.BeginInvoke(new Action(StopLightNovelAutoCopy)),
+                () => Dispatcher.BeginInvoke(new Action(async () => await StartPictureDownloadFromFloatingAsync())),
+                () => Dispatcher.BeginInvoke(new Action(StopPictureDownloadFromFloating)),
+                enabled => Dispatcher.BeginInvoke(new Action(() => SetPictureAutoRetryFromFloating(enabled))),
+                () => Dispatcher.BeginInvoke(new Action(ToggleLightNovelAutoFocus)),
+                () => Dispatcher.BeginInvoke(new Action(() => BtnOpenLightNovelFolder_Click(this, new RoutedEventArgs()))));
+            _lightNovelFloatingControlWindow.Closed += (sender, args) =>
+            {
+                _lightNovelFloatingControlWindow = null;
+            };
+        }
+
+        private void UpdateLightNovelFloatingControlState()
+        {
+            _lightNovelFloatingControlWindow?.UpdateState(
+                _lightNovelCopyCts != null && !_lightNovelCopyBackoffActive,
+                _lightNovelAutoFocusEnabled,
+                _downloadCts != null,
+                btnAutoRetryErrors?.IsChecked == true,
+                _isVietnameseUi);
+        }
+
+        private void UpdateLightNovelFocusVisibilityState()
+        {
+            bool shouldHideWindows = _lightNovelAutoFocusEnabled && _lightNovelCopyCts != null;
+            if (shouldHideWindows)
+            {
+                if (_lightNovelFocusRestoreOverride)
+                {
+                    return;
+                }
+
+                HideMainWindowToFocusTray();
+                return;
+            }
+
+            _lightNovelFocusRestoreOverride = false;
+            if (_lightNovelFocusTrayHidden)
+            {
+                if (_lightNovelAutoFocusEnabled)
+                {
+                    return;
+                }
+
+                RestoreMainWindowFromFocusTray(activateWindow: false);
+                return;
+            }
+
+            if (!_lightNovelFocusStealthActive)
+            {
+                return;
+            }
+
+            _lightNovelFocusStealthActive = false;
+            Opacity = _lightNovelSavedWindowOpacity <= 0d ? 1d : _lightNovelSavedWindowOpacity;
+            ShowInTaskbar = _lightNovelSavedShowInTaskbar;
+        }
+
+        private void ToggleLightNovelAutoFocus()
+        {
+            _lightNovelAutoFocusEnabled = !_lightNovelAutoFocusEnabled;
+            lblStatus.Text = _lightNovelAutoFocusEnabled
+                ? "Auto focus WebView2: ON"
+                : "Auto focus WebView2: OFF";
+            if (_lightNovelAutoFocusEnabled)
+            {
+                HideMainWindowToFocusTray();
+            }
+            else
+            {
+                _lightNovelFocusRestoreOverride = false;
+                RestoreMainWindowFromFocusTray(activateWindow: false);
+            }
+            UpdateLightNovelFocusVisibilityState();
+            UpdateLightNovelFloatingControlState();
+        }
+
+        private void EnsureLightNovelFocusTrayIcon()
+        {
+            if (_lightNovelFocusTrayIcon != null)
+            {
+                return;
+            }
+
+            var icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var trayMenu = new System.Windows.Forms.ContextMenuStrip();
+            trayMenu.Items.Add("Restore", null, (sender, args) => Dispatcher.BeginInvoke(new Action(() => RestoreMainWindowFromFocusTray(activateWindow: true))));
+            trayMenu.Items.Add("Show Float", null, (sender, args) => Dispatcher.BeginInvoke(new Action(() =>
+            {
+                RestoreMainWindowFromFocusTray(activateWindow: true);
+                EnsureLightNovelFloatingControlWindow();
+                _lightNovelFloatingControlWindow?.Show();
+                UpdateLightNovelFloatingControlState();
+            })));
+            trayMenu.Items.Add("Exit", null, (sender, args) => Dispatcher.BeginInvoke(new Action(Close)));
+            _lightNovelFocusTrayIcon = new System.Windows.Forms.NotifyIcon
+            {
+                Icon = icon,
+                Text = "Comic-GMTPC focus",
+                Visible = false,
+                ContextMenuStrip = trayMenu
+            };
+            _lightNovelFocusTrayIcon.MouseClick += (sender, args) =>
+            {
+                if (args.Button == System.Windows.Forms.MouseButtons.Left)
+                {
+                    Dispatcher.BeginInvoke(new Action(() => RestoreMainWindowFromFocusTray(activateWindow: true)));
+                }
+            };
+        }
+
+        private void HideMainWindowToFocusTray()
+        {
+            EnsureLightNovelFocusTrayIcon();
+            if (!_lightNovelFocusStealthActive)
+            {
+                _lightNovelSavedWindowOpacity = Opacity;
+                _lightNovelSavedShowInTaskbar = ShowInTaskbar;
+            }
+
+            _lightNovelFocusStealthActive = true;
+            _lightNovelFocusTrayHidden = true;
+            _lightNovelFocusRestoreOverride = false;
+            _lightNovelFocusTrayIcon.Visible = true;
+            _lightNovelFloatingWasVisibleBeforeFocusTray = _lightNovelFloatingControlWindow != null && _lightNovelFloatingControlWindow.IsVisible;
+            if (_lightNovelFloatingControlWindow != null)
+            {
+                _lightNovelFloatingControlWindow.PrepareForTrayHide();
+                _lightNovelFloatingControlWindow.Hide();
+            }
+            WindowState = WindowState.Minimized;
+            ShowInTaskbar = false;
+            Opacity = 0d;
+            Hide();
+        }
+
+        private void RestoreMainWindowFromFocusTray(bool activateWindow)
+        {
+            _lightNovelFocusTrayHidden = false;
+            _lightNovelFocusRestoreOverride = _lightNovelAutoFocusEnabled;
+            if (_lightNovelFocusTrayIcon != null)
+            {
+                _lightNovelFocusTrayIcon.Visible = false;
+            }
+
+            _lightNovelFocusStealthActive = false;
+            Opacity = _lightNovelSavedWindowOpacity <= 0d ? 1d : _lightNovelSavedWindowOpacity;
+            ShowInTaskbar = _lightNovelSavedShowInTaskbar;
+            if (!IsVisible)
+            {
+                Show();
+            }
+
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
+
+            if (activateWindow)
+            {
+                Activate();
+                Focus();
+            }
+
+            RestoreLightNovelFloatingControlWindowFromTray();
+        }
+
+        private void RestoreLightNovelFloatingControlWindowFromTray()
+        {
+            EnsureLightNovelFloatingControlWindow();
+            if (_lightNovelFloatingControlWindow == null)
+            {
+                return;
+            }
+
+            _lightNovelFloatingControlWindow.RestoreFromTray();
+            UpdateLightNovelFloatingControlState();
+        }
+
+        private void DisposeLightNovelFocusTrayIcon()
+        {
+            if (_lightNovelFocusTrayIcon == null)
+            {
+                return;
+            }
+
+            _lightNovelFocusTrayIcon.Visible = false;
+            _lightNovelFocusTrayIcon.Dispose();
+            _lightNovelFocusTrayIcon = null;
+        }
+
+        private void HandleFocusTrayWindowStateChanged()
+        {
+            if (_lightNovelAutoFocusEnabled && WindowState == WindowState.Minimized)
+            {
+                HideMainWindowToFocusTray();
+            }
+        }
+
+        private async Task StartPictureDownloadFromFloatingAsync()
+        {
+            if (btnStartDownload?.IsChecked == true || _downloadCts != null)
+            {
+                lblStatus.Text = "Download picture đang chạy.";
+                UpdateLightNovelFloatingControlState();
+                return;
+            }
+
+            SetDownloadToggleState(true);
+            await HandleStartDownloadToggleCheckedAsync();
+            UpdateLightNovelFloatingControlState();
+        }
+
+        private void StopPictureDownloadFromFloating()
+        {
+            BtnStopDownload_Click(this, new RoutedEventArgs());
+            UpdateLightNovelFloatingControlState();
+        }
+
+        private void SetPictureAutoRetryFromFloating(bool enabled)
+        {
+            if (btnAutoRetryErrors == null)
+            {
+                return;
+            }
+
+            btnAutoRetryErrors.IsChecked = enabled;
+            lblStatus.Text = enabled ? "Auto retry: ON" : "Auto retry: OFF";
+            UpdateLightNovelFloatingControlState();
+        }
+
+        private async Task MergeLightNovelBookMarkdownAsync(GalleryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            if (!_lightNovelChapterMap.TryGetValue(GetLightNovelItemKey(item), out ObservableCollection<LightNovelChapterRecord> chapters) ||
+                chapters.Count == 0)
+            {
+                List<LightNovelChapterRecord> loaded = await BuildLightNovelChapterRecordsAsync(item, CancellationToken.None, firecrawlOnly: true);
+                if (loaded.Count == 0)
+                {
+                    loaded = await BuildLightNovelChapterRecordsAsync(item, CancellationToken.None, firecrawlOnly: false);
+                }
+
+                SetLightNovelChapterList(item, loaded);
+                chapters = _lightNovelChapterMap.TryGetValue(GetLightNovelItemKey(item), out ObservableCollection<LightNovelChapterRecord> created)
+                    ? created
+                    : new ObservableCollection<LightNovelChapterRecord>();
+            }
+
+            List<LightNovelChapterRecord> orderedChapters = chapters
+                .OrderBy(record => record.VolumeOrder)
+                .ThenBy(record => record.SequenceIndex)
+                .ThenBy(record => record.ChapterTitle, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (orderedChapters.Count == 0)
+            {
+                throw new InvalidOperationException("Không có chapter để merge.");
+            }
+
+            string bookTitle = FormatGalleryTitle(item.Name);
+            string targetFolder = GetMergedLightNovelBookFolder(item, bookTitle);
+            Directory.CreateDirectory(targetFolder);
+
+            var mergedSections = new List<MergedLightNovelChapterSection>();
+            foreach (LightNovelChapterRecord chapter in orderedChapters)
+            {
+                string markdown = await EnsureLightNovelChapterMarkdownAsync(item, chapter);
+                if (string.IsNullOrWhiteSpace(markdown))
+                {
+                    continue;
+                }
+
+                mergedSections.Add(new MergedLightNovelChapterSection
+                {
+                    Chapter = chapter,
+                    Anchor = BuildLightNovelAnchor(chapter),
+                    MarkdownBody = ExtractLightNovelMergedBody(markdown)
+                });
+            }
+
+            if (mergedSections.Count == 0)
+            {
+                throw new InvalidOperationException("Không có file .md chapter hợp lệ để merge.");
+            }
+
+            string mergedMarkdown = BuildMergedLightNovelMarkdown(bookTitle, item.Link, mergedSections);
+            string mergedPath = Path.Combine(targetFolder, "0000 - MERGED BOOK.md");
+            File.WriteAllText(mergedPath, mergedMarkdown, new System.Text.UTF8Encoding(true));
+        }
+
+        private string GetMergedLightNovelBookFolder(GalleryItem item, string bookTitle)
+        {
+            string rootFolder = txtDownloadPath?.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(rootFolder))
+            {
+                rootFolder = PortablePaths.DefaultDownloadRoot;
+            }
+
+            string resolvedRoot = GetConfiguredDownloadRoot(rootFolder, item);
+            string safeBookTitle = GetCanonicalBookFolderName(item, bookTitle, "hako-book", 72);
+            return Path.Combine(resolvedRoot, safeBookTitle);
+        }
+
+        private async Task<string> EnsureLightNovelChapterMarkdownAsync(GalleryItem item, LightNovelChapterRecord chapter)
+        {
+            if (!string.IsNullOrWhiteSpace(chapter?.MarkdownText))
+            {
+                return chapter.MarkdownText;
+            }
+
+            if (!string.IsNullOrWhiteSpace(chapter?.MarkdownFilePath) && File.Exists(chapter.MarkdownFilePath))
+            {
+                string fileMarkdown = File.ReadAllText(chapter.MarkdownFilePath);
+                chapter.MarkdownText = fileMarkdown;
+                return fileMarkdown;
+            }
+
+            string rootFolder = txtDownloadPath?.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(rootFolder))
+            {
+                rootFolder = PortablePaths.DefaultDownloadRoot;
+            }
+
+            await CopyLightNovelChapterAsync(item, chapter, rootFolder, CancellationToken.None);
+            if (!string.IsNullOrWhiteSpace(chapter.MarkdownText))
+            {
+                return chapter.MarkdownText;
+            }
+
+            if (!string.IsNullOrWhiteSpace(chapter.MarkdownFilePath) && File.Exists(chapter.MarkdownFilePath))
+            {
+                chapter.MarkdownText = File.ReadAllText(chapter.MarkdownFilePath);
+                return chapter.MarkdownText;
+            }
+
+            return string.Empty;
+        }
+
+        private static string BuildMergedLightNovelMarkdown(string bookTitle, string bookLink, List<MergedLightNovelChapterSection> sections)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("# " + (bookTitle ?? "Merged Book"));
+            sb.AppendLine();
+            if (!string.IsNullOrWhiteSpace(bookLink))
+            {
+                sb.AppendLine("> Source book: " + bookLink.Trim());
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("<a id=\"muc-luc\"></a>");
+            sb.AppendLine();
+            sb.AppendLine("## Mục lục");
+            sb.AppendLine();
+
+            string currentVolume = null;
+            foreach (MergedLightNovelChapterSection section in sections)
+            {
+                string volumeTitle = string.IsNullOrWhiteSpace(section.Chapter?.VolumeTitle)
+                    ? null
+                    : section.Chapter.VolumeTitle.Trim();
+
+                if (!string.Equals(currentVolume, volumeTitle, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentVolume = volumeTitle;
+                    if (!string.IsNullOrWhiteSpace(currentVolume))
+                    {
+                        sb.AppendLine("### " + currentVolume);
+                        sb.AppendLine();
+                    }
+                }
+
+                sb.AppendLine($"- [{section.Chapter.ChapterTitle}](#{section.Anchor})");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("---");
+            sb.AppendLine();
+
+            currentVolume = null;
+            foreach (MergedLightNovelChapterSection section in sections)
+            {
+                string volumeTitle = string.IsNullOrWhiteSpace(section.Chapter?.VolumeTitle)
+                    ? null
+                    : section.Chapter.VolumeTitle.Trim();
+
+                if (!string.Equals(currentVolume, volumeTitle, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentVolume = volumeTitle;
+                    if (!string.IsNullOrWhiteSpace(currentVolume))
+                    {
+                        sb.AppendLine("## " + currentVolume);
+                        sb.AppendLine();
+                    }
+                }
+
+                sb.AppendLine($"<a id=\"{section.Anchor}\"></a>");
+                sb.AppendLine();
+                sb.AppendLine("### " + section.Chapter.ChapterTitle);
+                sb.AppendLine();
+                if (!string.IsNullOrWhiteSpace(section.Chapter.ChapterLink))
+                {
+                    sb.AppendLine("> Source chapter: " + section.Chapter.ChapterLink.Trim());
+                    sb.AppendLine();
+                }
+
+                sb.AppendLine(section.MarkdownBody.Trim());
+                sb.AppendLine();
+                sb.AppendLine("[Lên mục lục](#muc-luc)");
+                sb.AppendLine();
+                sb.AppendLine("---");
+                sb.AppendLine();
+            }
+
+            return sb.ToString().Trim() + Environment.NewLine;
+        }
+
+        private static string ExtractLightNovelMergedBody(string markdown)
+        {
+            if (string.IsNullOrWhiteSpace(markdown))
+            {
+                return string.Empty;
+            }
+
+            string normalized = markdown.Replace("\r\n", "\n");
+            string[] markerLines =
+            {
+                "---\n",
+                "---\r\n"
+            };
+
+            foreach (string marker in markerLines)
+            {
+                int markerIndex = normalized.IndexOf(marker.Replace("\r\n", "\n"), StringComparison.Ordinal);
+                if (markerIndex >= 0)
+                {
+                    return normalized.Substring(markerIndex + 4).Trim();
+                }
+            }
+
+            return normalized.Trim();
+        }
+
+        private static string BuildLightNovelAnchor(LightNovelChapterRecord chapter)
+        {
+            string raw = (chapter?.VolumeTitle ?? string.Empty) + "-" + (chapter?.ChapterTitle ?? string.Empty);
+            string normalized = raw.ToLowerInvariant();
+            normalized = normalized.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new System.Text.StringBuilder();
+            foreach (char ch in normalized)
+            {
+                System.Globalization.UnicodeCategory category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (category == System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    continue;
+                }
+
+                if (char.IsLetterOrDigit(ch))
+                {
+                    sb.Append(ch);
+                }
+                else if (sb.Length == 0 || sb[sb.Length - 1] != '-')
+                {
+                    sb.Append('-');
+                }
+            }
+
+            string anchor = sb.ToString().Trim('-');
+            return string.IsNullOrWhiteSpace(anchor) ? "chapter" : anchor;
+        }
+
+        private void UpdateLightNovelBookCheckedState(GalleryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            if (!_lightNovelChapterMap.TryGetValue(GetLightNovelItemKey(item), out ObservableCollection<LightNovelChapterRecord> records) ||
+                records.Count == 0)
+            {
+                item.IsChecked = false;
+                return;
+            }
+
+            item.IsChecked = records.Any(record => record.IsChecked);
+        }
+
+        private sealed class MergedLightNovelChapterSection
+        {
+            public LightNovelChapterRecord Chapter { get; set; }
+
+            public string Anchor { get; set; }
+
+            public string MarkdownBody { get; set; }
         }
     }
 }

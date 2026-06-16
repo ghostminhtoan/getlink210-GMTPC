@@ -28,6 +28,7 @@ namespace get_link_manga
         private static readonly SemaphoreSlim _captchaSemaphore = new SemaphoreSlim(1, 1);
         private static volatile bool _isCaptchaWindowActive = false;
         private bool _hakoCaptchaSessionReady;
+        private bool _displaySettingsHooked;
         internal string _truyenqqPreferredBaseUrl;
         private CancellationTokenSource _cts;
         private int _detectedMaxPage = 1;
@@ -63,6 +64,7 @@ namespace get_link_manga
         {
             InitializeComponent();
             InitializeWorkspaceShell();
+            HookDisplaySettingsChanged();
             PreviewMouseWheel += MainWindow_PreviewMouseWheel;
             Loaded += (s, e) => ApplyAdaptiveLayout(new Size(ActualWidth, ActualHeight));
             _isVietnameseUi = true;
@@ -191,12 +193,45 @@ namespace get_link_manga
                 {
                     view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Ascending));
                 }
+
+                EnsureLightNovelFloatingControlWindow();
+                if (_lightNovelFloatingControlWindow != null && !_lightNovelFloatingControlWindow.IsVisible)
+                {
+                    _lightNovelFloatingControlWindow.Show();
+                }
+                UpdateLightNovelFloatingControlState();
+
             };
 
             Closing += (s, e) =>
             {
+                UnhookDisplaySettingsChanged();
+                DisposeLightNovelFocusTrayIcon();
+                _lightNovelFloatingControlWindow?.Close();
                 SaveActiveGalleryListSnapshot();
             };
+        }
+
+        private void HookDisplaySettingsChanged()
+        {
+            if (_displaySettingsHooked)
+            {
+                return;
+            }
+
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+            _displaySettingsHooked = true;
+        }
+
+        private void UnhookDisplaySettingsChanged()
+        {
+            if (!_displaySettingsHooked)
+            {
+                return;
+            }
+
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
+            _displaySettingsHooked = false;
         }
 
         private void StyleComboBoxPopup(System.Windows.Controls.ComboBox comboBox)
@@ -510,11 +545,9 @@ namespace get_link_manga
 
         private void BtnClearComplete_Click(object sender, RoutedEventArgs e)
         {
-            var toRemove = _scrapedItems.Where(item => 
-                item.Status == "Completed" || 
-                item.Status == "Done" || 
-                item.CurrentProcess == "Done"
-            ).ToList();
+            var toRemove = _scrapedItems
+                .Where(item => item != null && item.IsSuccessfullyCompleted())
+                .ToList();
 
             if (toRemove.Count == 0)
             {

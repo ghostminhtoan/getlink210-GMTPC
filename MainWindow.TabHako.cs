@@ -496,13 +496,98 @@ namespace get_link_manga
             return visibleHtml;
         }
 
-        private async Task<string> TryFetchHakoChapterHtmlViaWebViewAsync(string chapterUrl, CancellationToken token)
+        private static bool IsHakoForbiddenChapterHtml(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return false;
+            }
+
+            string text = WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]+>", " ", RegexOptions.Singleline));
+            text = Regex.Replace(text, @"\s+", " ").Trim();
+
+            return text.IndexOf("403", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                   (text.IndexOf("không phù hợp", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("khong phu hop", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("hãy chờ đợi người làm sửa lại", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("hay cho doi nguoi lam sua lai", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("forbidden", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static bool IsHakoTooManyRequestsHtml(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return false;
+            }
+
+            string text = WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]+>", " ", RegexOptions.Singleline));
+            text = Regex.Replace(text, @"\s+", " ").Trim();
+
+            return text.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                   (text.IndexOf("too many requests", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("quá nhiều yêu cầu", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("qua nhieu yeu cau", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static bool IsSkippableHakoChapterError(Exception ex)
+        {
+            if (ex == null)
+            {
+                return false;
+            }
+
+            string message = ex.Message ?? string.Empty;
+            return message.IndexOf("403", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("forbidden", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("không phù hợp", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("khong phu hop", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("khong trich xuat duoc noi dung text", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("non-text chapter", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsHakoRateLimitError(Exception ex)
+        {
+            if (ex == null)
+            {
+                return false;
+            }
+
+            string message = ex.Message ?? string.Empty;
+            return message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("too many requests", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("quá nhiều yêu cầu", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("qua nhieu yeu cau", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static void EnsureHakoChapterHasText(string plainText)
+        {
+            if (!string.IsNullOrWhiteSpace(plainText))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("non-text chapter");
+        }
+
+        private async Task<string> TryFetchHakoChapterHtmlViaWebViewAsync(string chapterUrl, CancellationToken token, bool autoFocus)
         {
             token.ThrowIfCancellationRequested();
-            HakoChapterCaptureResult capture = await HakoChapterCaptureWindow.CaptureAsync(this, chapterUrl, _isVietnameseUi, token);
+            HakoChapterCaptureResult capture = await HakoChapterCaptureWindow.CaptureAsync(
+                this,
+                chapterUrl,
+                _isVietnameseUi,
+                autoFocus,
+                token,
+                () => _lightNovelCopyCts?.Cancel());
             token.ThrowIfCancellationRequested();
             if (capture == null || string.IsNullOrWhiteSpace(capture.ContentHtml))
             {
+                if (capture != null && capture.IsRateLimited)
+                {
+                    throw new InvalidOperationException("429 too many requests");
+                }
+
                 return null;
             }
 
@@ -921,7 +1006,7 @@ namespace get_link_manga
             }
 
             string resolvedRoot = GetConfiguredDownloadRoot(rootFolder, item);
-            string safeTitle = GetCanonicalBookFolderName(item, item?.Name, "hako-book");
+            string safeTitle = GetCanonicalBookFolderName(item, item?.Name, "hako-book", 72);
             string targetFolder = Path.Combine(resolvedRoot, safeTitle);
             string tempFolder = BuildStableTempFolderPath(resolvedRoot, HakoSiteFolder, safeTitle, item.Link, item.Name);
 
@@ -1012,11 +1097,33 @@ namespace get_link_manga
                         }
                     });
 
-                    string chapterHtml = await FetchHakoHtmlAsync(chapter.Link, token);
-                    string plainText = BuildHakoChapterPlainText(chapterHtml);
-                    string markdown = BuildHakoChapterMarkdown(item, chapter, chapterHtml);
-                    File.WriteAllText(chapterFilePath, markdown, new UTF8Encoding(true));
-                    RecordLightNovelChapterSnapshot(item, chapterLabel, plainText, markdown, chapterFilePath);
+                    try
+                    {
+                        string chapterHtml = await FetchHakoHtmlAsync(chapter.Link, token);
+                        string plainText = BuildHakoChapterPlainText(chapterHtml);
+                        EnsureHakoChapterHasText(plainText);
+                        string markdown = BuildHakoChapterMarkdown(item, chapter, chapterHtml);
+                        File.WriteAllText(chapterFilePath, markdown, new UTF8Encoding(true));
+                        RecordLightNovelChapterSnapshot(item, chapterLabel, plainText, markdown, chapterFilePath);
+                    }
+                    catch (Exception ex) when (IsSkippableHakoChapterError(ex))
+                    {
+                        HakoLog($"Skip Hako chapter: {chapterLabel} - {chapter.Link} - {ex.Message}");
+                        completed++;
+                        MarkChapterProcessDone(rootFolder, processSiteFolder, item, chapter.Link);
+
+                        if (queueItem != null)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                queueItem.CompletedChapters = completed;
+                                queueItem.CurrentProcess = $"Skip {completed}/{totalChapters}";
+                            });
+                        }
+
+                        WriteTempProgressLog(tempFolder, item, "Downloading", completed, totalChapters, $"{completed}/{totalChapters} chapters", $"Skip {chapterLabel}");
+                        continue;
+                    }
 
                     completed++;
                     MarkChapterProcessDone(rootFolder, processSiteFolder, item, chapter.Link);
@@ -1079,7 +1186,7 @@ namespace get_link_manga
             }
 
             string resolvedRoot = GetConfiguredDownloadRoot(rootFolder, item);
-            string safeBookTitle = GetCanonicalBookFolderName(item, bookTitle, "hako-book");
+            string safeBookTitle = GetCanonicalBookFolderName(item, bookTitle, "hako-book", 72);
             string targetFolder = Path.Combine(resolvedRoot, safeBookTitle);
             string tempFolder = BuildStableTempFolderPath(resolvedRoot, HakoSiteFolder, safeBookTitle, chapterUrl, chapterTitle);
 
@@ -1113,6 +1220,7 @@ namespace get_link_manga
 
                 item.Name = FormatGalleryTitle(bookTitle);
                 string plainText = BuildHakoChapterPlainText(chapterHtml);
+                EnsureHakoChapterHasText(plainText);
                 string markdown = BuildHakoChapterMarkdown(item, chapterInfo, chapterHtml);
                 File.WriteAllText(chapterFilePath, markdown, new UTF8Encoding(true));
                 RecordLightNovelChapterSnapshot(item, normalizedChapterTitle, plainText, markdown, chapterFilePath);
@@ -1185,13 +1293,30 @@ namespace get_link_manga
 
         private string ExtractHakoBookTitleFromChapterHtml(string html, string chapterUrl)
         {
-            Match match = Regex.Match(
-                html ?? string.Empty,
-                @"<a[^>]+href\s*=\s*[""'](?<link>/(?:truyen|sang-tac)/[^""'#?]+/?)[^""']*[""'][^>]*>(?<text>.*?)</a>",
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            if (match.Success)
+            string[] patterns =
             {
+                @"<div[^>]*class\s*=\s*[""'][^""']*rd_sidebar-name[^""']*[""'][^>]*>.*?<h5[^>]*>\s*<a[^>]*>(?<text>.*?)</a>",
+                @"<span[^>]*class\s*=\s*[""'][^""']*series-name[^""']*[""'][^>]*>(?<text>.*?)</span>",
+                @"<a[^>]+href\s*=\s*[""'](?<link>/(?:truyen|sang-tac)/[^""'#?]+/?)[^""']*[""'][^>]*>(?<text>.*?)</a>"
+            };
+
+            foreach (string pattern in patterns)
+            {
+                Match match = Regex.Match(
+                    html ?? string.Empty,
+                    pattern,
+                    RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                if (!match.Success)
+                {
+                    continue;
+                }
+
                 string text = StripHtmlToPlainText(match.Groups["text"].Value);
+                if (IsInvalidHakoBookTitle(text))
+                {
+                    continue;
+                }
+
                 if (!string.IsNullOrWhiteSpace(text))
                 {
                     return text.Trim();
@@ -1204,6 +1329,20 @@ namespace get_link_manga
             }
 
             return string.Empty;
+        }
+
+        private static bool IsInvalidHakoBookTitle(string text)
+        {
+            string normalized = (text ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return true;
+            }
+
+            return Regex.IsMatch(
+                normalized,
+                @"^Ảnh tạm thời bị tắt\.?$|^Anh tam thoi bi tat\.?$|^Temporary image disabled\.?$",
+                RegexOptions.IgnoreCase);
         }
 
         private List<HakoChapterInfo> ExtractHakoChapterLinks(string html, string bookUrl)
@@ -1336,14 +1475,33 @@ namespace get_link_manga
                 throw new Exception("Không trích xuất được nội dung text trong chapter-content.");
             }
 
+            string bookTitle = item?.Name;
+            if (string.IsNullOrWhiteSpace(bookTitle))
+            {
+                bookTitle = chapter?.BookTitle;
+            }
+
             var sb = new StringBuilder();
-            sb.AppendLine("# " + chapterTitle);
+            if (!string.IsNullOrWhiteSpace(bookTitle))
+            {
+                sb.AppendLine("# " + bookTitle.Trim());
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("## " + chapterTitle);
             sb.AppendLine();
             if (!string.IsNullOrWhiteSpace(chapter?.VolumeTitle))
             {
-                sb.AppendLine("> " + chapter.VolumeTitle.Trim());
+                sb.AppendLine("> Volume: " + chapter.VolumeTitle.Trim());
                 sb.AppendLine();
             }
+            if (!string.IsNullOrWhiteSpace(chapter?.Link))
+            {
+                sb.AppendLine("> Source: " + chapter.Link.Trim());
+                sb.AppendLine();
+            }
+            sb.AppendLine("---");
+            sb.AppendLine();
             sb.AppendLine(contentMarkdown.Trim());
             sb.AppendLine();
             return sb.ToString();
@@ -1577,14 +1735,14 @@ namespace get_link_manga
             }
 
             string prefix = volumeOrder > 0 ? volumeOrder.ToString("00", CultureInfo.InvariantCulture) + " - " : string.Empty;
-            string volumeFolder = Path.Combine(rootFolder, GetSafeChapterPathName(prefix + normalizedVolume));
+            string volumeFolder = Path.Combine(rootFolder, GetSafeChapterPathName(prefix + normalizedVolume, 40));
             Directory.CreateDirectory(volumeFolder);
             return volumeFolder;
         }
 
         private string BuildHakoChapterFileName(string chapterTitle, int sequenceIndex)
         {
-            string safeChapterName = GetSafeChapterPathName(chapterTitle);
+            string safeChapterName = GetSafeChapterPathName(chapterTitle, 92);
             string prefix = sequenceIndex > 0
                 ? sequenceIndex.ToString("0000", CultureInfo.InvariantCulture) + " - "
                 : string.Empty;

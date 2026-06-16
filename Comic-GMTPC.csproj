@@ -109,6 +109,9 @@
     <Compile Include="GalleryItem.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="LightNovelFloatingControlWindow.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="HakoChapterCaptureWindow.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -345,6 +348,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="7-Zip\**\*">
       <LogicalName>7-Zip/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FastStone Image Viewer\**\*">
+      <LogicalName>FastStone Image Viewer/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Target Name="GenerateBuildInfo"

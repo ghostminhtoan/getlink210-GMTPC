@@ -109,6 +109,51 @@ namespace get_link_manga
             public Dictionary<string, string> CreateSubfolderByDomain { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
 
+        [DataContract]
+        private sealed class LightNovelChapterState
+        {
+            [DataMember(Order = 1)]
+            public string ChapterTitle { get; set; }
+
+            [DataMember(Order = 2)]
+            public string ChapterLink { get; set; }
+
+            [DataMember(Order = 3)]
+            public string VolumeTitle { get; set; }
+
+            [DataMember(Order = 4)]
+            public int VolumeOrder { get; set; }
+
+            [DataMember(Order = 5)]
+            public int SequenceIndex { get; set; }
+
+            [DataMember(Order = 6)]
+            public bool IsChecked { get; set; }
+
+            [DataMember(Order = 7)]
+            public string MarkdownFilePath { get; set; }
+        }
+
+        [DataContract]
+        private sealed class LightNovelBookState
+        {
+            [DataMember(Order = 1)]
+            public GalleryItemState Book { get; set; }
+
+            [DataMember(Order = 2)]
+            public List<LightNovelChapterState> Chapters { get; set; } = new List<LightNovelChapterState>();
+        }
+
+        [DataContract]
+        private sealed class GalleryMarkdownPayload
+        {
+            [DataMember(Order = 1)]
+            public List<GalleryItemState> MangaItems { get; set; } = new List<GalleryItemState>();
+
+            [DataMember(Order = 2)]
+            public List<LightNovelBookState> LightNovelBooks { get; set; } = new List<LightNovelBookState>();
+        }
+
         private List<GalleryItem> GetItemsToExport()
         {
             var checkedItems = _scrapedItems.Where(item => item.IsChecked).ToList();
@@ -123,14 +168,25 @@ namespace get_link_manga
             }
 
             var safeItems = (items ?? Array.Empty<GalleryItem>()).ToList();
-            var states = safeItems.Select((item, index) => CreateGalleryItemState(item, index)).ToList();
+            var mangaStates = safeItems.Select((item, index) => CreateGalleryItemState(item, index)).ToList();
+            var lightNovelStates = CreateLightNovelBookStates();
+            var payload = new GalleryMarkdownPayload
+            {
+                MangaItems = mangaStates,
+                LightNovelBooks = lightNovelStates
+            };
 
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"# {title}");
             sb.AppendLine();
-            sb.AppendLine("## Summary");
+            sb.AppendLine("## Manga Summary");
             sb.AppendLine("| No. | Checked | Name | Link | Chapter | Page | Status | Process | Error Count |");
             sb.AppendLine("| :--- | :---: | :--- | :--- | :--- | :--- | :--- | :--- | :---: |");
+
+            if (safeItems.Count == 0)
+            {
+                sb.AppendLine("| - | - | *(empty)* |  |  |  |  |  | 0 |");
+            }
 
             for (int i = 0; i < safeItems.Count; i++)
             {
@@ -146,6 +202,28 @@ namespace get_link_manga
             }
 
             sb.AppendLine();
+            sb.AppendLine("## Light Novel Summary");
+            sb.AppendLine("| No. | Checked | Book | Link | Chapters | Status | Process |");
+            sb.AppendLine("| :--- | :---: | :--- | :--- | :---: | :--- | :--- |");
+
+            if (lightNovelStates.Count == 0)
+            {
+                sb.AppendLine("| - | - | *(empty)* |  | 0 |  |  |");
+            }
+
+            for (int i = 0; i < lightNovelStates.Count; i++)
+            {
+                GalleryItem book = CreateGalleryItemFromState(lightNovelStates[i].Book);
+                int chapterCount = lightNovelStates[i].Chapters?.Count ?? 0;
+                string checkedStr = book != null && book.IsChecked ? "[x]" : "[ ]";
+                string bookName = EscapeMarkdownCell(book?.Name);
+                string bookLink = EscapeMarkdownCell(book?.Link);
+                string status = EscapeMarkdownCell(book?.Status);
+                string process = EscapeMarkdownCell(book?.CurrentProcess);
+                sb.AppendLine($"| {i + 1} | {checkedStr} | {bookName} | {bookLink} | {chapterCount} | {status} | {process} |");
+            }
+
+            sb.AppendLine();
             sb.AppendLine("## Download Settings");
             sb.AppendLine(GallerySettingsBeginMarker);
             sb.AppendLine("```json");
@@ -156,7 +234,7 @@ namespace get_link_manga
             sb.AppendLine("## Full State");
             sb.AppendLine(GalleryStateBeginMarker);
             sb.AppendLine("```json");
-            sb.AppendLine(SerializeGalleryStates(states));
+            sb.AppendLine(SerializeGalleryPayload(payload));
             sb.AppendLine("```");
             sb.AppendLine(GalleryStateEndMarker);
 
@@ -265,7 +343,8 @@ namespace get_link_manga
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             var items = _scrapedItems.ToList();
-            if (!items.Any())
+            bool hasNovelItems = _lightNovelItems.Any();
+            if (!items.Any() && !hasNovelItems)
             {
                 MessageBox.Show("No content to save.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -273,7 +352,7 @@ namespace get_link_manga
 
             try
             {
-                SaveGalleryItemsMarkdownFile(PortablePaths.PortableGalleryListPath, items, "Scraped Galleries");
+                SaveGalleryItemsMarkdownFile(PortablePaths.PortableGalleryListPath, items, "Saved Galleries And Light Novels");
 
                 Log($"All content successfully saved to portable Markdown file: {PortablePaths.PortableGalleryListPath}");
                 lblStatus.Text = "Saved portable MD file.";
@@ -298,8 +377,9 @@ namespace get_link_manga
                 string content = File.ReadAllText(PortablePaths.PortableGalleryListPath, Encoding.UTF8);
                 ApplyGalleryMarkdownSettings(content);
                 List<GalleryItem> loadedItems = LoadGalleryItemsFromMarkdown(content);
+                List<LightNovelBookState> loadedLightNovels = LoadLightNovelBooksFromMarkdown(content);
 
-                if (loadedItems.Any())
+                if (loadedItems.Any() || loadedLightNovels.Any())
                 {
                     _scrapedItems.Clear();
                     if (chkSelectAll != null)
@@ -314,10 +394,12 @@ namespace get_link_manga
                         _scrapedItems.Add(item);
                     }
 
+                    ApplyLoadedLightNovelBooks(loadedLightNovels);
+
                     RecalculateDuplicates();
                     lblLinkCount.Text = _scrapedItems.Count.ToString();
                     ApplySavedDownloadSettings(loadedItems.FirstOrDefault());
-                    Log($"Successfully loaded {_scrapedItems.Count} items from portable markdown: {PortablePaths.PortableGalleryListPath}");
+                    Log($"Successfully loaded {_scrapedItems.Count} manga items and {_lightNovelItems.Count} light novel books from portable markdown: {PortablePaths.PortableGalleryListPath}");
                     lblStatus.Text = "Portable markdown file loaded successfully.";
                 }
                 else
@@ -355,7 +437,8 @@ namespace get_link_manga
 
         private List<GalleryItem> LoadGalleryItemsFromMarkdown(string content)
         {
-            var stateItems = TryLoadGalleryStateItems(content);
+            var payload = TryLoadGalleryMarkdownPayload(content);
+            var stateItems = payload?.MangaItems;
             if (stateItems != null && stateItems.Any())
             {
                 return stateItems
@@ -366,6 +449,12 @@ namespace get_link_manga
             }
 
             return LoadLegacyGalleryItems(content);
+        }
+
+        private List<LightNovelBookState> LoadLightNovelBooksFromMarkdown(string content)
+        {
+            var payload = TryLoadGalleryMarkdownPayload(content);
+            return payload?.LightNovelBooks ?? new List<LightNovelBookState>();
         }
 
         private List<GalleryItem> LoadLegacyGalleryItems(string content)
@@ -421,7 +510,7 @@ namespace get_link_manga
             return loadedItems;
         }
 
-        private List<GalleryItemState> TryLoadGalleryStateItems(string content)
+        private GalleryMarkdownPayload TryLoadGalleryMarkdownPayload(string content)
         {
             int beginMarkerIndex = content.IndexOf(GalleryStateBeginMarker, StringComparison.Ordinal);
             if (beginMarkerIndex < 0)
@@ -456,10 +545,32 @@ namespace get_link_manga
 
             try
             {
-                var serializer = new DataContractJsonSerializer(typeof(List<GalleryItemState>));
+                var payloadSerializer = new DataContractJsonSerializer(typeof(GalleryMarkdownPayload));
                 using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
-                    return serializer.ReadObject(ms) as List<GalleryItemState>;
+                    var payload = payloadSerializer.ReadObject(ms) as GalleryMarkdownPayload;
+                    if (payload != null)
+                    {
+                        payload.MangaItems = payload.MangaItems ?? new List<GalleryItemState>();
+                        payload.LightNovelBooks = payload.LightNovelBooks ?? new List<LightNovelBookState>();
+                        return payload;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var legacySerializer = new DataContractJsonSerializer(typeof(List<GalleryItemState>));
+                using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return new GalleryMarkdownPayload
+                    {
+                        MangaItems = legacySerializer.ReadObject(ms) as List<GalleryItemState> ?? new List<GalleryItemState>(),
+                        LightNovelBooks = new List<LightNovelBookState>()
+                    };
                 }
             }
             catch (Exception ex)
@@ -469,12 +580,12 @@ namespace get_link_manga
             }
         }
 
-        private string SerializeGalleryStates(List<GalleryItemState> states)
+        private string SerializeGalleryPayload(GalleryMarkdownPayload payload)
         {
-            var serializer = new DataContractJsonSerializer(typeof(List<GalleryItemState>));
+            var serializer = new DataContractJsonSerializer(typeof(GalleryMarkdownPayload));
             using (var ms = new MemoryStream())
             {
-                serializer.WriteObject(ms, states);
+                serializer.WriteObject(ms, payload);
                 return Encoding.UTF8.GetString(ms.ToArray());
             }
         }
@@ -529,6 +640,82 @@ namespace get_link_manga
                     ImageUrl = error.ImageUrl
                 }).ToList()
             };
+        }
+
+        private List<LightNovelBookState> CreateLightNovelBookStates()
+        {
+            return _lightNovelItems
+                .Select((item, index) =>
+                {
+                    _lightNovelChapterMap.TryGetValue(GetLightNovelItemKey(item), out var chapters);
+                    return new LightNovelBookState
+                    {
+                        Book = CreateGalleryItemState(item, index),
+                        Chapters = (chapters ?? new System.Collections.ObjectModel.ObservableCollection<LightNovelChapterRecord>())
+                            .OrderBy(chapter => chapter.VolumeOrder)
+                            .ThenBy(chapter => chapter.SequenceIndex)
+                            .ThenBy(chapter => chapter.ChapterTitle, StringComparer.OrdinalIgnoreCase)
+                            .Select(chapter => new LightNovelChapterState
+                            {
+                                ChapterTitle = chapter.ChapterTitle,
+                                ChapterLink = chapter.ChapterLink,
+                                VolumeTitle = chapter.VolumeTitle,
+                                VolumeOrder = chapter.VolumeOrder,
+                                SequenceIndex = chapter.SequenceIndex,
+                                IsChecked = chapter.IsChecked,
+                                MarkdownFilePath = chapter.MarkdownFilePath
+                            })
+                            .ToList()
+                    };
+                })
+                .ToList();
+        }
+
+        private void ApplyLoadedLightNovelBooks(IList<LightNovelBookState> states)
+        {
+            _lightNovelItems.Clear();
+            _lightNovelChapterMap.Clear();
+            _lightNovelChapterView.Clear();
+            _selectedLightNovelBook = null;
+            _selectedLightNovelChapter = null;
+
+            foreach (LightNovelBookState state in (states ?? Array.Empty<LightNovelBookState>()).Where(entry => entry?.Book != null).OrderBy(entry => entry.Book.OriginalIndex))
+            {
+                GalleryItem book = CreateGalleryItemFromState(state.Book);
+                if (book == null)
+                {
+                    continue;
+                }
+
+                _lightNovelItems.Add(book);
+                var chapters = new System.Collections.ObjectModel.ObservableCollection<LightNovelChapterRecord>(
+                    (state.Chapters ?? new List<LightNovelChapterState>())
+                    .OrderBy(chapter => chapter.VolumeOrder)
+                    .ThenBy(chapter => chapter.SequenceIndex)
+                    .ThenBy(chapter => chapter.ChapterTitle, StringComparer.OrdinalIgnoreCase)
+                    .Select(chapter => new LightNovelChapterRecord
+                    {
+                        ChapterTitle = chapter.ChapterTitle,
+                        ChapterLink = chapter.ChapterLink,
+                        VolumeTitle = chapter.VolumeTitle,
+                        VolumeOrder = chapter.VolumeOrder,
+                        SequenceIndex = chapter.SequenceIndex,
+                        IsChecked = chapter.IsChecked,
+                        MarkdownFilePath = chapter.MarkdownFilePath
+                    }));
+                _lightNovelChapterMap[GetLightNovelItemKey(book)] = chapters;
+                TrackLightNovelChapterAutosave(chapters);
+                UpdateLightNovelBookCheckedState(book);
+            }
+
+            _selectedLightNovelBook = _lightNovelItems.FirstOrDefault();
+            if (_dgLightNovelBooks != null)
+            {
+                _dgLightNovelBooks.SelectedItem = _selectedLightNovelBook;
+            }
+
+            RefreshLightNovelDetail(_selectedLightNovelBook);
+            RefreshLightNovelSummary();
         }
 
         private GalleryItem CreateGalleryItemFromState(GalleryItemState state)

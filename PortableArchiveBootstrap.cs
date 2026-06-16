@@ -27,12 +27,39 @@ namespace get_link_manga
         {
             try
             {
+                string localSource = Path.Combine(PortablePaths.AppRoot, "FastStone Image Viewer");
+                if (Directory.Exists(localSource))
+                {
+                    CopyDirectory(localSource, PortablePaths.FastStoneRoot);
+                    return;
+                }
+
                 ExtractEmbeddedResourceTree(FastStoneResourcePrefix, PortablePaths.FastStoneRoot);
             }
             catch
             {
                 // Best effort only. Reader actions will validate the tool again
                 // when the user opens FastStone Image Viewer.
+            }
+        }
+
+        private static void CopyDirectory(string sourceDir, string destinationDir)
+        {
+            Directory.CreateDirectory(destinationDir);
+
+            foreach (string file in Directory.GetFiles(sourceDir))
+            {
+                string destFile = Path.Combine(destinationDir, Path.GetFileName(file));
+                if (!File.Exists(destFile) || File.GetLastWriteTimeUtc(file) > File.GetLastWriteTimeUtc(destFile))
+                {
+                    File.Copy(file, destFile, true);
+                }
+            }
+
+            foreach (string subDir in Directory.GetDirectories(sourceDir))
+            {
+                string destSubDir = Path.Combine(destinationDir, Path.GetFileName(subDir));
+                CopyDirectory(subDir, destSubDir);
             }
         }
 

@@ -26,7 +26,27 @@ namespace get_link_manga
 
         public string FilePath { get; set; }
 
+        public DateTime LastModifiedUtc { get; set; }
+
         public string DisplayLabel => $"Page {Index + 1:000} - {Name}";
+
+        public override string ToString()
+        {
+            return DisplayLabel;
+        }
+    }
+
+    internal sealed class ReaderMarkdownItem
+    {
+        public int Index { get; set; }
+
+        public string Name { get; set; }
+
+        public string FilePath { get; set; }
+
+        public DateTime LastModifiedUtc { get; set; }
+
+        public string DisplayLabel => $"MD {Index + 1:000} - {Name}";
 
         public override string ToString()
         {
@@ -39,6 +59,8 @@ namespace get_link_manga
         public string Name { get; set; }
 
         public string FolderPath { get; set; }
+
+        public DateTime LastModifiedUtc { get; set; }
 
         public List<ReaderPageItem> Pages { get; set; } = new List<ReaderPageItem>();
 
@@ -67,6 +89,8 @@ namespace get_link_manga
 
         public string FolderPath { get; set; }
 
+        public DateTime LastModifiedUtc { get; set; }
+
         public List<ReaderChapterItem> Chapters { get; set; } = new List<ReaderChapterItem>();
 
         public bool IsCompleted { get; set; }
@@ -93,7 +117,72 @@ namespace get_link_manga
 
         public string FolderPath { get; set; }
 
+        public DateTime LastModifiedUtc { get; set; }
+
         public List<ReaderMangaItem> Books { get; set; } = new List<ReaderMangaItem>();
+
+        public string DisplayLabel => $"{Name} ({Books.Count} book{(Books.Count == 1 ? string.Empty : "s")})";
+
+        public override string ToString()
+        {
+            return DisplayLabel;
+        }
+    }
+
+    internal sealed class ReaderNovelChapterItem
+    {
+        public string Name { get; set; }
+
+        public string FolderPath { get; set; }
+
+        public DateTime LastModifiedUtc { get; set; }
+
+        public List<ReaderMarkdownItem> Files { get; set; } = new List<ReaderMarkdownItem>();
+
+        public string DisplayLabel => $"{Name} ({Files.Count} md)";
+
+        public override string ToString()
+        {
+            return DisplayLabel;
+        }
+    }
+
+    internal sealed class ReaderNovelBookItem
+    {
+        public string Name { get; set; }
+
+        public string SourceGroup { get; set; }
+
+        public string FolderPath { get; set; }
+
+        public DateTime LastModifiedUtc { get; set; }
+
+        public List<ReaderNovelChapterItem> Chapters { get; set; } = new List<ReaderNovelChapterItem>();
+
+        public string DisplayLabel
+        {
+            get
+            {
+                string prefix = string.IsNullOrWhiteSpace(SourceGroup) ? string.Empty : SourceGroup + " - ";
+                return $"{prefix}{Name} ({Chapters.Count} chapter{(Chapters.Count == 1 ? string.Empty : "s")})";
+            }
+        }
+
+        public override string ToString()
+        {
+            return DisplayLabel;
+        }
+    }
+
+    internal sealed class ReaderNovelDomainItem
+    {
+        public string Name { get; set; }
+
+        public string FolderPath { get; set; }
+
+        public DateTime LastModifiedUtc { get; set; }
+
+        public List<ReaderNovelBookItem> Books { get; set; } = new List<ReaderNovelBookItem>();
 
         public string DisplayLabel => $"{Name} ({Books.Count} book{(Books.Count == 1 ? string.Empty : "s")})";
 
