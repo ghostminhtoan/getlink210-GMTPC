@@ -1090,26 +1090,40 @@ namespace get_link_manga
             if (_aboutContentText != null)
             {
                 _aboutContentText.Text = _isVietnameseUi
-                    ? "Ứng dụng này có 3 trục chính:\n\n" +
-                      "1. Chọn nguồn hoặc dán link để lấy danh sách truyện.\n" +
-                      "2. Quản lý hàng chờ tải với temp path an toàn và progress log hiện có.\n" +
-                      "3. Đọc ảnh offline ngay trong app với hỗ trợ jpg, jpeg, png, gif, bmp, webp.\n\n" +
-                      "Phím tắt:\n" +
-                      "- Ctrl + mouse wheel: đổi DPI preset\n\n" +
+                    ? "Ứng dụng Manga Desk hỗ trợ cào, quản lý hàng chờ và đọc offline truyện tranh/tiểu thuyết:\n\n" +
+                      "1. CHỌN NGUỒN / DÁN LINK:\n" +
+                      "   - Hỗ trợ parser phong phú cho Manga & Hentai (TruyenQQ, NetTruyen, SayHentai, Vi-Hentai, NHentai, HentaiForce, HentaiEra, Daomeoden, v.v.).\n" +
+                      "   - Nguồn Novel riêng để lấy text từ các trang như Hako (docln.net / ln.hako.vn) và tự động chuyển đổi sang định dạng Markdown (.md).\n\n" +
+                      "2. HÀNG CHỜ TẢI VỀ:\n" +
+                      "   - Quản lý tải song song đa luồng an toàn, hỗ trợ tạm dừng, tiếp tục tải (resume-safe) và tự động tải lại khi lỗi (auto-retry).\n" +
+                      "   - Giao diện floating control window tiện ích (Pin topmost, chế độ Focus ẩn, tùy chỉnh Opacity, kích thước và điều khiển nhanh quá trình tải/copy).\n\n" +
+                      "3. XEM TRUYỆN OFFLINE:\n" +
+                      "   - Watch Manga: Đọc ảnh offline tiện lợi, hỗ trợ nhiều chế độ hiển thị (Fit Width, Fit Height, Original), cuộn dọc/ngang mượt mà, tự động chuyển chapter khi đọc đến trang cuối/đầu.\n" +
+                      "   - Watch Novel: Trình xem trước file Markdown tích hợp, hỗ trợ mở nhanh trình đọc MD Reader bên thứ ba.\n" +
+                      "   - Cho phép tải thư mục gốc (Root Folder) mặc định hoặc chọn thư mục tùy ý (Other Folder) để quét truyện.\n\n" +
+                      "Phím tắt chính:\n" +
+                      "   - Ctrl + Mouse Wheel (ở màn hình chính): Phóng to / thu nhỏ toàn bộ giao diện phần mềm.\n" +
+                      "   - Các phím mũi tên Trái / Phải hoặc A / D (khi đang đọc truyện): Chuyển trang/chuyển chapter.\n\n" +
                       "Lưu ý:\n" +
-                      "- 100% là mức tối ưu cho 1360x768.\n" +
-                      "- Reader tự nhảy sang chapter sau hoặc trước ở biên trang.\n" +
-                      "- Download root vẫn là nguồn quét mặc định cho Watch."
-                    : "This rebuild now centers around three workflows:\n\n" +
-                      "1. Choose a source or paste links to collect manga entries.\n" +
-                      "2. Manage the download queue with the existing resume-safe temp paths and progress logs.\n" +
-                      "3. Read offline images inside the app with jpg, jpeg, png, gif, bmp, and webp support.\n\n" +
-                      "Shortcuts:\n" +
-                      "- Ctrl + mouse wheel: change DPI preset\n\n" +
+                      "   - Giao diện được thiết kế tối ưu hóa hiển thị ở độ phân giải cơ bản 1360x768 (DPI 100%).\n" +
+                      "   - Watch lists sẽ tự động cập nhật danh sách truyện mới ngay sau khi bạn tải xong."
+                    : "Manga Desk provides advanced scraping, queue management, and offline reading/rendering for both manga and novels:\n\n" +
+                      "1. CHOOSE SOURCE / PASTE LINK:\n" +
+                      "   - High-fidelity parsers for Manga & Hentai sites (TruyenQQ, NetTruyen, SayHentai, Vi-Hentai, NHentai, HentaiForce, HentaiEra, etc.).\n" +
+                      "   - Novel Source allows crawling text from Hako (docln.net / ln.hako.vn) and auto-converting chapters to Markdown (.md) format.\n\n" +
+                      "2. DOWNLOAD QUEUE:\n" +
+                      "   - Parallel multi-threaded downloading with resume-safe capabilities and auto-retry error handling.\n" +
+                      "   - Companion floating control window (Pin topmost, Stealth Focus mode, customizable Opacity & Size, quick start/stop controls).\n\n" +
+                      "3. WATCH OFFLINE:\n" +
+                      "   - Watch Manga: In-app image viewer supporting Fit Width, Fit Height, and Original sizing. Smooth vertical/horizontal scroll. Auto chapter-bridge transitions at document edges.\n" +
+                      "   - Watch Novel: Integrated Markdown previewer with quick options to install and open a standard MD Reader.\n" +
+                      "   - Supports loading default Root Download Folder or browsing to custom library directories (Other Folder).\n\n" +
+                      "Hotkeys:\n" +
+                      "   - Ctrl + Mouse Wheel (main screen): Scale and zoom the entire application window.\n" +
+                      "   - Left / Right or A / D keys (inside reader): Navigate pages or transition chapters.\n\n" +
                       "Notes:\n" +
-                      "- 100% is tuned for 1360x768.\n" +
-                      "- Reader auto-bridges across chapter edges.\n" +
-                      "- Download root remains the default scan source for Watch.";
+                      "   - UI is optimized for a baseline resolution of 1360x768 (100% scale).\n" +
+                      "   - Libraries in the Watch section automatically refresh upon successful download completions.";
             }
 
             if (_updateContentText != null)
