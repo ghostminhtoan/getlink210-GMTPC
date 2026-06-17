@@ -15,6 +15,7 @@ namespace get_link_manga
         public Uri ResolvedUri { get; private set; }
         public string UserAgent { get; private set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
         public string ResolvedHtml { get; private set; }
+        public bool WasCompleted { get; private set; }
         private readonly string _targetUrl;
         private readonly bool _autoDeleteCookiesOnLoad;
         private readonly bool _headlessAutomation;
@@ -52,6 +53,26 @@ namespace get_link_manga
                 this.Title = GetCaptchaWindowTitlePrefix();
             }
             Loaded += CaptchaWindow_Loaded;
+        }
+
+        public Task<bool> ShowNonBlockingAsync()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            Closed += OnClosed;
+            Show();
+            return tcs.Task;
+
+            void OnClosed(object sender, EventArgs e)
+            {
+                Closed -= OnClosed;
+                tcs.TrySetResult(WasCompleted);
+            }
+        }
+
+        private void CloseWithResult(bool completed)
+        {
+            WasCompleted = completed;
+            Close();
         }
 
         private void ConfigureHeadlessWindow()
@@ -243,13 +264,22 @@ namespace get_link_manga
         {
             try
             {
-                // Keep WebView2 data next to the portable app root so a copied exe remains self-contained.
+                string browserArgs = "--disable-extensions --disable-component-extensions-with-background-pages --disable-background-networking --disable-sync --disable-default-apps --no-first-run --disable-features=msSmartScreenProtection,RendererCodeIntegrity";
                 var env = await CoreWebView2Environment.CreateAsync(
                     null,
-                    PortablePaths.WebView2UserDataFolder,
-                    new CoreWebView2EnvironmentOptions());
+                    PortablePaths.WebView2CaptchaUserDataFolder,
+                    new CoreWebView2EnvironmentOptions(browserArgs));
                 await webView.EnsureCoreWebView2Async(env);
-                
+
+                if (webView.CoreWebView2 != null)
+                {
+                    webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
+                    webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
+                    webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+                    webView.CoreWebView2.Settings.IsZoomControlEnabled = true;
+                    webView.CoreWebView2.Settings.UserAgent = UserAgent;
+                }
+
                 webView.Source = new Uri(_targetUrl);
 
                 if (_autoDeleteCookiesOnLoad)
@@ -266,8 +296,7 @@ namespace get_link_manga
                 {
                     MessageBox.Show($"Lỗi khởi tạo trình duyệt WebView2: {ex.Message}\n\nHãy đảm bảo bạn đã cài đặt WebView2 Runtime trên hệ thống.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                DialogResult = false;
-                Close();
+                CloseWithResult(false);
             }
         }
 
@@ -421,8 +450,7 @@ namespace get_link_manga
                         {
                             Dispatcher.Invoke(() =>
                             {
-                                DialogResult = false;
-                                Close();
+                                CloseWithResult(false);
                             });
                             break;
                         }
@@ -550,8 +578,7 @@ namespace get_link_manga
                     UserAgent = ua;
                 }
 
-                DialogResult = true;
-                Close();
+                CloseWithResult(true);
             }
             catch (Exception ex)
             {
@@ -565,8 +592,7 @@ namespace get_link_manga
                 {
                     MessageBox.Show($"Lỗi thu thập cookies: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                DialogResult = false;
-                Close();
+                CloseWithResult(false);
             }
         }
 
@@ -595,17 +621,10 @@ namespace get_link_manga
             {
                 try
                 {
-                    webView.CoreWebView2.Reload();
+                    webView.CoreWebView2.Navigate(_targetUrl);
                 }
                 catch
                 {
-                    try
-                    {
-                        webView.CoreWebView2.Navigate(_targetUrl);
-                    }
-                    catch
-                    {
-                    }
                 }
             });
 
@@ -625,8 +644,7 @@ namespace get_link_manga
             catch
             {
                 MessageBox.Show($"Lỗi thu thập cookies: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                DialogResult = false;
-                Close();
+                CloseWithResult(false);
             }
         }
 
@@ -644,8 +662,7 @@ namespace get_link_manga
 
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            Close();
+            CloseWithResult(false);
         }
 
         private string UnescapeJsonString(string value)

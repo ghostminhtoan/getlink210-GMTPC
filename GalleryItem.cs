@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace get_link_manga
 {
@@ -15,7 +16,7 @@ namespace get_link_manga
 
         public override string ToString()
         {
-            return $"{ChapterName}, Trang {PageNumber} — {ErrorMessage}";
+            return $"{ChapterName}, Trang {PageNumber} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â {ErrorMessage}";
         }
     }
 
@@ -258,6 +259,10 @@ namespace get_link_manga
             }
         }
 
+        public string DisplayName => NormalizeDisplayText(Name);
+
+        public string DisplayLink => NormalizeDisplayText(Link);
+
         public int OriginalIndex
         {
             get => _originalIndex;
@@ -281,6 +286,15 @@ namespace get_link_manga
                     _linkCount = value;
                     OnPropertyChanged();
                 }
+            }
+        }
+
+        public string LatestChapterDisplay
+        {
+            get
+            {
+                string value = NormalizeDisplayText(LinkCount);
+                return string.IsNullOrWhiteSpace(value) ? string.Empty : $"{GetLocalizedLabel("latest", "moi nhat")}: {value}";
             }
         }
 
@@ -535,6 +549,67 @@ namespace get_link_manga
             return IsVietnameseUiEnabled() ? vietnamese : english;
         }
 
+        private static string NormalizeDisplayText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value ?? string.Empty;
+            }
+
+            if (!LooksMojibake(value))
+            {
+                return value;
+            }
+
+            try
+            {
+                string fixedValue = Encoding.UTF8.GetString(Encoding.GetEncoding(1252).GetBytes(value));
+                return CountMojibakeMarkers(fixedValue) < CountMojibakeMarkers(value) ? fixedValue : value;
+            }
+            catch
+            {
+                return value;
+            }
+        }
+
+        private static int CountMojibakeMarkers(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return 0;
+            }
+
+            return CountMarker(value, "Ã") +
+                   CountMarker(value, "Â") +
+                   CountMarker(value, "â") +
+                   CountMarker(value, "ð") +
+                   CountMarker(value, "ï¿½") +
+                   CountMarker(value, "�");
+        }
+
+        private static bool LooksMojibake(string value)
+        {
+            return value.Contains("Ã") ||
+                   value.Contains("Â") ||
+                   value.Contains("â") ||
+                   value.Contains("ð") ||
+                   value.Contains("ï¿½") ||
+                   value.Contains("�");
+        }
+
+        private static int CountMarker(string value, string marker)
+        {
+            int score = 0;
+            int index = 0;
+            while ((index = value.IndexOf(marker, index, StringComparison.Ordinal)) >= 0)
+            {
+                score++;
+                index += marker.Length;
+            }
+
+            return score;
+        }
+
         private static string NormalizePageProgressText(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -580,19 +655,19 @@ namespace get_link_manga
                 switch (_status)
                 {
                     case "Queued":
-                        return IsVietnameseUiEnabled() ? "⏳ Chờ tải" : "⏳ Waiting";
+                        return IsVietnameseUiEnabled() ? "Cho tai" : "Waiting";
                     case "Downloading":
-                        return IsVietnameseUiEnabled() ? "⬇️ Đang tải" : "⬇️ Downloading";
+                        return IsVietnameseUiEnabled() ? "Dang tai" : "Downloading";
                     case "Completed":
-                        return IsVietnameseUiEnabled() ? "✅ Hoàn tất" : "✅ Done";
+                        return IsVietnameseUiEnabled() ? "Hoan tat" : "Done";
                     case "Error":
-                        return IsVietnameseUiEnabled() ? "❌ Lỗi" : "❌ Error";
+                        return IsVietnameseUiEnabled() ? "Loi" : "Error";
                     case "Paused":
-                        return IsVietnameseUiEnabled() ? "⏸️ Tạm dừng" : "⏸️ Paused";
+                        return IsVietnameseUiEnabled() ? "Tam dung" : "Paused";
                     case "Stopping":
-                        return IsVietnameseUiEnabled() ? "🛑 Đang dừng" : "🛑 Stopping";
+                        return IsVietnameseUiEnabled() ? "Dang dung" : "Stopping";
                     case "Cancelled":
-                        return IsVietnameseUiEnabled() ? "⛔ Đã dừng" : "⛔ Stopped";
+                        return IsVietnameseUiEnabled() ? "Da dung" : "Stopped";
                     default:
                         return string.IsNullOrWhiteSpace(_status) ? string.Empty : _status;
                 }
@@ -676,6 +751,23 @@ namespace get_link_manga
                     continue;
                 }
 
+                string domainVal = SourceDomain ?? "";
+                if (string.IsNullOrEmpty(domainVal) && !string.IsNullOrEmpty(Link))
+                {
+                    try
+                    {
+                        domainVal = new Uri(Link).Host;
+                    }
+                    catch {}
+                }
+
+                if ((domainVal.Contains("truyenqq") || domainVal.Contains("hentai2read") || domainVal.Contains("nhentai")) &&
+                    string.Equals(error.ChapterName, "general", StringComparison.OrdinalIgnoreCase) &&
+                    error.PageNumber == 0)
+                {
+                    continue;
+                }
+
                 string key = BuildErrorKey(error.ChapterName, error.PageNumber);
                 if (seen.Add(key))
                 {
@@ -705,6 +797,23 @@ namespace get_link_manga
 
         public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null)
         {
+            string domainVal = SourceDomain ?? "";
+            if (string.IsNullOrEmpty(domainVal) && !string.IsNullOrEmpty(Link))
+            {
+                try
+                {
+                    domainVal = new Uri(Link).Host;
+                }
+                catch {}
+            }
+
+            if ((domainVal.Contains("truyenqq") || domainVal.Contains("hentai2read") || domainVal.Contains("nhentai")) &&
+                string.Equals((chapterName ?? string.Empty).Trim(), "general", StringComparison.OrdinalIgnoreCase) &&
+                pageNumber == 0)
+            {
+                return;
+            }
+
             if (Errors == null)
             {
                 Errors = new List<ErrorDetail>();

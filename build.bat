@@ -32,7 +32,7 @@ taskkill /im "Comic-GMTPC.exe" /f >nul 2>&1
 cd /d "%~dp0"
 
 :: Khai báo biến thư mục đích để dùng lại cho gọn
-set "TARGET_DIR=release\"
+set "TARGET_DIR=bin\release\"
 if not exist "%TARGET_DIR%" mkdir "%TARGET_DIR%"
 
 :: ------------------------------------------

@@ -188,14 +188,14 @@ namespace get_link_manga
                 bool solved = false;
                 try
                 {
-                    Dispatcher.BeginInvoke((Action)(() =>
+                    await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl)
+                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {
                             Owner = this
                         };
 
-                        if (captchaWin.ShowDialog() == true)
+                        if (await captchaWin.ShowNonBlockingAsync())
                         {
                             var originalUri = new Uri(testUrl);
                             var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
@@ -221,7 +221,7 @@ namespace get_link_manga
 
                             solved = true;
                         }
-                    }));
+                    });
                 }
                 finally
                 {
@@ -297,7 +297,7 @@ namespace get_link_manga
                 {
                     txtTruyenggvnTotalPages.Text = "1";
                     txtTruyenggvnPageTo.Text = "1";
-                    lblStatus.Text = "Book/chapter khÃ´ng cÃ³ phÃ¢n trang danh sÃ¡ch.";
+                    lblStatus.Text = "Book/chapter không có phân trang danh sách.";
                     return;
                 }
 
@@ -1126,7 +1126,7 @@ namespace get_link_manga
             cleanChapter = NormalizeChapterLabel(cleanChapter);
             string safeManga = GetCanonicalBookFolderName(item, cleanManga, "SayHentai");
             string aliasSafeManga = GetSafePathName(cleanManga);
-            string safeChapter = GetSafeChapterPathName(cleanChapter);
+            string safeChapter = GetSafeChapterPathName(cleanManga, cleanChapter);
             string progressKey = $"sayhentai|{safeManga}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;

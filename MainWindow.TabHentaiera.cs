@@ -550,14 +550,14 @@ namespace get_link_manga
                 bool solved = false;
                 try
                 {
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl)
+                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {
                             Owner = this
                         };
 
-                        if (captchaWin.ShowDialog() == true)
+                        if (await captchaWin.ShowNonBlockingAsync())
                         {
                             var resolvedUri = captchaWin.ResolvedUri ?? new Uri(testUrl);
                             var resolvedCookies = captchaWin.ResolvedCookies.GetCookies(resolvedUri);

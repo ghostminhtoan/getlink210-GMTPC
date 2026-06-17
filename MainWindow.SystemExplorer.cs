@@ -27,7 +27,7 @@ namespace get_link_manga
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
             {
-                MessageBox.Show("Vui lÃ²ng chá»n thÆ° má»¥c lÆ°u trÆ°á»›c (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Vui lòng chọn thư mục lưu trước (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -36,30 +36,31 @@ namespace get_link_manga
 
             if (!ShellFolderLauncher.TryOpenFolder(targetFolder, out string openError))
             {
-                MessageBox.Show($"KhÃ´ng thá»ƒ má»Ÿ thÆ° má»¥c: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Không thể mở thư mục: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private void BtnClearTemp_Click(object sender, RoutedEventArgs e)
         {
             string downloadRoot = txtDownloadPath?.Text?.Trim() ?? string.Empty;
+            ClearTempRootFolder(Path.Combine(PortablePaths.AppRoot, ".tmp"));
             if (string.IsNullOrWhiteSpace(downloadRoot))
             {
-                MessageBox.Show("Vui lÃ²ng chá»n thÆ° má»¥c táº£i trÆ°á»›c.", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Vui lòng chọn thư mục tải trước.", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            string tempRoot = Path.Combine(GetEffectiveDownloadRoot(downloadRoot), ".tmp");
+            string tempRoot = Path.Combine(downloadRoot, ".tmp");
             if (!Directory.Exists(tempRoot))
             {
                 Log($"Temp root not found: {tempRoot}");
-                lblStatus.Text = "Temp Ä‘Ã£ sáº¡ch.";
+                lblStatus.Text = "Temp đã sạch.";
                 return;
             }
 
             ClearTempRootFolder(tempRoot);
             Log($"Cleared temp root: {tempRoot}");
-            lblStatus.Text = "Temp Ä‘Ã£ Ä‘Æ°á»£c xÃ³a.";
+            lblStatus.Text = "Temp đã được xóa.";
         }
 
         private void BtnOpenFolderInRow_Click(object sender, RoutedEventArgs e)
@@ -73,19 +74,19 @@ namespace get_link_manga
             string targetFolder = ResolveBestFolderForGalleryItem(item);
             if (string.IsNullOrWhiteSpace(targetFolder))
             {
-                MessageBox.Show("ChÆ°a xÃ¡c Ä‘á»‹nh Ä‘Æ°á»£c thÆ° má»¥c cá»§a truyá»‡n nÃ y.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Chưa xác định được thư mục của truyện này.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!Directory.Exists(targetFolder))
             {
-                MessageBox.Show($"ThÆ° má»¥c khÃ´ng tá»“n táº¡i:\n{targetFolder}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show($"Thư mục không tồn tại:\n{targetFolder}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!ShellFolderLauncher.TryOpenFolder(targetFolder, out string error))
             {
-                MessageBox.Show($"KhÃ´ng thá»ƒ má»Ÿ thÆ° má»¥c: {error}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show($"Không thể mở thư mục: {error}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -110,11 +111,6 @@ namespace get_link_manga
 
                 foreach (string directory in Directory.GetDirectories(tempRoot))
                 {
-                    if (string.Equals(Path.GetFileName(directory), ".process", StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
                     TryDeletePath(directory);
                 }
             }
@@ -209,15 +205,6 @@ namespace get_link_manga
                 }
                 else if (tabLeftPanel.SelectedIndex == 1)
                 {
-                    if (tabLightNovel != null && tabLightNovel.SelectedItem is System.Windows.Controls.TabItem selectedLightNovelTab)
-                    {
-                        string header = selectedLightNovelTab.Header?.ToString().ToLower() ?? "";
-                        if (header.Contains("hako"))
-                            siteKey = "ln.hako.vn";
-                    }
-                }
-                else if (tabLeftPanel.SelectedIndex == 2)
-                {
                     if (tabHentai != null && tabHentai.SelectedItem is System.Windows.Controls.TabItem selectedHentaiTab)
                     {
                         string header = selectedHentaiTab.Header?.ToString().ToLower() ?? "";
@@ -229,6 +216,19 @@ namespace get_link_manga
                             siteKey = "vi-hentai.pro";
                         else if (header.Contains("hentaiera"))
                             siteKey = "hentaiera.com";
+                        else if (header.Contains("hentai2read"))
+                            siteKey = "hentai2read.com";
+                        else if (header.Contains("daomeoden"))
+                            siteKey = "daomeoden.net";
+                    }
+                }
+                else if (tabLeftPanel.SelectedIndex == 2)
+                {
+                    if (tabLightNovel != null && tabLightNovel.SelectedItem is System.Windows.Controls.TabItem selectedLightNovelTab)
+                    {
+                        string header = selectedLightNovelTab.Header?.ToString().ToLower() ?? "";
+                        if (header.Contains("hako"))
+                            siteKey = "ln.hako.vn";
                     }
                 }
             });

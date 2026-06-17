@@ -40,6 +40,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -129,6 +130,14 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="MainWindow.SystemBootstrap.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.SystemCaptcha.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="MainWindow.Theme.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -158,6 +167,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="MainWindow.TabHentaiforce.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.TabHentai2read.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
@@ -218,6 +231,14 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="MainWindow.UIEnglish.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.UIBootstrap.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.UILogs.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
@@ -313,6 +334,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="MainWindow.TabRouting.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -348,14 +373,8 @@
     <EmbeddedResource Include="runtimes\webview2\win-arm64\native\WebView2Loader.dll">
       <LogicalName>runtimes/webview2/win-arm64/native/WebView2Loader.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="Bandiview\**\*">
-      <LogicalName>Bandiview/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="7-Zip\**\*">
       <LogicalName>7-Zip/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FastStone Image Viewer\**\*">
-      <LogicalName>FastStone Image Viewer/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Target Name="GenerateBuildInfo"
@@ -378,6 +397,13 @@
                       Overwrite="true"
                       Encoding="UTF-8" />
     <Message Text="Stamped BuildInfo.cs with $(BuildTimestamp)" Importance="High" />
+  </Target>
+  <Target Name="IncludeGeneratedWpfCode"
+          BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)**\*.g.cs"
+               Exclude="@(Compile)" />
+    </ItemGroup>
   </Target>
   <Target Name="PublishReleaseArtifact"
           AfterTargets="Build"

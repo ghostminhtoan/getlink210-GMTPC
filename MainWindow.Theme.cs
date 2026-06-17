@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
@@ -7,7 +7,7 @@ namespace get_link_manga
 {
     public partial class MainWindow : Window
     {
-        private bool _isDayTheme;
+        private bool _isDayTheme = false;
 
         private void UnfreezeApplicationBrushes()
         {
@@ -24,7 +24,7 @@ namespace get_link_manga
         private void UnfreezeResourceDictionary(ResourceDictionary dict)
         {
             if (dict == null) return;
-            
+
             var keys = new List<object>();
             foreach (var key in dict.Keys)
             {
@@ -161,17 +161,18 @@ namespace get_link_manga
 
         private void UpdateThemeText()
         {
-            if (btnMainTheme != null)
+            var pinButton = btnPinWindow ?? btnMainTheme;
+            if (pinButton != null)
             {
-                btnMainTheme.Content = _isVietnameseUi 
-                    ? (_isDayTheme ? "NGÀY" : "ĐÊM") 
-                    : (_isDayTheme ? "DAY" : "NIGHT");
+                bool isPinned = Topmost;
+                var accentBrush = Application.Current.TryFindResource(isPinned ? "CyberpunkYellowBrush" : "CyberpunkCyanBrush") as Brush;
 
-                var yellowBrush = Application.Current.TryFindResource("CyberpunkYellowBrush") as Brush;
-                var pinkBrush = Application.Current.TryFindResource("CyberpunkPinkBrush") as Brush;
-
-                btnMainTheme.Foreground = _isDayTheme ? yellowBrush : pinkBrush;
-                btnMainTheme.BorderBrush = _isDayTheme ? yellowBrush : pinkBrush;
+                pinButton.Content = isPinned ? "📌" : "📍";
+                pinButton.ToolTip = _isVietnameseUi
+                    ? (isPinned ? "Bỏ ghim cửa sổ" : "Ghim cửa sổ")
+                    : (isPinned ? "Unpin window" : "Pin window");
+                pinButton.Foreground = accentBrush;
+                pinButton.BorderBrush = accentBrush;
             }
         }
     }

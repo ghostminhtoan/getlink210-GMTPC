@@ -441,14 +441,14 @@ namespace get_link_manga
         private async Task<BrowserSessionSnapshot> AcquireWebView2SessionAsync(string url)
         {
             BrowserSessionSnapshot snapshot = null;
-            await Dispatcher.InvokeAsync(() =>
+            await Dispatcher.InvokeAsync(async () =>
             {
-                var captchaWin = new CaptchaWindow(url)
+                var captchaWin = new CaptchaWindow(url, autoDeleteCookiesOnLoad: true)
                 {
                     Owner = this
                 };
 
-                if (captchaWin.ShowDialog() == true)
+                if (await captchaWin.ShowNonBlockingAsync())
                 {
                     snapshot = BuildBrowserSessionSnapshot(
                         captchaWin.ResolvedUri ?? new Uri(url),

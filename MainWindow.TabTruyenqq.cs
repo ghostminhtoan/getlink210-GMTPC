@@ -139,14 +139,14 @@ namespace get_link_manga
                 bool solved = false;
                 try
                 {
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl)
+                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {
                             Owner = this
                         };
 
-                        if (captchaWin.ShowDialog() == true)
+                        if (await captchaWin.ShowNonBlockingAsync())
                         {
                             var originalUri = new Uri(testUrl);
                             var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
@@ -1133,7 +1133,7 @@ namespace get_link_manga
 
             cleanChapter = NormalizeChapterLabel(cleanChapter);
             string safeManga = GetSafePathName(cleanManga);
-            string safeChapter = GetSafeChapterPathName(cleanChapter);
+            string safeChapter = GetSafeChapterPathName(cleanManga, cleanChapter);
             string progressKey = $"truyenqq|{GetSafePathName(cleanManga)}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;

@@ -947,7 +947,7 @@ namespace get_link_manga
             chapterTitle = NormalizeChapterLabel(chapterTitle);
             string safeManga = GetCanonicalBookFolderName(item, mangaTitle, "Unknown Manga");
             string aliasSafeManga = GetSafePathName(mangaTitle);
-            string safeChapter = GetSafeChapterPathName(chapterTitle);
+            string safeChapter = GetSafeChapterPathName(mangaTitle, chapterTitle);
             string progressKey = $"vi-hentai.pro|{safeManga}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;

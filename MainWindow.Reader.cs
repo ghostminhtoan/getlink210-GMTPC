@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -31,6 +33,12 @@ namespace get_link_manga
         {
             DateModified,
             Name
+        }
+
+        private enum ReaderWatchExternalApp
+        {
+            FastStone,
+            Bandiview
         }
 
         private sealed class ReaderWatchSortState
@@ -150,16 +158,24 @@ namespace get_link_manga
         private bool _isReaderFullscreen = false;
         private Button _readerOtherFolderButton;
         private Button _readerRootFolderButton;
+        private Button _readerWatchWithButton;
         private string _readerLibraryRootOverride;
         private bool _forceReaderRenderOnNextPageOpen;
         private string _lastRenderedReaderChapterPath;
         private ReaderFitMode _lastRenderedReaderFitMode = ReaderFitMode.FitWidth;
         private bool _readerUsesFastStone = true;
+        private ReaderWatchExternalApp _readerWatchExternalApp = ReaderWatchExternalApp.FastStone;
         private bool _readerHasUserClickedInWatch;
         private bool _readerAutoRefreshInProgress;
         private bool _readerSuppressAutoLaunch;
         private DateTime _lastReaderAutoRefreshUtc = DateTime.MinValue;
         private DispatcherTimer _readerAutoRefreshTimer;
+        private FileSystemWatcher _readerLibraryWatcher;
+        private FileSystemWatcher _readerNovelLibraryWatcher;
+        private DispatcherTimer _readerLibraryWatcherDebounceTimer;
+        private DispatcherTimer _readerNovelLibraryWatcherDebounceTimer;
+        private string _readerWatcherRoot;
+        private string _readerNovelWatcherRoot;
         private List<ReaderNovelBookItem> _readerNovelLibrary = new List<ReaderNovelBookItem>();
         private List<ReaderNovelDomainItem> _readerNovelDomains = new List<ReaderNovelDomainItem>();
         private ReaderNovelDomainItem _currentReaderNovelDomain;
@@ -234,6 +250,13 @@ namespace get_link_manga
                 out _readerRootFolderButton,
                 out _readerCurrentTitleText);
 
+            _readerWatchWithButton = CreateReaderMiniButton("WATCH WITH", ReaderWatchWith_Click, 128);
+            Grid.SetColumn(_readerWatchWithButton, 3);
+            _readerWatchWithButton.HorizontalAlignment = HorizontalAlignment.Left;
+            _readerWatchWithButton.Margin = new Thickness(0, 0, 6, 4);
+            watchToolbar.Children.Add(_readerWatchWithButton);
+            UpdateReaderWatchWithButtonLabel();
+
             _readerSummaryText = CreateWatchSummaryText();
             _readerDomainList = CreateWatchListBox();
             _readerMangaList = CreateWatchListBox();
@@ -261,7 +284,7 @@ namespace get_link_manga
                 CreateReaderWatchPanel("Book / Chapter", _readerChapterList),
                 CreateReaderWatchPanel("Chapter / Image", _readerFileList));
 
-            _readerFullscreenButton = CreateReaderMiniButton("Open FastStone", ReaderFullscreen_Click, 92);
+            _readerFullscreenButton = CreateReaderMiniButton("Open viewer", ReaderFullscreen_Click, 92);
             _readerStatusText = CreateWatchStatusText();
 
             Grid.SetRow(watchToolbar, 0);
@@ -371,8 +394,8 @@ namespace get_link_manga
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
             var refreshLibraryButton = CreateReaderMiniButton("Refresh library", (sender, args) => refreshAction(), 118);
             Grid.SetColumn(refreshLibraryButton, 0);
@@ -392,9 +415,9 @@ namespace get_link_manga
                 FontSize = 11,
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                TextAlignment = TextAlignment.Right,
-                TextTrimming = TextTrimming.CharacterEllipsis,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                TextAlignment = TextAlignment.Left,
+                TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(12, 0, 0, 4)
             };
             Grid.SetColumn(titleText, 4);
@@ -590,23 +613,211 @@ namespace get_link_manga
         private void StopReaderAutoRefresh()
         {
             _readerAutoRefreshTimer?.Stop();
+            DisposeReaderLibraryWatcher(ref _readerLibraryWatcher, ref _readerWatcherRoot);
+            DisposeReaderLibraryWatcher(ref _readerNovelLibraryWatcher, ref _readerNovelWatcherRoot);
+            _readerLibraryWatcherDebounceTimer?.Stop();
+            _readerNovelLibraryWatcherDebounceTimer?.Stop();
+        }
+
+        private void EnsureReaderLibraryWatcherTimers()
+        {
+            if (_readerLibraryWatcherDebounceTimer == null)
+            {
+                _readerLibraryWatcherDebounceTimer = new DispatcherTimer(DispatcherPriority.Background)
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                _readerLibraryWatcherDebounceTimer.Tick += async (sender, args) =>
+                {
+                    _readerLibraryWatcherDebounceTimer.Stop();
+                    if (_currentSection == AppSection.Watch && !_isReaderFullscreen)
+                    {
+                        await RefreshReaderLibraryAsync(forceRefresh: true);
+                    }
+                };
+            }
+
+            if (_readerNovelLibraryWatcherDebounceTimer == null)
+            {
+                _readerNovelLibraryWatcherDebounceTimer = new DispatcherTimer(DispatcherPriority.Background)
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                _readerNovelLibraryWatcherDebounceTimer.Tick += async (sender, args) =>
+                {
+                    _readerNovelLibraryWatcherDebounceTimer.Stop();
+                    if (_currentSection == AppSection.Watch && !_isReaderFullscreen)
+                    {
+                        await RefreshReaderNovelLibraryAsync(forceRefresh: true);
+                    }
+                };
+            }
+        }
+
+        private void EnsureReaderLibraryWatcher(string root, bool isNovel)
+        {
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+            {
+                if (isNovel)
+                {
+                    DisposeReaderLibraryWatcher(ref _readerNovelLibraryWatcher, ref _readerNovelWatcherRoot);
+                }
+                else
+                {
+                    DisposeReaderLibraryWatcher(ref _readerLibraryWatcher, ref _readerWatcherRoot);
+                }
+                return;
+            }
+
+            EnsureReaderLibraryWatcherTimers();
+
+            if (isNovel)
+            {
+                if (string.Equals(_readerNovelWatcherRoot, root, StringComparison.OrdinalIgnoreCase) && _readerNovelLibraryWatcher != null)
+                {
+                    return;
+                }
+
+                DisposeReaderLibraryWatcher(ref _readerNovelLibraryWatcher, ref _readerNovelWatcherRoot);
+                _readerNovelLibraryWatcher = CreateReaderLibraryWatcher(root, () =>
+                {
+                    _readerNovelLibraryWatcherDebounceTimer.Stop();
+                    _readerNovelLibraryWatcherDebounceTimer.Start();
+                });
+                _readerNovelWatcherRoot = root;
+                return;
+            }
+
+            if (string.Equals(_readerWatcherRoot, root, StringComparison.OrdinalIgnoreCase) && _readerLibraryWatcher != null)
+            {
+                return;
+            }
+
+            DisposeReaderLibraryWatcher(ref _readerLibraryWatcher, ref _readerWatcherRoot);
+            _readerLibraryWatcher = CreateReaderLibraryWatcher(root, () =>
+            {
+                _readerLibraryWatcherDebounceTimer.Stop();
+                _readerLibraryWatcherDebounceTimer.Start();
+            });
+            _readerWatcherRoot = root;
+        }
+
+        private FileSystemWatcher CreateReaderLibraryWatcher(string root, Action onChanged)
+        {
+            var watcher = new FileSystemWatcher(root)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.FileName | NotifyFilters.LastWrite
+            };
+
+            FileSystemEventHandler changedHandler = (sender, args) => Dispatcher.BeginInvoke(onChanged);
+            RenamedEventHandler renamedHandler = (sender, args) => Dispatcher.BeginInvoke(onChanged);
+            watcher.Created += changedHandler;
+            watcher.Changed += changedHandler;
+            watcher.Deleted += changedHandler;
+            watcher.Renamed += renamedHandler;
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
+
+        private static void DisposeReaderLibraryWatcher(ref FileSystemWatcher watcher, ref string root)
+        {
+            if (watcher != null)
+            {
+                watcher.EnableRaisingEvents = false;
+                watcher.Dispose();
+                watcher = null;
+            }
+
+            root = null;
+        }
+
+        private string GetReaderWatchAppDisplayName(ReaderWatchExternalApp app)
+        {
+            return app == ReaderWatchExternalApp.Bandiview ? "Bandiview" : "FastStone Image Viewer";
+        }
+
+        private string GetReaderWatchCurrentAppDisplayName()
+        {
+            return GetReaderWatchAppDisplayName(_readerWatchExternalApp);
+        }
+
+        private string GetReaderWatchAppDownloadUrl(ReaderWatchExternalApp app)
+        {
+            return app == ReaderWatchExternalApp.Bandiview
+                ? "https://github.com/ghostminhtoan/getlink210-GMTPC/releases/download/accessories/Bandiview.zip"
+                : "https://github.com/ghostminhtoan/getlink210-GMTPC/releases/download/accessories/FastStone.Image.Viewer.zip";
+        }
+
+        private string GetReaderWatchAppRootPath(ReaderWatchExternalApp app)
+        {
+            return app == ReaderWatchExternalApp.Bandiview
+                ? PortablePaths.BandiviewRoot
+                : PortablePaths.FastStoneRoot;
+        }
+
+        private string GetReaderWatchAppExecutablePath(ReaderWatchExternalApp app)
+        {
+            return app == ReaderWatchExternalApp.Bandiview
+                ? PortablePaths.BandiviewExePath
+                : PortablePaths.FastStoneExePath;
+        }
+
+        private void UpdateReaderWatchWithButtonLabel()
+        {
+            if (_readerWatchWithButton == null)
+            {
+                return;
+            }
+
+            _readerWatchWithButton.Content = "WATCH WITH";
+            _readerWatchWithButton.ToolTip = GetReaderWatchCurrentAppDisplayName();
+        }
+
+        private async Task EnsureReaderWatchAppReadyAsync(ReaderWatchExternalApp app)
+        {
+            string exePath = GetReaderWatchAppExecutablePath(app);
+            if (File.Exists(exePath))
+            {
+                return;
+            }
+
+            string appName = GetReaderWatchAppDisplayName(app);
+            string appRoot = GetReaderWatchAppRootPath(app);
+            string zipFileName = app == ReaderWatchExternalApp.Bandiview ? "Bandiview.zip" : "FastStone.Image.Viewer.zip";
+            string zipPath = Path.Combine(PortablePaths.PortableDataRoot, zipFileName);
+
+            Directory.CreateDirectory(PortablePaths.PortableDataRoot);
+            UpdateReaderStatus((_isVietnameseUi ? "Đang tải " : "Downloading ") + appName + "...");
+
+            using (var response = await _httpClient.GetAsync(GetReaderWatchAppDownloadUrl(app), HttpCompletionOption.ResponseHeadersRead))
+            {
+                response.EnsureSuccessStatusCode();
+                using (var input = await response.Content.ReadAsStreamAsync())
+                using (var output = File.Open(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await input.CopyToAsync(output);
+                }
+            }
+
+            if (Directory.Exists(appRoot))
+            {
+                Directory.Delete(appRoot, true);
+            }
+
+            // ponytail: zip already contains app folder; extract to .portable, not nested folder again.
+            ZipFile.ExtractToDirectory(zipPath, PortablePaths.PortableDataRoot);
+            File.Delete(zipPath);
+
+            if (!File.Exists(exePath))
+            {
+                throw new FileNotFoundException("Viewer executable was not found after extraction.", exePath);
+            }
         }
 
         private string ResolveFastStoneExecutablePath()
         {
-            string portablePath = PortablePaths.FastStoneExePath;
-            if (File.Exists(portablePath))
-            {
-                return portablePath;
-            }
-
-            string appRelativePath = Path.Combine(PortablePaths.AppRoot, "FastStone Image Viewer", "FSViewer.exe");
-            if (File.Exists(appRelativePath))
-            {
-                return appRelativePath;
-            }
-
-            return null;
+            return GetReaderWatchAppExecutablePath(_readerWatchExternalApp);
         }
 
         private bool TryLaunchFastStone(string targetPath, out string errorMessage)
@@ -650,7 +861,7 @@ namespace get_link_manga
             }
         }
 
-        private void LaunchCurrentReaderTargetInFastStone(bool preferChapterFolder)
+        private async void LaunchCurrentReaderTargetInFastStone(bool preferChapterFolder)
         {
             string targetPath = null;
 
@@ -671,15 +882,26 @@ namespace get_link_manga
                 targetPath = _currentReaderManga.FolderPath;
             }
 
+            try
+            {
+                await EnsureReaderWatchAppReadyAsync(_readerWatchExternalApp);
+            }
+            catch (Exception ex)
+            {
+                UpdateReaderStatus((_isVietnameseUi ? "Không thể tải app watch: " : "Failed to download watch app: ") + ex.Message);
+                return;
+            }
+
             if (!TryLaunchFastStone(targetPath, out string errorMessage))
             {
                 UpdateReaderStatus(errorMessage);
                 return;
             }
 
+            string appName = GetReaderWatchCurrentAppDisplayName();
             string targetLabel = preferChapterFolder
-                ? (_currentReaderChapter?.Name ?? _currentReaderManga?.Name ?? "FastStone")
-                : (_currentReaderPage?.DisplayLabel ?? _currentReaderChapter?.Name ?? "FastStone");
+                ? (_currentReaderChapter?.Name ?? _currentReaderManga?.Name ?? appName)
+                : (_currentReaderPage?.DisplayLabel ?? _currentReaderChapter?.Name ?? appName);
             UpdateReaderStatus((_isVietnameseUi ? "Đã mở bằng FastStone Image Viewer: " : "Opened in FastStone Image Viewer: ") + targetLabel);
         }
 
@@ -855,6 +1077,7 @@ namespace get_link_manga
             }
 
             string root = GetCurrentReaderLibraryRoot();
+            EnsureReaderLibraryWatcher(root, isNovel: false);
 
             if (!forceRefresh && string.Equals(root, _lastReaderLibraryRoot, StringComparison.OrdinalIgnoreCase) && _readerLibrary.Count > 0)
             {
@@ -922,6 +1145,34 @@ namespace get_link_manga
                 : PortablePaths.DefaultDownloadRoot;
         }
 
+        private void SetReaderCurrentTitle()
+        {
+            if (_readerCurrentTitleText == null)
+            {
+                return;
+            }
+
+            string bookName = _currentReaderManga?.Name ?? string.Empty;
+            string chapterName = _currentReaderChapter?.Name ?? string.Empty;
+            _readerCurrentTitleText.Text = string.IsNullOrWhiteSpace(chapterName)
+                ? bookName
+                : bookName + Environment.NewLine + chapterName;
+        }
+
+        private void SetReaderNovelCurrentTitle()
+        {
+            if (_readerNovelCurrentTitleText == null)
+            {
+                return;
+            }
+
+            string bookName = _currentReaderNovelBook?.Name ?? string.Empty;
+            string chapterName = _currentReaderNovelChapter?.Name ?? string.Empty;
+            _readerNovelCurrentTitleText.Text = string.IsNullOrWhiteSpace(chapterName)
+                ? bookName
+                : bookName + Environment.NewLine + chapterName;
+        }
+
         private async Task RefreshReaderNovelLibraryAsync(bool forceRefresh)
         {
             if (_readerNovelBookList == null)
@@ -930,6 +1181,7 @@ namespace get_link_manga
             }
 
             string root = GetCurrentReaderNovelLibraryRoot();
+            EnsureReaderLibraryWatcher(root, isNovel: true);
             UpdateReaderNovelStatus(_isVietnameseUi ? "Đang quét root/domain/book novel..." : "Scanning novel root/domain/book...");
 
             List<ReaderNovelBookItem> library = await Task.Run(() => ScanReaderNovelLibrary(root));
@@ -1957,7 +2209,7 @@ namespace get_link_manga
             _readerSelectionGuard = false;
             _currentReaderChapter = nextChapter;
             _currentReaderPage = null;
-            _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} - {_currentReaderChapter?.Name}";
+            SetReaderCurrentTitle();
             RenderReaderPlaceholder();
             UpdateReaderStatus(_isVietnameseUi
                 ? "Chá»n chapter hoáº - c áº£nh trong panel bÃªn trá»i Ä‘á»ƒ má»Ÿ FastStone."
@@ -2067,7 +2319,7 @@ namespace get_link_manga
             _readerSelectionGuard = false;
             _currentReaderNovelChapter = null;
             _currentReaderNovelFile = null;
-            _readerNovelCurrentTitleText.Text = _currentReaderNovelBook?.Name ?? string.Empty;
+            SetReaderNovelCurrentTitle();
             _readerNovelPreviewTextBox.Text = string.Empty;
             if (nextChapter != null)
             {
@@ -2097,7 +2349,7 @@ namespace get_link_manga
             UpdateReaderNovelFileListItems(chapter.Files);
             _readerNovelFileList.SelectedItem = null;
             _readerSelectionGuard = false;
-            _readerNovelCurrentTitleText.Text = $"{_currentReaderNovelBook?.Name} - {_currentReaderNovelChapter?.Name}";
+            SetReaderNovelCurrentTitle();
             _readerNovelPreviewTextBox.Text = string.Empty;
             UpdateReaderNovelStatus(chapter.Files.Count > 0
                 ? (_isVietnameseUi ? "Đã chọn chapter. Click file .md để xem preview, double-click để mở trình duyệt." : "Chapter selected. Click .md for preview, double-click to open in browser.")
@@ -2118,7 +2370,7 @@ namespace get_link_manga
             ReaderMarkdownItem firstFile = chapter.Files.FirstOrDefault();
             _readerNovelFileList.SelectedItem = firstFile;
             _readerSelectionGuard = false;
-            _readerNovelCurrentTitleText.Text = $"{_currentReaderNovelBook?.Name} - {_currentReaderNovelChapter?.Name}";
+            SetReaderNovelCurrentTitle();
             if (firstFile != null)
             {
                 OpenReaderNovelFile(firstFile, openInBrowser: false);
@@ -2144,7 +2396,7 @@ namespace get_link_manga
             _readerSelectionGuard = true;
             SyncReaderNovelFileListSelection(file);
             _readerSelectionGuard = false;
-            _readerNovelCurrentTitleText.Text = $"{_currentReaderNovelBook?.Name} - {_currentReaderNovelChapter?.Name}";
+            SetReaderNovelCurrentTitle();
             if (string.IsNullOrWhiteSpace(file.FilePath) || !File.Exists(file.FilePath))
             {
                 _readerNovelPreviewTextBox.Text = string.Empty;
@@ -2228,7 +2480,7 @@ namespace get_link_manga
             SyncReaderFileListSelection(_currentReaderPage);
             _readerSelectionGuard = false;
 
-            _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} - {_currentReaderChapter?.Name}";
+            SetReaderCurrentTitle();
             _forceReaderRenderOnNextPageOpen = true;
             if (_readerUsesFastStone)
             {
@@ -2277,7 +2529,7 @@ namespace get_link_manga
             UpdateReaderFileListItems(chapter.Pages);
             _readerFileList.SelectedItem = null;
             _readerSelectionGuard = false;
-            _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} - {_currentReaderChapter?.Name}";
+            SetReaderCurrentTitle();
             RenderReaderPlaceholder();
             UpdateReaderStatus(chapter.Pages.Count > 0
                 ? (_isVietnameseUi ? "Đã chọn chapter. Double-click ảnh để mở bằng FastStone." : "Chapter selected. Double-click image to open in FastStone.")
@@ -2297,7 +2549,7 @@ namespace get_link_manga
             SyncReaderFileListSelection(page);
             _readerSelectionGuard = false;
 
-            _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} - {_currentReaderChapter?.Name}";
+            SetReaderCurrentTitle();
             if (_readerUsesFastStone)
             {
                 if (launchFastStone && _readerHasUserClickedInWatch && !_readerSuppressAutoLaunch)
@@ -2346,7 +2598,7 @@ namespace get_link_manga
             _readerSelectionGuard = false;
             SyncReaderFileListSelection(page);
 
-            _readerCurrentTitleText.Text = $"{_currentReaderManga?.Name} - {_currentReaderChapter?.Name}";
+            SetReaderCurrentTitle();
             UpdateReaderNavigationState();
             UpdateReaderStatus(BuildReaderStatusText());
         }
@@ -3542,6 +3794,58 @@ namespace get_link_manga
             UpdateReaderStatus(_isVietnameseUi
                 ? "FastStone chỉ mở khi click chapter hoặc ảnh."
                 : "FastStone opens only when you click a chapter or an image.");
+        }
+
+        private void ReaderWatchWith_Click(object sender, RoutedEventArgs e)
+        {
+            if (_readerWatchWithButton == null)
+            {
+                return;
+            }
+
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateReaderWatchWithMenuItem(ReaderWatchExternalApp.Bandiview));
+            menu.Items.Add(CreateReaderWatchWithMenuItem(ReaderWatchExternalApp.FastStone));
+            _readerWatchWithButton.ContextMenu = menu;
+            menu.PlacementTarget = _readerWatchWithButton;
+            menu.IsOpen = true;
+        }
+
+        private MenuItem CreateReaderWatchWithMenuItem(ReaderWatchExternalApp app)
+        {
+            var item = new MenuItem
+            {
+                Header = GetReaderWatchAppDisplayName(app),
+                IsCheckable = true,
+                IsChecked = _readerWatchExternalApp == app
+            };
+            item.Click += async (sender, args) => await SelectReaderWatchAppAsync(app);
+            return item;
+        }
+
+        private async Task SelectReaderWatchAppAsync(ReaderWatchExternalApp app)
+        {
+            _readerWatchExternalApp = app;
+            UpdateReaderWatchWithButtonLabel();
+            RenderReaderPlaceholder();
+
+            try
+            {
+                await EnsureReaderWatchAppReadyAsync(app);
+            }
+            catch (Exception ex)
+            {
+                UpdateReaderStatus((_isVietnameseUi ? "Không thể tải " : "Failed to download ") + GetReaderWatchCurrentAppDisplayName() + ": " + ex.Message);
+                return;
+            }
+
+            if (_currentReaderPage != null || _currentReaderChapter != null || _currentReaderManga != null)
+            {
+                LaunchCurrentReaderTargetInFastStone(preferChapterFolder: false);
+                return;
+            }
+
+            UpdateReaderStatus((_isVietnameseUi ? "Đã chọn app watch: " : "Selected watch app: ") + GetReaderWatchCurrentAppDisplayName());
         }
 
         public void ToggleReaderFullscreen()

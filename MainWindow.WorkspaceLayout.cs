@@ -48,6 +48,9 @@ namespace get_link_manga
         private string _createSubfolderSelectedDomainKey;
         private Border _sectionHeaderBorder;
         private Border _navigationRailBorder;
+        private Button _toolbarDownloadToggleButton;
+        private Button _toolbarRetryToggleButton;
+        private Button _toolbarClearTempButton;
 
         private void InitializeWorkspaceShell()
         {
@@ -57,6 +60,7 @@ namespace get_link_manga
             }
 
             ConfigureHeaderPanelLayout();
+            RelocateDaomeodenToHentaiTab();
             BuildScalePresetCard();
             BuildGlobalDownloadToolbar();
             BuildModernShell();
@@ -166,6 +170,7 @@ namespace get_link_manga
                 }
             }
 
+            EnsureCompactDownloadToolbarButtons();
             MoveToolbarElement(txtBuildInfo, new Thickness(8, 0, 12, 0));
             MoveToolbarElement(btnRetryErrorLog, new Thickness(0, 0, 6, 0));
             MoveToolbarElement(btnShutdownMenu?.Parent as UIElement ?? btnShutdownMenu, new Thickness(0, 0, 6, 0));
@@ -179,6 +184,136 @@ namespace get_link_manga
             {
                 grdAutoRetryErrorsToggle.Visibility = Visibility.Collapsed;
             }
+
+            UpdateCompactDownloadToolbarState();
+        }
+
+        private void EnsureCompactDownloadToolbarButtons()
+        {
+            if (_globalDownloadActionPanel == null)
+            {
+                return;
+            }
+
+            if (_toolbarDownloadToggleButton == null)
+            {
+                _toolbarDownloadToggleButton = CreateCompactToolbarToggleButton("DOWNLOAD", async (sender, args) =>
+                {
+                    if (_downloadCts != null)
+                    {
+                        BtnStopDownload_Click(sender, args);
+                        return;
+                    }
+
+                    await HandleStartDownloadToggleCheckedAsync();
+                });
+                _globalDownloadActionPanel.Children.Insert(0, _toolbarDownloadToggleButton);
+            }
+
+            if (_toolbarRetryToggleButton == null)
+            {
+                _toolbarRetryToggleButton = CreateCompactToolbarToggleButton("RETRY", (sender, args) =>
+                {
+                    if (btnAutoRetryErrors == null)
+                    {
+                        return;
+                    }
+
+                    btnAutoRetryErrors.IsChecked = !(btnAutoRetryErrors.IsChecked == true);
+                });
+                int insertIndex = _toolbarDownloadToggleButton != null ? 1 : 0;
+                _globalDownloadActionPanel.Children.Insert(insertIndex, _toolbarRetryToggleButton);
+            }
+
+            if (_toolbarClearTempButton == null)
+            {
+                _toolbarClearTempButton = CreateCompactToolbarToggleButton("CLEAR TEMP", BtnClearTempFloating_Click);
+                _toolbarClearTempButton.Content = "CLEAR TEMP";
+                _toolbarClearTempButton.ToolTip = "CLEAR TEMP";
+                int insertIndex = _toolbarRetryToggleButton != null ? 2 : (_toolbarDownloadToggleButton != null ? 1 : 0);
+                _globalDownloadActionPanel.Children.Insert(insertIndex, _toolbarClearTempButton);
+            }
+        }
+
+        private Button CreateCompactToolbarToggleButton(string label, RoutedEventHandler onClick)
+        {
+            var button = new Button
+            {
+                MinWidth = 74,
+                Height = 20,
+                Margin = new Thickness(0, 0, 6, 0),
+                Padding = new Thickness(6, 0, 6, 0),
+                FontSize = 9.0,
+                FontWeight = FontWeights.Bold,
+                BorderThickness = new Thickness(1.1),
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            button.Click += onClick;
+            SetCompactToolbarToggleVisual(button, label, false);
+            return button;
+        }
+
+        private void SetCompactToolbarToggleVisual(Button button, string label, bool isOn)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            Color accent = isOn ? Color.FromRgb(0x00, 0xE5, 0xFF) : Color.FromRgb(0xFF, 0x6C, 0x6C);
+            button.Background = new SolidColorBrush(Color.FromArgb(255, 18, 25, 40));
+            button.Foreground = new SolidColorBrush(accent);
+            button.BorderBrush = new SolidColorBrush(accent);
+            button.Content = $"{label} {(isOn ? "ON" : "OFF")}";
+            button.ToolTip = button.Content;
+        }
+
+        internal void UpdateCompactDownloadToolbarState()
+        {
+            SetCompactToolbarToggleVisual(_toolbarDownloadToggleButton, "DOWNLOAD", _downloadCts != null);
+            SetCompactToolbarToggleVisual(_toolbarRetryToggleButton, "RETRY", btnAutoRetryErrors?.IsChecked == true);
+        }
+
+        private void BtnClearTempFloating_Click(object sender, RoutedEventArgs e)
+        {
+            ClearTempRootFolder(Path.Combine(PortablePaths.AppRoot, ".tmp"));
+
+            string downloadRoot = txtDownloadPath?.Text?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(downloadRoot))
+            {
+                BtnClearTemp_Click(sender, e);
+                return;
+            }
+
+            lblStatus.Text = _isVietnameseUi ? "Đã xóa .tmp." : "Cleared .tmp.";
+        }
+
+        private void RelocateDaomeodenToHentaiTab()
+        {
+            if (tabManga == null || tabHentai == null)
+            {
+                return;
+            }
+
+            TabItem daomeodenTab = null;
+            foreach (object item in tabManga.Items)
+            {
+                if (item is TabItem tabItem &&
+                    string.Equals(tabItem.Header?.ToString(), "daomeoden", StringComparison.OrdinalIgnoreCase))
+                {
+                    daomeodenTab = tabItem;
+                    break;
+                }
+            }
+
+            if (daomeodenTab == null || tabHentai.Items.Contains(daomeodenTab))
+            {
+                return;
+            }
+
+            tabManga.Items.Remove(daomeodenTab);
+            tabHentai.Items.Add(daomeodenTab);
         }
 
         private void CompactHeaderPanelButtons(Panel panel, bool isPrimaryRow)
@@ -493,6 +628,7 @@ namespace get_link_manga
             AddCreateSubfolderDomainItem("nhentai.xxx");
             AddCreateSubfolderDomainItem("hentaiforce.net");
             AddCreateSubfolderDomainItem("hentaiera.com");
+            AddCreateSubfolderDomainItem("hentai2read.com");
         }
 
         private void AddCreateSubfolderDomainItem(string domainKey)
@@ -1100,7 +1236,7 @@ namespace get_link_manga
                 _aboutContentText.Text = _isVietnameseUi
                     ? "Ứng dụng Manga Desk hỗ trợ cào, quản lý hàng chờ và đọc offline truyện tranh/tiểu thuyết:\n\n" +
                       "1. CHỌN NGUỒN / DÁN LINK:\n" +
-                      "   - Hỗ trợ parser phong phú cho Manga & Hentai (TruyenQQ, NetTruyen, SayHentai, Vi-Hentai, NHentai, HentaiForce, HentaiEra, Daomeoden, v.v.).\n" +
+                      "   - Hỗ trợ parser phong phú cho Manga & Hentai (TruyenQQ, NetTruyen, SayHentai, Vi-Hentai, NHentai, HentaiForce, HentaiEra, Hentai2Read, Daomeoden, v.v.).\n" +
                       "   - Nguồn Novel riêng để lấy text từ các trang như Hako (docln.net / ln.hako.vn) và tự động chuyển đổi sang định dạng Markdown (.md).\n\n" +
                       "2. HÀNG CHỜ TẢI VỀ:\n" +
                       "   - Quản lý tải song song đa luồng an toàn, hỗ trợ tạm dừng, tiếp tục tải (resume-safe) và tự động tải lại khi lỗi (auto-retry).\n" +
@@ -1117,7 +1253,7 @@ namespace get_link_manga
                       "   - Watch lists sẽ tự động cập nhật danh sách truyện mới ngay sau khi bạn tải xong."
                     : "Manga Desk provides advanced scraping, queue management, and offline reading/rendering for both manga and novels:\n\n" +
                       "1. CHOOSE SOURCE / PASTE LINK:\n" +
-                      "   - High-fidelity parsers for Manga & Hentai sites (TruyenQQ, NetTruyen, SayHentai, Vi-Hentai, NHentai, HentaiForce, HentaiEra, etc.).\n" +
+                      "   - High-fidelity parsers for Manga & Hentai sites (TruyenQQ, NetTruyen, SayHentai, Vi-Hentai, NHentai, HentaiForce, HentaiEra, Hentai2Read, etc.).\n" +
                       "   - Novel Source allows crawling text from Hako (docln.net / ln.hako.vn) and auto-converting chapters to Markdown (.md) format.\n\n" +
                       "2. DOWNLOAD QUEUE:\n" +
                       "   - Parallel multi-threaded downloading with resume-safe capabilities and auto-retry error handling.\n" +

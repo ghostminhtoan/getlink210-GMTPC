@@ -109,6 +109,29 @@ namespace get_link_manga
                 return;
             }
 
+            if (e.Key == Key.V)
+            {
+                if (_currentSection == AppSection.Download)
+                {
+                    try
+                    {
+                        if (Clipboard.ContainsText())
+                        {
+                            string text = Clipboard.GetText()?.Trim();
+                            if (!string.IsNullOrWhiteSpace(text))
+                            {
+                                AppendSupportedInputLinks(text);
+                                e.Handled = true;
+                                return;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
             switch (e.Key)
             {
                 case Key.D1:

@@ -282,14 +282,14 @@ namespace get_link_manga
 
                 try
                 {
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(requestUrl, autoDeleteCookiesOnLoad: false, headlessAutomation: headlessAutomation)
+                        var captchaWin = new CaptchaWindow(requestUrl, autoDeleteCookiesOnLoad: true, headlessAutomation: headlessAutomation)
                         {
                             Owner = this
                         };
 
-                        if (captchaWin.ShowDialog() == true)
+                        if (await captchaWin.ShowNonBlockingAsync())
                         {
                             ApplyHakoBrowserSession(captchaWin, requestUrl);
                             resolvedHtml = captchaWin.ResolvedHtml;
@@ -365,14 +365,14 @@ namespace get_link_manga
                 bool solved = false;
                 try
                 {
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl)
+                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {
                             Owner = this
                         };
 
-                        if (captchaWin.ShowDialog() == true)
+                        if (await captchaWin.ShowNonBlockingAsync())
                         {
                             var originalUri = new Uri(testUrl);
                             var resolvedUri = captchaWin.ResolvedUri ?? originalUri;

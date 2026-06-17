@@ -118,6 +118,11 @@ namespace get_link_manga
                 {
                     return "hentaiera.com";
                 }
+
+                if (host.Contains("hentai2read"))
+                {
+                    return "hentai2read.com";
+                }
             }
             catch
             {
@@ -210,6 +215,14 @@ namespace get_link_manga
         private string GetSafeChapterPathName(string chapterTitle, int maxLength = 120)
         {
             return GetSafePathName(NormalizeChapterLabel(chapterTitle), maxLength);
+        }
+
+        private string GetSafeChapterPathName(string bookTitle, string chapterTitle, int maxLength = 120)
+        {
+            string combined = string.IsNullOrWhiteSpace(bookTitle)
+                ? NormalizeChapterLabel(chapterTitle)
+                : CompactSingleLine(bookTitle) + " - " + NormalizeChapterLabel(chapterTitle);
+            return GetSafePathName(combined, maxLength);
         }
 
         private static string ZeroPadChapterNumberToken(string numberToken)
@@ -541,6 +554,11 @@ namespace get_link_manga
                 if (host.Contains("hentaiera"))
                 {
                     return "hentaiera";
+                }
+
+                if (host.Contains("hentai2read"))
+                {
+                    return "hentai2read";
                 }
 
                 if (host.Contains("sayhentai.cx"))
@@ -1121,6 +1139,8 @@ namespace get_link_manga
                     _suppressDownloadToggleEvent = false;
                 }
             });
+
+            UpdateCompactDownloadToolbarState();
         }
 
         private Task RunQueuedGalleryDownloadAsync(GalleryItem item, string downloadRoot, ChapterFilter chapterFilter, CancellationToken token, int scheduledOrder)
@@ -1332,6 +1352,12 @@ namespace get_link_manga
             if (hostName.Contains("hentaiera.com"))
             {
                 await DownloadHentaieraGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
+                return;
+            }
+
+            if (hostName.Contains("hentai2read.com") || hostName.Contains("static.hentaicdn.com"))
+            {
+                await DownloadHentai2readGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
                 return;
             }
 
@@ -2404,14 +2430,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 bool solved = false;
                 try
                 {
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl)
+                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {
                             Owner = this
                         };
 
-                        if (captchaWin.ShowDialog() == true)
+                        if (await captchaWin.ShowNonBlockingAsync())
                         {
                             var originalUri = new Uri(testUrl);
                             var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
@@ -2551,14 +2577,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 bool solved = false;
                 try
                 {
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl)
+                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {
                             Owner = this
                         };
 
-                        if (captchaWin.ShowDialog() == true)
+                        if (await captchaWin.ShowNonBlockingAsync())
                         {
                             var uri = new Uri("https://vi-hentai.pro");
                             var cookies = captchaWin.ResolvedCookies.GetCookies(uri);

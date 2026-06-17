@@ -23,6 +23,8 @@ namespace get_link_manga
 
         internal static string WebView2UserDataFolder => Path.Combine(WebView2RuntimeRoot, "userdata");
 
+        internal static string WebView2CaptchaUserDataFolder => Path.Combine(WebView2UserDataFolder, "captcha");
+
         internal static string DefaultDownloadRoot => Path.Combine(AppRoot, "root");
 
         internal static string PortableGalleryListPath => Path.Combine(AppRoot, "save gallery.md");
@@ -34,6 +36,10 @@ namespace get_link_manga
         internal static string FastStoneRoot => Path.Combine(PortableDataRoot, "FastStone Image Viewer");
 
         internal static string FastStoneExePath => Path.Combine(FastStoneRoot, "FSViewer.exe");
+
+        internal static string BandiviewRoot => Path.Combine(PortableDataRoot, "Bandiview");
+
+        internal static string BandiviewExePath => Path.Combine(BandiviewRoot, "BandiView.exe");
 
         internal static string PortableArchivePath => Path.Combine(AppRoot, "Comic-GMTPC.zip");
 

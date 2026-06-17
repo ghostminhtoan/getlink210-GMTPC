@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -6,111 +7,107 @@ namespace get_link_manga
 {
     public partial class MainWindow : Window
     {
-        private sealed class UiTextPair
+        private static readonly Dictionary<string, string> UiTranslations = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            public UiTextPair(string english, string vietnamese, params string[] legacyValues)
-            {
-                English = english;
-                Vietnamese = vietnamese;
-                LegacyValues = legacyValues ?? Array.Empty<string>();
-            }
+            ["PARAMETERS CONFIG"] = "1. Chọn nguồn và dán link",
+            ["📜 HISTORY"] = "📜 Lịch sử",
+            ["📌 BOOKMARKS"] = "📌 Đánh dấu",
+            ["🏠 HOMEPAGE"] = "🏠 Trang chủ",
+            ["DOWNLOAD MULTIPLE WITH TAG OR ARTIST"] = "Dán link danh sách, tag, thể loại hoặc tác giả",
+            ["TARGET TAG URL"] = "Link mục tiêu",
+            ["ANALYZE TARGET PAGE"] = "1) Kiểm tra link",
+            ["DELETE COOKIE"] = "Xóa cookie",
+            ["TOTAL PAGES"] = "Tổng số trang tìm thấy",
+            ["FROM PAGE"] = "Lấy từ trang",
+            ["TO PAGE"] = "Đến trang",
+            ["GET LINK"] = "2) Lấy danh sách truyện",
+            ["GET MORE"] = "Lấy thêm trang",
+            ["PASTE DIRECT LINK"] = "Dán link truyện trực tiếp",
+            ["START CRAWLING"] = "Bắt đầu cào",
+            ["CRAWL MORE"] = "Cào thêm",
+            ["SORT OPTION"] = "Tùy chọn sắp xếp",
+            ["Recent"] = "Mới nhất",
+            ["Popular Today"] = "Phổ biến hôm nay",
+            ["Popular Week"] = "Phổ biến tuần này",
+            ["Popular All Time"] = "Phổ biến mọi lúc",
+            ["TARGET PAGE ANALYSIS"] = "Phân tích trang đích",
+            ["Total Pages Found:"] = "Tổng số trang tìm thấy:",
+            ["EXTRACTED GALLERY LINKS"] = "2. Danh sách chờ tải",
+            ["GALLERY DETAILS (TITLE & URL)"] = "Chi tiết truyện (tên & URL)",
+            ["STATUS"] = "Trạng thái",
+            ["PROCESS"] = "Tiến trình",
+            ["VIEW LINK"] = "Mở nhanh",
+            ["COPY LINKS"] = "Sao chép link",
+            ["COPY NAME+LINK"] = "Sao chép tên + link",
+            ["COPY NAME + LINK"] = "Sao chép tên + link",
+            ["SAVE LIST"] = "Lưu danh sách",
+            ["LOAD LIST"] = "Tải danh sách",
+            ["CLEAR"] = "Xóa",
+            ["WORD WRAP"] = "Xuống dòng",
+            ["SEARCH"] = "Tìm kiếm",
+            ["FOLDER ACTIONS"] = "Công cụ thư mục",
+            ["CHAPTER SELECTION"] = "Chỉ tải chapter",
+            ["CONNECTION"] = "Kết nối",
+            ["DOWNLOAD MULTIPLE BOOK"] = "Tải cùng lúc",
+            ["SORT BY NAME"] = "Sắp xếp theo tên",
+            ["RESTORE ORDER"] = "Trả về thứ tự cũ",
+            ["DUPLICATE NAME"] = "Tên trùng",
+            ["NO LINK (VI-HENTAI)"] = "Không có chapter",
+            ["REVERSE ORDER"] = "Đảo thứ tự",
+            ["CLEAR COMPLETE BOOKS"] = "Ẩn truyện đã xong",
+            ["BROWSE"] = "Duyệt",
+            ["OPEN FOLDER"] = "Mở thư mục",
+            ["MERGE"] = "Gộp",
+            ["SPLIT"] = "Tách",
+            ["COMPRESS"] = "Nén",
+            ["EXTRACT"] = "Giải nén",
+            ["START"] = "Tải",
+            ["STOP"] = "Dừng",
+            ["RETRY"] = "Thử lại",
+            ["LOG"] = "Nhật ký",
+            ["DOWNLOAD SETTINGS"] = "3. Thiết lập tải",
+            ["QUICK ACTIONS FOR CURRENT LIST"] = "Thao tác nhanh cho danh sách hiện tại",
+            ["Simple flow: choose website, paste link, review list, then download."] = "Cách dùng nhanh: chọn web, dán link, xem danh sách rồi tải.",
+            ["CHOOSE SOURCE"] = "CHỌN NGUỒN",
+            ["PASTE LINK"] = "DÁN LINK",
+            ["DOWNLOAD"] = "TẢI VỀ",
+            ["STEP 1"] = "BƯỚC 1",
+            ["STEP 2"] = "BƯỚC 2",
+            ["STEP 3"] = "BƯỚC 3",
+            ["INTERFACE LANGUAGE"] = "NGÔN NGỮ GIAO DIỆN",
+            ["DISPLAY SCALE"] = "TỶ LỆ HIỂN THỊ",
+            ["100% = baseline cho 1360x768"] = "100% = chuẩn cho 1360x768",
+            ["Review queue, tick what you want, then start download."] = "Kiểm tra danh sách, tích mục muốn tải, rồi bấm tải.",
+            ["Check selected rows"] = "Tích chọn dòng đang bôi đen",
+            ["Uncheck selected rows"] = "Bỏ tích dòng đang bôi đen",
+            ["Invert checked state"] = "Đảo ngược trạng thái tích",
+            ["📌 Bookmark selected row"] = "📌 Đánh dấu dòng đang chọn",
+            ["🌐 Open link in browser"] = "🌐 Mở link trong trình duyệt",
+            ["Copy selected links"] = "Copy link các dòng đang chọn",
+            ["Delete selected rows"] = "Xóa các dòng đang bôi đen",
+            ["Delete checked rows"] = "Xóa các dòng đã tích",
+            ["Download selected rows"] = "Tải các dòng đang bôi đen",
+            ["Download checked rows"] = "Tải các dòng đã tích",
+            ["Download novel"] = "Tải novel",
+            ["PANEL 1 - BOOK"] = "PANEL 1 - TÊN TRUYỆN",
+            ["PANEL 2 - CHAPTER"] = "PANEL 2 - CHAPTER",
+            ["PANEL 3 - PLAIN TEXT"] = "PANEL 3 - VĂN BẢN THÔ",
+            ["PANEL 4 - .MD"] = "PANEL 4 - .MD",
+            ["SHUTDOWN AFTER DONE"] = "TẮT MÁY SAU KHI XONG",
+            ["POWER"] = "TẮT MÁY"
+        };
 
-            public string English { get; }
-            public string Vietnamese { get; }
-            public string[] LegacyValues { get; }
-        }
-
-        private static readonly UiTextPair[] UiTextPairs =
+        private static readonly Dictionary<string, string> LegacyVietnameseCleanup = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            new UiTextPair("PARAMETERS CONFIG", "1. Chọn nguồn và dán link"),
-            new UiTextPair("📜 HISTORY", "📜 Lịch sử", "ðŸ“œ HISTORY", "ðŸ“œ Lá»ŠCH Sá»¬", "Ã°Å¸â€œÅ“ LÃ¡Â»Å CH SÃ¡Â»Â¬"),
-            new UiTextPair("📌 BOOKMARKS", "📌 Đánh dấu", "ðŸ“Œ BOOKMARKS", "ðŸ“Œ ÄÃNH Dáº¤U", "Ã°Å¸â€œÅ’ Ã„ÂÃƒÂNH DÃ¡ÂºÂ¤U"),
-            new UiTextPair("🏠 HOMEPAGE", "🏠 Trang chủ", "ðŸ  HOMEPAGE", "ðŸ  TRANG CHá»¦"),
-            new UiTextPair("DOWNLOAD MULTIPLE WITH TAG OR ARTIST", "Dán link danh sách, tag, thể loại hoặc tác giả", "Táº¢I NHIá»€U Bá»˜ THEO TAG HOáº¶C TÃC GIáº¢", "TÃ¡ÂºÂ¢I NHIÃ¡Â»â‚¬U BÃ¡Â»Ëœ THEO TAG HOÃ¡ÂºÂ¶C TÃƒÂC GIÃ¡ÂºÂ¢"),
-            new UiTextPair("TARGET TAG URL", "Link mục tiêu", "LINK TAG Má»¤C TIÃŠU"),
-            new UiTextPair("ANALYZE TARGET PAGE", "1) Kiểm tra link", "PHÃ‚N TÃCH TRANG ÄÃCH", "PHÃƒâ€šN TÃƒÂCH TRANG Ã„ÂÃƒÂCH"),
-            new UiTextPair("DELETE COOKIE", "Xóa cookie", "XÃ“A COOKIE", "XÃƒâ€œA COOKIE"),
-            new UiTextPair("TOTAL PAGES", "Tổng số trang tìm thấy", "Tá»”NG Sá» TRANG", "TÃ¡Â»â€NG SÃ¡Â»Â TRANG"),
-            new UiTextPair("FROM PAGE", "Lấy từ trang", "Tá»ª TRANG"),
-            new UiTextPair("TO PAGE", "Đến trang", "Äáº¾N TRANG"),
-            new UiTextPair("GET LINK", "2) Lấy danh sách truyện", "Láº¤Y LINK", "LÃ¡ÂºÂ¤Y LINK"),
-            new UiTextPair("GET MORE", "Lấy thêm trang", "Láº¤Y THÃŠM", "LÃ¡ÂºÂ¤Y THÃƒÅ M"),
-            new UiTextPair("PASTE DIRECT LINK", "Dán link truyện trực tiếp", "DÃN LINK TRá»°C TIáº¾P", "DÃƒÂN LINK TRÃ¡Â»Â°C TIÃ¡ÂºÂ¾P"),
-            new UiTextPair("START CRAWLING", "Bắt đầu cào", "Báº®T Äáº¦U CÃ€O"),
-            new UiTextPair("CRAWL MORE", "Cào thêm", "CÃ€O THÃŠM"),
-            new UiTextPair("SORT OPTION", "Tùy chọn sắp xếp", "TÃ™Y CHá»ŒN Sáº®P Xáº¾P"),
-            new UiTextPair("Recent", "Mới nhất", "Má»›i nháº¥t"),
-            new UiTextPair("Popular Today", "Phổ biến hôm nay", "Phá»• biáº¿n hÃ´m nay"),
-            new UiTextPair("Popular Week", "Phổ biến tuần này", "Phá»• biáº¿n tuáº§n nÃ y"),
-            new UiTextPair("Popular All Time", "Phổ biến mọi lúc", "Phá»• biáº¿n má»i lÃºc"),
-            new UiTextPair("TARGET PAGE ANALYSIS", "Phân tích trang đích", "PHÃ‚N TÃCH TRANG ÄÃCH"),
-            new UiTextPair("Total Pages Found:", "Tổng số trang tìm thấy:", "Tá»•ng sá»‘ trang tÃ¬m tháº¥y:"),
-            new UiTextPair("EXTRACTED GALLERY LINKS", "2. Danh sách chờ tải", "DANH SÃCH LINK ÄÃƒ Láº¤Y", "DANH SÃƒÂCH LINK Ã„ÂÃƒÆ’ LÃ¡ÂºÂ¤Y"),
-            new UiTextPair("GALLERY DETAILS (TITLE & URL)", "Chi tiết truyện (tên & URL)", "CHI TIáº¾T TRUYá»†N (TÃŠN & URL)", "CHI TIÃ¡ÂºÂ¾T TRUYÃ¡Â»â€ N (TÃƒÅ N & URL)"),
-            new UiTextPair("STATUS", "Trạng thái", "TRáº NG THÃI", "TRÃ¡ÂºÂ NG THÃƒÂI"),
-            new UiTextPair("PROCESS", "Tiến trình", "TIáº¾N TRÃŒNH", "TIÃ¡ÂºÂ¾N TRÃƒÅ’NH"),
-            new UiTextPair("VIEW LINK", "Mở nhanh", "XEM LINK"),
-            new UiTextPair("COPY LINKS", "Sao chép link"),
-            new UiTextPair("COPY NAME+LINK", "Sao chép tên + link"),
-            new UiTextPair("COPY NAME + LINK", "Sao chép tên + link", "COPY TÃŠN + LINK", "COPY TÃƒÅ N + LINK"),
-            new UiTextPair("SAVE LIST", "Lưu danh sách", "LÆ¯U DANH SÃCH", "LÃ†Â¯U DANH SÃƒÂCH"),
-            new UiTextPair("LOAD LIST", "Tải danh sách", "Táº¢I DANH SÃCH", "TÃ¡ÂºÂ¢I DANH SÃƒÂCH"),
-            new UiTextPair("CLEAR", "Xóa", "XÃ“A", "XÃƒâ€œA"),
-            new UiTextPair("WORD WRAP", "Xuống dòng", "XUá»NG DÃ’NG", "XUÃ¡Â»ÂNG DÃƒâ€™NG"),
-            new UiTextPair("SEARCH", "Tìm kiếm", "TÃŒM KIáº¾M", "TÃƒÅ’M KIÃ¡ÂºÂ¾M"),
-            new UiTextPair("FOLDER ACTIONS", "Công cụ thư mục", "THAO TÃC THÆ¯ Má»¤C", "THAO TÃƒÂC THÃ†Â¯ MÃ¡Â»Â¤C"),
-            new UiTextPair("CHAPTER SELECTION", "Chỉ tải chapter", "CHá»ŒN CHAPTER", "CHÃ¡Â»Å’N CHAPTER"),
-            new UiTextPair("CONNECTION", "Kết nối", "Káº¾T Ná»I", "KÃ¡ÂºÂ¾T NÃ¡Â»ÂI"),
-            new UiTextPair("DOWNLOAD MULTIPLE BOOK", "Tải cùng lúc", "Táº¢I NHIá»€U TRUYá»†N", "TÃ¡ÂºÂ¢I NHIÃ¡Â»â‚¬U TRUYÃ¡Â»â€ N"),
-            new UiTextPair("SORT BY NAME", "Sắp xếp theo tên", "Sáº®P Xáº¾P THEO TÃŠN", "SÃ¡ÂºÂ®P XÃ¡ÂºÂ¾P THEO TÃƒÅ N"),
-            new UiTextPair("RESTORE ORDER", "Trả về thứ tự cũ", "KHÃ”I PHá»¤C THá»¨ Tá»°", "KHÃƒâ€I PHÃ¡Â»Â¤C THÃ¡Â»Â¨ TÃ¡Â»Â°"),
-            new UiTextPair("DUPLICATE NAME", "Tên bị trùng", "TRÃ™NG TÃŠN", "TRÃƒâ„¢NG TÃƒÅ N"),
-            new UiTextPair("NO LINK (VI-HENTAI)", "Không link (VI-HENTAI)", "KHÃ”NG LINK (VI-HENTAI)", "KHÃƒâ€NG LINK (VI-HENTAI)"),
-            new UiTextPair("REVERSE ORDER", "Đảo chiều", "Äáº¢O CHIá»€U", "Ã„ÂÃ¡ÂºÂ¢O CHIÃ¡Â»â‚¬U"),
-            new UiTextPair("CLEAR COMPLETE BOOKS", "Ẩn truyện đã tải xong", "XÃ“A TRUYá»†N HOÃ€N Táº¤T", "XÃƒâ€œA TRUYÃ¡Â»â€ N HOÃƒâ‚¬N TÃ¡ÂºÂ¤T"),
-            new UiTextPair("BROWSE", "Duyệt", "DUYá»†T"),
-            new UiTextPair("OPEN FOLDER", "Mở thư mục", "Má»ž THÆ¯ Má»¤C"),
-            new UiTextPair("MERGE", "Gộp", "Gá»˜P"),
-            new UiTextPair("SPLIT", "Tách", "TÃCH"),
-            new UiTextPair("COMPRESS", "Nén", "NÃ‰N"),
-            new UiTextPair("EXTRACT", "Giải nén", "GIáº¢I NÃ‰N"),
-            new UiTextPair("START", "Tải"),
-            new UiTextPair("STOP", "Dừng"),
-            new UiTextPair("RETRY", "Thử lại"),
-            new UiTextPair("LOG", "Nhật ký"),
-            new UiTextPair("DOWNLOAD SETTINGS", "3. Thiết lập tải"),
-            new UiTextPair("QUICK ACTIONS FOR CURRENT LIST", "Thao tác nhanh cho danh sách hiện tại"),
-            new UiTextPair("Simple flow: choose website, paste link, review list, then download.", "Cách dùng nhanh: chọn web, dán link, xem danh sách rồi tải."),
-            new UiTextPair("CHOOSE SOURCE", "CHỌN NGUỒN"),
-            new UiTextPair("PASTE LINK", "DÁN LINK"),
-            new UiTextPair("DOWNLOAD", "TẢI VỀ"),
-            new UiTextPair("STEP 1", "BƯỚC 1"),
-            new UiTextPair("STEP 2", "BƯỚC 2"),
-            new UiTextPair("STEP 3", "BƯỚC 3"),
-            new UiTextPair("INTERFACE LANGUAGE", "NGÔN NGỮ GIAO DIỆN"),
-            new UiTextPair("DISPLAY SCALE", "TỶ LỆ HIỂN THỊ"),
-            new UiTextPair("100% = baseline cho 1360x768", "100% = chuẩn cho 1360x768"),
-            new UiTextPair("Review queue, tick what you want, then start download.", "Kiểm tra danh sách, tích mục muốn tải, rồi bấm tải."),
-            new UiTextPair("Check selected rows", "Tích chọn dòng đang bôi đen"),
-            new UiTextPair("Uncheck selected rows", "Bỏ tích dòng đang bôi đen"),
-            new UiTextPair("Invert checked state", "Đảo ngược trạng thái tích"),
-            new UiTextPair("📌 Bookmark selected row", "📌 Đánh dấu dòng đang chọn", "ðŸ“Œ Bookmark selected row", "ðŸ“Œ ÄÃ¡nh dáº¥u dÃ²ng Ä‘ang chá»n"),
-            new UiTextPair("🌐 Open link in browser", "🌐 Mở link trong trình duyệt", "ðŸŒ Open link in browser", "ðŸŒ Má»Ÿ link trong trÃ¬nh duyá»‡t"),
-            new UiTextPair("Copy selected links", "Copy link các dòng đang chọn", "Copy link cÃ¡c dÃ²ng Ä‘ang chá»n"),
-            new UiTextPair("Delete selected rows", "Xóa các dòng đang bôi đen", "XÃ³a cÃ¡c dÃ²ng Ä‘ang bÃ´i Ä‘en"),
-            new UiTextPair("Delete checked rows", "Xóa các dòng đã tích", "XÃ³a cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch"),
-            new UiTextPair("Download selected rows", "Tải các dòng đang bôi đen", "Táº£i cÃ¡c dÃ²ng Ä‘ang bÃ´i Ä‘en"),
-            new UiTextPair("Download checked rows", "Tải các dòng đã tích", "Táº£i cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch"),
-            new UiTextPair("Tích chọn dòng đang bôi đen (Check Selected)", "Tích chọn dòng đang bôi đen", "TÃ­ch chá»n dÃ²ng Ä‘ang bÃ´i Ä‘en (Check Selected)"),
-            new UiTextPair("Bỏ tích dòng đang bôi đen (Uncheck Selected)", "Bỏ tích dòng đang bôi đen", "Bá» tÃ­ch dÃ²ng Ä‘ang bÃ´i Ä‘en (Uncheck Selected)"),
-            new UiTextPair("Đảo ngược trạng thái tích (Invert Checked)", "Đảo ngược trạng thái tích", "Äáº£o ngÆ°á»£c tráº¡ng thÃ¡i tÃ­ch (Invert Checked)"),
-            new UiTextPair("📌 Bookmark dòng đang chọn", "📌 Đánh dấu dòng đang chọn", "ðŸ“Œ Bookmark dÃ²ng Ä‘ang chá»n"),
-            new UiTextPair("🌐 Mở link trong trình duyệt", "🌐 Mở link trong trình duyệt", "ðŸŒ Má»Ÿ link trong trÃ¬nh duyá»‡t"),
-            new UiTextPair("Copy link các dòng đang chọn (Copy Selected Links)", "Copy link các dòng đang chọn", "Copy link cÃ¡c dÃ²ng Ä‘ang chá»n (Copy Selected Links)"),
-            new UiTextPair("Xóa các dòng đang bôi đen (Delete Selected)", "Xóa các dòng đang bôi đen", "XÃ³a cÃ¡c dÃ²ng Ä‘ang bÃ´i Ä‘en (Delete Selected)"),
-            new UiTextPair("Xóa các dòng đã tích (Delete Checked)", "Xóa các dòng đã tích", "XÃ³a cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch (Delete Checked)"),
-            new UiTextPair("Tải các dòng đang bôi đen (Download highlighted lines)", "Tải các dòng đang bôi đen", "Táº£i cÃ¡c dÃ²ng Ä‘ang bÃ´i Ä‘en (Download highlighted lines)"),
-            new UiTextPair("Tải các dòng đã tích (Download selected lines)", "Tải các dòng đã tích", "Táº£i cÃ¡c dÃ²ng Ä‘Ã£ tÃ­ch (Download selected lines)")
+            ["Tích chọn dòng đang bôi đen (Check Selected)"] = "Tích chọn dòng đang bôi đen",
+            ["Bỏ tích dòng đang bôi đen (Uncheck Selected)"] = "Bỏ tích dòng đang bôi đen",
+            ["Đảo ngược trạng thái tích (Invert Checked)"] = "Đảo ngược trạng thái tích",
+            ["📌 Bookmark dòng đang chọn"] = "📌 Đánh dấu dòng đang chọn",
+            ["Copy link các dòng đang chọn (Copy Selected Links)"] = "Copy link các dòng đang chọn",
+            ["Xóa các dòng đang bôi đen (Delete Selected)"] = "Xóa các dòng đang bôi đen",
+            ["Xóa các dòng đã tích (Delete Checked)"] = "Xóa các dòng đã tích",
+            ["Tải các dòng đang bôi đen (Download highlighted lines)"] = "Tải các dòng đang bôi đen",
+            ["Tải các dòng đã tích (Download selected lines)"] = "Tải các dòng đã tích"
         };
 
         internal bool _isVietnameseUi;
@@ -137,9 +134,10 @@ namespace get_link_manga
                 return;
             }
 
+            string fileName = System.IO.Path.GetFileName(archivePath);
             string message =
-                $"Found archive file {System.IO.Path.GetFileName(archivePath)}.\n" +
-                $"Tìm thấy file nén {System.IO.Path.GetFileName(archivePath)}.\n\n" +
+                $"Found archive file {fileName}.\n" +
+                $"Tìm thấy file nén {fileName}.\n\n" +
                 "Do you want to extract it now?\n" +
                 "Bạn có muốn giải nén ngay bây giờ không?";
 
@@ -312,6 +310,7 @@ namespace get_link_manga
             if (txtLanguageTarget != null) txtLanguageTarget.Text = "VI";
             if (txtTotalBooksLabel != null) txtTotalBooksLabel.Text = "Total titles: ";
             if (txtResultsHeader != null) txtResultsHeader.Text = "EXTRACTED GALLERY LINKS";
+            if (btnShutdownMenu != null) btnShutdownMenu.Content = "POWER";
             if (btnShutdownMenu != null) btnShutdownMenu.ToolTip = "Shutdown options";
             if (txtShutdownPopupHeader != null) txtShutdownPopupHeader.Text = "SHUTDOWN OPTIONS";
             if (chkShutdownAfterCompleted != null) chkShutdownAfterCompleted.Content = "shutdown after completed";
@@ -380,7 +379,19 @@ namespace get_link_manga
             }
             else if (node is Button button && button.Content is string buttonText)
             {
-                button.Content = TranslateUiText(buttonText, vietnamese);
+                if (button.ToolTip is string stopTooltip && string.Equals(stopTooltip, "Stop download", StringComparison.Ordinal))
+                {
+                    button.Content = vietnamese ? "DỪNG" : "STOP";
+                }
+                else
+                {
+                    button.Content = TranslateUiText(buttonText, vietnamese);
+                }
+
+                if (button.ToolTip is string buttonToolTip)
+                {
+                    button.ToolTip = TranslateUiText(buttonToolTip, vietnamese);
+                }
             }
             else if (node is MenuItem menuItem && menuItem.Header is string headerText)
             {
@@ -414,38 +425,125 @@ namespace get_link_manga
 
         private string TranslateUiText(string currentText, bool vietnamese)
         {
-            foreach (UiTextPair pair in UiTextPairs)
+            string normalizedText = NormalizeMojibakeText(currentText)?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedText))
             {
-                if (MatchesUiText(currentText, pair))
+                return currentText;
+            }
+
+            if (vietnamese)
+            {
+                if (LegacyVietnameseCleanup.TryGetValue(normalizedText, out string cleanedVietnamese))
                 {
-                    return vietnamese ? pair.Vietnamese : pair.English;
+                    return cleanedVietnamese;
+                }
+
+                if (UiTranslations.TryGetValue(normalizedText, out string translatedVietnamese))
+                {
+                    return translatedVietnamese;
+                }
+
+                foreach (KeyValuePair<string, string> pair in UiTranslations)
+                {
+                    if (string.Equals(normalizedText, pair.Value, StringComparison.Ordinal))
+                    {
+                        return pair.Value;
+                    }
+                }
+
+                return normalizedText;
+            }
+
+            foreach (KeyValuePair<string, string> pair in UiTranslations)
+            {
+                if (string.Equals(normalizedText, pair.Key, StringComparison.Ordinal))
+                {
+                    return pair.Key;
+                }
+
+                if (string.Equals(normalizedText, pair.Value, StringComparison.Ordinal))
+                {
+                    return pair.Key;
                 }
             }
 
-            return currentText;
-        }
-
-        private bool MatchesUiText(string currentText, UiTextPair pair)
-        {
-            if (UiTextEquals(currentText, pair.English) || UiTextEquals(currentText, pair.Vietnamese))
+            foreach (KeyValuePair<string, string> pair in LegacyVietnameseCleanup)
             {
-                return true;
-            }
-
-            foreach (string legacyValue in pair.LegacyValues)
-            {
-                if (UiTextEquals(currentText, legacyValue))
+                if (string.Equals(normalizedText, pair.Key, StringComparison.Ordinal) ||
+                    string.Equals(normalizedText, pair.Value, StringComparison.Ordinal))
                 {
-                    return true;
+                    return pair.Value;
                 }
             }
 
-            return false;
+            return normalizedText;
         }
 
-        private static bool UiTextEquals(string left, string right)
+        private static string NormalizeMojibakeText(string value)
         {
-            return string.Equals(left?.Trim(), right?.Trim(), StringComparison.Ordinal);
+            if (string.IsNullOrWhiteSpace(value) || !LooksLikeMojibake(value))
+            {
+                return value;
+            }
+
+            string current = value;
+            for (int i = 0; i < 2; i++)
+            {
+                try
+                {
+                    string decoded = System.Text.Encoding.UTF8.GetString(System.Text.Encoding.GetEncoding(1252).GetBytes(current));
+                    if (CountMojibakeMarkers(decoded) >= CountMojibakeMarkers(current))
+                    {
+                        break;
+                    }
+
+                    current = decoded;
+                }
+                catch
+                {
+                    break;
+                }
+            }
+
+            return current;
+        }
+
+        private static bool LooksLikeMojibake(string value)
+        {
+            return value.IndexOf("Ã", StringComparison.Ordinal) >= 0 ||
+                   value.IndexOf("Â", StringComparison.Ordinal) >= 0 ||
+                   value.IndexOf("â", StringComparison.Ordinal) >= 0 ||
+                   value.IndexOf("ð", StringComparison.Ordinal) >= 0 ||
+                   value.IndexOf("ï¿½", StringComparison.Ordinal) >= 0 ||
+                   value.IndexOf("�", StringComparison.Ordinal) >= 0;
+        }
+
+        private static int CountMojibakeMarkers(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return 0;
+            }
+
+            return CountMarker(value, "Ã") +
+                   CountMarker(value, "Â") +
+                   CountMarker(value, "â") +
+                   CountMarker(value, "ð") +
+                   CountMarker(value, "ï¿½") +
+                   CountMarker(value, "�");
+        }
+
+        private static int CountMarker(string value, string marker)
+        {
+            int count = 0;
+            int index = 0;
+            while ((index = value.IndexOf(marker, index, StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                index += marker.Length;
+            }
+
+            return count;
         }
     }
 }

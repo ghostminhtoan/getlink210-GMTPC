@@ -725,7 +725,7 @@ namespace get_link_manga
         {
             info.ChapterTitle = NormalizeChapterLabel(info.ChapterTitle);
             string safeManga = GetSafePathName(info.BookTitle);
-            string safeChapter = GetSafeChapterPathName(info.ChapterTitle);
+            string safeChapter = GetSafeChapterPathName(info.BookTitle, info.ChapterTitle);
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, DaomeodenSiteFolder);
             string targetFolder = Path.Combine(siteRootFolder, safeManga, safeChapter);
             string tempFolder = targetFolder;

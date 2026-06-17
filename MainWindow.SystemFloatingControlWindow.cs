@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,6 +22,8 @@ namespace get_link_manga
         private readonly Action _toggleAutoFocusAction;
         private readonly Action _openFolderAction;
         private readonly Action _deleteCookiesAction;
+        private readonly Action _clearTempAction;
+        private readonly Action<string> _pasteDirectLinkAction;
         private readonly TextBlock _statusText;
         private readonly TextBlock _buildInfoText;
         private readonly Button _pinToggleButton;
@@ -27,6 +31,7 @@ namespace get_link_manga
         private readonly Button _downloadToggleButton;
         private readonly Button _retryToggleButton;
         private readonly Button _shutdownToggleButton;
+        private readonly Button _moveButton;
         private Button _copyToggleButton;
         private readonly Border _shellBorder;
         private readonly Slider _opacitySlider;
@@ -41,9 +46,9 @@ namespace get_link_manga
         private double _savedWidth;
         private double _savedHeight;
 
-        private const double BaseWindowWidth = 336;
+        private const double BaseWindowWidth = 442;
         private const double BaseWindowHeight = 286;
-        private const double BaseWindowMinWidth = 296;
+        private const double BaseWindowMinWidth = 392;
         private const double BaseWindowMinHeight = 252;
         private const int GwlExStyle = -20;
         private const int WsExNoActivate = 0x08000000;
@@ -69,7 +74,9 @@ namespace get_link_manga
             Action<bool> setShutdownAction,
             Action toggleAutoFocusAction,
             Action openFolderAction,
-            Action deleteCookiesAction)
+            Action deleteCookiesAction,
+            Action clearTempAction,
+            Action<string> pasteDirectLinkAction)
         {
             _startCopyAction = startCopyAction;
             _stopCopyAction = stopCopyAction;
@@ -80,6 +87,8 @@ namespace get_link_manga
             _toggleAutoFocusAction = toggleAutoFocusAction;
             _openFolderAction = openFolderAction;
             _deleteCookiesAction = deleteCookiesAction;
+            _clearTempAction = clearTempAction;
+            _pasteDirectLinkAction = pasteDirectLinkAction;
 
             Width = BaseWindowWidth;
             Height = BaseWindowHeight;
@@ -95,6 +104,52 @@ namespace get_link_manga
             Background = Brushes.Transparent;
             ShowActivated = false;
             Opacity = 0.92;
+
+            AllowDrop = true;
+            DragOver += (s, e) =>
+            {
+                if (e.Data.GetDataPresent(DataFormats.Text) || 
+                    e.Data.GetDataPresent(DataFormats.UnicodeText) || 
+                    e.Data.GetDataPresent("UniformResourceLocator") || 
+                    e.Data.GetDataPresent("UniformResourceLocatorW"))
+                {
+                    e.Effects = DragDropEffects.Copy;
+                }
+                else
+                {
+                    e.Effects = DragDropEffects.None;
+                }
+                e.Handled = true;
+            };
+            Drop += (s, e) =>
+            {
+                string droppedText = null;
+                try
+                {
+                    if (e.Data.GetDataPresent(DataFormats.UnicodeText))
+                    {
+                        droppedText = e.Data.GetData(DataFormats.UnicodeText) as string;
+                    }
+                    else if (e.Data.GetDataPresent(DataFormats.Text))
+                    {
+                        droppedText = e.Data.GetData(DataFormats.Text) as string;
+                    }
+                    else if (e.Data.GetDataPresent("UniformResourceLocatorW"))
+                    {
+                        droppedText = e.Data.GetData("UniformResourceLocatorW")?.ToString();
+                    }
+                    else if (e.Data.GetDataPresent("UniformResourceLocator"))
+                    {
+                        droppedText = e.Data.GetData("UniformResourceLocator")?.ToString();
+                    }
+                }
+                catch {}
+
+                if (!string.IsNullOrWhiteSpace(droppedText))
+                {
+                    _pasteDirectLinkAction?.Invoke(droppedText);
+                }
+            };
 
             var host = new Grid();
 
@@ -132,6 +187,8 @@ namespace get_link_manga
             topBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             topBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
             topBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            topBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
+            topBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             _statusText = new TextBlock
             {
@@ -145,12 +202,18 @@ namespace get_link_manga
             Grid.SetColumn(_statusText, 0);
             topBar.Children.Add(_statusText);
 
+            _moveButton = CreateWindowButton("MOVE", Color.FromRgb(0xFF, 0xD4, 0x6A), null);
+            _moveButton.PreviewMouseLeftButtonDown += MoveButton_PreviewMouseLeftButtonDown;
+            _moveButton.MinWidth = 54;
+            Grid.SetColumn(_moveButton, 1);
+            topBar.Children.Add(_moveButton);
+
             var minimizeButton = CreateWindowButton("_", Color.FromRgb(0xB2, 0xEB, 0xF2), (sender, args) => Hide());
-            Grid.SetColumn(minimizeButton, 1);
+            Grid.SetColumn(minimizeButton, 3);
             topBar.Children.Add(minimizeButton);
 
             var closeButton = CreateWindowButton("X", Color.FromRgb(0xFF, 0x79, 0xC6), (sender, args) => Hide());
-            Grid.SetColumn(closeButton, 3);
+            Grid.SetColumn(closeButton, 5);
             topBar.Children.Add(closeButton);
 
             Grid.SetRow(topBar, 0);
@@ -398,6 +461,10 @@ namespace get_link_manga
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             var labelText = CreateRowLabel("Shutdown");
             Grid.SetColumn(labelText, 0);
@@ -412,6 +479,18 @@ namespace get_link_manga
             deleteCookieButton.MinHeight = 22;
             Grid.SetColumn(deleteCookieButton, 4);
             row.Children.Add(deleteCookieButton);
+
+            var cleanTempButton = CreateWindowButton("CLEAN TEMP", Color.FromRgb(0x00, 0xE5, 0xFF), (sender, args) => _clearTempAction?.Invoke());
+            cleanTempButton.MinWidth = 92;
+            cleanTempButton.MinHeight = 22;
+            Grid.SetColumn(cleanTempButton, 6);
+            row.Children.Add(cleanTempButton);
+
+            var tweakButton = CreateWindowButton("TWEAK", Color.FromRgb(0xFF, 0x79, 0xC6), TweakButton_Click);
+            tweakButton.MinWidth = 74;
+            tweakButton.MinHeight = 22;
+            Grid.SetColumn(tweakButton, 8);
+            row.Children.Add(tweakButton);
 
             return row;
         }
@@ -438,7 +517,82 @@ namespace get_link_manga
             openFolderButton.MinHeight = 22;
             Grid.SetColumn(openFolderButton, 4);
             row.Children.Add(openFolderButton);
+
             return row;
+        }
+
+        private void TweakButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is Button button))
+            {
+                return;
+            }
+
+            string tweakRoot = FindFolderUpward("regedit");
+            if (!Directory.Exists(tweakRoot))
+            {
+                return;
+            }
+
+            string[] regFiles = Directory.GetFiles(tweakRoot, "*.reg");
+            if (regFiles.Length == 0)
+            {
+                return;
+            }
+
+            var menu = new ContextMenu();
+            foreach (string regFile in regFiles)
+            {
+                string localPath = regFile;
+                var item = new MenuItem
+                {
+                    Header = Path.GetFileNameWithoutExtension(localPath)
+                };
+                item.Click += (menuSender, menuArgs) =>
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = localPath,
+                        UseShellExecute = true
+                    });
+                };
+                menu.Items.Add(item);
+            }
+
+            button.ContextMenu = menu;
+            menu.PlacementTarget = button;
+            menu.IsOpen = true;
+        }
+
+        private static string FindFolderUpward(string folderName)
+        {
+            string[] roots =
+            {
+                AppDomain.CurrentDomain.BaseDirectory,
+                Environment.CurrentDirectory
+            };
+
+            foreach (string root in roots)
+            {
+                if (string.IsNullOrWhiteSpace(root))
+                {
+                    continue;
+                }
+
+                var current = new DirectoryInfo(root);
+                while (current != null)
+                {
+                    string candidate = Path.Combine(current.FullName, folderName);
+                    if (Directory.Exists(candidate))
+                    {
+                        return candidate;
+                    }
+
+                    current = current.Parent;
+                }
+            }
+
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, folderName);
         }
 
         private Grid CreateToggleGroup(string label, out Button toggleButton, RoutedEventHandler onClick)
@@ -524,6 +678,7 @@ namespace get_link_manga
         }
 
         private static void SetToggleVisual(Button button, bool isOn)
+
         {
             if (!(button?.Tag is FloatingToggleVisual visual))
             {
@@ -579,6 +734,23 @@ namespace get_link_manga
             _isPinned = !_isPinned;
             Topmost = _isPinned;
             SetToggleVisual(_pinToggleButton, _isPinned);
+        }
+
+        private void MoveButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            try
+            {
+                DragMove();
+            }
+            catch
+            {
+            }
         }
 
         private static bool IsToggleOn(Button button)
@@ -785,7 +957,10 @@ namespace get_link_manga
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            button.Click += onClick;
+            if (onClick != null)
+            {
+                button.Click += onClick;
+            }
             return button;
         }
 

@@ -385,6 +385,9 @@ namespace get_link_manga
                 case "hentaiera":
                     url = "https://hentaiera.com/";
                     break;
+                case "hentai2read":
+                    url = "https://hentai2read.com/";
+                    break;
             }
 
             if (string.IsNullOrWhiteSpace(url))
@@ -567,12 +570,14 @@ namespace get_link_manga
         private void BtnAutoRetryErrors_Checked(object sender, RoutedEventArgs e)
         {
             StartAutoRetryLoopAsync();
+            UpdateCompactDownloadToolbarState();
             UpdateLightNovelFloatingControlState();
         }
 
         private void BtnAutoRetryErrors_Unchecked(object sender, RoutedEventArgs e)
         {
             StopAutoRetryLoop();
+            UpdateCompactDownloadToolbarState();
             UpdateLightNovelFloatingControlState();
         }
 

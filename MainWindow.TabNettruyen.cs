@@ -105,14 +105,14 @@ namespace get_link_manga
                 bool solved = false;
                 try
                 {
-                    Dispatcher.Invoke(() =>
+                    await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl)
+                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {
                             Owner = this
                         };
 
-                        if (captchaWin.ShowDialog() == true)
+                        if (await captchaWin.ShowNonBlockingAsync())
                         {
                             var originalUri = new Uri(testUrl);
                             var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
@@ -273,15 +273,15 @@ namespace get_link_manga
         private async Task<string> LoadExpandedNettruyenChapterHtmlAsync(string cleanLink)
         {
             string webViewHtml = null;
-            await Dispatcher.InvokeAsync(() =>
+            await Dispatcher.InvokeAsync(async () =>
             {
-                var captchaWin = new CaptchaWindow(cleanLink)
+                var captchaWin = new CaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: true)
                 {
                     Owner = this,
                     Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ..."
                 };
 
-                if (captchaWin.ShowDialog() == true && !string.IsNullOrEmpty(captchaWin.ResolvedHtml))
+                if (await captchaWin.ShowNonBlockingAsync() && !string.IsNullOrEmpty(captchaWin.ResolvedHtml))
                 {
                     webViewHtml = NormalizeNettruyenHtml(captchaWin.ResolvedHtml);
 
@@ -1147,7 +1147,7 @@ namespace get_link_manga
 
             cleanChapter = NormalizeChapterLabel(cleanChapter);
             string safeManga = GetSafePathName(cleanManga);
-            string safeChapter = GetSafeChapterPathName(cleanChapter);
+            string safeChapter = GetSafeChapterPathName(cleanManga, cleanChapter);
             string progressKey = $"nettruyen|{GetSafePathName(cleanManga)}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;

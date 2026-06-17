@@ -14,7 +14,6 @@ namespace get_link_manga
 
             PortableRuntimeBootstrap.EnsurePortableRuntime();
             PortableArchiveBootstrap.EnsurePortableSevenZip();
-            PortableArchiveBootstrap.EnsurePortableFastStone();
             try
             {
                 System.IO.Directory.SetCurrentDirectory(PortablePaths.AppRoot);
