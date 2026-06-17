@@ -1,26 +1,32 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace get_link_manga
 {
-    internal sealed class LightNovelFloatingControlWindow : Window
+    internal sealed class SystemFloatingControlWindow : Window
     {
         private readonly Action _startCopyAction;
         private readonly Action _stopCopyAction;
         private readonly Action _startDownloadPictureAction;
         private readonly Action _stopDownloadPictureAction;
         private readonly Action<bool> _setRetryAction;
+        private readonly Action<bool> _setShutdownAction;
         private readonly Action _toggleAutoFocusAction;
         private readonly Action _openFolderAction;
+        private readonly Action _deleteCookiesAction;
         private readonly TextBlock _statusText;
+        private readonly TextBlock _buildInfoText;
         private readonly Button _pinToggleButton;
         private readonly Button _focusToggleButton;
         private readonly Button _downloadToggleButton;
         private readonly Button _retryToggleButton;
+        private readonly Button _shutdownToggleButton;
         private Button _copyToggleButton;
         private readonly Border _shellBorder;
         private readonly Slider _opacitySlider;
@@ -35,33 +41,45 @@ namespace get_link_manga
         private double _savedWidth;
         private double _savedHeight;
 
-        private const double BaseWindowWidth = 312;
-        private const double BaseWindowHeight = 210;
+        private const double BaseWindowWidth = 336;
+        private const double BaseWindowHeight = 286;
         private const double BaseWindowMinWidth = 296;
-        private const double BaseWindowMinHeight = 196;
+        private const double BaseWindowMinHeight = 252;
+        private const int GwlExStyle = -20;
+        private const int WsExNoActivate = 0x08000000;
+        private const int WsExToolWindow = 0x00000080;
+        private const uint SwpNoActivate = 0x0010;
+        private const uint SwpNoMove = 0x0002;
+        private const uint SwpNoSize = 0x0001;
+        private const uint SwpShowWindow = 0x0040;
+        private static readonly IntPtr HwndTopmost = new IntPtr(-1);
 
         private static readonly Color OnColor = Color.FromRgb(0x58, 0xD6, 0x00);
         private static readonly Color OnBorderColor = Color.FromRgb(0x7F, 0xE6, 0x27);
         private static readonly Color OffColor = Color.FromRgb(0xD8, 0x21, 0x2A);
         private static readonly Color OffBorderColor = Color.FromRgb(0xF4, 0x62, 0x6B);
 
-        internal LightNovelFloatingControlWindow(
+        internal SystemFloatingControlWindow(
             bool isVietnamese,
             Action startCopyAction,
             Action stopCopyAction,
             Action startDownloadPictureAction,
             Action stopDownloadPictureAction,
             Action<bool> setRetryAction,
+            Action<bool> setShutdownAction,
             Action toggleAutoFocusAction,
-            Action openFolderAction)
+            Action openFolderAction,
+            Action deleteCookiesAction)
         {
             _startCopyAction = startCopyAction;
             _stopCopyAction = stopCopyAction;
             _startDownloadPictureAction = startDownloadPictureAction;
             _stopDownloadPictureAction = stopDownloadPictureAction;
             _setRetryAction = setRetryAction;
+            _setShutdownAction = setShutdownAction;
             _toggleAutoFocusAction = toggleAutoFocusAction;
             _openFolderAction = openFolderAction;
+            _deleteCookiesAction = deleteCookiesAction;
 
             Width = BaseWindowWidth;
             Height = BaseWindowHeight;
@@ -93,6 +111,8 @@ namespace get_link_manga
             var root = new Grid();
             _contentScaleTransform = new ScaleTransform(1d, 1d);
             root.LayoutTransform = _contentScaleTransform;
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -152,6 +172,32 @@ namespace get_link_manga
             Grid.SetRow(bottomToggleRow, 3);
             root.Children.Add(bottomToggleRow);
 
+            var systemRow = CreateSystemRow(out _shutdownToggleButton, (sender, args) => ToggleShutdown());
+            Grid.SetRow(systemRow, 4);
+            root.Children.Add(systemRow);
+
+            var buildRow = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+            buildRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            buildRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
+            buildRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var buildLabel = CreateRowLabel("Build");
+            Grid.SetColumn(buildLabel, 0);
+            buildRow.Children.Add(buildLabel);
+
+            _buildInfoText = new TextBlock
+            {
+                Foreground = new SolidColorBrush(Color.FromRgb(0x00, 0xE5, 0xFF)),
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            Grid.SetColumn(_buildInfoText, 2);
+            buildRow.Children.Add(_buildInfoText);
+            Grid.SetRow(buildRow, 5);
+            root.Children.Add(buildRow);
+
             var opacityRow = new Grid { Margin = new Thickness(0, 5, 0, 0) };
             opacityRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             opacityRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
@@ -207,7 +253,7 @@ namespace get_link_manga
             Grid.SetColumn(opacityBubble, 4);
             opacityRow.Children.Add(opacityBubble);
 
-            Grid.SetRow(opacityRow, 4);
+            Grid.SetRow(opacityRow, 6);
             root.Children.Add(opacityRow);
 
             var sizeRow = new Grid { Margin = new Thickness(0, 4, 0, 0) };
@@ -265,7 +311,7 @@ namespace get_link_manga
             Grid.SetColumn(sizeBubble, 4);
             sizeRow.Children.Add(sizeBubble);
 
-            Grid.SetRow(sizeRow, 5);
+            Grid.SetRow(sizeRow, 7);
             root.Children.Add(sizeRow);
 
             _shellBorder.Child = root;
@@ -280,10 +326,32 @@ namespace get_link_manga
 
             UpdateOpacityVisual();
             UpdateSizeVisual();
-            UpdateState(false, true, false, false, isVietnamese);
+            UpdateState(false, true, false, false, false, BuildInfo.DisplayText, isVietnamese);
         }
 
-        internal void UpdateState(bool isCopyRunning, bool autoFocusEnabled, bool isDownloadRunning, bool isRetryEnabled, bool isVietnamese)
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            IntPtr handle = new WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            int exStyle = GetWindowLong(handle, GwlExStyle);
+            SetWindowLong(handle, GwlExStyle, exStyle | WsExNoActivate | WsExToolWindow);
+        }
+
+        internal void UpdateState(bool isCopyRunning, bool autoFocusEnabled, bool isDownloadRunning, bool isRetryEnabled, bool isShutdownEnabled, string buildText, bool isVietnamese)
         {
             bool isRunning = isCopyRunning || isDownloadRunning;
             _statusText.Text = isRunning ? "RUNNING" : "STOPPED";
@@ -295,7 +363,9 @@ namespace get_link_manga
             SetToggleVisual(_focusToggleButton, autoFocusEnabled);
             SetToggleVisual(_downloadToggleButton, isDownloadRunning);
             SetToggleVisual(_retryToggleButton, isRetryEnabled);
+            SetToggleVisual(_shutdownToggleButton, isShutdownEnabled);
             SetToggleVisual(_copyToggleButton, isCopyRunning);
+            _buildInfoText.Text = string.IsNullOrWhiteSpace(buildText) ? "-" : buildText;
 
             _shellBorder.BorderBrush = new SolidColorBrush(isRunning
                 ? Color.FromRgb(0x00, 0xE5, 0xFF)
@@ -316,6 +386,32 @@ namespace get_link_manga
             var rightGroup = CreateToggleGroup(rightLabel, out rightToggle, rightClick);
             Grid.SetColumn(rightGroup, 2);
             row.Children.Add(rightGroup);
+
+            return row;
+        }
+
+        private Grid CreateSystemRow(out Button shutdownToggleButton, RoutedEventHandler shutdownClick)
+        {
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var labelText = CreateRowLabel("Shutdown");
+            Grid.SetColumn(labelText, 0);
+            row.Children.Add(labelText);
+
+            shutdownToggleButton = CreateToggleButton(shutdownClick);
+            Grid.SetColumn(shutdownToggleButton, 2);
+            row.Children.Add(shutdownToggleButton);
+
+            var deleteCookieButton = CreateWindowButton("DEL COOKIE", Color.FromRgb(0xFF, 0xD2, 0x6A), (sender, args) => _deleteCookiesAction?.Invoke());
+            deleteCookieButton.MinWidth = 92;
+            deleteCookieButton.MinHeight = 22;
+            Grid.SetColumn(deleteCookieButton, 4);
+            row.Children.Add(deleteCookieButton);
 
             return row;
         }
@@ -473,6 +569,11 @@ namespace get_link_manga
             _setRetryAction?.Invoke(!IsToggleOn(_retryToggleButton));
         }
 
+        private void ToggleShutdown()
+        {
+            _setShutdownAction?.Invoke(!IsToggleOn(_shutdownToggleButton));
+        }
+
         private void TogglePin()
         {
             _isPinned = !_isPinned;
@@ -547,7 +648,7 @@ namespace get_link_manga
                 Top = _savedTop;
             }
 
-            Activate();
+            BringToFrontWithoutActivation();
 
             Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -565,8 +666,23 @@ namespace get_link_manga
                 {
                     WindowState = WindowState.Normal;
                 }
-                Activate();
+                BringToFrontWithoutActivation();
             }), System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        internal void ShowWithoutActivationSafe()
+        {
+            if (!IsVisible)
+            {
+                Show();
+            }
+
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
+
+            BringToFrontWithoutActivation();
         }
 
         internal void PrepareForTrayHide()
@@ -633,6 +749,17 @@ namespace get_link_manga
 
             thumb.DragDelta += onDrag;
             host.Children.Add(thumb);
+        }
+
+        private void BringToFrontWithoutActivation()
+        {
+            IntPtr handle = new WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            SetWindowPos(handle, HwndTopmost, 0, 0, 0, 0, SwpNoActivate | SwpNoMove | SwpNoSize | SwpShowWindow);
         }
 
         private static Button CreateWindowButton(string text, Color accent, RoutedEventHandler onClick)

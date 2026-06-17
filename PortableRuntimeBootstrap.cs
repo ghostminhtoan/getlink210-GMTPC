@@ -7,7 +7,7 @@ namespace get_link_manga
 {
     internal static class PortableRuntimeBootstrap
     {
-        private const string LoaderResourcePrefix = "runtimes/";
+        private const string LoaderResourcePrefix = "runtimes/webview2/";
         private const string LoaderFileName = "WebView2Loader.dll";
 
         [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -33,6 +33,41 @@ namespace get_link_manga
             {
                 // Best effort only. If the native loader cannot be extracted,
                 // WebView2 will fall back to whatever runtime is available.
+            }
+        }
+
+        internal static void ResetPortableRuntimeStorage()
+        {
+            TryDeleteDirectory(PortablePaths.WebView2UserDataFolder);
+
+            try
+            {
+                string runtimeRoot = PortablePaths.WebView2RuntimeRoot;
+                if (!Directory.Exists(runtimeRoot))
+                {
+                    return;
+                }
+
+                foreach (string directory in Directory.GetDirectories(runtimeRoot))
+                {
+                    if (string.Equals(directory, PortablePaths.WebView2UserDataFolder, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    string name = Path.GetFileName(directory);
+                    if (string.Equals(name, "win-x64", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "win-x86", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "win-arm64", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    TryDeleteDirectory(directory);
+                }
+            }
+            catch
+            {
             }
         }
 
@@ -71,6 +106,22 @@ namespace get_link_manga
                 {
                     stream.CopyTo(fileStream);
                 }
+            }
+        }
+
+        private static void TryDeleteDirectory(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.Delete(path, true);
+            }
+            catch
+            {
             }
         }
     }

@@ -103,6 +103,47 @@ namespace get_link_manga
             {
                 return;
             }
+
+            if ((Keyboard.Modifiers & ModifierKeys.Control) != ModifierKeys.Control)
+            {
+                return;
+            }
+
+            switch (e.Key)
+            {
+                case Key.D1:
+                case Key.NumPad1:
+                    EnsureLightNovelFloatingControlWindow();
+                    _lightNovelFloatingControlWindow?.ShowWithoutActivationSafe();
+                    UpdateLightNovelFloatingControlState();
+                    e.Handled = true;
+                    return;
+                case Key.D2:
+                case Key.NumPad2:
+                    SelectAppSection(AppSection.ChooseSource);
+                    e.Handled = true;
+                    return;
+                case Key.D3:
+                case Key.NumPad3:
+                    SelectAppSection(AppSection.Download);
+                    e.Handled = true;
+                    return;
+                case Key.D4:
+                case Key.NumPad4:
+                    SelectAppSection(AppSection.Watch);
+                    e.Handled = true;
+                    return;
+                case Key.D5:
+                case Key.NumPad5:
+                    SelectAppSection(AppSection.About);
+                    e.Handled = true;
+                    return;
+                case Key.D6:
+                case Key.NumPad6:
+                    SelectAppSection(AppSection.Update);
+                    e.Handled = true;
+                    return;
+            }
         }
 
         private void SnapWindowToHalf(bool leftSide)

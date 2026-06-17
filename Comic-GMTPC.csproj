@@ -20,6 +20,7 @@
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <BuildInfoFile>$(MSBuildProjectDirectory)\BuildInfo.cs</BuildInfoFile>
     <ReleasePackageDir>$(MSBuildProjectDirectory)\release\Comic-GMTPC</ReleasePackageDir>
+    <LocalPackageRoot>$(UserProfile)\.nuget\packages\</LocalPackageRoot>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Selenium.WebDriver">
@@ -109,7 +110,7 @@
     <Compile Include="GalleryItem.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="LightNovelFloatingControlWindow.cs">
+    <Compile Include="MainWindow.SystemFloatingControlWindow.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="HakoChapterCaptureWindow.cs">
@@ -125,6 +126,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.Theme.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
@@ -334,14 +339,14 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="runtimes\win-x64\native\WebView2Loader.dll">
-      <LogicalName>runtimes/win-x64/native/WebView2Loader.dll</LogicalName>
+    <EmbeddedResource Include="runtimes\webview2\win-x64\native\WebView2Loader.dll">
+      <LogicalName>runtimes/webview2/win-x64/native/WebView2Loader.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="runtimes\win-x86\native\WebView2Loader.dll">
-      <LogicalName>runtimes/win-x86/native/WebView2Loader.dll</LogicalName>
+    <EmbeddedResource Include="runtimes\webview2\win-x86\native\WebView2Loader.dll">
+      <LogicalName>runtimes/webview2/win-x86/native/WebView2Loader.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="runtimes\win-arm64\native\WebView2Loader.dll">
-      <LogicalName>runtimes/win-arm64/native/WebView2Loader.dll</LogicalName>
+    <EmbeddedResource Include="runtimes\webview2\win-arm64\native\WebView2Loader.dll">
+      <LogicalName>runtimes/webview2/win-arm64/native/WebView2Loader.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Bandiview\**\*">
       <LogicalName>Bandiview/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>

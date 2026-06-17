@@ -37,7 +37,7 @@ namespace get_link_manga
         private TextBlock _txtLightNovelCount;
         private GalleryItem _selectedLightNovelBook;
         private LightNovelChapterRecord _selectedLightNovelChapter;
-        private LightNovelFloatingControlWindow _lightNovelFloatingControlWindow;
+        private SystemFloatingControlWindow _lightNovelFloatingControlWindow;
         private bool _lightNovelAutoFocusEnabled = false;
         private bool _lightNovelCopyBackoffActive;
         private bool _lightNovelFocusStealthActive;
@@ -1285,11 +1285,7 @@ namespace get_link_manga
             {
                 _lightNovelFloatingControlWindow.WindowState = WindowState.Normal;
             }
-            if (!_lightNovelFloatingControlWindow.IsVisible)
-            {
-                _lightNovelFloatingControlWindow.Show();
-            }
-            _lightNovelFloatingControlWindow.Activate();
+            _lightNovelFloatingControlWindow.ShowWithoutActivationSafe();
             UpdateLightNovelFloatingControlState();
             lblStatus.Text = "Đã mở float auto copy text.";
         }
@@ -1411,15 +1407,17 @@ namespace get_link_manga
                 return;
             }
 
-            _lightNovelFloatingControlWindow = new LightNovelFloatingControlWindow(
+            _lightNovelFloatingControlWindow = new SystemFloatingControlWindow(
                 _isVietnameseUi,
                 () => Dispatcher.BeginInvoke(new Action(async () => await StartLightNovelAutoCopyAsync())),
                 () => Dispatcher.BeginInvoke(new Action(StopLightNovelAutoCopy)),
                 () => Dispatcher.BeginInvoke(new Action(async () => await StartPictureDownloadFromFloatingAsync())),
                 () => Dispatcher.BeginInvoke(new Action(StopPictureDownloadFromFloating)),
                 enabled => Dispatcher.BeginInvoke(new Action(() => SetPictureAutoRetryFromFloating(enabled))),
+                enabled => Dispatcher.BeginInvoke(new Action(() => SetShutdownAfterCompleteFromFloating(enabled))),
                 () => Dispatcher.BeginInvoke(new Action(ToggleLightNovelAutoFocus)),
-                () => Dispatcher.BeginInvoke(new Action(() => BtnOpenLightNovelFolder_Click(this, new RoutedEventArgs()))));
+                () => Dispatcher.BeginInvoke(new Action(() => BtnOpenLightNovelFolder_Click(this, new RoutedEventArgs()))),
+                () => Dispatcher.BeginInvoke(new Action(async () => await ResetActiveCaptchaFromFloatingAsync())));
             _lightNovelFloatingControlWindow.Closed += (sender, args) =>
             {
                 _lightNovelFloatingControlWindow = null;
@@ -1433,6 +1431,8 @@ namespace get_link_manga
                 _lightNovelAutoFocusEnabled,
                 _downloadCts != null,
                 btnAutoRetryErrors?.IsChecked == true,
+                _shutdownAfterCompleted,
+                BuildInfo.DisplayText,
                 _isVietnameseUi);
         }
 

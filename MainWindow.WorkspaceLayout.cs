@@ -167,10 +167,18 @@ namespace get_link_manga
             }
 
             MoveToolbarElement(txtBuildInfo, new Thickness(8, 0, 12, 0));
-            MoveToolbarElement(grdStartDownloadToggle, new Thickness(0, 0, 6, 0));
-            MoveToolbarElement(grdAutoRetryErrorsToggle, new Thickness(0, 0, 6, 0));
             MoveToolbarElement(btnRetryErrorLog, new Thickness(0, 0, 6, 0));
             MoveToolbarElement(btnShutdownMenu?.Parent as UIElement ?? btnShutdownMenu, new Thickness(0, 0, 6, 0));
+
+            if (grdStartDownloadToggle != null)
+            {
+                grdStartDownloadToggle.Visibility = Visibility.Collapsed;
+            }
+
+            if (grdAutoRetryErrorsToggle != null)
+            {
+                grdAutoRetryErrorsToggle.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void CompactHeaderPanelButtons(Panel panel, bool isPrimaryRow)

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
@@ -62,6 +64,7 @@ namespace get_link_manga
 
         public MainWindow()
         {
+            UnfreezeApplicationBrushes();
             InitializeComponent();
             InitializeWorkspaceShell();
             HookDisplaySettingsChanged();
@@ -197,7 +200,7 @@ namespace get_link_manga
                 EnsureLightNovelFloatingControlWindow();
                 if (_lightNovelFloatingControlWindow != null && !_lightNovelFloatingControlWindow.IsVisible)
                 {
-                    _lightNovelFloatingControlWindow.Show();
+                    _lightNovelFloatingControlWindow.ShowWithoutActivationSafe();
                 }
                 UpdateLightNovelFloatingControlState();
 
@@ -232,6 +235,17 @@ namespace get_link_manga
 
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
             _displaySettingsHooked = false;
+        }
+
+        private void BtnMainTheme_Click(object sender, RoutedEventArgs e)
+        {
+            _isDayTheme = !_isDayTheme;
+            ApplyCurrentTheme();
+        }
+
+        private void BtnMainMinimize_Click(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
         }
 
         private void StyleComboBoxPopup(System.Windows.Controls.ComboBox comboBox)
@@ -530,6 +544,8 @@ namespace get_link_manga
             try
             {
                 InitializeHttpClientState();
+                PortableRuntimeBootstrap.ResetPortableRuntimeStorage();
+                PortableRuntimeBootstrap.EnsurePortableRuntime();
                 _hakoCaptchaSessionReady = false;
                 if (IsTruyenqqUrl(url))
                 {
@@ -541,6 +557,106 @@ namespace get_link_manga
             {
                 Log($"[Captcha] Không thể reset cookie: {ex.Message}");
             }
+        }
+
+        private void SetShutdownAfterCompleteFromFloating(bool enabled)
+        {
+            _shutdownAfterCompleted = enabled;
+            if (tglShutdownAfterDownload != null)
+            {
+                tglShutdownAfterDownload.IsChecked = enabled;
+            }
+
+            if (chkShutdownAfterCompleted != null)
+            {
+                chkShutdownAfterCompleted.IsChecked = enabled;
+            }
+        }
+
+        private async Task ResetActiveCaptchaFromFloatingAsync()
+        {
+            string url = GetActiveCaptchaTargetUrl();
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                ShowWarning("KhÃ´ng tÃ¬m tháº¥y URL captcha á»Ÿ tab hiá»‡n táº¡i.", "ThÃ´ng bÃ¡o");
+                return;
+            }
+
+            ResetCookiesForCaptcha(url);
+            if (IsNhentaiCaptchaUrl(url))
+            {
+                ShowInfo("ÄÃ£ lÃ m má»›i cookie cho nhentai.xxx.", "ThÃ´ng bÃ¡o");
+                return;
+            }
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                var captchaWin = new CaptchaWindow(url, autoDeleteCookiesOnLoad: true)
+                {
+                    Owner = this
+                };
+
+                if (captchaWin.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                try
+                {
+                    var originalUri = new Uri(url);
+                    var resolvedUri = captchaWin.ResolvedUri ?? originalUri;
+                    foreach (Cookie cookie in captchaWin.ResolvedCookies.GetCookies(resolvedUri))
+                    {
+                        _cookieContainer.Add(resolvedUri, cookie);
+                    }
+
+                    if (originalUri.Host != resolvedUri.Host)
+                    {
+                        foreach (Cookie cookie in captchaWin.ResolvedCookies.GetCookies(originalUri))
+                        {
+                            _cookieContainer.Add(originalUri, cookie);
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(captchaWin.UserAgent))
+                    {
+                        _httpClient.DefaultRequestHeaders.UserAgent.Clear();
+                        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(captchaWin.UserAgent);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ShowError($"Lá»—i lÆ°u cookie: {ex.Message}", "Lá»—i");
+                }
+            });
+        }
+
+        private string GetActiveCaptchaTargetUrl()
+        {
+            if (tabLeftPanel?.SelectedIndex == 1)
+            {
+                return txtHakoTagUrl?.Text?.Trim() ?? string.Empty;
+            }
+
+            if (tabLeftPanel?.SelectedIndex == 2)
+            {
+                string selectedHentai = (tabHentai?.SelectedItem as System.Windows.Controls.TabItem)?.Header?.ToString()?.ToLowerInvariant() ?? string.Empty;
+                if (selectedHentai.Contains("nhentai")) return txtNhentaiTagUrl?.Text?.Trim() ?? string.Empty;
+                if (selectedHentai.Contains("hentaiera")) return txtHentaieraTagUrl?.Text?.Trim() ?? string.Empty;
+                return txtViHentaiTagUrl?.Text?.Trim() ?? string.Empty;
+            }
+
+            string selectedManga = (tabManga?.SelectedItem as System.Windows.Controls.TabItem)?.Header?.ToString()?.ToLowerInvariant() ?? string.Empty;
+            if (selectedManga.Contains("nettruyen")) return txtNettruyenTagUrl?.Text?.Trim() ?? string.Empty;
+            if (selectedManga.Contains("daomeoden")) return txtDaomeodenTagUrl?.Text?.Trim() ?? string.Empty;
+            if (selectedManga.Contains("truyengg")) return txtTruyenggvnTagUrl?.Text?.Trim() ?? string.Empty;
+            return txtTruyenqqTagUrl?.Text?.Trim() ?? string.Empty;
+        }
+
+        private static bool IsNhentaiCaptchaUrl(string url)
+        {
+            return !string.IsNullOrWhiteSpace(url) &&
+                   url.IndexOf("nhentai", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void BtnClearComplete_Click(object sender, RoutedEventArgs e)

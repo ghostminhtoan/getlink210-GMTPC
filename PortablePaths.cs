@@ -17,9 +17,11 @@ namespace get_link_manga
 
         internal static string PortableDataRoot => Path.Combine(AppRoot, ".portable");
 
-        internal static string WebView2UserDataFolder => Path.Combine(PortableDataRoot, "webview2");
+        internal static string WebView2RuntimeRoot => Path.Combine(RuntimeRoot, "webview2");
 
         internal static string RuntimeRoot => Path.Combine(AppRoot, "runtimes");
+
+        internal static string WebView2UserDataFolder => Path.Combine(WebView2RuntimeRoot, "userdata");
 
         internal static string DefaultDownloadRoot => Path.Combine(AppRoot, "root");
 
@@ -53,7 +55,7 @@ namespace get_link_manga
                 rid = "win-x86";
             }
 
-            return Path.Combine(RuntimeRoot, rid, "native");
+            return Path.Combine(WebView2RuntimeRoot, rid, "native");
         }
     }
 }

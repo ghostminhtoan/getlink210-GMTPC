@@ -186,6 +186,7 @@ namespace get_link_manga
             RefreshVisibleGalleryLanguage();
             UpdateFoldButtonUi();
             UpdateWorkspaceShellLanguage();
+            UpdateThemeText();
         }
 
         private void RefreshVisibleGalleryLanguage()

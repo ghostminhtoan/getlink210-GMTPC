@@ -166,7 +166,7 @@ namespace get_link_manga
 
         private double GetInitialCaptchaAttemptDelaySeconds(string url)
         {
-            return ShouldUseVerifyFindSequence(url) ? 10.0 : 8.0;
+            return 12.0;
         }
 
         private double GetRepeatCaptchaAttemptDelaySeconds(string url)
@@ -210,6 +210,33 @@ namespace get_link_manga
             await Task.Delay(300);
 
             System.Windows.Forms.SendKeys.SendWait(" ");
+        }
+
+        private async Task<bool> PageContainsKeywordAsync(string keyword)
+        {
+            if (webView.CoreWebView2 == null || string.IsNullOrWhiteSpace(keyword))
+            {
+                return false;
+            }
+
+            string escapedKeyword = keyword.Replace("\\", "\\\\").Replace("'", "\\'");
+            string script = @"
+                (function() {
+                    var keyword = '" + escapedKeyword + @"'.toLowerCase();
+                    var bodyText = (document.body && document.body.innerText || '').toLowerCase();
+                    var html = (document.documentElement && document.documentElement.outerHTML || '').toLowerCase();
+                    return bodyText.indexOf(keyword) !== -1 || html.indexOf(keyword) !== -1;
+                })();";
+
+            try
+            {
+                string result = await webView.CoreWebView2.ExecuteScriptAsync(script);
+                return string.Equals(result?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private async void CaptchaWindow_Loaded(object sender, RoutedEventArgs e)
@@ -426,9 +453,13 @@ namespace get_link_manga
 
                         if (shouldAttempt)
                         {
-                            BypassWasNeeded = true;
-                            _lastCaptchaKeyboardAttempt = DateTime.Now;
-                            await SendCaptchaKeyboardBypassAsync(url);
+                            string keyword = GetCaptchaFindKeyword(url);
+                            if (await PageContainsKeywordAsync(keyword))
+                            {
+                                BypassWasNeeded = true;
+                                _lastCaptchaKeyboardAttempt = DateTime.Now;
+                                await SendCaptchaKeyboardBypassAsync(url);
+                            }
                         }
                     }
                 }
@@ -526,6 +557,12 @@ namespace get_link_manga
             {
                 if (!_headlessAutomation)
                 {
+                    await RecoverFromCookieErrorAsync(ex);
+                    return;
+                }
+
+                if (!_headlessAutomation)
+                {
                     MessageBox.Show($"Lỗi thu thập cookies: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 DialogResult = false;
@@ -541,6 +578,8 @@ namespace get_link_manga
             }
 
             webView.CoreWebView2.CookieManager.DeleteAllCookies();
+            PortableRuntimeBootstrap.ResetPortableRuntimeStorage();
+            PortableRuntimeBootstrap.EnsurePortableRuntime();
 
             ResolvedCookies = new CookieContainer();
             ResolvedUri = null;
@@ -573,6 +612,21 @@ namespace get_link_manga
             if (showMessage)
             {
                 MessageBox.Show("Đã xóa cookie, refresh trang, tiếp tục chờ captcha/bypass.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private async Task RecoverFromCookieErrorAsync(Exception ex)
+        {
+            try
+            {
+                await DeleteCookiesAndReloadAsync(showMessage: false);
+                MessageBox.Show("Lỗi cookie. Đã tự reload captcha để thử lại.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch
+            {
+                MessageBox.Show($"Lỗi thu thập cookies: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                DialogResult = false;
+                Close();
             }
         }
 
