@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -924,8 +924,11 @@ namespace get_link_manga
                     }
                 }
 
-                // If AJAX failed (chapterListHtml is still the original html), use WebView2 to click "Xem thêm" 
-                if (chapterListHtml == html && (html.Contains("Xem thêm") || html.Contains("xem thêm") || html.Contains("show-more")))
+                // Detect if the original page has a "Xem thêm" button (chapters hidden behind expand)
+                bool pageHasViewMore = html.Contains("Xem thêm") || html.Contains("xem thêm") || html.Contains("view-more") || html.Contains("show-more");
+
+                // If AJAX failed, try WebView to click "Xem thêm"
+                if (chapterListHtml == html && pageHasViewMore)
                 {
                     Log("[nettruyen] AJAX không lấy được danh sách chương. Mở trình duyệt để click 'Xem thêm'...");
                     string webViewHtml = await LoadExpandedNettruyenChapterHtmlAsync(cleanLink);
@@ -939,15 +942,39 @@ namespace get_link_manga
                 string parentPath = uri.AbsolutePath.TrimEnd('/');
                 var chapterLinks = ExtractNettruyenChapterLinks(chapterListHtml, activeDomain, parentPath);
 
+                // If AJAX succeeded but page originally had "Xem thêm", verify AJAX returned more chapters than visible HTML
+                if (chapterListHtml != html && pageHasViewMore)
+                {
+                    var htmlVisibleLinks = ExtractNettruyenChapterLinks(html, activeDomain, parentPath);
+                    if (chapterLinks.Count <= htmlVisibleLinks.Count)
+                    {
+                        Log($"[nettruyen] AJAX trả về {chapterLinks.Count} chương, HTML visible có {htmlVisibleLinks.Count}. AJAX không bung thêm. Mở trình duyệt click 'Xem thêm'...");
+                        string webViewHtml = await LoadExpandedNettruyenChapterHtmlAsync(cleanLink);
+                        if (!string.IsNullOrEmpty(webViewHtml))
+                        {
+                            var webViewLinks = ExtractNettruyenChapterLinks(webViewHtml, activeDomain, parentPath);
+                            if (webViewLinks.Count > chapterLinks.Count)
+                            {
+                                chapterListHtml = webViewHtml;
+                                chapterLinks = webViewLinks;
+                                Log($"[nettruyen] WebView bung được {webViewLinks.Count} chương (trước đó AJAX: {htmlVisibleLinks.Count}).");
+                            }
+                        }
+                    }
+                }
+
                 double expectedLatestChapter = ParseChapterNumberFromText(item.LinkCount);
                 bool looksIncomplete = chapterLinks.Count > 0 &&
-                    expectedLatestChapter >= 20 &&
-                    chapterLinks.Count + 5 < expectedLatestChapter;
+                    ((expectedLatestChapter >= 20 && chapterLinks.Count + 5 < expectedLatestChapter) ||
+                     (pageHasViewMore && expectedLatestChapter == 0));
 
                 if (looksIncomplete)
                 {
                     int originalChapterCount = chapterLinks.Count;
-                    Log($"[nettruyen] Danh sách chương có vẻ thiếu ({originalChapterCount} link, chap mới nhất ~ {expectedLatestChapter:0.##}). Thử mở trình duyệt để bung đủ danh sách...");
+                    string reason = expectedLatestChapter > 0
+                        ? $"{originalChapterCount} link, chap mới nhất ~ {expectedLatestChapter:0.##}"
+                        : $"{originalChapterCount} link, trang có nút 'Xem thêm'";
+                    Log($"[nettruyen] Danh sách chương có vẻ thiếu ({reason}). Thử mở trình duyệt để bung đủ danh sách...");
                     string webViewHtml = await LoadExpandedNettruyenChapterHtmlAsync(cleanLink);
                     if (!string.IsNullOrEmpty(webViewHtml))
                     {

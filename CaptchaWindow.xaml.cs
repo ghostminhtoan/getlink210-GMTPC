@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
@@ -379,16 +379,26 @@ namespace get_link_manga
                                                 break;
                                             }
                                         }
-                                        if (xemThem && (xemThem.offsetWidth > 0 || xemThem.offsetHeight > 0)) {
-                                            xemThem.click();
-                                            return 'clicked';
+                                        if (!xemThem) {
+                                            xemThem = document.querySelector('.view-more') || document.querySelector('[class*=""view-more""]');
+                                        }
+                                        if (xemThem) {
+                                            xemThem.classList.remove('hidden');
+                                            xemThem.style.display = '';
+                                            xemThem.style.visibility = 'visible';
+                                            if (xemThem.offsetWidth > 0 || xemThem.offsetHeight > 0 || xemThem.getClientRects().length > 0) {
+                                                xemThem.scrollIntoView({behavior:'instant',block:'center'});
+                                                xemThem.click();
+                                                return 'clicked';
+                                            } else {
+                                                xemThem.click();
+                                                xemThem.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true}));
+                                                return 'clicked';
+                                            }
                                         }
                                         var chapterCount = getChapterLinks();
                                         if (chapterCount > 0) {
                                             return 'ready';
-                                        }
-                                        if (!xemThem) {
-                                            return 'waiting';
                                         }
                                         return 'waiting';
                                     })()";
