@@ -607,7 +607,7 @@ namespace get_link_manga
                 }
             }
 
-            return links;
+            return links.OrderBy(ParseChapterNumber).ToList();
         }
 
         private void InitializeChapterProcess(string rootFolder, string siteFolder, GalleryItem item, IList<string> chapterLinks, bool preserveExistingDone = true)
