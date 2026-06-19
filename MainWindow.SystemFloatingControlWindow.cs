@@ -94,8 +94,8 @@ namespace get_link_manga
             Height = BaseWindowHeight;
             MinWidth = BaseWindowMinWidth;
             MinHeight = BaseWindowMinHeight;
-            Left = SystemParameters.WorkArea.Right - Width - 16;
-            Top = 16;
+            Left = SystemParameters.WorkArea.Left + 16;
+            Top = SystemParameters.WorkArea.Bottom - Height - 16;
             Topmost = true;
             ShowInTaskbar = false;
             ResizeMode = ResizeMode.NoResize;

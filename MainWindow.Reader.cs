@@ -250,7 +250,11 @@ namespace get_link_manga
                 out _readerRootFolderButton,
                 out _readerCurrentTitleText);
 
-            _readerWatchWithButton = CreateReaderMiniButton("WATCH WITH", ReaderWatchWith_Click, 128);
+            _readerWatchWithButton = CreateReaderMiniButton("OPEN PICTURE WITH", ReaderWatchWith_Click, 160);
+            _readerWatchWithButton.Style = TryFindResource("CompactPinkButton") as Style;
+            _readerWatchWithButton.Height = 24;
+            _readerWatchWithButton.FontSize = 10.5;
+            _readerWatchWithButton.FontWeight = FontWeights.Bold;
             Grid.SetColumn(_readerWatchWithButton, 3);
             _readerWatchWithButton.HorizontalAlignment = HorizontalAlignment.Left;
             _readerWatchWithButton.Margin = new Thickness(0, 0, 6, 4);
@@ -770,7 +774,7 @@ namespace get_link_manga
                 return;
             }
 
-            _readerWatchWithButton.Content = "WATCH WITH";
+            _readerWatchWithButton.Content = "OPEN PICTURE WITH";
             _readerWatchWithButton.ToolTip = GetReaderWatchCurrentAppDisplayName();
         }
 

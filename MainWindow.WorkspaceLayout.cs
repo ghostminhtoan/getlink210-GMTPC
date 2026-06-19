@@ -489,7 +489,7 @@ namespace get_link_manga
             navStack.Children.Add(_navigationButtonHost);
             navStack.Children.Add(_sidebarToolsHost);
 
-            AddNavigationButton(AppSection.ChooseSource, "Choose source of paste link");
+            AddNavigationButton(AppSection.ChooseSource, "Source");
             AddNavigationButton(AppSection.Download, "Download");
             AddNavigationButton(AppSection.Watch, "Watch");
             AddNavigationButton(AppSection.About, "About");
@@ -1081,7 +1081,7 @@ namespace get_link_manga
             switch (_currentSection)
             {
                 case AppSection.ChooseSource:
-                    _sectionTitleText.Text = isVietnamese ? "Chọn nguồn hoặc dán link" : "Choose source or paste link";
+                    _sectionTitleText.Text = "Source";
                     _sectionHintText.Text = isVietnamese
                         ? "Chọn web nguồn bằng thẻ nhanh hoặc dùng form site cũ bên dưới. Toàn bộ parser và paste flow hiện tại được giữ nguyên."
                         : "Pick a source with quick cards or keep using the proven site forms below. Existing parsers and direct-paste flows stay intact.";
@@ -1193,7 +1193,7 @@ namespace get_link_manga
 
             if (_navigationButtons.Count > 0)
             {
-                _navigationButtons[AppSection.ChooseSource].Content = _isVietnameseUi ? "Chọn nguồn / dán link" : "Choose source of paste link";
+                _navigationButtons[AppSection.ChooseSource].Content = "Source";
                 _navigationButtons[AppSection.Download].Content = _isVietnameseUi ? "Tải về" : "Download";
                 _navigationButtons[AppSection.Watch].Content = _isVietnameseUi ? "Xem truyện" : "Watch";
                 _navigationButtons[AppSection.About].Content = _isVietnameseUi ? "Giới thiệu" : "About";

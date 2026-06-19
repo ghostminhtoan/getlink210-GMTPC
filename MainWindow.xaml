@@ -1,4 +1,4 @@
-﻿<Window x:Class="get_link_manga.MainWindow"
+<Window x:Class="get_link_manga.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -293,7 +293,7 @@
                                            FontSize="10"
                                            FontWeight="Bold"/>
                                 <TextBlock Name="txtHeaderStepPrimaryTitle"
-                                           Text="CHOOSE SOURCE OR PASTE LINK"
+                                           Text="SOURCE"
                                            Foreground="{StaticResource CyberpunkTextBrush}"
                                            FontSize="13"
                                            FontWeight="SemiBold"/>
@@ -2043,7 +2043,7 @@
                                 <DataGridTemplateColumn.Header>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="COMIC BOOKS" Foreground="{StaticResource CyberpunkPinkBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <Button Name="btnSortByName" Content="&lt;&gt;" Click="BtnSortByName_Click" Width="22" Height="18" Padding="0" FontSize="10" ToolTip="SORT BY NAME">
+                                        <Button Name="btnSortByName" Content="⇅" Click="BtnSortByName_Click" Width="22" Height="18" Padding="0" FontSize="10" ToolTip="SORT BY NAME">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
                                                     <Setter Property="Margin" Value="0"/>
@@ -2119,7 +2119,7 @@
                                  <DataGridTemplateColumn.Header>
                                      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                          <TextBlock Text="STATUS" Foreground="{StaticResource CyberpunkPinkBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                         <Button Name="btnSortByStatus" Content="&lt;&gt;" Click="BtnSortByStatus_Click" Width="22" Height="18" Padding="0" FontSize="10" ToolTip="SORT BY STATUS">
+                                         <Button Name="btnSortByStatus" Content="⇅" Click="BtnSortByStatus_Click" Width="22" Height="18" Padding="0" FontSize="10" ToolTip="SORT BY STATUS">
                                              <Button.Style>
                                                  <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
                                                      <Setter Property="Margin" Value="0"/>
@@ -2248,7 +2248,7 @@
                                 <DataGridTemplateColumn.Header>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="PROCESS" Foreground="{StaticResource CyberpunkPinkBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <Button Name="btnSortByProcess" Content="&lt;&gt;" Click="BtnSortByProcess_Click" Width="22" Height="18" Padding="0" FontSize="10" ToolTip="SORT BY PROCESS">
+                                        <Button Name="btnSortByProcess" Content="⇅" Click="BtnSortByProcess_Click" Width="22" Height="18" Padding="0" FontSize="10" ToolTip="SORT BY PROCESS">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
                                                     <Setter Property="Margin" Value="0"/>

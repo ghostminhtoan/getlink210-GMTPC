@@ -289,7 +289,7 @@ namespace get_link_manga
                 ? " ↓"
                 : _lastLatestChapterSortDescending == false
                     ? " ↑"
-                    : string.Empty;
+                    : " ⇅";
 
             btnSortByLatestChapter.Content = _isVietnameseUi
                 ? $"CHƯƠNG MỚI NHẤT{suffix}"
@@ -303,7 +303,7 @@ namespace get_link_manga
             if (txtHeaderTitle != null) txtHeaderTitle.Text = string.Empty;
             if (txtHeaderSubtitle != null) txtHeaderSubtitle.Text = string.Empty;
             if (txtHeaderStepPrimary != null) txtHeaderStepPrimary.Text = "STEP 1";
-            if (txtHeaderStepPrimaryTitle != null) txtHeaderStepPrimaryTitle.Text = "CHOOSE SOURCE OR PASTE LINK";
+            if (txtHeaderStepPrimaryTitle != null) txtHeaderStepPrimaryTitle.Text = "Source";
             if (txtHeaderStepSecondary != null) txtHeaderStepSecondary.Text = "STEP 2";
             if (txtHeaderStepSecondaryTitle != null) txtHeaderStepSecondaryTitle.Text = "DOWNLOAD";
             if (txtLanguageLabel != null) txtLanguageLabel.Text = "ENG";
