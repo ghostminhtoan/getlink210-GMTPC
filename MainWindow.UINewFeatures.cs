@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -269,7 +269,9 @@ namespace get_link_manga
             if (queueItem == null)
                 return;
 
-            var errorsToRetry = queueItem.GetUniqueErrors();
+            var errorsToRetry = queueItem.GetUniqueErrors()
+                .Where(e => e.PageNumber > 0 && !string.IsNullOrEmpty(e.ImageUrl))
+                .ToList();
             if (errorsToRetry.Count == 0)
                 return;
 
