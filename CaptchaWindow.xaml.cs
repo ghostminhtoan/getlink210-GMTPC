@@ -371,6 +371,12 @@ namespace get_link_manga
                                              return matches ? matches.length : 0;
                                          }
                                          
+                                         // Check if list is already active (fully expanded)
+                                         var list = document.querySelector('#chapter_list');
+                                         if (list && list.classList.contains('active')) {
+                                             return 'ready';
+                                         }
+                                         
                                          // Prioritize the correct chapter-list view-more button
                                          var xemThem = document.querySelector('.list-chapter .view-more') || 
                                                        document.querySelector('#nt_listchapter .view-more') ||
@@ -393,6 +399,11 @@ namespace get_link_manga
                                          }
 
                                          if (xemThem) {
+                                             // If it's already clicked but list is not active yet, keep waiting
+                                             if (window.viewMoreClicked) {
+                                                 return 'waiting';
+                                             }
+
                                              xemThem.classList.remove('hidden');
                                              xemThem.style.display = '';
                                              xemThem.style.visibility = 'visible';
@@ -409,6 +420,7 @@ namespace get_link_manga
                                                  return 'waiting';
                                              }
 
+                                             window.viewMoreClicked = true;
                                              if (xemThem.offsetWidth > 0 || xemThem.offsetHeight > 0 || xemThem.getClientRects().length > 0) {
                                                  xemThem.click();
                                                  return 'clicked';
@@ -418,6 +430,8 @@ namespace get_link_manga
                                                  return 'clicked';
                                              }
                                          }
+                                         
+                                         // If no view-more button exists and we have chapters, it's ready
                                          var chapterCount = getChapterLinks();
                                          if (chapterCount > 0) {
                                              return 'ready';
