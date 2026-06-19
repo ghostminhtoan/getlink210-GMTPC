@@ -370,18 +370,28 @@ namespace get_link_manga
                                              var matches = html.match(/\/(?:chuong|chap|chapter|c|chuong-tranh|chuong-doc)-\d+(?:\.\d+)?(?:\/|\s|""|'|\?|$)/gi);
                                              return matches ? matches.length : 0;
                                          }
-                                         var xemThem = null;
-                                         var allEls = document.querySelectorAll('a, button, span, div');
-                                         for (var i = 0; i < allEls.length; i++) {
-                                             var txt = (allEls[i].textContent || '').trim();
-                                             if (txt === 'Xem thêm' || txt === '+ Xem thêm' || txt === 'xem thêm' || txt === '+ xem thêm') {
-                                                 xemThem = allEls[i];
-                                                 break;
+                                         
+                                         // Prioritize the correct chapter-list view-more button
+                                         var xemThem = document.querySelector('.list-chapter .view-more') || 
+                                                       document.querySelector('#nt_listchapter .view-more') ||
+                                                       document.querySelector('.view-more:not(.morelink)');
+                                         
+                                         if (!xemThem) {
+                                             var allEls = document.querySelectorAll('a, button, span, div');
+                                             for (var i = 0; i < allEls.length; i++) {
+                                                 var el = allEls[i];
+                                                 // Exclude description expand links
+                                                 if (el.classList.contains('morelink') || el.closest('.shortened') || el.closest('.detail-content')) {
+                                                     continue;
+                                                 }
+                                                 var txt = (el.textContent || '').trim();
+                                                 if (txt === 'Xem thêm' || txt === '+ Xem thêm' || txt === 'xem thêm' || txt === '+ xem thêm') {
+                                                     xemThem = el;
+                                                     break;
+                                                 }
                                              }
                                          }
-                                         if (!xemThem) {
-                                             xemThem = document.querySelector('.view-more') || document.querySelector('[class*=""view-more""]');
-                                         }
+
                                          if (xemThem) {
                                              xemThem.classList.remove('hidden');
                                              xemThem.style.display = '';
@@ -413,7 +423,7 @@ namespace get_link_manga
                                              return 'ready';
                                          }
                                          return 'waiting';
-                                     })()";
+                                      })()";
 
                                 string statusStr = await Dispatcher.Invoke(async () =>
                                 {
