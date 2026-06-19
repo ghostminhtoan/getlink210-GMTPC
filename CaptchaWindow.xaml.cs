@@ -364,44 +364,56 @@ namespace get_link_manga
                             {
                                 // Find and click "Xem thêm" by text content (CSS selectors are unreliable across nettruyen domains)
                                 string processChaptersJs = @"
-                                    (function() {
-                                        function getChapterLinks() {
-                                            var html = document.documentElement.outerHTML || '';
-                                            var matches = html.match(/\/(?:chuong|chap|chapter|c|chuong-tranh|chuong-doc)-\d+(?:\.\d+)?(?:\/|\s|""|'|\?|$)/gi);
-                                            return matches ? matches.length : 0;
-                                        }
-                                        var xemThem = null;
-                                        var allEls = document.querySelectorAll('a, button, span, div');
-                                        for (var i = 0; i < allEls.length; i++) {
-                                            var txt = (allEls[i].textContent || '').trim();
-                                            if (txt === 'Xem thêm' || txt === '+ Xem thêm' || txt === 'xem thêm' || txt === '+ xem thêm') {
-                                                xemThem = allEls[i];
-                                                break;
-                                            }
-                                        }
-                                        if (!xemThem) {
-                                            xemThem = document.querySelector('.view-more') || document.querySelector('[class*=""view-more""]');
-                                        }
-                                        if (xemThem) {
-                                            xemThem.classList.remove('hidden');
-                                            xemThem.style.display = '';
-                                            xemThem.style.visibility = 'visible';
-                                            if (xemThem.offsetWidth > 0 || xemThem.offsetHeight > 0 || xemThem.getClientRects().length > 0) {
-                                                xemThem.scrollIntoView({behavior:'instant',block:'center'});
-                                                xemThem.click();
-                                                return 'clicked';
-                                            } else {
-                                                xemThem.click();
-                                                xemThem.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true}));
-                                                return 'clicked';
-                                            }
-                                        }
-                                        var chapterCount = getChapterLinks();
-                                        if (chapterCount > 0) {
-                                            return 'ready';
-                                        }
-                                        return 'waiting';
-                                    })()";
+                                     (function() {
+                                         function getChapterLinks() {
+                                             var html = document.documentElement.outerHTML || '';
+                                             var matches = html.match(/\/(?:chuong|chap|chapter|c|chuong-tranh|chuong-doc)-\d+(?:\.\d+)?(?:\/|\s|""|'|\?|$)/gi);
+                                             return matches ? matches.length : 0;
+                                         }
+                                         var xemThem = null;
+                                         var allEls = document.querySelectorAll('a, button, span, div');
+                                         for (var i = 0; i < allEls.length; i++) {
+                                             var txt = (allEls[i].textContent || '').trim();
+                                             if (txt === 'Xem thêm' || txt === '+ Xem thêm' || txt === 'xem thêm' || txt === '+ xem thêm') {
+                                                 xemThem = allEls[i];
+                                                 break;
+                                             }
+                                         }
+                                         if (!xemThem) {
+                                             xemThem = document.querySelector('.view-more') || document.querySelector('[class*=""view-more""]');
+                                         }
+                                         if (xemThem) {
+                                             xemThem.classList.remove('hidden');
+                                             xemThem.style.display = '';
+                                             xemThem.style.visibility = 'visible';
+                                             xemThem.style.border = '5px solid red';
+                                             xemThem.style.backgroundColor = 'yellow';
+                                             xemThem.scrollIntoView({behavior:'instant',block:'center'});
+
+                                             if (!window.viewMoreFoundTime) {
+                                                 window.viewMoreFoundTime = Date.now();
+                                             }
+
+                                             var elapsed = Date.now() - window.viewMoreFoundTime;
+                                             if (elapsed < 4000) {
+                                                 return 'waiting';
+                                             }
+
+                                             if (xemThem.offsetWidth > 0 || xemThem.offsetHeight > 0 || xemThem.getClientRects().length > 0) {
+                                                 xemThem.click();
+                                                 return 'clicked';
+                                             } else {
+                                                 xemThem.click();
+                                                 xemThem.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true}));
+                                                 return 'clicked';
+                                             }
+                                         }
+                                         var chapterCount = getChapterLinks();
+                                         if (chapterCount > 0) {
+                                             return 'ready';
+                                         }
+                                         return 'waiting';
+                                     })()";
 
                                 string statusStr = await Dispatcher.Invoke(async () =>
                                 {
