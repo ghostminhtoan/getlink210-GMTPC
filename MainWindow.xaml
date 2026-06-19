@@ -11,6 +11,9 @@
         WindowStartupLocation="CenterScreen"
         SizeChanged="Window_SizeChanged"
         StateChanged="MainWindow_StateChanged"
+        AllowDrop="True"
+        PreviewDragOver="MainWindow_PreviewDragOver"
+        Drop="MainWindow_Drop"
         PreviewKeyDown="MainWindow_PreviewPanelHotkeys"
         Loaded="MainWindow_Loaded">
 

@@ -18,7 +18,7 @@ namespace get_link_manga
         private readonly Action _startDownloadPictureAction;
         private readonly Action _stopDownloadPictureAction;
         private readonly Action<bool> _setRetryAction;
-        private readonly Action<bool> _setShutdownAction;
+        private readonly Action _openShutdownOptionsAction;
         private readonly Action _toggleAutoFocusAction;
         private readonly Action _openFolderAction;
         private readonly Action _deleteCookiesAction;
@@ -71,7 +71,7 @@ namespace get_link_manga
             Action startDownloadPictureAction,
             Action stopDownloadPictureAction,
             Action<bool> setRetryAction,
-            Action<bool> setShutdownAction,
+            Action openShutdownOptionsAction,
             Action toggleAutoFocusAction,
             Action openFolderAction,
             Action deleteCookiesAction,
@@ -83,7 +83,7 @@ namespace get_link_manga
             _startDownloadPictureAction = startDownloadPictureAction;
             _stopDownloadPictureAction = stopDownloadPictureAction;
             _setRetryAction = setRetryAction;
-            _setShutdownAction = setShutdownAction;
+            _openShutdownOptionsAction = openShutdownOptionsAction;
             _toggleAutoFocusAction = toggleAutoFocusAction;
             _openFolderAction = openFolderAction;
             _deleteCookiesAction = deleteCookiesAction;
@@ -235,7 +235,7 @@ namespace get_link_manga
             Grid.SetRow(bottomToggleRow, 3);
             root.Children.Add(bottomToggleRow);
 
-            var systemRow = CreateSystemRow(out _shutdownToggleButton, (sender, args) => ToggleShutdown());
+            var systemRow = CreateSystemRow(out _shutdownToggleButton, (sender, args) => _openShutdownOptionsAction?.Invoke());
             Grid.SetRow(systemRow, 4);
             root.Children.Add(systemRow);
 
@@ -470,7 +470,10 @@ namespace get_link_manga
             Grid.SetColumn(labelText, 0);
             row.Children.Add(labelText);
 
-            shutdownToggleButton = CreateToggleButton(shutdownClick);
+            shutdownToggleButton = CreateWindowButton("⏰", Color.FromRgb(0xFF, 0x79, 0xC6), shutdownClick);
+            shutdownToggleButton.MinWidth = 44;
+            shutdownToggleButton.MinHeight = 22;
+            shutdownToggleButton.FontSize = 15;
             Grid.SetColumn(shutdownToggleButton, 2);
             row.Children.Add(shutdownToggleButton);
 
@@ -726,7 +729,7 @@ namespace get_link_manga
 
         private void ToggleShutdown()
         {
-            _setShutdownAction?.Invoke(!IsToggleOn(_shutdownToggleButton));
+            _openShutdownOptionsAction?.Invoke();
         }
 
         private void TogglePin()

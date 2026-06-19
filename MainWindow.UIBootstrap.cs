@@ -107,6 +107,23 @@ namespace get_link_manga
             UpdateThemeText();
         }
 
+        private void BtnMainMove_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            try
+            {
+                DragMove();
+            }
+            catch
+            {
+            }
+        }
+
         private void BtnMainMinimize_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;

@@ -252,7 +252,8 @@ Update log git commit -> commit -> push -> bàn giao
 ---
 
 ## 7. Quy Tắc Git Commit
-- Sau build release thành công, phải commit và push.
+- Bất kể agent nào (Codex hay Antigravity), khi commit và push đều phải thực hiện trên default branch là `main`. Không commit lên các branch phụ trừ trường hợp đặc biệt được yêu cầu riêng.
+- Sau build release thành công, phải commit và push trực tiếp lên default branch `main`.
 - Cập nhật [log git commit.md](file:///r:/HDD%20R/ZC%20SYMLINK/USERS/source/repos/ghostminhtoan/get%20link%20manga/log%20git%20commit.md).
 - Commit mới nhất luôn nằm trên cùng.
 - Không commit file rác debug, dump, html tạm.

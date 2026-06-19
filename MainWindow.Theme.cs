@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace get_link_manga
@@ -161,7 +162,9 @@ namespace get_link_manga
 
         private void UpdateThemeText()
         {
-            var pinButton = btnPinWindow ?? btnMainTheme;
+            var pinButton = FindName("btnPinWindow") as Button
+                ?? FindName("btnMainTheme") as Button
+                ?? FindName("btnMainThemeLegacy") as Button;
             if (pinButton != null)
             {
                 bool isPinned = Topmost;

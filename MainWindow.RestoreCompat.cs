@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Win32;
 
 namespace get_link_manga
@@ -442,6 +443,77 @@ namespace get_link_manga
                     "Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+        }
+
+        private void MainWindow_PreviewDragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = TryGetDroppedText(e.Data, out _) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private async void MainWindow_Drop(object sender, DragEventArgs e)
+        {
+            if (!TryGetDroppedText(e.Data, out string text) || string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            await AppendDroppedDirectLinksAsync(text);
+        }
+
+        private static bool TryGetDroppedText(IDataObject data, out string text)
+        {
+            text = string.Empty;
+            if (data == null)
+            {
+                return false;
+            }
+
+            if (data.GetDataPresent(DataFormats.UnicodeText))
+            {
+                text = data.GetData(DataFormats.UnicodeText) as string;
+            }
+            else if (data.GetDataPresent(DataFormats.Text))
+            {
+                text = data.GetData(DataFormats.Text) as string;
+            }
+            else if (data.GetDataPresent("UniformResourceLocatorW"))
+            {
+                text = data.GetData("UniformResourceLocatorW")?.ToString();
+            }
+            else if (data.GetDataPresent("UniformResourceLocator"))
+            {
+                text = data.GetData("UniformResourceLocator")?.ToString();
+            }
+
+            return !string.IsNullOrWhiteSpace(text);
+        }
+
+        private async Task AppendDroppedDirectLinksAsync(string text)
+        {
+            var links = (text ?? string.Empty)
+                .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (links.Count == 0)
+            {
+                return;
+            }
+
+            foreach (string link in links)
+            {
+                bool handled = await TryAppendSupportedDirectLinkAsync(link);
+                if (handled)
+                {
+                    ClearAppendCompletedStatus();
+                    continue;
+                }
+
+                RouteAndProcessInputLink(link);
             }
         }
 

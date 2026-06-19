@@ -940,6 +940,14 @@ namespace get_link_manga
             }
         }
 
+        private void OpenShutdownOptionsPopup()
+        {
+            if (popupShutdownOptions != null)
+            {
+                popupShutdownOptions.IsOpen = true;
+            }
+        }
+
         private void ChkShutdownAfterCompleted_Checked(object sender, RoutedEventArgs e)
         {
             _shutdownAfterCompleted = true;

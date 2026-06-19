@@ -19,7 +19,7 @@ namespace get_link_manga
             if (txtTotalBooksLabel != null) txtTotalBooksLabel.Text = "Tổng truyện: ";
             if (txtResultsHeader != null) txtResultsHeader.Text = "DANH SÁCH CHỜ TẢI";
 
-            if (btnShutdownMenu != null) btnShutdownMenu.Content = "TẮT MÁY";
+            if (btnShutdownMenu != null) btnShutdownMenu.Content = "⏰";
             if (btnShutdownMenu != null) btnShutdownMenu.ToolTip = "Tùy chọn tắt máy";
             if (txtShutdownPopupHeader != null) txtShutdownPopupHeader.Text = "TÙY CHỌN TẮT MÁY";
             if (chkShutdownAfterCompleted != null) chkShutdownAfterCompleted.Content = "tắt máy sau khi tải xong";

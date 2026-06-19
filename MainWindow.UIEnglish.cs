@@ -310,7 +310,7 @@ namespace get_link_manga
             if (txtLanguageTarget != null) txtLanguageTarget.Text = "VI";
             if (txtTotalBooksLabel != null) txtTotalBooksLabel.Text = "Total titles: ";
             if (txtResultsHeader != null) txtResultsHeader.Text = "EXTRACTED GALLERY LINKS";
-            if (btnShutdownMenu != null) btnShutdownMenu.Content = "POWER";
+            if (btnShutdownMenu != null) btnShutdownMenu.Content = "⏰";
             if (btnShutdownMenu != null) btnShutdownMenu.ToolTip = "Shutdown options";
             if (txtShutdownPopupHeader != null) txtShutdownPopupHeader.Text = "SHUTDOWN OPTIONS";
             if (chkShutdownAfterCompleted != null) chkShutdownAfterCompleted.Content = "shutdown after completed";

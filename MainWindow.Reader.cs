@@ -2212,7 +2212,7 @@ namespace get_link_manga
             SetReaderCurrentTitle();
             RenderReaderPlaceholder();
             UpdateReaderStatus(_isVietnameseUi
-                ? "Chá»n chapter hoáº - c áº£nh trong panel bÃªn trá»i Ä‘á»ƒ má»Ÿ FastStone."
+                ? "Chọn chapter hoặc ảnh trong panel bên trái để mở FastStone."
                 : "Pick a chapter or an image in the left panels to open FastStone.");
             UpdateReaderNavigationState();
         }
