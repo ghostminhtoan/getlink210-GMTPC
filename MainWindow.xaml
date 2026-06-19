@@ -9,6 +9,9 @@
         Title="Comic-GMTPC v1.0" Height="900" Width="800" MinWidth="1080" MinHeight="560"
         Background="{StaticResource CyberpunkDarkBrush}"
         WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        UseLayoutRounding="True"
         SizeChanged="Window_SizeChanged"
         StateChanged="MainWindow_StateChanged"
         AllowDrop="True"
@@ -25,14 +28,14 @@
         </ResourceDictionary>
     </Window.Resources>
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CaptionHeight="32"
+        <shell:WindowChrome CaptionHeight="0"
                             CornerRadius="0"
                             GlassFrameThickness="0"
                             ResizeBorderThickness="8"
-                            UseAeroCaptionButtons="True"/>
+                            UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
     
-    <Grid Name="rootLayout" Margin="18">
+    <Grid Name="rootLayout" Margin="18" PreviewMouseLeftButtonDown="RootLayout_PreviewMouseLeftButtonDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -63,6 +66,75 @@
                 </Ellipse.Effect>
             </Ellipse>
         </Grid>
+
+        <Border HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="0,0,0,0"
+                Panel.ZIndex="500"
+                Background="#E0090D16"
+                CornerRadius="12"
+                BorderBrush="{StaticResource CyberpunkBorderBrush}"
+                BorderThickness="1"
+                Padding="5"
+                SnapsToDevicePixels="True">
+            <StackPanel Orientation="Horizontal">
+                <Button Name="btnMainMove"
+                        Content="MOVE"
+                        PreviewMouseLeftButtonDown="BtnMainMove_PreviewMouseLeftButtonDown"
+                        Style="{StaticResource CyberpunkButtonCyan}"
+                        Width="66"
+                        Height="26"
+                        Margin="0,0,6,0"
+                        Padding="0"
+                        FontSize="11"
+                        FontWeight="Bold"
+                        Cursor="SizeAll"
+                        ToolTip="Move window"/>
+                <Button Name="btnPinWindow"
+                        Content="PIN"
+                        Click="BtnMainTheme_Click"
+                        Style="{StaticResource CyberpunkButtonCyan}"
+                        Width="44"
+                        Height="26"
+                        Margin="0,0,6,0"
+                        Padding="0"
+                        FontSize="11"
+                        FontWeight="Bold"
+                        ToolTip="Pin window"/>
+                <Button Name="btnMainMinimize"
+                        Content="-"
+                        Click="BtnMainMinimize_Click"
+                        Style="{StaticResource CyberpunkButtonCyan}"
+                        Width="32"
+                        Height="26"
+                        Margin="0,0,6,0"
+                        Padding="0"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        ToolTip="Minimize"/>
+                <Button Name="btnMainMaximize"
+                        Content="[]"
+                        Click="BtnMainMaximize_Click"
+                        Style="{StaticResource CyberpunkButtonCyan}"
+                        Width="32"
+                        Height="26"
+                        Margin="0,0,6,0"
+                        Padding="0"
+                        FontSize="10"
+                        FontWeight="Bold"
+                        ToolTip="Maximize"/>
+                <Button Name="btnMainClose"
+                        Content="X"
+                        Click="BtnMainClose_Click"
+                        Style="{StaticResource CyberpunkButtonPink}"
+                        Width="32"
+                        Height="26"
+                        Padding="0"
+                        FontSize="12"
+                        FontWeight="Bold"
+                        ToolTip="Close"/>
+            </StackPanel>
+        </Border>
 
         <Grid Grid.Row="0" Name="gridMainContent" Margin="0">
             <Grid.RowDefinitions>
@@ -1903,7 +1975,6 @@
                               Name="dgResults"
                               Style="{StaticResource CyberpunkDataGrid}"
                               ColumnHeaderStyle="{StaticResource CyberpunkDataGridColumnHeader}"
-                              RowStyle="{StaticResource CyberpunkDataGridRow}"
                               CellStyle="{StaticResource CyberpunkDataGridCell}"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
@@ -1918,8 +1989,19 @@
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling"
                               VirtualizingPanel.ScrollUnit="Item"
+                              AllowDrop="True"
+                              DragOver="DgResults_DragOver"
+                              Drop="DgResults_Drop"
                               EnableRowVirtualization="True"
                               Margin="0,0,0,10">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow" BasedOn="{StaticResource CyberpunkDataGridRow}">
+                                    <Setter Property="AllowDrop" Value="True"/>
+                                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DgResultsRow_PreviewMouseLeftButtonDown"/>
+                                    <EventSetter Event="PreviewMouseMove" Handler="DgResultsRow_PreviewMouseMove"/>
+                                    <EventSetter Event="ContextMenuOpening" Handler="DgResultsRow_ContextMenuOpening"/>
+                                </Style>
+                            </DataGrid.RowStyle>
                             <DataGrid.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="TÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­ch chÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Ân dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â²ng ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ang bÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â´i ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“en (Check Selected)" Click="MenuCheckSelected_Click"/>
@@ -2089,29 +2171,28 @@
                                                  </StackPanel>
 
                                                  <!-- Row Buttons -->
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="5,0,0,0">
-                                                    <Button Content="X" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download"/>
-                                                    <Button Content="ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
-                                                                 <Setter Property="Visibility" Value="Collapsed"/>
-                                                                 <Style.Triggers>
-                                                                     <DataTrigger Binding="{Binding Status}" Value="Downloading">
-                                                                         <Setter Property="Visibility" Value="Visible"/>
-                                                                     </DataTrigger>
-                                                                     <DataTrigger Binding="{Binding Status}" Value="Paused">
-                                                                         <Setter Property="Visibility" Value="Visible"/>
-                                                                     </DataTrigger>
-                                                                     <DataTrigger Binding="{Binding Status}" Value="Queued">
-                                                                         <Setter Property="Visibility" Value="Visible"/>
-                                                                     </DataTrigger>
-                                                                 </Style.Triggers>
-                                                             </Style>
-                                                         </Button.Style>
-                                                     </Button>
-                                                 </StackPanel>
+                                               <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="5,0,0,0">
+                                                   <Button Content="&#x23F9;" Click="BtnRowStop_Click" Width="22" Height="18" Margin="1,0" Padding="0" FontSize="8" ToolTip="Stop download">
+                                                       <Button.Style>
+                                                           <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonPink}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="Queued">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </StackPanel>
 
-                                                 <!-- Error Button -->
+                                                <!-- Error Button -->
                                                  <Button Grid.Column="2" Content="{Binding ErrorCount, StringFormat=Err: {0}}" 
                                                          Click="BtnShowErrors_Click"
                                                          VerticalAlignment="Center"
@@ -2225,14 +2306,16 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <Button Content="L" 
-                                                    Tag="{Binding Link}" 
+                                                                                        <Button Content="&#xE71B;"
+                                                    FontFamily="Segoe MDL2 Assets"
+                                                    Tag="{Binding Link}"
                                                     Click="BtnOpenLinkInRow_Click"
                                                     Width="28" Height="24" Margin="1,0"
                                                     Style="{StaticResource CyberpunkButtonCyan}"
                                                     FontSize="12" Padding="0"
                                                     ToolTip="OPEN LINK"/>
-                                            <Button Content="F" 
+                                            <Button Content="&#x1F4C2;"
+                                                    FontFamily="Segoe UI Emoji"
                                                     DataContext="{Binding}"
                                                     Click="BtnOpenFolderInRow_Click"
                                                     Width="28" Height="24" Margin="1,0"
@@ -2296,7 +2379,7 @@
 
                                 <Button Grid.Column="4" Name="btnBrowseFolder" Content="BROWSE" Click="BtnBrowseFolder_Click" Style="{StaticResource CompactCyanButton}" Width="72" Margin="0"/>
 
-                                <Button Grid.Column="6" Name="btnOpenFolder" Content="OPEN FOLDER" Click="BtnOpenFolder_Click" Style="{StaticResource CompactCyanButton}" Width="92" Margin="0"/>
+                                <Button Grid.Column="6" Name="btnOpenFolder" Content="&#x1F4C2;" Click="BtnOpenFolder_Click" Style="{StaticResource CompactCyanButton}" Width="92" Margin="0" FontFamily="Segoe UI Emoji" FontSize="12" ToolTip="OPEN FOLDER"/>
 
                                 <TextBlock Name="txtSearchLabel" Grid.Column="8" Text="SEARCH" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="10" Name="txtFilter" 
@@ -2627,92 +2710,7 @@
                 </TabItem>
             </TabControl>
             </Border>
-        <Button Name="btnMainThemeLegacy"
-        Content="📍"
-        Click="BtnMainTheme_Click"
-        Style="{StaticResource CyberpunkButtonCyan}"
-        Width="28"
-        Height="22"
-        HorizontalAlignment="Right"
-        VerticalAlignment="Top"
-        Margin="0,-18,138,0"
-        Padding="3,0"
-        FontWeight="Bold"
-        Panel.ZIndex="100"
-        ToolTip="Pin window"
-        Visibility="Collapsed"/>
-<Button Name="btnMainTheme"
-        Content="📍"
-        Click="BtnMainTheme_Click"
-        Style="{StaticResource CyberpunkButtonCyan}"
-        Width="32"
-        Height="24"
-        HorizontalAlignment="Right"
-        VerticalAlignment="Top"
-        Margin="0,-12,154,0"
-        Padding="0"
-        FontSize="14"
-        FontWeight="Bold"
-        Panel.ZIndex="100"
-        shell:WindowChrome.IsHitTestVisibleInChrome="True"
-        ToolTip="Pin window"
-        Visibility="Collapsed"/>
-<Border HorizontalAlignment="Right"
-        VerticalAlignment="Top"
-        Margin="0,-10,0,0"
-        Panel.ZIndex="200"
-        shell:WindowChrome.IsHitTestVisibleInChrome="True"
-        Background="#33060A12"
-        CornerRadius="10"
-        BorderBrush="{StaticResource CyberpunkBorderBrush}"
-        BorderThickness="1"
-        Padding="6">
-    <StackPanel Orientation="Horizontal">
-        <Button Name="btnPinWindow"
-                Content="📍"
-                Click="BtnMainTheme_Click"
-                Style="{StaticResource CyberpunkButtonCyan}"
-                Width="32"
-                Height="24"
-                Margin="0,0,6,0"
-                Padding="0"
-                FontSize="14"
-                FontWeight="Bold"
-                ToolTip="Pin window"/>
-        <Button Name="btnMainMinimize"
-                Content="−"
-                Click="BtnMainMinimize_Click"
-                Style="{StaticResource CyberpunkButtonCyan}"
-                Width="32"
-                Height="24"
-                Margin="0,0,6,0"
-                Padding="0"
-                FontSize="14"
-                FontWeight="Bold"
-                ToolTip="Minimize"/>
-        <Button Name="btnMainMaximize"
-                Content="□"
-                Click="BtnMainMaximize_Click"
-                Style="{StaticResource CyberpunkButtonCyan}"
-                Width="32"
-                Height="24"
-                Margin="0,0,6,0"
-                Padding="0"
-                FontSize="12"
-                FontWeight="Bold"
-                ToolTip="Maximize"/>
-        <Button Name="btnMainClose"
-                Content="✕"
-                Click="BtnMainClose_Click"
-                Style="{StaticResource CyberpunkButtonPink}"
-                Width="32"
-                Height="24"
-                Padding="0"
-                FontSize="12"
-                FontWeight="Bold"
-                ToolTip="Close"/>
-    </StackPanel>
-</Border>
     </Grid>
     </Grid>
 </Window>
+

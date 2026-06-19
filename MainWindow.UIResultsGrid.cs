@@ -1,9 +1,11 @@
 using System;
+using System.Diagnostics;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -16,6 +18,8 @@ namespace get_link_manga
         private bool _isNameSortAscending = true;
         private bool _isStatusSortAscending = true;
         private bool _isProcessSortAscending = true;
+        private Point _resultsDragStartPoint;
+        private GalleryItem _resultsDragItem;
 
         private void ApplyResultsSort(string propertyName, ListSortDirection direction, string logMessage = null)
         {
@@ -135,11 +139,203 @@ namespace get_link_manga
 
         private void BtnRestoreOrder_Click(object sender, RoutedEventArgs e)
         {
+            RestoreResultsOrder("Original order restored.");
+        }
+
+        private void RestoreResultsOrder(string logMessage)
+        {
             _isNameSortAscending = true;
             _isStatusSortAscending = true;
             _isProcessSortAscending = true;
             ClearResultsColumnSortDirections();
-            ApplyResultsSort("OriginalIndex", ListSortDirection.Ascending, "Original order restored.");
+            ApplyResultsSort("OriginalIndex", ListSortDirection.Ascending, logMessage);
+        }
+
+        private void RenumberResultOrder()
+        {
+            for (int i = 0; i < _scrapedItems.Count; i++)
+            {
+                _scrapedItems[i].OriginalIndex = i;
+            }
+
+            Debug.Assert(_scrapedItems.Select((item, index) => item.OriginalIndex == index).All(match => match));
+        }
+
+        private void MoveResultItem(GalleryItem item, int targetIndex, string logMessage)
+        {
+            if (item == null || !_scrapedItems.Contains(item))
+            {
+                return;
+            }
+
+            int currentIndex = _scrapedItems.IndexOf(item);
+            if (currentIndex < 0)
+            {
+                return;
+            }
+
+            targetIndex = Math.Max(0, Math.Min(targetIndex, _scrapedItems.Count - 1));
+            if (targetIndex == currentIndex)
+            {
+                return;
+            }
+
+            _scrapedItems.RemoveAt(currentIndex);
+            if (targetIndex > currentIndex)
+            {
+                targetIndex--;
+            }
+            _scrapedItems.Insert(targetIndex, item);
+            RenumberResultOrder();
+            RestoreResultsOrder(logMessage);
+        }
+
+        private static bool IsDragCandidate(DependencyObject source)
+        {
+            while (source != null)
+            {
+                if (source is ButtonBase || source is TextBoxBase || source is PasswordBox || source is ComboBox || source is ToggleButton || source is ScrollBar || source is Thumb || source is MenuItem)
+                {
+                    return false;
+                }
+
+                if (source is DataGridRow || source is DataGridCell)
+                {
+                    return true;
+                }
+
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            return false;
+        }
+
+        private DataGridRow GetResultsRow(DependencyObject source)
+        {
+            while (source != null && !(source is DataGridRow))
+            {
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            return source as DataGridRow;
+        }
+
+        private void DgResultsRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState != MouseButtonState.Pressed || !IsDragCandidate(e.OriginalSource as DependencyObject))
+            {
+                _resultsDragItem = null;
+                return;
+            }
+
+            if (sender is DataGridRow row && row.Item is GalleryItem item)
+            {
+                _resultsDragStartPoint = e.GetPosition(null);
+                _resultsDragItem = item;
+            }
+        }
+
+        private void DgResultsRow_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed || _resultsDragItem == null || !(sender is DataGridRow row))
+            {
+                return;
+            }
+
+            Point currentPosition = e.GetPosition(null);
+            if (Math.Abs(currentPosition.X - _resultsDragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(currentPosition.Y - _resultsDragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+
+            try
+            {
+                DragDrop.DoDragDrop(row, _resultsDragItem, DragDropEffects.Move);
+            }
+            finally
+            {
+                _resultsDragItem = null;
+            }
+        }
+
+        private void DgResultsRow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (!(sender is DataGridRow row))
+            {
+                return;
+            }
+
+            if (row.ContextMenu == null)
+            {
+                row.ContextMenu = new ContextMenu();
+                var moveTopItem = new MenuItem { Header = "Move to top", Tag = "top" };
+                var moveBottomItem = new MenuItem { Header = "Move to bottom", Tag = "bottom" };
+                moveTopItem.Click += RowContextMenuItem_Click;
+                moveBottomItem.Click += RowContextMenuItem_Click;
+                row.ContextMenu.Items.Add(moveTopItem);
+                row.ContextMenu.Items.Add(moveBottomItem);
+            }
+        }
+
+        private void RowContextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is MenuItem menuItem) || !(menuItem.Parent is ContextMenu contextMenu) || !(contextMenu.PlacementTarget is DataGridRow row) || !(row.Item is GalleryItem item))
+            {
+                return;
+            }
+
+            string action = menuItem.Tag as string;
+            if (string.Equals(action, "top", StringComparison.Ordinal))
+            {
+                MoveResultItem(item, 0, $"Moved '{item.DisplayName}' to top.");
+            }
+            else if (string.Equals(action, "bottom", StringComparison.Ordinal))
+            {
+                MoveResultItem(item, _scrapedItems.Count - 1, $"Moved '{item.DisplayName}' to bottom.");
+            }
+        }
+
+        private void DgResults_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = e.Data.GetDataPresent(typeof(GalleryItem)) ? DragDropEffects.Move : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void DgResults_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(typeof(GalleryItem)))
+            {
+                return;
+            }
+
+            var sourceItem = e.Data.GetData(typeof(GalleryItem)) as GalleryItem;
+            var targetRow = GetResultsRow(e.OriginalSource as DependencyObject);
+            var targetItem = targetRow?.Item as GalleryItem;
+
+            if (sourceItem == null)
+            {
+                return;
+            }
+
+            if (targetItem == null)
+            {
+                MoveResultItem(sourceItem, _scrapedItems.Count - 1, $"Moved '{sourceItem.DisplayName}' in gallery list.");
+                return;
+            }
+
+            if (ReferenceEquals(sourceItem, targetItem))
+            {
+                return;
+            }
+
+            int targetIndex = _scrapedItems.IndexOf(targetItem);
+            if (targetIndex < 0)
+            {
+                return;
+            }
+
+            MoveResultItem(sourceItem, targetIndex, $"Moved '{sourceItem.DisplayName}' in gallery list.");
         }
 
         private void BtnNoLinkViHentai_Click(object sender, RoutedEventArgs e)

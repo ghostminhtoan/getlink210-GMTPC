@@ -105,6 +105,7 @@ namespace get_link_manga
         {
             Topmost = !Topmost;
             UpdateThemeText();
+            UpdateMainWindowChromeButtons();
         }
 
         private void BtnMainMove_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -124,6 +125,38 @@ namespace get_link_manga
             }
         }
 
+        private void RootLayout_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState != MouseButtonState.Pressed || IsWindowDragBlocked(e.OriginalSource as DependencyObject))
+            {
+                return;
+            }
+
+            try
+            {
+                DragMove();
+                e.Handled = true;
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool IsWindowDragBlocked(DependencyObject source)
+        {
+            while (source != null)
+            {
+                if (source is DataGrid || source is DataGridRow || source is DataGridCell || source is ButtonBase || source is TextBoxBase || source is PasswordBox || source is ComboBox || source is ToggleButton || source is ScrollBar || source is Thumb || source is Slider || source is MenuItem)
+                {
+                    return true;
+                }
+
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            return false;
+        }
+
         private void BtnMainMinimize_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;
@@ -134,11 +167,27 @@ namespace get_link_manga
             WindowState = WindowState == WindowState.Maximized
                 ? WindowState.Normal
                 : WindowState.Maximized;
+            UpdateMainWindowChromeButtons();
         }
 
         private void BtnMainClose_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void UpdateMainWindowChromeButtons()
+        {
+            if (btnMainMaximize != null)
+            {
+                btnMainMaximize.Content = WindowState == WindowState.Maximized ? "❐" : "□";
+                btnMainMaximize.ToolTip = WindowState == WindowState.Maximized ? "Restore" : "Maximize";
+            }
+
+            if (btnPinWindow != null)
+            {
+                btnPinWindow.Content = Topmost ? "PIN ON" : "PIN OFF";
+                btnPinWindow.ToolTip = Topmost ? "Unpin window" : "Pin window";
+            }
         }
 
         private void StyleComboBoxPopup(ComboBox comboBox)

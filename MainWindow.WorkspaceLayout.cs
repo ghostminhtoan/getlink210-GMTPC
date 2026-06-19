@@ -1339,6 +1339,8 @@ namespace get_link_manga
                 RefreshWindowBoundsForCurrentDisplay(preserveWindowState: false);
                 ApplyAdaptiveLayout(new Size(ActualWidth, ActualHeight));
             }
+
+            UpdateMainWindowChromeButtons();
         }
 
         private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e)

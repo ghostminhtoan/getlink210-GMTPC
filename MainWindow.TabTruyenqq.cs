@@ -907,10 +907,14 @@ namespace get_link_manga
                 string escapedPath = Regex.Escape(parentPath);
 
                 // Scrape child links: href=".../truyen-tranh/slug-{suffix}"
-                // IMPORTANT: only match links where the suffix starts with "chap"
-                // to avoid matching other non-chapter links that share the same slug prefix.
+                // IMPORTANT: prefer strict chap suffix, then widen only if site shifts markup.
                 string pattern = @"href=[""'](?<link>[^""']*?" + escapedPath + @"-chap(?:[^""'\s?#]*)?)[""']";
                 var matches = Regex.Matches(html, pattern, RegexOptions.IgnoreCase);
+                if (matches.Count == 0)
+                {
+                    string fallbackPattern = @"href=[""'](?<link>[^""']*?" + escapedPath + @"-(?:chap|chapter|chuong)(?:[^""'\s?#]*)?)[""']";
+                    matches = Regex.Matches(html, fallbackPattern, RegexOptions.IgnoreCase);
+                }
 
                 var chapterLinks = new System.Collections.Generic.List<string>();
                 var seenChapters = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1177,6 +1181,15 @@ namespace get_link_manga
             }
 
             var imageUrls = ExtractTruyenqqImageUrls(contentArea, item.Link);
+            if (imageUrls.Count == 0 && !string.Equals(contentArea, safeHtml, StringComparison.Ordinal))
+            {
+                // ponytail: fallback full safe HTML when scoped scan misses images; upgrade to DOM parse if markup churn keeps happening.
+                imageUrls = ExtractTruyenqqImageUrls(safeHtml, item.Link);
+            }
+            if (imageUrls.Count == 0)
+            {
+                imageUrls = ExtractTruyenqqImageUrls(html, item.Link);
+            }
 
             if (imageUrls.Count == 0)
             {
@@ -1475,7 +1488,57 @@ namespace get_link_manga
                 }
             }
 
-            return imageUrls;
+            return PreferSingleTruyenqqImageServer(imageUrls);
+        }
+
+        private List<string> PreferSingleTruyenqqImageServer(IList<string> imageUrls)
+        {
+            if (imageUrls == null || imageUrls.Count == 0)
+            {
+                return new List<string>();
+            }
+
+            string[] preferredHosts = new[]
+            {
+                "hinhhinh.com",
+                "truyenvua.com"
+            };
+
+            foreach (string preferredHost in preferredHosts)
+            {
+                var selected = imageUrls
+                    .Where(url => IsTruyenqqImageHost(url, preferredHost))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (selected.Count > 0)
+                {
+                    // ponytail: pick 1 image host only; if site adds more mirrors later, extend preferredHosts.
+                    return selected;
+                }
+            }
+
+            return imageUrls
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private bool IsTruyenqqImageHost(string url, string preferredHost)
+        {
+            if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(preferredHost))
+            {
+                return false;
+            }
+
+            try
+            {
+                return Uri.TryCreate(url, UriKind.Absolute, out Uri uri) &&
+                    uri.Host.IndexOf(preferredHost, StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private double ParseChapterNumber(string url)
