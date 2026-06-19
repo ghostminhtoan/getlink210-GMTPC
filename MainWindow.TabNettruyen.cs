@@ -105,7 +105,7 @@ namespace get_link_manga
                 bool solved = false;
                 try
                 {
-                    await Dispatcher.InvokeAsync(async () =>
+                    await await Dispatcher.InvokeAsync(async () =>
                     {
                         var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {
@@ -273,26 +273,34 @@ namespace get_link_manga
         private async Task<string> LoadExpandedNettruyenChapterHtmlAsync(string cleanLink)
         {
             string webViewHtml = null;
-            await Dispatcher.InvokeAsync(async () =>
+            _isDownloadPaused = true;
+            try
             {
-                var captchaWin = new CaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: true)
+                await await Dispatcher.InvokeAsync(async () =>
                 {
-                    Owner = this,
-                    Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ..."
-                };
-
-                if (await captchaWin.ShowNonBlockingAsync() && !string.IsNullOrEmpty(captchaWin.ResolvedHtml))
-                {
-                    webViewHtml = NormalizeNettruyenHtml(captchaWin.ResolvedHtml);
-
-                    var resolvedUri = captchaWin.ResolvedUri ?? new Uri(cleanLink);
-                    var resolvedCookies = captchaWin.ResolvedCookies.GetCookies(resolvedUri);
-                    foreach (Cookie cookie in resolvedCookies)
+                    var captchaWin = new CaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: true)
                     {
-                        _cookieContainer.Add(resolvedUri, cookie);
+                        Owner = this,
+                        Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ..."
+                    };
+
+                    if (await captchaWin.ShowNonBlockingAsync() && !string.IsNullOrEmpty(captchaWin.ResolvedHtml))
+                    {
+                        webViewHtml = NormalizeNettruyenHtml(captchaWin.ResolvedHtml);
+
+                        var resolvedUri = captchaWin.ResolvedUri ?? new Uri(cleanLink);
+                        var resolvedCookies = captchaWin.ResolvedCookies.GetCookies(resolvedUri);
+                        foreach (Cookie cookie in resolvedCookies)
+                        {
+                            _cookieContainer.Add(resolvedUri, cookie);
+                        }
                     }
-                }
-            });
+                });
+            }
+            finally
+            {
+                _isDownloadPaused = false;
+            }
 
             return webViewHtml;
         }

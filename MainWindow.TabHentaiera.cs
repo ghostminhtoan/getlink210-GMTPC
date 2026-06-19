@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -550,7 +550,7 @@ namespace get_link_manga
                 bool solved = false;
                 try
                 {
-                    await Dispatcher.InvokeAsync(async () =>
+                    await await Dispatcher.InvokeAsync(async () =>
                     {
                         var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
                         {

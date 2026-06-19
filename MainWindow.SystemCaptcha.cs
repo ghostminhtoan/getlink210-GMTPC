@@ -100,7 +100,7 @@ namespace get_link_manga
                 return;
             }
 
-            await Dispatcher.InvokeAsync(async () =>
+            await await Dispatcher.InvokeAsync(async () =>
             {
                 var captchaWin = new CaptchaWindow(url, autoDeleteCookiesOnLoad: true)
                 {

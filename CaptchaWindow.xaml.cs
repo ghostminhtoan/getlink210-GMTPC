@@ -371,10 +371,9 @@ namespace get_link_manga
                                              return matches ? matches.length : 0;
                                          }
                                          
-                                         // Check if list is already active (fully expanded)
-                                         var list = document.querySelector('#chapter_list');
-                                         if (list && list.classList.contains('active')) {
-                                             return 'ready';
+                                         if (window.viewMoreClicked) {
+                                             var elapsed = Date.now() - window.viewMoreClickedTime;
+                                             return elapsed < 4000 ? 'waiting' : 'ready';
                                          }
                                          
                                          // Prioritize the correct chapter-list view-more button
@@ -399,37 +398,25 @@ namespace get_link_manga
                                          }
 
                                          if (xemThem) {
-                                             // If it's already clicked but list is not active yet, keep waiting
-                                             if (window.viewMoreClicked) {
-                                                 return 'waiting';
-                                             }
+                                              xemThem.classList.remove('hidden');
+                                              xemThem.style.display = '';
+                                              xemThem.style.visibility = 'visible';
+                                              xemThem.style.border = '5px solid red';
+                                              xemThem.style.backgroundColor = 'yellow';
+                                              xemThem.scrollIntoView({behavior:'instant',block:'center'});
 
-                                             xemThem.classList.remove('hidden');
-                                             xemThem.style.display = '';
-                                             xemThem.style.visibility = 'visible';
-                                             xemThem.style.border = '5px solid red';
-                                             xemThem.style.backgroundColor = 'yellow';
-                                             xemThem.scrollIntoView({behavior:'instant',block:'center'});
+                                              window.viewMoreClicked = true;
+                                              window.viewMoreClickedTime = Date.now();
 
-                                             if (!window.viewMoreFoundTime) {
-                                                 window.viewMoreFoundTime = Date.now();
-                                             }
-
-                                             var elapsed = Date.now() - window.viewMoreFoundTime;
-                                             if (elapsed < 4000) {
-                                                 return 'waiting';
-                                             }
-
-                                             window.viewMoreClicked = true;
-                                             if (xemThem.offsetWidth > 0 || xemThem.offsetHeight > 0 || xemThem.getClientRects().length > 0) {
-                                                 xemThem.click();
-                                                 return 'clicked';
-                                             } else {
-                                                 xemThem.click();
-                                                 xemThem.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true}));
-                                                 return 'clicked';
-                                             }
-                                         }
+                                              if (xemThem.offsetWidth > 0 || xemThem.offsetHeight > 0 || xemThem.getClientRects().length > 0) {
+                                                  xemThem.click();
+                                                  return 'waiting';
+                                              } else {
+                                                  xemThem.click();
+                                                  xemThem.dispatchEvent(new MouseEvent('click', {bubbles:true,cancelable:true}));
+                                                  return 'waiting';
+                                              }
+                                          }
                                          
                                          // If no view-more button exists and we have chapters, it's ready
                                          var chapterCount = getChapterLinks();
