@@ -21,6 +21,7 @@
     <BuildInfoFile>$(MSBuildProjectDirectory)\BuildInfo.cs</BuildInfoFile>
     <ReleasePackageDir>$(MSBuildProjectDirectory)\release\Comic-GMTPC</ReleasePackageDir>
     <LocalPackageRoot>$(UserProfile)\.nuget\packages\</LocalPackageRoot>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Selenium.WebDriver">
@@ -362,6 +363,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="runtimes\webview2\win-x64\native\WebView2Loader.dll">

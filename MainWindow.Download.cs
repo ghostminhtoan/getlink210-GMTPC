@@ -258,12 +258,12 @@ namespace get_link_manga
             return normalized;
         }
 
-        private string GetSafeChapterPathName(string chapterTitle, int maxLength = 120)
+        private string GetSafeChapterPathName(string chapterTitle, int maxLength = 32000)
         {
             return GetSafePathName(NormalizeChapterLabel(chapterTitle), maxLength);
         }
 
-        private string GetSafeChapterPathName(string bookTitle, string chapterTitle, int maxLength = 120)
+        private string GetSafeChapterPathName(string bookTitle, string chapterTitle, int maxLength = 32000)
         {
             string combined = string.IsNullOrWhiteSpace(bookTitle)
                 ? NormalizeChapterLabel(chapterTitle)
@@ -330,7 +330,7 @@ namespace get_link_manga
             }
         }
 
-        private string GetCanonicalBookFolderName(GalleryItem item, string fallbackTitle, string defaultTitle = "item", int maxLength = 120)
+        private string GetCanonicalBookFolderName(GalleryItem item, string fallbackTitle, string defaultTitle = "item", int maxLength = 32000)
         {
             string preferredTitle = CompactSingleLine(item?.Name);
             if (string.IsNullOrWhiteSpace(preferredTitle))
@@ -2678,7 +2678,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
         }
 
-        private string GetSafePathName(string name, int maxLength = 120)
+        private string GetSafePathName(string name, int maxLength = 32000)
         {
             if (string.IsNullOrEmpty(name)) return "Unnamed";
             
