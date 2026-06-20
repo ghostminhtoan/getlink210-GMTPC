@@ -235,24 +235,32 @@ namespace get_link_manga
 
         private async Task<bool> PageContainsKeywordAsync(string keyword)
         {
-            if (webView.CoreWebView2 == null || string.IsNullOrWhiteSpace(keyword))
+            if (string.IsNullOrWhiteSpace(keyword))
             {
                 return false;
             }
 
-            string escapedKeyword = keyword.Replace("\\", "\\\\").Replace("'", "\\'");
-            string script = @"
-                (function() {
-                    var keyword = '" + escapedKeyword + @"'.toLowerCase();
-                    var bodyText = (document.body && document.body.innerText || '').toLowerCase();
-                    var html = (document.documentElement && document.documentElement.outerHTML || '').toLowerCase();
-                    return bodyText.indexOf(keyword) !== -1 || html.indexOf(keyword) !== -1;
-                })();";
-
             try
             {
-                string result = await webView.CoreWebView2.ExecuteScriptAsync(script);
-                return string.Equals(result?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+                return await await Dispatcher.InvokeAsync(async () =>
+                {
+                    if (webView.CoreWebView2 == null)
+                    {
+                        return false;
+                    }
+
+                    string escapedKeyword = keyword.Replace("\\", "\\\\").Replace("'", "\\'");
+                    string script = @"
+                        (function() {
+                            var keyword = '" + escapedKeyword + @"'.toLowerCase();
+                            var bodyText = (document.body && document.body.innerText || '').toLowerCase();
+                            var html = (document.documentElement && document.documentElement.outerHTML || '').toLowerCase();
+                            return bodyText.indexOf(keyword) !== -1 || html.indexOf(keyword) !== -1;
+                        })();";
+
+                    string result = await webView.CoreWebView2.ExecuteScriptAsync(script);
+                    return string.Equals(result?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+                });
             }
             catch
             {
@@ -306,7 +314,10 @@ namespace get_link_manga
             while (true)
             {
                 await Task.Delay(1000);
-                if (webView.CoreWebView2 == null) continue;
+                
+                bool isReady = false;
+                Dispatcher.Invoke(() => isReady = webView.CoreWebView2 != null);
+                if (!isReady) continue;
 
                 try
                 {
@@ -339,7 +350,7 @@ namespace get_link_manga
                             return 'ok';
                         })()";
 
-                    string result = await Dispatcher.Invoke(async () =>
+                    string result = await await Dispatcher.InvokeAsync(async () =>
                     {
                         try
                         {
@@ -426,7 +437,7 @@ namespace get_link_manga
                                          return 'waiting';
                                       })()";
 
-                                string statusStr = await Dispatcher.Invoke(async () =>
+                                string statusStr = await await Dispatcher.InvokeAsync(async () =>
                                 {
                                     try { return await webView.CoreWebView2.ExecuteScriptAsync(processChaptersJs); } catch { return "ready"; }
                                 });
@@ -449,7 +460,7 @@ namespace get_link_manga
                             if (!shouldDelay)
                             {
                                 // Get final HTML
-                                string finalHtml = await Dispatcher.Invoke(async () =>
+                                string finalHtml = await await Dispatcher.InvokeAsync(async () =>
                                 {
                                     try { return await webView.CoreWebView2.ExecuteScriptAsync("document.documentElement.outerHTML"); } catch { return null; }
                                 });
