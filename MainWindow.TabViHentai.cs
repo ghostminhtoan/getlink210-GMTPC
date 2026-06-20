@@ -1121,8 +1121,11 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl, item.Link);
-                                        RecordCheckError("vi-hentai.pro", queueItem.Name ?? mangaTitle, chapterTitle, index + 1, ex.Message, imgUrl);
+                                        Dispatcher.BeginInvoke((Action)(() =>
+                                        {
+                                            queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl, item.Link);
+                                            RecordCheckError("vi-hentai.pro", queueItem.Name ?? mangaTitle, chapterTitle, index + 1, ex.Message, imgUrl);
+                                        }));
                                     }
                                     Log($"[vi-hentai.pro] Lỗi tải trang {index + 1} của chapter '{chapterTitle}': {ex.Message}");
                                 }
