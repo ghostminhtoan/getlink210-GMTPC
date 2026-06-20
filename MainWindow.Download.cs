@@ -2979,6 +2979,11 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
         public static int ExtractPageNumberFromFilename(string filenameWithoutExt)
         {
+            return ExtractPageNumberFromFilename(filenameWithoutExt, false);
+        }
+
+        public static int ExtractPageNumberFromFilename(string filenameWithoutExt, bool isZeroBased)
+        {
             if (string.IsNullOrEmpty(filenameWithoutExt)) return -1;
             
             if (filenameWithoutExt.StartsWith("page-", StringComparison.OrdinalIgnoreCase))
@@ -2987,15 +2992,41 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 if (int.TryParse(part, out int num)) return num;
             }
             
-            var match = Regex.Match(filenameWithoutExt, @"\d+$");
-            if (match.Success && int.TryParse(match.Value, out int result))
+            int rawNum = -1;
+            if (filenameWithoutExt.Contains("_"))
             {
-                return result;
+                string firstPart = filenameWithoutExt.Split('_')[0];
+                int.TryParse(firstPart, out rawNum);
             }
-            
-            if (int.TryParse(filenameWithoutExt, out int parsed))
+            else if (filenameWithoutExt.Contains("-"))
             {
-                return parsed;
+                string firstPart = filenameWithoutExt.Split('-')[0];
+                int.TryParse(firstPart, out rawNum);
+            }
+            else
+            {
+                var matchStart = Regex.Match(filenameWithoutExt, @"^\d+");
+                if (matchStart.Success && int.TryParse(matchStart.Value, out int resultStart))
+                {
+                    rawNum = resultStart;
+                }
+                else
+                {
+                    var matchEnd = Regex.Match(filenameWithoutExt, @"\d+$");
+                    if (matchEnd.Success && int.TryParse(matchEnd.Value, out int resultEnd))
+                    {
+                        rawNum = resultEnd;
+                    }
+                    else if (int.TryParse(filenameWithoutExt, out int parsed))
+                    {
+                        rawNum = parsed;
+                    }
+                }
+            }
+
+            if (rawNum >= 0)
+            {
+                return isZeroBased ? rawNum + 1 : rawNum;
             }
             
             return -1;
@@ -3009,11 +3040,28 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             try
             {
                 var files = Directory.GetFiles(folderPath);
+                
+                // Tự động phát hiện thư mục đặt tên dạng 0-based
+                bool isZeroBased = false;
+                foreach (var file in files)
+                {
+                    string name = Path.GetFileNameWithoutExtension(file);
+                    string prefix = name;
+                    if (name.Contains("_")) prefix = name.Split('_')[0];
+                    else if (name.Contains("-")) prefix = name.Split('-')[0];
+                    
+                    if (prefix == "0" || prefix == "00" || prefix == "000")
+                    {
+                        isZeroBased = true;
+                        break;
+                    }
+                }
+
                 var existingPageNumbers = new HashSet<int>();
                 foreach (var file in files)
                 {
                     string nameWithoutExt = Path.GetFileNameWithoutExtension(file);
-                    int pageNum = ExtractPageNumberFromFilename(nameWithoutExt);
+                    int pageNum = ExtractPageNumberFromFilename(nameWithoutExt, isZeroBased);
                     if (pageNum >= 0)
                     {
                         existingPageNumbers.Add(pageNum);
