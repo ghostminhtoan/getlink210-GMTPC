@@ -744,6 +744,28 @@ namespace get_link_manga
                     {
                         rawTitle = rawTitle.Replace(suffix2, "").Trim();
                     }
+
+                    string[] suffixesToRemove = {
+                        " - Việt Hentai",
+                        " - Hentai Vietsub HD",
+                        " - Kuro Neko",
+                        " - Mèo đen",
+                        " - Vi-Hentai"
+                    };
+                    bool changed;
+                    do
+                    {
+                        changed = false;
+                        foreach (var s in suffixesToRemove)
+                        {
+                            if (rawTitle.EndsWith(s, StringComparison.OrdinalIgnoreCase))
+                            {
+                                rawTitle = rawTitle.Substring(0, rawTitle.Length - s.Length).Trim();
+                                changed = true;
+                            }
+                        }
+                    } while (changed);
+
                     item.Name = FormatGalleryTitle(rawTitle);
                 }
 
