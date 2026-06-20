@@ -983,6 +983,8 @@ namespace get_link_manga
                 });
             }
 
+            var pageFilenames = DetermineImageFilenames(imageUrls);
+
             using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
             {
                 var tasks = new List<Task>();
@@ -1007,12 +1009,10 @@ namespace get_link_manga
                         await semaphore.WaitAsync(token);
                         try
                         {
-                            string ext = Path.GetExtension(imgUrl.Split('?')[0]);
-                            if (string.IsNullOrWhiteSpace(ext)) ext = ".jpg";
-
-                            string localFilePath = Path.Combine(tempFolder, $"{index + 1:D3}{ext}");
-                            string unmergedFilePath = Path.Combine(unmergedPath, $"{index + 1:D3}{ext}");
-                            string mergedFilePath = Path.Combine(mergedPath, $"{index + 1:D3}{ext}");
+                            string fileName = pageFilenames[index];
+                            string localFilePath = Path.Combine(tempFolder, fileName);
+                            string unmergedFilePath = Path.Combine(unmergedPath, fileName);
+                            string mergedFilePath = Path.Combine(mergedPath, fileName);
 
                             if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024) ||
                                 (File.Exists(unmergedFilePath) && new FileInfo(unmergedFilePath).Length > 1024) ||

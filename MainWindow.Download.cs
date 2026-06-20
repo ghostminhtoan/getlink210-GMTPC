@@ -2901,6 +2901,102 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             throw new Exception($"Không thể tải ảnh sau {maxAttempts} lần thử: {url}");
         }
 
+        public static List<string> DetermineImageFilenames(IList<string> imageUrls)
+        {
+            var filenames = new List<string>();
+            if (imageUrls == null || imageUrls.Count == 0) return filenames;
+
+            var origNames = new List<string>();
+            var extensions = new List<string>();
+            foreach (var url in imageUrls)
+            {
+                string cleanUrl = url.Split('?')[0];
+                string nameWithoutExt = Path.GetFileNameWithoutExtension(cleanUrl);
+                string ext = Path.GetExtension(cleanUrl);
+                if (string.IsNullOrEmpty(ext)) ext = ".jpg";
+                origNames.Add(nameWithoutExt);
+                extensions.Add(ext);
+            }
+
+            bool useOriginal = true;
+            var nums = new List<long>();
+            foreach (var name in origNames)
+            {
+                if (long.TryParse(name, out long val))
+                {
+                    nums.Add(val);
+                }
+                else
+                {
+                    useOriginal = false;
+                    break;
+                }
+            }
+
+            if (useOriginal && nums.Count > 1)
+            {
+                for (int i = 1; i < nums.Count; i++)
+                {
+                    if (nums[i] <= nums[i - 1])
+                    {
+                        useOriginal = false;
+                        break;
+                    }
+                }
+
+                if (useOriginal)
+                {
+                    long range = nums[nums.Count - 1] - nums[0];
+                    if (range >= nums.Count * 2)
+                    {
+                        useOriginal = false;
+                    }
+                }
+            }
+            else if (nums.Count <= 1)
+            {
+                useOriginal = true;
+            }
+
+            for (int i = 0; i < imageUrls.Count; i++)
+            {
+                if (useOriginal)
+                {
+                    filenames.Add(origNames[i] + extensions[i]);
+                }
+                else
+                {
+                    filenames.Add($"page-{(i + 1):D3}{extensions[i]}");
+                }
+            }
+
+            return filenames;
+        }
+
+        public static int ExtractPageNumberFromFilename(string filenameWithoutExt)
+        {
+            if (string.IsNullOrEmpty(filenameWithoutExt)) return -1;
+            
+            if (filenameWithoutExt.StartsWith("page-", StringComparison.OrdinalIgnoreCase))
+            {
+                string part = filenameWithoutExt.Substring(5);
+                if (int.TryParse(part, out int num)) return num;
+            }
+            
+            var match = Regex.Match(filenameWithoutExt, @"\d+$");
+            if (match.Success && int.TryParse(match.Value, out int result))
+            {
+                return result;
+            }
+            
+            if (int.TryParse(filenameWithoutExt, out int parsed))
+            {
+                return parsed;
+            }
+            
+            return -1;
+        }
+
         private bool ValidateDownloadedFiles(string folderPath, int expectedCount, GalleryItem queueItem, string chapterName = "General", IDictionary<int, string> pageImageUrls = null)
         {
             if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
@@ -2913,7 +3009,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 foreach (var file in files)
                 {
                     string nameWithoutExt = Path.GetFileNameWithoutExtension(file);
-                    if (int.TryParse(nameWithoutExt, out int pageNum))
+                    int pageNum = ExtractPageNumberFromFilename(nameWithoutExt);
+                    if (pageNum >= 0)
                     {
                         existingPageNumbers.Add(pageNum);
                     }

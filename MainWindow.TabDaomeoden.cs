@@ -750,17 +750,19 @@ namespace get_link_manga
                 }
 
                 int maxThreads = GetCurrentConnectionLimit();
-                using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
-                {
-                    var tasks = new System.Collections.Generic.List<Task>();
-                    int completedPages = 0;
-                    object lockObj = new object();
+            var pageFilenames = DetermineImageFilenames(imageUrls);
 
-                    for (int i = 0; i < imageUrls.Count; i++)
-                    {
-                        int index = i;
-                        string pageUrl = imageUrls[index];
-                        string filePath = Path.Combine(tempFolder, $"{index + 1:D3}{GetDaomeodenImageExtension(pageUrl)}");
+            using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
+            {
+                var tasks = new System.Collections.Generic.List<Task>();
+                int completedPages = 0;
+                object lockObj = new object();
+
+                for (int i = 0; i < imageUrls.Count; i++)
+                {
+                    int index = i;
+                    string pageUrl = imageUrls[index];
+                    string filePath = Path.Combine(tempFolder, pageFilenames[index]);
 
                         tasks.Add(Task.Run(async () =>
                         {

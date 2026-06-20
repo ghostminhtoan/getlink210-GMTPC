@@ -289,8 +289,8 @@ namespace get_link_manga
 
             foreach (string file in Directory.GetFiles(folderPath))
             {
-                int pageNumber;
-                if (!int.TryParse(Path.GetFileNameWithoutExtension(file), out pageNumber))
+                int pageNumber = ExtractPageNumberFromFilename(Path.GetFileNameWithoutExtension(file));
+                if (pageNumber < 0)
                 {
                     continue;
                 }
