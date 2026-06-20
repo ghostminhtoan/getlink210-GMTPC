@@ -1242,7 +1242,10 @@ namespace get_link_manga
                             item.CurrentProcess = hasErrors ? "Done with errors" : "Done";
                             item.IsChecked = hasErrors ? item.IsChecked : false;
                         });
-                        await RefreshReaderLibraryAsync(forceRefresh: true);
+                        await Dispatcher.InvokeAsync(async () =>
+                        {
+                            await RefreshReaderLibraryAsync(forceRefresh: true);
+                        });
 
                         Log($"[Download] Hoàn thành truyện: {item.Name}");
 
