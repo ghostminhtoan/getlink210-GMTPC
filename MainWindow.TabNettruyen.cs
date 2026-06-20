@@ -107,7 +107,7 @@ namespace get_link_manga
                 {
                     await await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true)
+                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled)
                         {
                             Owner = this
                         };
@@ -278,7 +278,7 @@ namespace get_link_manga
             {
                 await await Dispatcher.InvokeAsync(async () =>
                 {
-                    var captchaWin = new CaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: true)
+                    var captchaWin = new CaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled)
                     {
                         Owner = this,
                         Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ..."
