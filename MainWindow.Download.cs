@@ -1268,6 +1268,10 @@ namespace get_link_manga
                         Dispatcher.Invoke(() =>
                         {
                             item.Status = "Error";
+                            if (item.HasNoChapters)
+                            {
+                                return;
+                            }
                             string chapterLabel = item.SourceDomain != null && IsNhentaiSource(item.SourceDomain)
                                 ? string.Empty
                                 : "General";

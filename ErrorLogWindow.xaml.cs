@@ -28,7 +28,23 @@ namespace get_link_manga
             _displayItems = new List<ErrorDisplayItem>();
             foreach (var comic in items)
             {
-                foreach (var error in comic.GetUniqueErrors())
+                var errors = comic.GetUniqueErrors() ?? Enumerable.Empty<ErrorDetail>();
+                var errorList = errors.ToList();
+                
+                bool hasNoChapters = comic.HasNoChapters || errorList.Any(e => 
+                    (e.ChapterName != null && e.ChapterName.IndexOf("Không có chương", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (e.ErrorMessage != null && e.ErrorMessage.IndexOf("chưa có chương", StringComparison.OrdinalIgnoreCase) >= 0)
+                );
+
+                if (hasNoChapters)
+                {
+                    errorList = errorList.Where(e => 
+                        (e.ChapterName != null && e.ChapterName.IndexOf("Không có chương", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                        (e.ErrorMessage != null && e.ErrorMessage.IndexOf("chưa có chương", StringComparison.OrdinalIgnoreCase) >= 0)
+                    ).ToList();
+                }
+
+                foreach (var error in errorList)
                 {
                     _displayItems.Add(new ErrorDisplayItem
                     {
