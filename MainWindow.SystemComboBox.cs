@@ -9,32 +9,44 @@ namespace get_link_manga
     {
         private void CmbConnections_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (cmbConnections == null || cmbConnections.SelectedItem == null)
+            try
             {
-                return;
+                if (cmbConnections == null || cmbConnections.SelectedItem == null)
+                {
+                    return;
+                }
+
+                int newLimit = GetCurrentConnectionLimit();
+
+                foreach (var item in _scrapedItems)
+                {
+                    item.ConnectionCount = newLimit;
+                }
+
+                _activeBookSemaphore?.AdjustLimit();
+                Log($"[Connection] Đã cập nhật số trang song song mỗi book thành {newLimit}.");
             }
-
-            int newLimit = GetCurrentConnectionLimit();
-
-            foreach (var item in _scrapedItems)
+            catch
             {
-                item.ConnectionCount = newLimit;
             }
-
-            _activeBookSemaphore?.AdjustLimit();
-            Log($"[Connection] Đã cập nhật số trang song song mỗi book thành {newLimit}.");
         }
 
         private void CmbMultiDownload_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (cmbMultiDownload == null || cmbMultiDownload.SelectedItem == null) return;
-            var selectedItem = cmbMultiDownload.SelectedItem as ComboBoxItem;
-            if (selectedItem == null) return;
-            if (!int.TryParse(selectedItem.Content.ToString(), out int newVal)) return;
+            try
+            {
+                if (cmbMultiDownload == null || cmbMultiDownload.SelectedItem == null) return;
+                var selectedItem = cmbMultiDownload.SelectedItem as ComboBoxItem;
+                if (selectedItem == null) return;
+                if (!int.TryParse(selectedItem.Content.ToString(), out int newVal)) return;
 
-            _currentMaxParallelBooks = newVal;
-            Log($"[Multi Download] Số luồng tải song song được chỉnh thành {newVal}.");
-            _activeBookSemaphore?.AdjustLimit();
+                _currentMaxParallelBooks = newVal;
+                Log($"[Multi Download] Số luồng tải song song được chỉnh thành {newVal}.");
+                _activeBookSemaphore?.AdjustLimit();
+            }
+            catch
+            {
+            }
         }
 
         private void CmbCreateSubfolderDomain_SelectionChanged(object sender, SelectionChangedEventArgs e)
