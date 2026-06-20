@@ -1292,14 +1292,12 @@ namespace get_link_manga
             Rect workArea = SystemParameters.WorkArea;
             bool portrait = workArea.Height > workArea.Width;
 
-            MinWidth = portrait ? 860 : 1180;
-            MinHeight = 720;
-            MaxWidth = workArea.Width;
-            MaxHeight = workArea.Height;
-
             bool wasMaximized = WindowState == WindowState.Maximized;
             if (wasMaximized)
             {
+                MaxWidth = double.PositiveInfinity;
+                MaxHeight = double.PositiveInfinity;
+
                 if (preserveWindowState)
                 {
                     WindowState = WindowState.Normal;
@@ -1313,6 +1311,11 @@ namespace get_link_manga
                 ApplyAdaptiveLayout(new Size(workArea.Width, workArea.Height));
                 return;
             }
+
+            MinWidth = portrait ? 860 : 1180;
+            MinHeight = 720;
+            MaxWidth = workArea.Width;
+            MaxHeight = workArea.Height;
 
             if (WindowState != WindowState.Normal)
             {

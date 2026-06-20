@@ -163,6 +163,7 @@ namespace get_link_manga
 
         private void TabManga_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (e.Source != sender) return;
             UpdateTruyenqqSpecificActions();
         }
 
