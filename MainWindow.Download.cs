@@ -418,7 +418,7 @@ namespace get_link_manga
                 DateTime nowUtc = DateTime.UtcNow;
                 if (!forceWrite &&
                     _tempLogWriteTimes.TryGetValue(tempFolder, out DateTime lastWriteUtc) &&
-                    (nowUtc - lastWriteUtc).TotalMilliseconds < 500)
+                    (nowUtc - lastWriteUtc).TotalMilliseconds < 2000)
                 {
                     return;
                 }
@@ -663,7 +663,7 @@ namespace get_link_manga
 
             DateTime nowUtc = DateTime.UtcNow;
             if (_processWriteTimes.TryGetValue(processPath, out DateTime lastWriteUtc) &&
-                (nowUtc - lastWriteUtc).TotalMilliseconds < 500)
+                (nowUtc - lastWriteUtc).TotalMilliseconds < 2000)
             {
                 return;
             }
@@ -721,7 +721,7 @@ namespace get_link_manga
 
             DateTime nowUtc = DateTime.UtcNow;
             if (_processWriteTimes.TryGetValue(processPath, out DateTime lastWriteUtc) &&
-                (nowUtc - lastWriteUtc).TotalMilliseconds < 250)
+                (nowUtc - lastWriteUtc).TotalMilliseconds < 1500)
             {
                 return;
             }
@@ -1548,11 +1548,11 @@ namespace get_link_manga
                                     completedPages++;
                                     if (queueItem != null)
                                     {
-                                        Dispatcher.Invoke(() =>
+                                        Dispatcher.BeginInvoke(new Action(() =>
                                         {
                                             queueItem.CompletedChapters = completedPages;
                                             queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                        });
+                                        }));
                                     }
                                 }
                                 return;
@@ -1581,11 +1581,11 @@ namespace get_link_manga
                                 completedPages++;
                                 if (queueItem != null)
                                 {
-                                    Dispatcher.Invoke(() =>
+                                    Dispatcher.BeginInvoke(new Action(() =>
                                     {
                                         queueItem.CompletedChapters = completedPages;
                                         queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                    });
+                                    }));
                                 }
                                 WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                             }
@@ -1784,17 +1784,17 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                     completedPages++;
                                     if (queueItem != null)
                                     {
-                                        Dispatcher.Invoke(() =>
+                                        Dispatcher.BeginInvoke(new Action(() =>
                                         {
                                             queueItem.CompletedChapters = completedPages;
                                             queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                        });
+                                        }));
                                     }
                                     WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} existed");
-                                    Dispatcher.Invoke(() =>
+                                    Dispatcher.BeginInvoke(new Action(() =>
                                     {
                                         lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} (nhentai.xxx)";
-                                    });
+                                    }));
                                 }
                                 return;
                             }
@@ -1816,10 +1816,10 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                         $"Image: {(string.IsNullOrWhiteSpace(directUrl) ? "N/A" : directUrl)}{Environment.NewLine}" +
                                         $"Error: {pageEx.Message}";
 
-                                    Dispatcher.Invoke(() =>
+                                    _ = Dispatcher.BeginInvoke(new Action(() =>
                                     {
                                         queueItem.AddError(string.Empty, pageNum, traceMessage, directUrl ?? pageUrl);
-                                    });
+                                    }));
                                     RecordCheckError(item.SourceDomain ?? "nhentai.xxx", item.Name, string.Empty, pageNum, traceMessage, directUrl ?? pageUrl);
                                 }
                             }
@@ -1829,19 +1829,19 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                 completedPages++;
                                 if (queueItem != null)
                                 {
-                                    Dispatcher.Invoke(() =>
+                                    Dispatcher.BeginInvoke(new Action(() =>
                                     {
                                         queueItem.CompletedChapters = completedPages;
                                         queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                    });
+                                    }));
                                 }
                                     WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                                 if (completedPages % 5 == 0 || completedPages == totalPages)
                                 {
-                                    Dispatcher.Invoke(() =>
+                                    Dispatcher.BeginInvoke(new Action(() =>
                                     {
                                         lblStatus.Text = $"[{completedPages}/{totalPages}] Tải {safeTitle} (nhentai.xxx)";
-                                    });
+                                    }));
                                 }
                             }
                         }
@@ -3075,7 +3075,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                     }
                 }
 
-                await Task.Delay(50, token);
+                await Task.Delay(150, token);
             }
         }
 
@@ -3237,11 +3237,11 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                         completedPages++;
                                         if (queueItem != null)
                                         {
-                                            Dispatcher.Invoke(() =>
+                                            Dispatcher.BeginInvoke(new Action(() =>
                                             {
                                                 queueItem.CompletedChapters = completedPages;
                                                 queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                            });
+                                            }));
                                         }
                                         WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} existed");
                                     }
@@ -3259,11 +3259,11 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                                     completedPages++;
                                     if (queueItem != null)
                                     {
-                                        Dispatcher.Invoke(() =>
+                                        Dispatcher.BeginInvoke(new Action(() =>
                                         {
                                             queueItem.CompletedChapters = completedPages;
                                             queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                        });
+                                        }));
                                     }
                                     WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                                 }
