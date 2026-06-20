@@ -285,7 +285,7 @@ namespace get_link_manga
                 queueItem.CurrentProcess = BuildRetryProcessText(0, errorsToRetry.Count, 0, 0, false);
             });
 
-            Log($"[Retry] Đang thử tải lại {errorsToRetry.Count} trang bị lỗi của '{queueItem.Name}'...");
+                    Log($"[Retry] Đang thử tải lại {errorsToRetry.Count} trang bị lỗi của '{queueItem.Name}'...");
 
             int successfulRetries = 0;
             int failedRetries = 0;
@@ -301,6 +301,7 @@ namespace get_link_manga
                     string retryMergedFolder = null;
                     bool isViHentai = queueItem.SourceDomain != null && queueItem.SourceDomain.Contains("vi-hentai.pro");
                     bool isTruyenqq = queueItem.SourceDomain != null && queueItem.SourceDomain.Contains("truyenqq");
+                    bool isNettruyen = queueItem.SourceDomain != null && queueItem.SourceDomain.IndexOf("nettruyen", StringComparison.OrdinalIgnoreCase) >= 0;
                     string imageUrl = err.ImageUrl;
 
                     if (string.IsNullOrEmpty(imageUrl) && isTruyenqq)
@@ -328,6 +329,14 @@ namespace get_link_manga
                     {
                         string safeChapter = GetSafeChapterPathName(err.ChapterName);
                         string siteRoot = GetSiteDownloadRoot(queueItem.DownloadPath, "truyenqq");
+                        retryUnmergedFolder = Path.Combine(siteRoot, $"{safeManga}-{safeChapter}");
+                        retryMergedFolder = Path.Combine(siteRoot, safeManga, safeChapter);
+                        targetFolder = Directory.Exists(retryMergedFolder) ? retryMergedFolder : retryUnmergedFolder;
+                    }
+                    else if (isNettruyen)
+                    {
+                        string safeChapter = GetSafeChapterPathName(err.ChapterName);
+                        string siteRoot = GetSiteDownloadRoot(queueItem.DownloadPath, "nettruyen");
                         retryUnmergedFolder = Path.Combine(siteRoot, $"{safeManga}-{safeChapter}");
                         retryMergedFolder = Path.Combine(siteRoot, safeManga, safeChapter);
                         targetFolder = Directory.Exists(retryMergedFolder) ? retryMergedFolder : retryUnmergedFolder;

@@ -113,7 +113,8 @@
                         FontWeight="Bold"
                         ToolTip="Minimize"/>
                 <Button Name="btnMainMaximize"
-                        Content="[]"
+                        Content="&#xE922;"
+                        FontFamily="Segoe MDL2 Assets"
                         Click="BtnMainMaximize_Click"
                         Style="{StaticResource CyberpunkButtonCyan}"
                         Width="32"

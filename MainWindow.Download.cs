@@ -166,6 +166,52 @@ namespace get_link_manga
                 return rootFolder;
             }
 
+            string lowerKey = siteKey.ToLowerInvariant();
+            if (lowerKey.Contains("nettruyen"))
+            {
+                siteKey = "nettruyen";
+            }
+            else if (lowerKey.Contains("truyenqq"))
+            {
+                siteKey = "truyenqq";
+            }
+            else if (lowerKey.Contains("daomeoden"))
+            {
+                siteKey = "daomeoden.net";
+            }
+            else if (lowerKey.Contains("hako.vn") || lowerKey.Contains("docln.net") || lowerKey.Contains("hako.re"))
+            {
+                siteKey = "ln.hako.vn";
+            }
+            else if (lowerKey.Contains("truyenggvn"))
+            {
+                siteKey = "truyenggvn";
+            }
+            else if (lowerKey.Contains("sayhentai"))
+            {
+                siteKey = "sayhentai";
+            }
+            else if (lowerKey.Contains("vi-hentai"))
+            {
+                siteKey = "vi-hentai.pro";
+            }
+            else if (lowerKey.Contains("nhentai"))
+            {
+                siteKey = "nhentai.xxx";
+            }
+            else if (lowerKey.Contains("hentaiforce"))
+            {
+                siteKey = "hentaiforce.net";
+            }
+            else if (lowerKey.Contains("hentaiera"))
+            {
+                siteKey = "hentaiera.com";
+            }
+            else if (lowerKey.Contains("hentai2read"))
+            {
+                siteKey = "hentai2read.com";
+            }
+
             string subfolder = GetCreateSubfolderPath(siteKey);
             return string.IsNullOrWhiteSpace(subfolder)
                 ? Path.Combine(rootFolder, siteKey)

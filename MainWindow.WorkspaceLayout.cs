@@ -48,8 +48,6 @@ namespace get_link_manga
         private string _createSubfolderSelectedDomainKey;
         private Border _sectionHeaderBorder;
         private Border _navigationRailBorder;
-        private Button _toolbarDownloadToggleButton;
-        private Button _toolbarRetryToggleButton;
         private Button _toolbarClearTempButton;
 
         private void InitializeWorkspaceShell()
@@ -170,59 +168,27 @@ namespace get_link_manga
                 }
             }
 
-            EnsureCompactDownloadToolbarButtons();
-            MoveToolbarElement(txtBuildInfo, new Thickness(8, 0, 12, 0));
-            MoveToolbarElement(btnRetryErrorLog, new Thickness(0, 0, 6, 0));
-            MoveToolbarElement(btnShutdownMenu?.Parent as UIElement ?? btnShutdownMenu, new Thickness(0, 0, 6, 0));
-
             if (grdStartDownloadToggle != null)
             {
-                grdStartDownloadToggle.Visibility = Visibility.Collapsed;
+                RemoveFromParent(grdStartDownloadToggle);
+                grdStartDownloadToggle.Visibility = Visibility.Visible;
+                grdStartDownloadToggle.Margin = new Thickness(0, 0, 12, 0);
+                if (!_globalDownloadActionPanel.Children.Contains(grdStartDownloadToggle))
+                {
+                    _globalDownloadActionPanel.Children.Insert(0, grdStartDownloadToggle);
+                }
             }
 
             if (grdAutoRetryErrorsToggle != null)
             {
-                grdAutoRetryErrorsToggle.Visibility = Visibility.Collapsed;
-            }
-
-            UpdateCompactDownloadToolbarState();
-        }
-
-        private void EnsureCompactDownloadToolbarButtons()
-        {
-            if (_globalDownloadActionPanel == null)
-            {
-                return;
-            }
-
-            if (_toolbarDownloadToggleButton == null)
-            {
-                _toolbarDownloadToggleButton = CreateCompactToolbarToggleButton("DOWNLOAD", async (sender, args) =>
+                RemoveFromParent(grdAutoRetryErrorsToggle);
+                grdAutoRetryErrorsToggle.Visibility = Visibility.Visible;
+                grdAutoRetryErrorsToggle.Margin = new Thickness(0, 0, 12, 0);
+                int insertIndex = _globalDownloadActionPanel.Children.Contains(grdStartDownloadToggle) ? 1 : 0;
+                if (!_globalDownloadActionPanel.Children.Contains(grdAutoRetryErrorsToggle))
                 {
-                    if (_downloadCts != null)
-                    {
-                        BtnStopDownload_Click(sender, args);
-                        return;
-                    }
-
-                    await HandleStartDownloadToggleCheckedAsync();
-                });
-                _globalDownloadActionPanel.Children.Insert(0, _toolbarDownloadToggleButton);
-            }
-
-            if (_toolbarRetryToggleButton == null)
-            {
-                _toolbarRetryToggleButton = CreateCompactToolbarToggleButton("RETRY", (sender, args) =>
-                {
-                    if (btnAutoRetryErrors == null)
-                    {
-                        return;
-                    }
-
-                    btnAutoRetryErrors.IsChecked = !(btnAutoRetryErrors.IsChecked == true);
-                });
-                int insertIndex = _toolbarDownloadToggleButton != null ? 1 : 0;
-                _globalDownloadActionPanel.Children.Insert(insertIndex, _toolbarRetryToggleButton);
+                    _globalDownloadActionPanel.Children.Insert(insertIndex, grdAutoRetryErrorsToggle);
+                }
             }
 
             if (_toolbarClearTempButton == null)
@@ -230,9 +196,28 @@ namespace get_link_manga
                 _toolbarClearTempButton = CreateCompactToolbarToggleButton("CLEAR TEMP", BtnClearTempFloating_Click);
                 _toolbarClearTempButton.Content = "CLEAR TEMP";
                 _toolbarClearTempButton.ToolTip = "CLEAR TEMP";
-                int insertIndex = _toolbarRetryToggleButton != null ? 2 : (_toolbarDownloadToggleButton != null ? 1 : 0);
-                _globalDownloadActionPanel.Children.Insert(insertIndex, _toolbarClearTempButton);
             }
+            if (_toolbarClearTempButton != null)
+            {
+                RemoveFromParent(_toolbarClearTempButton);
+                if (!_globalDownloadActionPanel.Children.Contains(_toolbarClearTempButton))
+                {
+                    int insertIndex = 0;
+                    if (_globalDownloadActionPanel.Children.Contains(grdStartDownloadToggle)) insertIndex++;
+                    if (_globalDownloadActionPanel.Children.Contains(grdAutoRetryErrorsToggle)) insertIndex++;
+                    _globalDownloadActionPanel.Children.Insert(insertIndex, _toolbarClearTempButton);
+                }
+            }
+
+            MoveToolbarElement(txtBuildInfo, new Thickness(8, 0, 12, 0));
+            MoveToolbarElement(btnRetryErrorLog, new Thickness(0, 0, 6, 0));
+            MoveToolbarElement(btnShutdownMenu?.Parent as UIElement ?? btnShutdownMenu, new Thickness(0, 0, 6, 0));
+
+            UpdateCompactDownloadToolbarState();
+        }
+
+        private void EnsureCompactDownloadToolbarButtons()
+        {
         }
 
         private Button CreateCompactToolbarToggleButton(string label, RoutedEventHandler onClick)
@@ -271,8 +256,18 @@ namespace get_link_manga
 
         internal void UpdateCompactDownloadToolbarState()
         {
-            SetCompactToolbarToggleVisual(_toolbarDownloadToggleButton, "DOWNLOAD", _downloadCts != null);
-            SetCompactToolbarToggleVisual(_toolbarRetryToggleButton, "RETRY", btnAutoRetryErrors?.IsChecked == true);
+            if (btnStartDownload != null)
+            {
+                _suppressDownloadToggleEvent = true;
+                try
+                {
+                    btnStartDownload.IsChecked = _downloadCts != null;
+                }
+                finally
+                {
+                    _suppressDownloadToggleEvent = false;
+                }
+            }
         }
 
         private void BtnClearTempFloating_Click(object sender, RoutedEventArgs e)

@@ -179,7 +179,7 @@ namespace get_link_manga
         {
             if (btnMainMaximize != null)
             {
-                btnMainMaximize.Content = WindowState == WindowState.Maximized ? "❐" : "□";
+                btnMainMaximize.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
                 btnMainMaximize.ToolTip = WindowState == WindowState.Maximized ? "Restore" : "Maximize";
             }
 
