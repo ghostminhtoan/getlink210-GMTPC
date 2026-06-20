@@ -2,34 +2,11 @@
 :: Đảm bảo code hiển thị đúng font tiếng Việt nếu cần
 chcp 65001 > nul
 
-:: ==========================================
-:: ĐOẠN CODE TỰ KÍCH HOẠT QUYỀN ADMIN
-:: ==========================================
-net session >nul 2>&1
-if %errorLevel% == 0 (
-    goto :AdminSuccess
-) else (
-    echo Đang yêu cầu quyền Administrator...
-    goto :GetAdmin
-)
-
-:GetAdmin
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-    echo UAC.ShellExecute "cmd.exe", "/c ""%~s0"" %*", "", "runas", 1 >> "%temp%\getadmin.vbs"
-    "%temp%\getadmin.vbs"
-    del "%temp%\getadmin.vbs"
-    exit /b
-
-:AdminSuccess
-:: ==========================================
-:: CODE CHÍNH CỦA BẠN BẮT ĐẦU TỪ ĐÂY
-:: ==========================================
+:: Di chuyển đến thư mục chứa script
+cd /d "%~dp0"
 
 :: Tắt tiến trình nếu đang chạy (bỏ qua lỗi nếu không tìm thấy)
 taskkill /im "Comic-GMTPC.exe" /f >nul 2>&1
-
-:: Di chuyển đến thư mục chứa script
-cd /d "%~dp0"
 
 :: Khai báo biến thư mục đích để dùng lại cho gọn
 set "TARGET_DIR=bin\release\"
@@ -82,12 +59,11 @@ if exist "%TARGET_DIR%\Comic-GMTPC-old.exe" (
 :: ------------------------------------------
 echo [3/4] Dang tien hanh Build du an...
 "C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe" "r:\HDD R\ZC SYMLINK\USERS\source\repos\ghostminhtoan\get link manga\Comic-GMTPC.csproj" /t:Rebuild /p:Configuration=Release /p:Platform=AnyCPU /p:AutoStampBuildInfo=true /p:AutoPublishRelease=true
-
 :: Bắt mã lỗi (Error Level) của MSBuild ngay lập tức
 set BUILD_STATUS=%ERRORLEVEL%
 
 :: Chờ 2 giây cho chắc chắn hệ thống file đã cập nhật xong
-timeout /T 2 > nul
+ping 127.0.0.1 -n 3 > nul
 
 :: ------------------------------------------
 :: BƯỚC 4: XỬ LÝ KẾT QUẢ BUILD

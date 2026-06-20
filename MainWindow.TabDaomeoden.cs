@@ -749,21 +749,62 @@ namespace get_link_manga
                     });
                 }
 
-                for (int i = 0; i < imageUrls.Count; i++)
+                int maxThreads = GetCurrentConnectionLimit();
+                using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
                 {
-                    token.ThrowIfCancellationRequested();
-                    string pageUrl = imageUrls[i];
-                    string filePath = Path.Combine(tempFolder, $"{i + 1:D3}{GetDaomeodenImageExtension(pageUrl)}");
-                    await DownloadUrlToFileWithRefererAsync(pageUrl, info.RefererUrl, filePath, token);
+                    var tasks = new System.Collections.Generic.List<Task>();
+                    int completedPages = 0;
+                    object lockObj = new object();
 
-                    if (queueItem != null)
+                    for (int i = 0; i < imageUrls.Count; i++)
                     {
-                        int pageNumber = i + 1;
-                        Dispatcher.Invoke(() =>
+                        int index = i;
+                        string pageUrl = imageUrls[index];
+                        string filePath = Path.Combine(tempFolder, $"{index + 1:D3}{GetDaomeodenImageExtension(pageUrl)}");
+
+                        tasks.Add(Task.Run(async () =>
                         {
-                            queueItem.DownloadingPageProgress = $"{pageNumber}/{imageUrls.Count}";
-                        });
+                            while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
+                            {
+                                token.ThrowIfCancellationRequested();
+                                if (queueItem != null && queueItem.IsStopped) throw new OperationCanceledException();
+                                await Task.Delay(200, token);
+                            }
+                            token.ThrowIfCancellationRequested();
+
+                            await semaphore.WaitAsync(token);
+                            try
+                            {
+                                while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
+                                {
+                                    token.ThrowIfCancellationRequested();
+                                    if (queueItem != null && queueItem.IsStopped) throw new OperationCanceledException();
+                                    await Task.Delay(200, token);
+                                }
+                                token.ThrowIfCancellationRequested();
+
+                                await DownloadUrlToFileWithRefererAsync(pageUrl, info.RefererUrl, filePath, token);
+
+                                lock (lockObj)
+                                {
+                                    completedPages++;
+                                    if (queueItem != null)
+                                    {
+                                        int pageNumber = completedPages;
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            queueItem.DownloadingPageProgress = $"{pageNumber}/{imageUrls.Count}";
+                                        });
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                semaphore.Release();
+                            }
+                        }, token));
                     }
+                    await Task.WhenAll(tasks);
                 }
 
                 var pageMap = imageUrls
