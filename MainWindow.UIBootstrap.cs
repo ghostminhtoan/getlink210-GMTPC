@@ -116,6 +116,14 @@ namespace get_link_manga
             }
 
             e.Handled = true;
+
+            if (e.ClickCount == 2)
+            {
+                WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+                UpdateMainWindowChromeButtons();
+                return;
+            }
+
             try
             {
                 DragMove();
@@ -129,6 +137,22 @@ namespace get_link_manga
         {
             if (e.ButtonState != MouseButtonState.Pressed || IsWindowDragBlocked(e.OriginalSource as DependencyObject))
             {
+                return;
+            }
+
+            // Giới hạn phần move ở header trên (Y < 85 trên rootLayout)
+            var pos = e.GetPosition(rootLayout);
+            if (pos.Y > 85)
+            {
+                return;
+            }
+
+            // Click đúp để maximize / restore
+            if (e.ClickCount == 2)
+            {
+                WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+                UpdateMainWindowChromeButtons();
+                e.Handled = true;
                 return;
             }
 
