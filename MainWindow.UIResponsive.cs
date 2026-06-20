@@ -60,11 +60,13 @@ namespace get_link_manga
 
             if (rootLayout != null)
             {
-                rootLayout.Margin = ultraCompact
-                    ? new Thickness(8)
-                    : compactMode
-                        ? new Thickness(12)
-                        : new Thickness(18);
+                rootLayout.Margin = WindowState == WindowState.Maximized
+                    ? new Thickness(0)
+                    : ultraCompact
+                        ? new Thickness(8)
+                        : compactMode
+                            ? new Thickness(12)
+                            : new Thickness(18);
             }
 
             if (headerPanel != null)

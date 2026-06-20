@@ -13,10 +13,11 @@ namespace get_link_manga
         public int PageNumber { get; set; }
         public string ErrorMessage { get; set; }
         public string ImageUrl { get; set; }
+        public string ChapterUrl { get; set; }
 
         public override string ToString()
         {
-            return $"{ChapterName}, Trang {PageNumber} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â {ErrorMessage}";
+            return $"{ChapterName}, Trang {PageNumber} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â  {ErrorMessage}";
         }
     }
 
@@ -795,7 +796,7 @@ namespace get_link_manga
                    !string.Equals(CurrentProcess, "Done with errors", StringComparison.OrdinalIgnoreCase);
         }
 
-        public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null)
+        public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null, string chapterUrl = null)
         {
             string domainVal = SourceDomain ?? "";
             if (string.IsNullOrEmpty(domainVal) && !string.IsNullOrEmpty(Link))
@@ -816,7 +817,7 @@ namespace get_link_manga
 
             if (Errors == null)
             {
-                Errors = new List<ErrorDetail>();
+                IdentityErrorsInitialization();
             }
 
             var existing = Errors.FirstOrDefault(e =>
@@ -828,6 +829,7 @@ namespace get_link_manga
             {
                 existing.ErrorMessage = errorMessage;
                 existing.ImageUrl = imageUrl;
+                existing.ChapterUrl = chapterUrl;
             }
             else
             {
@@ -836,11 +838,17 @@ namespace get_link_manga
                     ChapterName = chapterName,
                     PageNumber = pageNumber,
                     ErrorMessage = errorMessage,
-                    ImageUrl = imageUrl
+                    ImageUrl = imageUrl,
+                    ChapterUrl = chapterUrl
                 });
             }
 
             ErrorCount = GetUniqueErrorCount();
+        }
+
+        private void IdentityErrorsInitialization()
+        {
+            Errors = new List<ErrorDetail>();
         }
 
         private static string BuildErrorKey(string chapterName, int pageNumber)

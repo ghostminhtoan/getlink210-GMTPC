@@ -1051,7 +1051,7 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl);
+                                        queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl, chapterUrl);
                                         RecordCheckError(Hentai2readSiteFolder, queueItem.Name ?? bookTitle, chapterTitle, index + 1, ex.Message, imgUrl);
                                     }
                                 }
@@ -1097,7 +1097,7 @@ namespace get_link_manga
                 UpsertMainLogLine(progressKey, $"[hentai2read.com] Đã tải xong {bookTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
 
                 string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-                return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem ?? item, chapterTitle);
+                return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem ?? item, chapterTitle, chapterUrl: item.Link);
             }
         }
 

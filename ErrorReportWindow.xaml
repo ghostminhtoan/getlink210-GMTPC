@@ -78,23 +78,41 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Header="CHAPTER" Binding="{Binding ChapterName}" Width="130">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="{StaticResource CyberpunkYellowBrush}"/>
-                                <Setter Property="Padding" Value="4,2"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
+                    <DataGridTemplateColumn Header="CHAPTER" Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding ChapterName}"
+                                        Tag="{Binding ChapterUrl}"
+                                        Click="BtnOpenComicLink_Click"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Foreground="{StaticResource CyberpunkYellowBrush}"
+                                        FontWeight="Bold"
+                                        HorizontalContentAlignment="Left"
+                                        Padding="4,2"
+                                        Cursor="Hand"
+                                        ToolTip="Open chapter link"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Header="PAGE" Binding="{Binding PageNumber}" Width="65">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="{StaticResource CyberpunkCyanBrush}"/>
-                                <Setter Property="Padding" Value="4,2"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
+                    <DataGridTemplateColumn Header="PAGE" Width="65">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding PageNumber}"
+                                        Tag="{Binding ImageUrl}"
+                                        Click="BtnOpenComicLink_Click"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Foreground="{StaticResource CyberpunkCyanBrush}"
+                                        FontWeight="Bold"
+                                        HorizontalContentAlignment="Left"
+                                        Padding="4,2"
+                                        Cursor="Hand"
+                                        ToolTip="Open image link"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
                     <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*">
                         <DataGridTextColumn.ElementStyle>

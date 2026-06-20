@@ -1093,7 +1093,7 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl);
+                                        queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl, item.Link);
                                         RecordCheckError("vi-hentai.pro", queueItem.Name ?? mangaTitle, chapterTitle, index + 1, ex.Message, imgUrl);
                                     }
                                     Log($"[vi-hentai.pro] Lỗi tải trang {index + 1} của chapter '{chapterTitle}': {ex.Message}");
@@ -1151,7 +1151,7 @@ namespace get_link_manga
 
                 // Check for missing files
                 string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
-                return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, chapterTitle);
+                return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, chapterTitle, chapterUrl: item.Link);
             }
         }
     }

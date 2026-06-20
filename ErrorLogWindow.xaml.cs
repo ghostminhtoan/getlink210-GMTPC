@@ -38,7 +38,8 @@ namespace get_link_manga
                         ChapterName = error?.ChapterName ?? "N/A",
                         PageNumber = error?.PageNumber ?? 0,
                         ErrorMessage = LocalizeErrorMessage(error?.ErrorMessage ?? "Unknown error", isVi),
-                        ImageUrl = error?.ImageUrl
+                        ImageUrl = error?.ImageUrl,
+                        ChapterUrl = error?.ChapterUrl
                     });
                 }
             }

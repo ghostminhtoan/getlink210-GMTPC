@@ -1279,7 +1279,7 @@ namespace get_link_manga
                                 rootTrace = $"Book: {item.Link}{Environment.NewLine}Error: {ex.Message}";
                             }
 
-                            item.AddError(chapterLabel, 0, rootTrace, rootTraceUrl);
+                            item.AddError(chapterLabel, 0, rootTrace, rootTraceUrl, rootTraceUrl);
                             RecordCheckError(item.SourceDomain ?? "general", item.Name, chapterLabel, 0, rootTrace, rootTraceUrl);
                         });
                     }
@@ -1818,7 +1818,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                                     _ = Dispatcher.BeginInvoke(new Action(() =>
                                     {
-                                        queueItem.AddError(string.Empty, pageNum, traceMessage, directUrl ?? pageUrl);
+                                        queueItem.AddError(string.Empty, pageNum, traceMessage, directUrl ?? pageUrl, item.Link);
                                     }));
                                     RecordCheckError(item.SourceDomain ?? "nhentai.xxx", item.Name, string.Empty, pageNum, traceMessage, directUrl ?? pageUrl);
                                 }
@@ -2997,7 +2997,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             return -1;
         }
 
-        private bool ValidateDownloadedFiles(string folderPath, int expectedCount, GalleryItem queueItem, string chapterName = "General", IDictionary<int, string> pageImageUrls = null)
+        private bool ValidateDownloadedFiles(string folderPath, int expectedCount, GalleryItem queueItem, string chapterName = "General", IDictionary<int, string> pageImageUrls = null, string chapterUrl = null)
         {
             if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
                 return false;
@@ -3037,7 +3037,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                             {
                                 string imageUrl = null;
                                 pageImageUrls?.TryGetValue(p, out imageUrl);
-                                queueItem.AddError(chapterName, p, "Trang bị thiếu (Missing page)", imageUrl);
+                                queueItem.AddError(chapterName, p, "Trang bị thiếu (Missing page)", imageUrl, chapterUrl);
                             }
                         });
                     }

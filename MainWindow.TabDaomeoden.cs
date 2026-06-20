@@ -812,7 +812,7 @@ namespace get_link_manga
                 var pageMap = imageUrls
                     .Select((url, index) => new { url, index })
                     .ToDictionary(x => x.index + 1, x => x.url);
-                return ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem ?? item, info.ChapterTitle, pageMap);
+                return ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem ?? item, info.ChapterTitle, pageMap, chapterUrl: item.Link);
             }
             finally
             {

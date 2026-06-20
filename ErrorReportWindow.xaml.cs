@@ -48,7 +48,8 @@ namespace get_link_manga
                 ChapterName = error?.ChapterName ?? "N/A",
                 PageNumber = error?.PageNumber ?? 0,
                 ErrorMessage = localizedMsg,
-                ImageUrl = error?.ImageUrl
+                ImageUrl = error?.ImageUrl,
+                ChapterUrl = error?.ChapterUrl
             };
         }
 
@@ -167,5 +168,6 @@ namespace get_link_manga
         public int PageNumber { get; set; }
         public string ErrorMessage { get; set; }
         public string ImageUrl { get; set; }
+        public string ChapterUrl { get; set; }
     }
 }

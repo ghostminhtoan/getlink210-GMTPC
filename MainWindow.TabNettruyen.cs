@@ -1271,7 +1271,8 @@ namespace get_link_manga
                         imgUrl.Contains("/images/favicon") ||
                         imgUrl.Contains("facebook.com") ||
                         imgUrl.Contains("banner") ||
-                        imgUrl.Contains("advertisement"))
+                        imgUrl.Contains("advertisement") ||
+                        imgUrl.Contains("nettruyenviet.webp"))
                     {
                         continue;
                     }
@@ -1392,7 +1393,7 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl);
+                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl, item.Link);
                                         RecordCheckError("nettruyen", queueItem.Name ?? cleanManga, cleanChapter, index + 1, ex.Message, imgUrl);
                                     }
                                     Log($"[nettruyen] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");

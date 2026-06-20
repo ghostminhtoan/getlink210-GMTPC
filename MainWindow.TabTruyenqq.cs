@@ -1291,7 +1291,7 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl);
+                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl, item.Link);
                                         RecordCheckError("truyenqq", queueItem.Name ?? cleanManga, cleanChapter, index + 1, ex.Message, imgUrl);
                                     }
                                     Log($"[truyenqq] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");
@@ -1352,7 +1352,7 @@ namespace get_link_manga
             var pageImageUrls = imageUrls
                 .Select((url, index) => new { Page = index + 1, Url = url })
                 .ToDictionary(x => x.Page, x => x.Url);
-            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageImageUrls);
+            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageImageUrls, chapterUrl: item.Link);
         }
 
         private List<string> ExtractTruyenqqImageUrls(string contentArea, string pageUrl)
