@@ -343,7 +343,7 @@ namespace get_link_manga
             win.Show();
         }
 
-        private async Task ImportHentaieraDirectLinksAsync(System.Collections.Generic.List<string> links)
+        private async Task ImportHentaieraDirectLinksAsync(System.Collections.Generic.List<string> links, bool showMessageBox = true)
         {
             btnHentaieraScrape.IsEnabled = false;
             btnHentaieraFetchInfo.IsEnabled = false;
@@ -466,7 +466,10 @@ namespace get_link_manga
                 HentaieraLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (showMessageBox)
+                {
+                    MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             finally
             {

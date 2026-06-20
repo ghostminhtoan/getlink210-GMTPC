@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -292,10 +292,10 @@ namespace get_link_manga
 
         private void BtnViHentaiPasteDirect_Click(object sender, RoutedEventArgs e)
         {
-            _ = PasteDirectLinksFromClipboardAsync(ImportViHentaiDirectLinksAsync, "Vi-hentai direct paste: no valid links found in clipboard.");
+            _ = PasteDirectLinksFromClipboardAsync(links => ImportViHentaiDirectLinksAsync(links, showMessageBox: true), "Vi-hentai direct paste: no valid links found in clipboard.");
         }
 
-        private Task ImportViHentaiDirectLinksAsync(System.Collections.Generic.List<string> links)
+        private Task ImportViHentaiDirectLinksAsync(System.Collections.Generic.List<string> links, bool showMessageBox = true)
         {
             btnViHentaiScrape.IsEnabled = false;
             btnViHentaiFetchInfo.IsEnabled = false;
@@ -376,7 +376,10 @@ namespace get_link_manga
                 ViHentaiLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (showMessageBox)
+                {
+                    MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             finally
             {

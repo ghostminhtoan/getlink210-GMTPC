@@ -506,7 +506,7 @@ namespace get_link_manga
 
             foreach (string link in links)
             {
-                bool handled = await TryAppendSupportedDirectLinkAsync(link);
+                bool handled = await TryAppendSupportedDirectLinkAsync(link, showMessageBox: false);
                 if (handled)
                 {
                     ClearAppendCompletedStatus();

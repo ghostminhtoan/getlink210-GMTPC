@@ -193,7 +193,7 @@ namespace get_link_manga
 
             foreach (string link in links)
             {
-                bool handled = await TryAppendSupportedDirectLinkAsync(link);
+                bool handled = await TryAppendSupportedDirectLinkAsync(link, showMessageBox: false);
                 if (handled)
                 {
                     ClearAppendCompletedStatus();
@@ -219,7 +219,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task<bool> TryAppendSupportedDirectLinkAsync(string url)
+        private async Task<bool> TryAppendSupportedDirectLinkAsync(string url, bool showMessageBox = true)
         {
             if (string.IsNullOrWhiteSpace(url))
             {
@@ -244,7 +244,7 @@ namespace get_link_manga
             {
                 if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 0;
                 if (tabManga != null) tabManga.SelectedIndex = 0;
-                await ImportTruyenqqDirectLinksAsync(new List<string> { url });
+                await ImportTruyenqqDirectLinksAsync(new List<string> { url }, showMessageBox);
                 return true;
             }
 
@@ -252,7 +252,7 @@ namespace get_link_manga
             {
                 if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 0;
                 if (tabManga != null) tabManga.SelectedIndex = 1;
-                await ImportNettruyenDirectLinksAsync(new List<string> { url });
+                await ImportNettruyenDirectLinksAsync(new List<string> { url }, showMessageBox);
                 return true;
             }
 
@@ -268,7 +268,7 @@ namespace get_link_manga
             {
                 if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 1;
                 if (tabHentai != null) tabHentai.SelectedIndex = 0;
-                await ImportViHentaiDirectLinksAsync(new List<string> { url });
+                await ImportViHentaiDirectLinksAsync(new List<string> { url }, showMessageBox);
                 return true;
             }
 
@@ -284,7 +284,7 @@ namespace get_link_manga
             {
                 if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 1;
                 SelectHentaiTabByHeader("hentaiforce");
-                await ImportDirectLinksAsync(new List<string> { url });
+                await ImportDirectLinksAsync(new List<string> { url }, showMessageBox);
                 return true;
             }
 
@@ -292,7 +292,7 @@ namespace get_link_manga
             {
                 if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 1;
                 SelectHentaiTabByHeader("nhentai");
-                await ImportNhentaiDirectLinksAsync(new List<string> { url });
+                await ImportNhentaiDirectLinksAsync(new List<string> { url }, showMessageBox);
                 return true;
             }
 
@@ -308,7 +308,7 @@ namespace get_link_manga
             {
                 if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 1;
                 SelectHentaiTabByHeader("hentaiera");
-                await ImportHentaieraDirectLinksAsync(new List<string> { url });
+                await ImportHentaieraDirectLinksAsync(new List<string> { url }, showMessageBox);
                 return true;
             }
 

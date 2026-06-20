@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -417,7 +417,7 @@ namespace get_link_manga
             win.Show();
         }
 
-        private async Task ImportDirectLinksAsync(System.Collections.Generic.List<string> links)
+        private async Task ImportDirectLinksAsync(System.Collections.Generic.List<string> links, bool showMessageBox = true)
         {
             btnScrape.IsEnabled = false;
             btnFetchInfo.IsEnabled = false;
@@ -503,8 +503,10 @@ namespace get_link_manga
 
                 Log($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}. Tổng số liên kết hiện tại: {_scrapedItems.Count}");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
-                
-                MessageBox.Show($"Đã nhập thành công {total} đường dẫn vào bảng Extracted Gallery Links!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (showMessageBox)
+                {
+                    MessageBox.Show($"Đã nhập thành công {total} đường dẫn vào bảng Extracted Gallery Links!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             finally
             {

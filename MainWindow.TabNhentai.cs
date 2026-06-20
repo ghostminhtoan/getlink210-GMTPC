@@ -455,7 +455,7 @@ namespace get_link_manga
             win.Show();
         }
 
-        private async Task ImportNhentaiDirectLinksAsync(System.Collections.Generic.List<string> links)
+        private async Task ImportNhentaiDirectLinksAsync(System.Collections.Generic.List<string> links, bool showMessageBox = true)
         {
             btnNhentaiScrape.IsEnabled = false;
             btnNhentaiFetchInfo.IsEnabled = false;
@@ -585,7 +585,10 @@ namespace get_link_manga
                 Log($"[Import nhentai] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}. Tổng số liên kết hiện tại: {_scrapedItems.Count}");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"Đã nhập thành công {total} đường dẫn vào bảng Extracted Gallery Links!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (showMessageBox)
+                {
+                    MessageBox.Show($"Đã nhập thành công {total} đường dẫn vào bảng Extracted Gallery Links!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             finally
             {

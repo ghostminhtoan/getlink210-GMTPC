@@ -648,7 +648,7 @@ namespace get_link_manga
             win.Show();
         }
 
-        private async Task ImportNettruyenDirectLinksAsync(List<string> links)
+        private async Task ImportNettruyenDirectLinksAsync(List<string> links, bool showMessageBox = true)
         {
             btnNettruyenScrape.IsEnabled = false;
             btnNettruyenFetchInfo.IsEnabled = false;
@@ -749,7 +749,10 @@ namespace get_link_manga
                 NettruyenLog($"[Import] Nhập hoàn tất! Thành công: {imported}, Lỗi/Fallback: {failed}.");
                 lblStatus.Text = $"Import completed. Success: {imported}, Failed: {failed}.";
                 
-                MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (showMessageBox)
+                {
+                    MessageBox.Show($"Đã nhập thành công {total} đường dẫn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             finally
             {
