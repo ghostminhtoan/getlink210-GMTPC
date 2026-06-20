@@ -793,6 +793,12 @@ namespace get_link_manga
                     Directory.CreateDirectory(targetFolder);
                     File.WriteAllText(Path.Combine(targetFolder, "info.txt"), $"Truyện '{item.Name}' ({item.Link}) không có chương nào.");
                     Log($"[vi-hentai.pro] Truyện '{item.Name}' không có chương nào. Đã phân loại vào thư mục .missing.");
+                    
+                    Dispatcher.Invoke(() =>
+                    {
+                        item.AddError("Không có chương", 0, "Truyện chưa có chương nào trên site", item.Link, item.Link);
+                        RecordCheckError(item.SourceDomain ?? "vi-hentai.pro", item.Name, "Không có chương", 0, "Truyện chưa có chương nào trên site", item.Link);
+                    });
                     return;
                 }
 
