@@ -104,6 +104,35 @@ namespace get_link_manga
                 return;
             }
 
+            if (e.Key == Key.Enter)
+            {
+                if (_currentSection == AppSection.Download)
+                {
+                    var focusedElement = FocusManager.GetFocusedElement(this);
+                    if (focusedElement is System.Windows.Controls.TextBox)
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        if (Clipboard.ContainsText())
+                        {
+                            string text = Clipboard.GetText()?.Trim();
+                            if (!string.IsNullOrWhiteSpace(text))
+                            {
+                                AppendSupportedInputLinks(text);
+                                e.Handled = true;
+                                return;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
             if ((Keyboard.Modifiers & ModifierKeys.Control) != ModifierKeys.Control)
             {
                 return;
