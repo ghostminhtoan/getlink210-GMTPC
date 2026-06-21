@@ -1288,7 +1288,8 @@ namespace get_link_manga
                         imgUrl.Contains("facebook.com") ||
                         imgUrl.Contains("banner") ||
                         imgUrl.Contains("advertisement") ||
-                        imgUrl.Contains("nettruyenviet.webp"))
+                        imgUrl.Contains("nettruyenviet.webp") ||
+                        Regex.IsMatch(imgUrl, @"/0{1,3}\.(jpg|jpeg|png|webp|gif|bmp)$", RegexOptions.IgnoreCase))
                     {
                         continue;
                     }
