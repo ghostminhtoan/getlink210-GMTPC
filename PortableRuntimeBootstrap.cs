@@ -88,10 +88,59 @@ namespace get_link_manga
 
             try
             {
-                Directory.Delete(path, true);
+                DeleteDirectoryRecursive(path);
             }
             catch
             {
+            }
+        }
+
+        private static void DeleteDirectoryRecursive(string path)
+        {
+            foreach (string file in Directory.GetFiles(path))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch
+                {
+                    try
+                    {
+                        string tempDir = Path.Combine(PortablePaths.AppRoot, "root", ".tmp");
+                        Directory.CreateDirectory(tempDir);
+                        string tempPath = Path.Combine(tempDir, Guid.NewGuid().ToString() + ".bak");
+                        File.Move(file, tempPath);
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            File.Move(file, file + "." + Guid.NewGuid().ToString() + ".bak");
+                        }
+                        catch { }
+                    }
+                }
+            }
+
+            foreach (string dir in Directory.GetDirectories(path))
+            {
+                DeleteDirectoryRecursive(dir);
+            }
+
+            try
+            {
+                Directory.Delete(path, false);
+            }
+            catch
+            {
+                try
+                {
+                    string tempDir = Path.Combine(PortablePaths.AppRoot, "root", ".tmp");
+                    Directory.CreateDirectory(tempDir);
+                    Directory.Move(path, Path.Combine(tempDir, Guid.NewGuid().ToString() + "_dir.bak"));
+                }
+                catch { }
             }
         }
     }

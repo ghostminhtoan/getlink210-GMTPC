@@ -3,6 +3,7 @@
 ## 2026-06-21
 - feat(archive): delete incomplete archive file if compression is cancelled or fails
 - feat(captcha): delete the entire runtimes folder during cookie reset instead of selectively deleting directories
+- fix(captcha): move locked runtimes files/folders to tmp folder to allow full deletion during reset
 
 ## 2026-06-20
 - fix(ui): prevent selection bubbling from inner controls and allow infinite window dimensions when maximized
