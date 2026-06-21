@@ -33,6 +33,8 @@ namespace get_link_manga
         private DateTime _challengeDetectedAt = DateTime.MinValue;
         public bool BypassWasNeeded { get; private set; }
         public double WindowElapsedSeconds => (DateTime.Now - _windowOpenedAt).TotalSeconds;
+        private bool _userInteracted = false;
+        private bool _isSendingBypassKeys = false;
 
         public CaptchaWindow(string targetUrl, CaptchaType captchaType, bool autoDeleteCookiesOnLoad = false, bool headlessAutomation = false)
         {
@@ -62,6 +64,24 @@ namespace get_link_manga
                 this.Title = GetCaptchaWindowTitlePrefix();
             }
             Loaded += CaptchaWindow_Loaded;
+            PreviewMouseDown += Window_PreviewMouseDown;
+            PreviewKeyDown += Window_PreviewKeyDown;
+        }
+
+        private void Window_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (!_isSendingBypassKeys)
+            {
+                _userInteracted = true;
+            }
+        }
+
+        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (!_isSendingBypassKeys)
+            {
+                _userInteracted = true;
+            }
         }
 
         public Task<bool> ShowNonBlockingAsync()
@@ -211,35 +231,43 @@ namespace get_link_manga
 
         private async Task SendCaptchaKeyboardBypassAsync(string url)
         {
-            await Dispatcher.InvokeAsync(() =>
+            _isSendingBypassKeys = true;
+            try
             {
-                try
+                await Dispatcher.InvokeAsync(() =>
                 {
-                    this.Activate();
-                    webView.Focus();
-                    System.Windows.Input.Keyboard.Focus(webView);
-                }
-                catch
-                {
-                }
-            });
-            await Task.Delay(300);
+                    try
+                    {
+                        this.Activate();
+                        webView.Focus();
+                        System.Windows.Input.Keyboard.Focus(webView);
+                    }
+                    catch
+                    {
+                    }
+                });
+                await Task.Delay(300);
 
-            string findKeyword = GetCaptchaFindKeyword(url);
+                string findKeyword = GetCaptchaFindKeyword(url);
 
-            System.Windows.Forms.SendKeys.SendWait("^f");
-            await Task.Delay(500);
+                System.Windows.Forms.SendKeys.SendWait("^f");
+                await Task.Delay(500);
 
-            System.Windows.Forms.SendKeys.SendWait(findKeyword);
-            await Task.Delay(500);
+                System.Windows.Forms.SendKeys.SendWait(findKeyword);
+                await Task.Delay(500);
 
-            System.Windows.Forms.SendKeys.SendWait("{ESCAPE}");
-            await Task.Delay(300);
+                System.Windows.Forms.SendKeys.SendWait("{ESCAPE}");
+                await Task.Delay(300);
 
-            System.Windows.Forms.SendKeys.SendWait("+{TAB}");
-            await Task.Delay(300);
+                System.Windows.Forms.SendKeys.SendWait("+{TAB}");
+                await Task.Delay(300);
 
-            System.Windows.Forms.SendKeys.SendWait(" ");
+                System.Windows.Forms.SendKeys.SendWait(" ");
+            }
+            finally
+            {
+                _isSendingBypassKeys = false;
+            }
         }
 
         private async Task<bool> PageContainsKeywordAsync(string keyword)
@@ -532,7 +560,7 @@ namespace get_link_manga
                             shouldAttempt = true;
                         }
 
-                        if (shouldAttempt)
+                        if (shouldAttempt && !_userInteracted)
                         {
                             // Tìm từ khóa trong DOM bằng JS sạch thay vì Ctrl+F của trình duyệt
                             bool containsChallengeText = await PageContainsKeywordAsync("human") || 
@@ -541,7 +569,7 @@ namespace get_link_manga
                                                          await PageContainsKeywordAsync("verify") ||
                                                          await PageContainsKeywordAsync("xác minh") ||
                                                          await PageContainsKeywordAsync("robot");
-                            if (containsChallengeText)
+                            if (containsChallengeText && !_userInteracted)
                             {
                                 BypassWasNeeded = true;
                                 _lastCaptchaKeyboardAttempt = DateTime.Now;
