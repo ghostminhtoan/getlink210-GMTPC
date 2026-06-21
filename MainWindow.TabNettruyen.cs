@@ -835,7 +835,11 @@ namespace get_link_manga
 
                 // Try to find story/comic ID to fetch full chapter list from AJAX service
                 string storyId = null;
-                var idMatch = Regex.Match(html, @"id=[""'](?:story_id|storyId|comicId)[""'][^>]*value=[""'\s]?(?<id>\d+)[""'\s]?", RegexOptions.IgnoreCase);
+                var idMatch = Regex.Match(html, @"gOpts\.comicId\s*=\s*['""]?(?<id>\d+)['""]?", RegexOptions.IgnoreCase);
+                if (!idMatch.Success)
+                {
+                    idMatch = Regex.Match(html, @"id=[""'](?:story_id|storyId|comicId)[""'][^>]*value=[""'\s]?(?<id>\d+)[""'\s]?", RegexOptions.IgnoreCase);
+                }
                 if (!idMatch.Success)
                 {
                     idMatch = Regex.Match(html, @"value=[""'\s]?(?<id>\d+)[""'\s]?[^>]*id=[""'](?:story_id|storyId|comicId)[""']", RegexOptions.IgnoreCase);

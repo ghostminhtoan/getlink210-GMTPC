@@ -397,16 +397,16 @@ namespace get_link_manga
                                          }
                                          
                                          // Prioritize the correct chapter-list view-more button
-                                         var xemThem = document.querySelector('.list-chapter .view-more') || 
-                                                       document.querySelector('#nt_listchapter .view-more') ||
-                                                       document.querySelector('.view-more:not(.morelink)');
+                                         var xemThem = document.querySelector('.list-chapter .view-more:not(.hidden)') || 
+                                                       document.querySelector('#nt_listchapter .view-more:not(.hidden)') ||
+                                                       document.querySelector('.view-more:not(.morelink):not(.hidden)');
                                          
                                          if (!xemThem) {
                                              var allEls = document.querySelectorAll('a, button, span, div');
                                              for (var i = 0; i < allEls.length; i++) {
                                                  var el = allEls[i];
                                                  // Exclude description expand links
-                                                 if (el.classList.contains('morelink') || el.closest('.shortened') || el.closest('.detail-content')) {
+                                                 if (el.classList.contains('morelink') || el.closest('.shortened') || el.closest('.detail-content') || el.classList.contains('hidden')) {
                                                      continue;
                                                  }
                                                  var txt = (el.textContent || '').trim();
@@ -732,7 +732,12 @@ namespace get_link_manga
             {
                 value = value.Substring(1, value.Length - 2);
             }
-            return value.Replace("\\\"", "\"").Replace("\\\\", "\\");
+            try
+            {
+                value = System.Text.RegularExpressions.Regex.Unescape(value);
+            }
+            catch {}
+            return value;
         }
     }
 }
