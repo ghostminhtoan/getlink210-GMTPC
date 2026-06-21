@@ -284,10 +284,8 @@ namespace get_link_manga
                 {
                     await await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(requestUrl, autoDeleteCookiesOnLoad: true, headlessAutomation: headlessAutomation)
-                        {
-                            Owner = this
-                        };
+                        var captchaWin = CreateCaptchaWindow(requestUrl, autoDeleteCookiesOnLoad: true, headlessAutomation: headlessAutomation);
+                        captchaWin.Owner = this;
 
                         if (await captchaWin.ShowNonBlockingAsync())
                         {
@@ -367,10 +365,8 @@ namespace get_link_manga
                 {
                     await await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled)
-                        {
-                            Owner = this
-                        };
+                        var captchaWin = CreateCaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled);
+                        captchaWin.Owner = this;
 
                         if (await captchaWin.ShowNonBlockingAsync())
                         {

@@ -8,6 +8,13 @@ using Microsoft.Web.WebView2.Wpf;
 
 namespace get_link_manga
 {
+    public enum CaptchaType
+    {
+        General,
+        Special,
+        WatchMore
+    }
+
     public partial class CaptchaWindow : Window
     {
         private readonly WebView2 webView = new WebView2();
@@ -17,6 +24,7 @@ namespace get_link_manga
         public string ResolvedHtml { get; private set; }
         public bool WasCompleted { get; private set; }
         private readonly string _targetUrl;
+        private readonly CaptchaType _captchaType;
         private readonly bool _autoDeleteCookiesOnLoad;
         private readonly bool _headlessAutomation;
         private readonly DateTime _windowOpenedAt = DateTime.Now;
@@ -26,7 +34,7 @@ namespace get_link_manga
         public bool BypassWasNeeded { get; private set; }
         public double WindowElapsedSeconds => (DateTime.Now - _windowOpenedAt).TotalSeconds;
 
-        public CaptchaWindow(string targetUrl, bool autoDeleteCookiesOnLoad = false, bool headlessAutomation = false)
+        public CaptchaWindow(string targetUrl, CaptchaType captchaType, bool autoDeleteCookiesOnLoad = false, bool headlessAutomation = false)
         {
             InitializeComponent();
             if (webViewHost != null)
@@ -34,6 +42,7 @@ namespace get_link_manga
                 webViewHost.Children.Add(webView);
             }
             _targetUrl = targetUrl;
+            _captchaType = captchaType;
             _autoDeleteCookiesOnLoad = autoDeleteCookiesOnLoad;
             _headlessAutomation = headlessAutomation;
             ApplyLanguage(GetIsVietnameseUiEnabled());
@@ -371,7 +380,7 @@ namespace get_link_manga
                         if (!title.Contains("Just a moment") && !title.Contains("Cloudflare"))
                         {
                             bool shouldDelay = false;
-                            if (IsNettruyenUrl(url))
+                            if (_captchaType == CaptchaType.WatchMore)
                             {
                                 // Find and click "Xem thêm" by text content (CSS selectors are unreliable across nettruyen domains)
                                 string processChaptersJs = @"

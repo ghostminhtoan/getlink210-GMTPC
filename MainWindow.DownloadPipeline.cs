@@ -443,10 +443,8 @@ namespace get_link_manga
             BrowserSessionSnapshot snapshot = null;
             await await Dispatcher.InvokeAsync(async () =>
             {
-                var captchaWin = new CaptchaWindow(url, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled)
-                {
-                    Owner = this
-                };
+                var captchaWin = CreateCaptchaWindow(url, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled);
+                captchaWin.Owner = this;
 
                 if (await captchaWin.ShowNonBlockingAsync())
                 {

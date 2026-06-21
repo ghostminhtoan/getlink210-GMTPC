@@ -107,10 +107,8 @@ namespace get_link_manga
                 {
                     await await Dispatcher.InvokeAsync(async () =>
                     {
-                        var captchaWin = new CaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled)
-                        {
-                            Owner = this
-                        };
+                        var captchaWin = CreateCaptchaWindow(testUrl, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled);
+                        captchaWin.Owner = this;
 
                         if (await captchaWin.ShowNonBlockingAsync())
                         {
@@ -278,11 +276,9 @@ namespace get_link_manga
             {
                 await await Dispatcher.InvokeAsync(async () =>
                 {
-                    var captchaWin = new CaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled)
-                    {
-                        Owner = this,
-                        Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ..."
-                    };
+                    var captchaWin = CreateCaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled);
+                    captchaWin.Owner = this;
+                    captchaWin.Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ...";
 
                     if (await captchaWin.ShowNonBlockingAsync() && !string.IsNullOrEmpty(captchaWin.ResolvedHtml))
                     {

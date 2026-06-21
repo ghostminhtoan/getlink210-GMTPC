@@ -38,10 +38,8 @@ namespace get_link_manga
 
             ResetCookiesForCaptcha(url);
 
-            var captchaWin = new CaptchaWindow(url, autoDeleteCookiesOnLoad: true)
-            {
-                Owner = this
-            };
+            var captchaWin = CreateCaptchaWindow(url, autoDeleteCookiesOnLoad: true);
+            captchaWin.Owner = this;
 
             if (await captchaWin.ShowNonBlockingAsync())
             {
@@ -102,10 +100,8 @@ namespace get_link_manga
 
             await await Dispatcher.InvokeAsync(async () =>
             {
-                var captchaWin = new CaptchaWindow(url, autoDeleteCookiesOnLoad: true)
-                {
-                    Owner = this
-                };
+                var captchaWin = CreateCaptchaWindow(url, autoDeleteCookiesOnLoad: true);
+                captchaWin.Owner = this;
 
                 if (await captchaWin.ShowNonBlockingAsync())
                 {
@@ -184,6 +180,19 @@ namespace get_link_manga
             {
                 ShowError($"Lỗi lưu cookie: {ex.Message}", "Lỗi");
             }
+        }
+
+        public CaptchaWindow CreateCaptchaWindow(string url, bool autoDeleteCookiesOnLoad = true, bool headlessAutomation = false)
+        {
+            if (IsWatchMoreDomain(url))
+            {
+                return CreateWatchMoreCaptcha(url, autoDeleteCookiesOnLoad, headlessAutomation);
+            }
+            if (IsSpecialDomain(url))
+            {
+                return CreateSpecialCaptcha(url, autoDeleteCookiesOnLoad, headlessAutomation);
+            }
+            return CreateGeneralCaptcha(url, autoDeleteCookiesOnLoad, headlessAutomation);
         }
     }
 }
