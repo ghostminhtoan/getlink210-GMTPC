@@ -276,7 +276,7 @@ namespace get_link_manga
             {
                 await await Dispatcher.InvokeAsync(async () =>
                 {
-                    var captchaWin = CreateCaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: true, headlessAutomation: _lightNovelAutoFocusEnabled);
+                    var captchaWin = CreateCaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: false, headlessAutomation: _lightNovelAutoFocusEnabled);
                     captchaWin.Owner = this;
                     captchaWin.Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ...";
 

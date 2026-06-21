@@ -223,11 +223,22 @@ namespace get_link_manga
                 {
                 }
             });
-            await Task.Delay(200);
+            await Task.Delay(300);
 
-            // Gửi tổ hợp phím giả lập Tab và Space trực tiếp vào WebView2
-            System.Windows.Forms.SendKeys.SendWait("{TAB}");
-            await Task.Delay(100);
+            string findKeyword = GetCaptchaFindKeyword(url);
+
+            System.Windows.Forms.SendKeys.SendWait("^f");
+            await Task.Delay(500);
+
+            System.Windows.Forms.SendKeys.SendWait(findKeyword);
+            await Task.Delay(500);
+
+            System.Windows.Forms.SendKeys.SendWait("{ESCAPE}");
+            await Task.Delay(300);
+
+            System.Windows.Forms.SendKeys.SendWait("+{TAB}");
+            await Task.Delay(300);
+
             System.Windows.Forms.SendKeys.SendWait(" ");
         }
 

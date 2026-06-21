@@ -5,7 +5,8 @@
 - feat(captcha): delete the entire runtimes folder during cookie reset instead of selectively deleting directories
 - fix(captcha): move locked runtimes files/folders to tmp folder to allow full deletion during reset
 - feat(captcha): refactor captcha into General, Special, and WatchMore types
-- fix(captcha): optimize key simulation turnstile bypass by scanning DOM and simulating simple Tab+Space sequence
+- fix(captcha): restore Ctrl+F keys search sequence in CaptchaWindow to guarantee precise Turnstile checkbox focus
+- fix(captcha): preserve cookies during Nettruyen chapter expansion by setting autoDeleteCookiesOnLoad to false to prevent captcha spam
 
 ## 2026-06-20
 - fix(ui): prevent selection bubbling from inner controls and allow infinite window dimensions when maximized
