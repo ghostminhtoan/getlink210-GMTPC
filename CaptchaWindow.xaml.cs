@@ -196,12 +196,12 @@ namespace get_link_manga
 
         private double GetInitialCaptchaAttemptDelaySeconds(string url)
         {
-            return 12.0;
+            return 5.0; // Giảm xuống 5 giây để bắt đầu bypass nhanh hơn
         }
 
         private double GetRepeatCaptchaAttemptDelaySeconds(string url)
         {
-            return ShouldUseVerifyFindSequence(url) ? 12.0 : 5.0;
+            return 4.0; // Lặp lại mỗi 4 giây
         }
 
         private string GetCaptchaFindKeyword(string url)
@@ -223,22 +223,11 @@ namespace get_link_manga
                 {
                 }
             });
-            await Task.Delay(300);
+            await Task.Delay(200);
 
-            string findKeyword = GetCaptchaFindKeyword(url);
-
-            System.Windows.Forms.SendKeys.SendWait("^f");
-            await Task.Delay(500);
-
-            System.Windows.Forms.SendKeys.SendWait(findKeyword);
-            await Task.Delay(500);
-
-            System.Windows.Forms.SendKeys.SendWait("{ESCAPE}");
-            await Task.Delay(300);
-
-            System.Windows.Forms.SendKeys.SendWait("+{TAB}");
-            await Task.Delay(300);
-
+            // Gửi tổ hợp phím giả lập Tab và Space trực tiếp vào WebView2
+            System.Windows.Forms.SendKeys.SendWait("{TAB}");
+            await Task.Delay(100);
             System.Windows.Forms.SendKeys.SendWait(" ");
         }
 
@@ -534,8 +523,14 @@ namespace get_link_manga
 
                         if (shouldAttempt)
                         {
-                            string keyword = GetCaptchaFindKeyword(url);
-                            if (await PageContainsKeywordAsync(keyword))
+                            // Tìm từ khóa trong DOM bằng JS sạch thay vì Ctrl+F của trình duyệt
+                            bool containsChallengeText = await PageContainsKeywordAsync("human") || 
+                                                         await PageContainsKeywordAsync("con người") ||
+                                                         await PageContainsKeywordAsync("con nguoi") ||
+                                                         await PageContainsKeywordAsync("verify") ||
+                                                         await PageContainsKeywordAsync("xác minh") ||
+                                                         await PageContainsKeywordAsync("robot");
+                            if (containsChallengeText)
                             {
                                 BypassWasNeeded = true;
                                 _lastCaptchaKeyboardAttempt = DateTime.Now;

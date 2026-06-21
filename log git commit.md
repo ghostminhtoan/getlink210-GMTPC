@@ -5,6 +5,7 @@
 - feat(captcha): delete the entire runtimes folder during cookie reset instead of selectively deleting directories
 - fix(captcha): move locked runtimes files/folders to tmp folder to allow full deletion during reset
 - feat(captcha): refactor captcha into General, Special, and WatchMore types
+- fix(captcha): optimize key simulation turnstile bypass by scanning DOM and simulating simple Tab+Space sequence
 
 ## 2026-06-20
 - fix(ui): prevent selection bubbling from inner controls and allow infinite window dimensions when maximized
