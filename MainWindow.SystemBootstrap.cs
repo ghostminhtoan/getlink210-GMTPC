@@ -37,6 +37,18 @@ namespace get_link_manga
         private int _currentMaxParallelBooks = 2;
         private DynamicSemaphore _activeBookSemaphore;
 
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        private const int HOTKEY_ID = 9000;
+        private const uint MOD_CONTROL = 0x0002;
+        private const uint VK_1 = 0x31;
+        private const int WM_HOTKEY = 0x0312;
+        private System.Windows.Interop.HwndSource _hwndSource;
+
         static MainWindow()
         {
             InitializeHttpClientState();
@@ -107,7 +119,34 @@ namespace get_link_manga
                 DisposeLightNovelFocusTrayIcon();
                 _lightNovelFloatingControlWindow?.Close();
                 SaveActiveGalleryListSnapshot();
+
+                if (_hwndSource != null)
+                {
+                    IntPtr handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                    UnregisterHotKey(handle, HOTKEY_ID);
+                    _hwndSource.RemoveHook(HwndHook);
+                    _hwndSource = null;
+                }
             };
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            IntPtr handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            _hwndSource = System.Windows.Interop.HwndSource.FromHwnd(handle);
+            _hwndSource?.AddHook(HwndHook);
+            RegisterHotKey(handle, HOTKEY_ID, MOD_CONTROL, VK_1);
+        }
+
+        private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == WM_HOTKEY && wParam.ToInt32() == HOTKEY_ID)
+            {
+                BtnShowLightNovelFloatButton_Click(null, null);
+                handled = true;
+            }
+            return IntPtr.Zero;
         }
 
         private static void InitializeHttpClientState()
