@@ -765,6 +765,7 @@ namespace get_link_manga
             string activeDomain = ExtractNettruyenBaseUrl(cleanLink);
 
             var uri = new Uri(cleanLink);
+            string parentPath = uri.AbsolutePath.TrimEnd('/');
             var segments = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
             // Detail Page segment pattern: /truyen-tranh/{slug}
@@ -879,9 +880,17 @@ namespace get_link_manga
                                         string unescapedHtml = NormalizeNettruyenHtml(Regex.Unescape(dMatch.Groups["htmlContent"].Value));
                                         if (!string.IsNullOrWhiteSpace(unescapedHtml) && unescapedHtml.Length > 100)
                                         {
-                                            chapterListHtml = unescapedHtml;
-                                            Log($"[nettruyen] Tải thành công danh sách toàn bộ chương qua ProcessChapterList (ID: {storyId}).");
-                                            loadedChapters = true;
+                                            var tempLinks = ExtractNettruyenChapterLinks(unescapedHtml, activeDomain, parentPath);
+                                            if (tempLinks.Count > 0)
+                                            {
+                                                chapterListHtml = unescapedHtml;
+                                                Log($"[nettruyen] Tải thành công danh sách toàn bộ chương qua ProcessChapterList (ID: {storyId}).");
+                                                loadedChapters = true;
+                                            }
+                                            else
+                                            {
+                                                Log($"[nettruyen] ProcessChapterList trả về HTML không chứa chương nào. Bỏ qua.");
+                                            }
                                         }
                                     }
                                 }
@@ -915,9 +924,17 @@ namespace get_link_manga
                                             string unescapedHtml = NormalizeNettruyenHtml(Regex.Unescape(dMatch.Groups["htmlContent"].Value));
                                             if (!string.IsNullOrWhiteSpace(unescapedHtml))
                                             {
-                                                chapterListHtml = unescapedHtml;
-                                                Log($"[nettruyen] Tải thành công danh sách toàn bộ chương qua GetListChapter (ID: {storyId}).");
-                                                loadedChapters = true;
+                                                var tempLinks = ExtractNettruyenChapterLinks(unescapedHtml, activeDomain, parentPath);
+                                                if (tempLinks.Count > 0)
+                                                {
+                                                    chapterListHtml = unescapedHtml;
+                                                    Log($"[nettruyen] Tải thành công danh sách toàn bộ chương qua GetListChapter (ID: {storyId}).");
+                                                    loadedChapters = true;
+                                                }
+                                                else
+                                                {
+                                                    Log($"[nettruyen] GetListChapter trả về HTML không chứa chương nào. Bỏ qua.");
+                                                }
                                             }
                                         }
                                     }
@@ -946,7 +963,6 @@ namespace get_link_manga
                     }
                 }
 
-                string parentPath = uri.AbsolutePath.TrimEnd('/');
                 var chapterLinks = ExtractNettruyenChapterLinks(chapterListHtml, activeDomain, parentPath);
 
                 // If AJAX succeeded but page originally had "Xem thêm", verify AJAX returned more chapters than visible HTML
@@ -1309,6 +1325,7 @@ namespace get_link_manga
                 {
                     queueItem.TotalChapters = imageUrls.Count;
                     queueItem.CompletedChapters = 0;
+                    queueItem.DownloadingChapter = cleanChapter;
                 }));
             }
 
