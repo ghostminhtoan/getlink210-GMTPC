@@ -1295,8 +1295,8 @@ namespace get_link_manga
             bool wasMaximized = WindowState == WindowState.Maximized;
             if (wasMaximized)
             {
-                MaxWidth = double.PositiveInfinity;
-                MaxHeight = double.PositiveInfinity;
+                MaxWidth = workArea.Width;
+                MaxHeight = workArea.Height;
 
                 if (preserveWindowState)
                 {
