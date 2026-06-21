@@ -1419,7 +1419,8 @@ namespace get_link_manga
                 () => Dispatcher.BeginInvoke(new Action(() => BtnOpenLightNovelFolder_Click(this, new RoutedEventArgs()))),
                 () => Dispatcher.BeginInvoke(new Action(async () => await ResetActiveCaptchaFromFloatingAsync())),
                 () => Dispatcher.BeginInvoke(new Action(() => BtnClearTemp_Click(this, new RoutedEventArgs()))),
-                url => Dispatcher.BeginInvoke(new Action(() => AppendSupportedInputLinks(url))));
+                url => Dispatcher.BeginInvoke(new Action(() => AppendSupportedInputLinks(url))),
+                button => Dispatcher.BeginInvoke(new Action(() => ShowFolderTypeContextMenu(button))));
 
             _lightNovelFloatingControlWindow.Closed += (sender, args) =>
             {

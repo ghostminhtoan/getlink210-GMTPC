@@ -562,10 +562,13 @@ namespace get_link_manga
 
         internal async Task AutoMergeChapterFolderAsync(string unmergedPath, string mergedPath, CancellationToken token)
         {
-            if (string.IsNullOrWhiteSpace(unmergedPath) ||
-                string.IsNullOrWhiteSpace(mergedPath) ||
-                string.Equals(unmergedPath, mergedPath, StringComparison.OrdinalIgnoreCase) ||
-                !Directory.Exists(unmergedPath))
+            string source = _isSingleComicFolderType ? unmergedPath : mergedPath;
+            string dest = _isSingleComicFolderType ? mergedPath : unmergedPath;
+
+            if (string.IsNullOrWhiteSpace(source) ||
+                string.IsNullOrWhiteSpace(dest) ||
+                string.Equals(source, dest, StringComparison.OrdinalIgnoreCase) ||
+                !Directory.Exists(source))
             {
                 return;
             }
@@ -573,23 +576,23 @@ namespace get_link_manga
             await _folderStructureSemaphore.WaitAsync(token);
             try
             {
-                string mergedParent = Path.GetDirectoryName(mergedPath);
-                if (string.IsNullOrEmpty(mergedParent))
+                string destParent = Path.GetDirectoryName(dest);
+                if (string.IsNullOrEmpty(destParent))
                 {
                     return;
                 }
 
-                Directory.CreateDirectory(mergedParent);
-                if (Directory.Exists(mergedPath))
+                Directory.CreateDirectory(destParent);
+                if (Directory.Exists(dest))
                 {
-                    MergeDirectoryContents(unmergedPath, mergedPath);
+                    MergeDirectoryContents(source, dest);
                 }
                 else
                 {
-                    Directory.Move(unmergedPath, mergedPath);
+                    Directory.Move(source, dest);
                 }
 
-                Log($"[Auto Merge] Đã gộp tự động '{Path.GetFileName(unmergedPath)}' -> '{mergedPath}'");
+                Log($"[Auto Merge] Đã gộp tự động '{Path.GetFileName(source)}' -> '{dest}'");
             }
             finally
             {
