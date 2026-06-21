@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -74,11 +74,19 @@ namespace get_link_manga
             {
                 Log("[Archive] Người dùng đã hủy thao tác nén.");
                 lblStatus.Text = _isVietnameseUi ? "Đã hủy nén." : "Compression cancelled.";
+                if (File.Exists(archivePath))
+                {
+                    try { File.Delete(archivePath); } catch { }
+                }
             }
             catch (Exception ex)
             {
                 Log($"[Archive Error] Không thể nén sách: {ex.Message}");
                 lblStatus.Text = "Compress failed.";
+                if (File.Exists(archivePath))
+                {
+                    try { File.Delete(archivePath); } catch { }
+                }
                 MessageBox.Show($"Lỗi khi nén sách: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally

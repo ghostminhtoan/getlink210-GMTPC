@@ -38,37 +38,7 @@ namespace get_link_manga
 
         internal static void ResetPortableRuntimeStorage()
         {
-            TryDeleteDirectory(PortablePaths.WebView2UserDataFolder);
-
-            try
-            {
-                string runtimeRoot = PortablePaths.WebView2RuntimeRoot;
-                if (!Directory.Exists(runtimeRoot))
-                {
-                    return;
-                }
-
-                foreach (string directory in Directory.GetDirectories(runtimeRoot))
-                {
-                    if (string.Equals(directory, PortablePaths.WebView2UserDataFolder, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    string name = Path.GetFileName(directory);
-                    if (string.Equals(name, "win-x64", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(name, "win-x86", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(name, "win-arm64", StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    TryDeleteDirectory(directory);
-                }
-            }
-            catch
-            {
-            }
+            TryDeleteDirectory(PortablePaths.RuntimeRoot);
         }
 
         private static string GetRuntimeResourceName()
