@@ -1289,8 +1289,9 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl, item.Link);
-                                        RecordCheckError("truyenqq", queueItem.Name ?? cleanManga, cleanChapter, index + 1, ex.Message, imgUrl);
+                                        string pageName = Path.GetFileNameWithoutExtension(pageFilenames[index]);
+                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl, item.Link, pageName);
+                                        RecordCheckError("truyenqq", queueItem.Name ?? cleanManga, cleanChapter, index + 1, ex.Message, imgUrl, pageName);
                                     }
                                     Log($"[truyenqq] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");
                                 }

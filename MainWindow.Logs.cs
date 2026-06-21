@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -150,17 +150,18 @@ namespace get_link_manga
             AppendLogLineToDocument(rtb, text, isError);
         }
 
-        private static string BuildCheckErrorKey(string source, string bookName, string chapterName, int pageNumber, string errorMessage)
+        private static string BuildCheckErrorKey(string source, string bookName, string chapterName, int pageNumber, string errorMessage, string pageName = null)
         {
             return string.Join("||",
                 (source ?? string.Empty).Trim().ToUpperInvariant(),
                 (bookName ?? string.Empty).Trim().ToUpperInvariant(),
                 (chapterName ?? string.Empty).Trim().ToUpperInvariant(),
                 pageNumber.ToString(),
+                (pageName ?? string.Empty).Trim().ToUpperInvariant(),
                 (errorMessage ?? string.Empty).Trim().ToUpperInvariant());
         }
 
-        internal void RecordCheckError(string source, string bookName, string chapterName, int pageNumber, string errorMessage, string imageUrl = null)
+        internal void RecordCheckError(string source, string bookName, string chapterName, int pageNumber, string errorMessage, string imageUrl = null, string pageName = null)
         {
             if (string.IsNullOrWhiteSpace(errorMessage))
             {
@@ -172,7 +173,7 @@ namespace get_link_manga
                 string normalizedSource = string.IsNullOrWhiteSpace(source) ? "GENERAL" : source.Trim();
                 string normalizedBook = string.IsNullOrWhiteSpace(bookName) ? "-" : bookName.Trim();
                 string normalizedChapter = string.IsNullOrWhiteSpace(chapterName) ? "-" : chapterName.Trim();
-                string key = BuildCheckErrorKey(normalizedSource, normalizedBook, normalizedChapter, pageNumber, errorMessage);
+                string key = BuildCheckErrorKey(normalizedSource, normalizedBook, normalizedChapter, pageNumber, errorMessage, pageName);
 
                 if (_checkErrorIndex.TryGetValue(key, out CheckErrorItem existing))
                 {
@@ -199,6 +200,10 @@ namespace get_link_manga
                     {
                         existing.PageNumber = pageNumber;
                     }
+                    if (string.IsNullOrEmpty(existing.PageName) && !string.IsNullOrEmpty(pageName))
+                    {
+                        existing.PageName = pageName;
+                    }
                     return;
                 }
 
@@ -209,6 +214,7 @@ namespace get_link_manga
                     BookName = normalizedBook,
                     ChapterName = normalizedChapter,
                     PageNumber = pageNumber,
+                    PageName = pageName,
                     ErrorMessage = errorMessage.Trim(),
                     ImageUrl = imageUrl,
                     OccurrenceCount = 1

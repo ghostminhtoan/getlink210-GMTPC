@@ -1051,8 +1051,9 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl, chapterUrl);
-                                        RecordCheckError(Hentai2readSiteFolder, queueItem.Name ?? bookTitle, chapterTitle, index + 1, ex.Message, imgUrl);
+                                        string pageName = Path.GetFileNameWithoutExtension(pageFilenames[index]);
+                                        queueItem.AddError(chapterTitle, index + 1, ex.Message, imgUrl, chapterUrl, pageName);
+                                        RecordCheckError(Hentai2readSiteFolder, queueItem.Name ?? bookTitle, chapterTitle, index + 1, ex.Message, imgUrl, pageName);
                                     }
                                 }
                             }

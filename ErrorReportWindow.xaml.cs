@@ -46,7 +46,7 @@ namespace get_link_manga
                 ComicName = queueItem?.Name ?? "N/A",
                 ComicUrl = queueItem?.Link ?? string.Empty,
                 ChapterName = error?.ChapterName ?? "N/A",
-                PageNumber = error?.PageNumber ?? 0,
+                PageNumber = error != null && !string.IsNullOrEmpty(error.PageName) ? error.PageName : (error?.PageNumber ?? 0).ToString(),
                 ErrorMessage = localizedMsg,
                 ImageUrl = error?.ImageUrl,
                 ChapterUrl = error?.ChapterUrl
@@ -165,7 +165,7 @@ namespace get_link_manga
         public string ComicName { get; set; }
         public string ComicUrl { get; set; }
         public string ChapterName { get; set; }
-        public int PageNumber { get; set; }
+        public string PageNumber { get; set; }
         public string ErrorMessage { get; set; }
         public string ImageUrl { get; set; }
         public string ChapterUrl { get; set; }

@@ -11,13 +11,15 @@ namespace get_link_manga
     {
         public string ChapterName { get; set; }
         public int PageNumber { get; set; }
+        public string PageName { get; set; }
         public string ErrorMessage { get; set; }
         public string ImageUrl { get; set; }
         public string ChapterUrl { get; set; }
 
         public override string ToString()
         {
-            return $"{ChapterName}, Trang {PageNumber} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â  {ErrorMessage}";
+            string pageStr = !string.IsNullOrEmpty(PageName) ? PageName : PageNumber.ToString();
+            return $"{ChapterName}, Trang {pageStr} — {ErrorMessage}";
         }
     }
 
@@ -94,6 +96,22 @@ namespace get_link_manga
             }
         }
 
+        private string _pageName;
+        public string PageName
+        {
+            get => _pageName;
+            set
+            {
+                if (_pageName != value)
+                {
+                    _pageName = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(PageDisplay));
+                    OnPropertyChanged(nameof(DisplayBook));
+                }
+            }
+        }
+
         public string ErrorMessage
         {
             get => _errorMessage;
@@ -112,7 +130,7 @@ namespace get_link_manga
             set { if (_occurrenceCount != value) { _occurrenceCount = value; OnPropertyChanged(); } }
         }
 
-        public string PageDisplay => PageNumber > 0 ? PageNumber.ToString() : "-";
+        public string PageDisplay => !string.IsNullOrEmpty(PageName) ? PageName : (PageNumber > 0 ? PageNumber.ToString() : "-");
 
         public string DisplayBook
         {
@@ -130,9 +148,10 @@ namespace get_link_manga
                     parts.Add(ChapterName.Trim());
                 }
 
-                if (PageNumber > 0)
+                string pageStr = !string.IsNullOrEmpty(PageName) ? PageName : (PageNumber > 0 ? PageNumber.ToString() : null);
+                if (pageStr != null)
                 {
-                    parts.Add($"trang {PageNumber}");
+                    parts.Add($"trang {pageStr}");
                 }
 
                 return parts.Count == 0 ? "-" : string.Join(" - ", parts);
@@ -796,7 +815,7 @@ namespace get_link_manga
                    !string.Equals(CurrentProcess, "Done with errors", StringComparison.OrdinalIgnoreCase);
         }
 
-        public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null, string chapterUrl = null)
+        public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null, string chapterUrl = null, string pageName = null)
         {
             string domainVal = SourceDomain ?? "";
             if (string.IsNullOrEmpty(domainVal) && !string.IsNullOrEmpty(Link))
@@ -830,6 +849,10 @@ namespace get_link_manga
                 existing.ErrorMessage = errorMessage;
                 existing.ImageUrl = imageUrl;
                 existing.ChapterUrl = chapterUrl;
+                if (!string.IsNullOrEmpty(pageName))
+                {
+                    existing.PageName = pageName;
+                }
             }
             else
             {
@@ -837,6 +860,7 @@ namespace get_link_manga
                 {
                     ChapterName = chapterName,
                     PageNumber = pageNumber,
+                    PageName = pageName,
                     ErrorMessage = errorMessage,
                     ImageUrl = imageUrl,
                     ChapterUrl = chapterUrl

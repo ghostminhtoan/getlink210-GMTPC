@@ -100,6 +100,9 @@ namespace get_link_manga
 
             [DataMember(Order = 4)]
             public string ImageUrl { get; set; }
+
+            [DataMember(Order = 5)]
+            public string PageName { get; set; }
         }
 
         [DataContract]
@@ -636,6 +639,7 @@ namespace get_link_manga
                 {
                     ChapterName = error.ChapterName,
                     PageNumber = error.PageNumber,
+                    PageName = error.PageName,
                     ErrorMessage = error.ErrorMessage,
                     ImageUrl = error.ImageUrl
                 }).ToList()
@@ -761,6 +765,7 @@ namespace get_link_manga
                     {
                         ChapterName = error.ChapterName,
                         PageNumber = error.PageNumber,
+                        PageName = error.PageName,
                         ErrorMessage = error.ErrorMessage,
                         ImageUrl = error.ImageUrl
                     }).ToList()

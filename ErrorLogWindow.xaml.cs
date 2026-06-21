@@ -52,7 +52,7 @@ namespace get_link_manga
                         ComicName = comic.Name ?? "N/A",
                         ComicUrl = comic.Link ?? string.Empty,
                         ChapterName = error?.ChapterName ?? "N/A",
-                        PageNumber = error?.PageNumber ?? 0,
+                        PageNumber = error != null && !string.IsNullOrEmpty(error.PageName) ? error.PageName : (error?.PageNumber ?? 0).ToString(),
                         ErrorMessage = LocalizeErrorMessage(error?.ErrorMessage ?? "Unknown error", isVi),
                         ImageUrl = error?.ImageUrl,
                         ChapterUrl = error?.ChapterUrl

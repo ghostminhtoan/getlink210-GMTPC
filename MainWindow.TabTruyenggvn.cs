@@ -1206,8 +1206,9 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl, normalizedLink);
-                                        RecordCheckError("sayhentai", queueItem.Name ?? cleanManga, cleanChapter, index + 1, ex.Message, imgUrl);
+                                        string pageName = Path.GetFileNameWithoutExtension(pageFilenames[index]);
+                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl, normalizedLink, pageName);
+                                        RecordCheckError("sayhentai", queueItem.Name ?? cleanManga, cleanChapter, index + 1, ex.Message, imgUrl, pageName);
                                     }
                                 }
                             }
