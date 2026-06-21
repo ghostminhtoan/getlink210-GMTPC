@@ -110,6 +110,12 @@ namespace get_link_manga
         {
             [DataMember(Order = 1)]
             public Dictionary<string, string> CreateSubfolderByDomain { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            [DataMember(Order = 2)]
+            public int ConnectionCount { get; set; }
+
+            [DataMember(Order = 3)]
+            public int MultiDownloadCount { get; set; }
         }
 
         [DataContract]
@@ -599,7 +605,9 @@ namespace get_link_manga
             {
                 CreateSubfolderByDomain = _createSubfolderByDomain
                     .Where(pair => !string.IsNullOrWhiteSpace(pair.Key) && !string.IsNullOrWhiteSpace(pair.Value))
-                    .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
+                ConnectionCount = GetComboBoxSelectedInt(cmbConnections, 4),
+                MultiDownloadCount = GetComboBoxSelectedInt(cmbMultiDownload, 2)
             };
 
             var serializer = new DataContractJsonSerializer(typeof(GalleryMarkdownSettingsState));
@@ -913,6 +921,15 @@ namespace get_link_manga
                     if (_createSubfolderUiReady)
                     {
                         UpdateCreateSubfolderFieldsFromSelection();
+                    }
+
+                    if (settings.ConnectionCount > 0)
+                    {
+                        Dispatcher.Invoke(() => SetComboBoxSelectedInt(cmbConnections, Math.Min(32, Math.Max(1, settings.ConnectionCount))));
+                    }
+                    if (settings.MultiDownloadCount > 0)
+                    {
+                        Dispatcher.Invoke(() => SetComboBoxSelectedInt(cmbMultiDownload, Math.Min(10, Math.Max(1, settings.MultiDownloadCount))));
                     }
                 }
             }

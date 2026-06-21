@@ -73,21 +73,28 @@ namespace get_link_manga
 
         private void BtnOpenComicLink_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement fe &&
-                fe.Tag is string url &&
-                !string.IsNullOrWhiteSpace(url))
+            if (sender is FrameworkElement fe)
             {
-                try
+                string url = fe.Tag as string;
+                if (string.IsNullOrWhiteSpace(url) && fe.DataContext is ErrorDisplayItem item)
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = url,
-                        UseShellExecute = true
-                    });
+                    url = item.ComicUrl;
                 }
-                catch (Exception ex)
+
+                if (!string.IsNullOrWhiteSpace(url))
                 {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = url,
+                            UseShellExecute = true
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
         }

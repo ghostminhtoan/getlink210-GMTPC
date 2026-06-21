@@ -60,7 +60,7 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="⚠" Binding="{Binding Icon}" Width="35"/>
 
-                    <DataGridTemplateColumn Header="COMIC" Width="240">
+                    <DataGridTemplateColumn Header="COMIC" Width="240" SortMemberPath="ComicName">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="{Binding ComicName}"
@@ -78,7 +78,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="CHAPTER" Width="130">
+                    <DataGridTemplateColumn Header="CHAPTER" Width="130" SortMemberPath="ChapterName">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="{Binding ChapterName}"
@@ -96,7 +96,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="PAGE" Width="65">
+                    <DataGridTemplateColumn Header="PAGE" Width="65" SortMemberPath="PageNumber">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="{Binding PageNumber}"

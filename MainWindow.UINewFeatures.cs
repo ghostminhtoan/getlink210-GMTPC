@@ -379,7 +379,7 @@ namespace get_link_manga
                     Log($"[Retry] Thất bại khi tải {err.ChapterName}, Trang {err.PageNumber}: {ex.Message}");
                     Dispatcher.Invoke(() =>
                     {
-                        queueItem.AddError(err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl, pageName: err.PageName);
+                        queueItem.AddError(err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl, chapterUrl: err.ChapterUrl, pageName: err.PageName);
                     });
                     RecordCheckError(queueItem.SourceDomain ?? "retry", queueItem.Name, err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl, pageName: err.PageName);
                 }

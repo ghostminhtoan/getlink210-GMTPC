@@ -25,6 +25,7 @@ namespace get_link_manga
 
                 _activeBookSemaphore?.AdjustLimit();
                 Log($"[Connection] Đã cập nhật số trang song song mỗi book thành {newLimit}.");
+                RequestGalleryListAutosave(500);
             }
             catch
             {
@@ -43,6 +44,7 @@ namespace get_link_manga
                 _currentMaxParallelBooks = newVal;
                 Log($"[Multi Download] Số luồng tải song song được chỉnh thành {newVal}.");
                 _activeBookSemaphore?.AdjustLimit();
+                RequestGalleryListAutosave(500);
             }
             catch
             {
