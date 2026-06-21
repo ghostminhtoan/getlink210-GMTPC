@@ -36,7 +36,6 @@ namespace get_link_manga
         private bool _startupArchivePromptShown;
         private int _currentMaxParallelBooks = 2;
         private DynamicSemaphore _activeBookSemaphore;
-        internal bool _isSingleComicFolderType = true;
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -87,6 +86,7 @@ namespace get_link_manga
                 StyleComboBoxPopup(cmbNhentaiSort);
                 StyleComboBoxPopup(cmbConnections);
                 StyleComboBoxPopup(cmbMultiDownload);
+                StyleComboBoxPopup(cmbDownloadFolderType);
 
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.New, WindowNew_Executed));
                 CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, WindowSave_Executed));

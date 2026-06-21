@@ -24,7 +24,8 @@ namespace get_link_manga
         private readonly Action _deleteCookiesAction;
         private readonly Action _clearTempAction;
         private readonly Action<string> _pasteDirectLinkAction;
-        private readonly Action<Button> _showFolderTypeMenuAction;
+        private readonly Action<int> _folderTypeChangedAction;
+        private ComboBox _folderTypeComboBox;
         private readonly TextBlock _statusText;
         private readonly TextBlock _buildInfoText;
         private readonly Button _pinToggleButton;
@@ -78,7 +79,7 @@ namespace get_link_manga
             Action deleteCookiesAction,
             Action clearTempAction,
             Action<string> pasteDirectLinkAction,
-            Action<Button> showFolderTypeMenuAction)
+            Action<int> folderTypeChangedAction)
         {
             _startCopyAction = startCopyAction;
             _stopCopyAction = stopCopyAction;
@@ -91,7 +92,7 @@ namespace get_link_manga
             _deleteCookiesAction = deleteCookiesAction;
             _clearTempAction = clearTempAction;
             _pasteDirectLinkAction = pasteDirectLinkAction;
-            _showFolderTypeMenuAction = showFolderTypeMenuAction;
+            _folderTypeChangedAction = folderTypeChangedAction;
 
             Width = BaseWindowWidth;
             Height = BaseWindowHeight;
@@ -459,15 +460,16 @@ namespace get_link_manga
         private Grid CreateSystemRow(out Button shutdownToggleButton, RoutedEventHandler shutdownClick)
         {
             var row = new Grid { Margin = new Thickness(0, 0, 0, 4) };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(65) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(75) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(86) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
             var labelText = CreateRowLabel("Shutdown");
             Grid.SetColumn(labelText, 0);
@@ -481,19 +483,19 @@ namespace get_link_manga
             row.Children.Add(shutdownToggleButton);
 
             var deleteCookieButton = CreateWindowButton("DEL COOKIE", Color.FromRgb(0xFF, 0xD2, 0x6A), (sender, args) => _deleteCookiesAction?.Invoke());
-            deleteCookieButton.MinWidth = 92;
+            deleteCookieButton.Width = 86;
             deleteCookieButton.MinHeight = 22;
             Grid.SetColumn(deleteCookieButton, 4);
             row.Children.Add(deleteCookieButton);
 
             var cleanTempButton = CreateWindowButton("CLEAN TEMP", Color.FromRgb(0x00, 0xE5, 0xFF), (sender, args) => _clearTempAction?.Invoke());
-            cleanTempButton.MinWidth = 135;
+            cleanTempButton.Width = 96;
             cleanTempButton.MinHeight = 22;
             Grid.SetColumn(cleanTempButton, 6);
             row.Children.Add(cleanTempButton);
 
             var tweakButton = CreateWindowButton("TWEAK", Color.FromRgb(0xFF, 0x79, 0xC6), TweakButton_Click);
-            tweakButton.MinWidth = 74;
+            tweakButton.Width = 70;
             tweakButton.MinHeight = 22;
             Grid.SetColumn(tweakButton, 8);
             row.Children.Add(tweakButton);
@@ -503,14 +505,16 @@ namespace get_link_manga
 
         private Grid CreateCopyRow()
         {
-            var row = new Grid();
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(65) });
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(75) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(86) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
             var labelText = CreateRowLabel("Copy text");
             Grid.SetColumn(labelText, 0);
@@ -521,19 +525,43 @@ namespace get_link_manga
             row.Children.Add(_copyToggleButton);
 
             var openFolderButton = CreateWindowButton("OPEN FOLDER", Color.FromRgb(0x00, 0xE5, 0xFF), (sender, args) => _openFolderAction?.Invoke());
-            openFolderButton.MinWidth = 92;
+            openFolderButton.Width = 86;
             openFolderButton.MinHeight = 22;
             Grid.SetColumn(openFolderButton, 4);
             row.Children.Add(openFolderButton);
 
-            var folderTypeButton = CreateWindowButton("Download Folder type", Color.FromRgb(0x00, 0xE5, 0xFF), (sender, args) => _showFolderTypeMenuAction?.Invoke(sender as Button));
-            folderTypeButton.MinWidth = 135;
-            folderTypeButton.MinHeight = 22;
-            folderTypeButton.FontSize = 10;
-            Grid.SetColumn(folderTypeButton, 6);
-            row.Children.Add(folderTypeButton);
+            _folderTypeComboBox = new ComboBox
+            {
+                Style = TryFindResource("CyberpunkComboBox") as Style,
+                Height = 22,
+                Width = 96,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                HorizontalContentAlignment = HorizontalAlignment.Center
+            };
+            
+            var itemStyle = TryFindResource("CyberpunkComboBoxItemStyle") as Style;
+            var item1 = new ComboBoxItem { Content = "Single comic", Style = itemStyle };
+            var item2 = new ComboBoxItem { Content = "Multi-comic", Style = itemStyle };
+            _folderTypeComboBox.Items.Add(item1);
+            _folderTypeComboBox.Items.Add(item2);
+            _folderTypeComboBox.SelectedIndex = 0;
+            _folderTypeComboBox.SelectionChanged += (sender, args) =>
+            {
+                _folderTypeChangedAction?.Invoke(_folderTypeComboBox.SelectedIndex);
+            };
+
+            Grid.SetColumn(_folderTypeComboBox, 6);
+            row.Children.Add(_folderTypeComboBox);
 
             return row;
+        }
+
+        internal void UpdateFolderType(int index)
+        {
+            if (_folderTypeComboBox != null && _folderTypeComboBox.SelectedIndex != index)
+            {
+                _folderTypeComboBox.SelectedIndex = index;
+            }
         }
 
         private void TweakButton_Click(object sender, RoutedEventArgs e)
@@ -613,7 +641,7 @@ namespace get_link_manga
         private Grid CreateToggleGroup(string label, out Button toggleButton, RoutedEventHandler onClick)
         {
             var group = new Grid();
-            group.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(65) });
+            group.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             group.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
             group.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 

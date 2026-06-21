@@ -1136,9 +1136,8 @@ namespace get_link_manga
 
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = mergedPath;
+            string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
             Directory.CreateDirectory(tempFolder);
-
             WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {cleanChapter}");
 
             int maxThreads = GetBookConnectionLimit(queueItem ?? item);
@@ -1260,8 +1259,11 @@ namespace get_link_manga
                 {
                     try
                     {
-                        await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
-                        await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
+                        if (_isSingleComicFolderType)
+                        {
+                            await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                            await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
+                        }
                         UpsertMainLogLine(progressKey, $"[sayhentai] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
                     }
                     finally

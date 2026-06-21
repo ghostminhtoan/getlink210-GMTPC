@@ -118,7 +118,7 @@ namespace get_link_manga
             public int MultiDownloadCount { get; set; }
 
             [DataMember(Order = 4)]
-            public bool IsSingleComicFolderType { get; set; } = true;
+            public int DownloadFolderType { get; set; }
         }
 
         [DataContract]
@@ -611,7 +611,7 @@ namespace get_link_manga
                     .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
                 ConnectionCount = GetComboBoxSelectedInt(cmbConnections, 4),
                 MultiDownloadCount = GetComboBoxSelectedInt(cmbMultiDownload, 2),
-                IsSingleComicFolderType = _isSingleComicFolderType
+                DownloadFolderType = cmbDownloadFolderType != null ? cmbDownloadFolderType.SelectedIndex : 0
             };
 
             var serializer = new DataContractJsonSerializer(typeof(GalleryMarkdownSettingsState));
@@ -905,29 +905,26 @@ namespace get_link_manga
                 using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     var settings = serializer.ReadObject(ms) as GalleryMarkdownSettingsState;
-                    if (settings == null)
+                    if (settings?.CreateSubfolderByDomain == null || settings.CreateSubfolderByDomain.Count == 0)
                     {
                         return;
                     }
 
-                    if (settings.CreateSubfolderByDomain != null)
+                    _createSubfolderByDomain.Clear();
+                    foreach (var pair in settings.CreateSubfolderByDomain)
                     {
-                        _createSubfolderByDomain.Clear();
-                        foreach (var pair in settings.CreateSubfolderByDomain)
+                        if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
                         {
-                            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
-                            {
-                                continue;
-                            }
-
-                            _createSubfolderByDomain[pair.Key.Trim()] = pair.Value.Trim();
+                            continue;
                         }
 
-                        SaveCreateSubfolderSettings();
-                        if (_createSubfolderUiReady)
-                        {
-                            UpdateCreateSubfolderFieldsFromSelection();
-                        }
+                        _createSubfolderByDomain[pair.Key.Trim()] = pair.Value.Trim();
+                    }
+
+                    SaveCreateSubfolderSettings();
+                    if (_createSubfolderUiReady)
+                    {
+                        UpdateCreateSubfolderFieldsFromSelection();
                     }
 
                     if (settings.ConnectionCount > 0)
@@ -938,15 +935,23 @@ namespace get_link_manga
                     {
                         Dispatcher.Invoke(() => SetComboBoxSelectedInt(cmbMultiDownload, Math.Min(10, Math.Max(1, settings.MultiDownloadCount))));
                     }
-
-                    if (json.Contains("IsSingleComicFolderType"))
-                    {
-                        _isSingleComicFolderType = settings.IsSingleComicFolderType;
-                    }
-                    else
-                    {
-                        _isSingleComicFolderType = true;
-                    }
+                    Dispatcher.Invoke(() => {
+                        if (cmbDownloadFolderType != null)
+                        {
+                            _suppressDownloadFolderTypeEvents = true;
+                            try
+                            {
+                                int selType = settings.DownloadFolderType;
+                                cmbDownloadFolderType.SelectedIndex = selType;
+                                _isSingleComicFolderType = (selType == 0);
+                                _lightNovelFloatingControlWindow?.UpdateFolderType(selType);
+                            }
+                            finally
+                            {
+                                _suppressDownloadFolderTypeEvents = false;
+                            }
+                        }
+                    });
                 }
             }
             catch (Exception ex)
@@ -1069,54 +1074,6 @@ namespace get_link_manga
             {
                 MessageBox.Show($"Error cancelling shutdown: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        private void BtnDownloadFolderType_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                ShowFolderTypeContextMenu(button);
-            }
-        }
-
-        internal void ShowFolderTypeContextMenu(Button button)
-        {
-            var menu = new ContextMenu();
-            var itemSingle = new MenuItem
-            {
-                Header = "Single comic: \\root\\book name\\chapter 1, 2, 3...",
-                IsCheckable = true,
-                IsChecked = _isSingleComicFolderType
-            };
-            itemSingle.Click += (s, e) =>
-            {
-                SetFolderType(true);
-            };
-
-            var itemMulti = new MenuItem
-            {
-                Header = "Multi-comic: \\root\\book name-chapter 1, 2, 3...",
-                IsCheckable = true,
-                IsChecked = !_isSingleComicFolderType
-            };
-            itemMulti.Click += (s, e) =>
-            {
-                SetFolderType(false);
-            };
-
-            menu.Items.Add(itemSingle);
-            menu.Items.Add(itemMulti);
-
-            button.ContextMenu = menu;
-            menu.PlacementTarget = button;
-            menu.IsOpen = true;
-        }
-
-        private void SetFolderType(bool isSingle)
-        {
-            _isSingleComicFolderType = isSingle;
-            Log($"[Config] Thay đổi kiểu thư mục tải về thành: {(isSingle ? "Single comic" : "Multi-comic")}");
-            SaveActiveGalleryListSnapshot();
         }
     }
 }

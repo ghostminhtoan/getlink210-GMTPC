@@ -1210,10 +1210,8 @@ namespace get_link_manga
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, "nettruyen");
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = mergedPath;
-            Directory.CreateDirectory(tempFolder);
-
-            // Isolate images inside reading area
+            string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            Directory.CreateDirectory(tempFolder);            // Isolate images inside reading area
             string safeHtml = GetSafeChapterHtml(html);
             int startIndex = -1;
             string[] containerMarkers = new[]
@@ -1457,7 +1455,10 @@ namespace get_link_manga
                 {
                     try
                     {
-                        await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                        if (_isSingleComicFolderType)
+                        {
+                            await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                        }
                         UpsertMainLogLine(progressKey, $"[nettruyen] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
                     }
                     catch (Exception ex)

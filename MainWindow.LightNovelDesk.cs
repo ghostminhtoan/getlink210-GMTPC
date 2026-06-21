@@ -1420,7 +1420,19 @@ namespace get_link_manga
                 () => Dispatcher.BeginInvoke(new Action(async () => await ResetActiveCaptchaFromFloatingAsync())),
                 () => Dispatcher.BeginInvoke(new Action(() => BtnClearTemp_Click(this, new RoutedEventArgs()))),
                 url => Dispatcher.BeginInvoke(new Action(() => AppendSupportedInputLinks(url))),
-                button => Dispatcher.BeginInvoke(new Action(() => ShowFolderTypeContextMenu(button))));
+                index => Dispatcher.BeginInvoke(new Action(() => {
+                    _suppressDownloadFolderTypeEvents = true;
+                    try
+                    {
+                        cmbDownloadFolderType.SelectedIndex = index;
+                        _isSingleComicFolderType = (index == 0);
+                        Log($"[Folder Type] Đã đồng bộ từ float: {(_isSingleComicFolderType ? "Single comic" : "Multi-comic")}");
+                    }
+                    finally
+                    {
+                        _suppressDownloadFolderTypeEvents = false;
+                    }
+                })));            _lightNovelFloatingControlWindow.UpdateFolderType(cmbDownloadFolderType.SelectedIndex);
 
             _lightNovelFloatingControlWindow.Closed += (sender, args) =>
             {

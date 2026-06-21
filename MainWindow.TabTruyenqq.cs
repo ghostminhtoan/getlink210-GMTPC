@@ -1144,14 +1144,11 @@ namespace get_link_manga
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
             UpsertMainLogLine(progressKey, $"[truyenqq] Đang tải {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
             
-            // Save inside "truyenqq" root directory
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, "truyenqq");
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = mergedPath;
-            Directory.CreateDirectory(tempFolder);
-
-            // Isolate images using Safe Chapter HTML (no comments section)
+            string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            Directory.CreateDirectory(tempFolder);            // Isolate images using Safe Chapter HTML (no comments section)
             string safeHtml = GetSafeChapterHtml(html);
 
             // Isolate reading container contents to avoid ads/logo/header images
@@ -1334,8 +1331,10 @@ namespace get_link_manga
                 {
                     WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
                 }
-
-                await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                if (_isSingleComicFolderType)
+                {
+                    await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
+                }
                 UpsertMainLogLine(progressKey, $"[truyenqq] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
             }
             catch (Exception ex)

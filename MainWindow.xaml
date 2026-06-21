@@ -2397,14 +2397,35 @@
                                     <ColumnDefinition Width="Auto"/> <!-- COMPRESS BOOKS button -->
                                     <ColumnDefinition Width="6"/>
                                     <ColumnDefinition Width="Auto"/> <!-- EXTRACT BOOKS button -->
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/> <!-- FOLDER TYPE label -->
                                     <ColumnDefinition Width="6"/>
-                                    <ColumnDefinition Width="Auto"/> <!-- Download Folder type button -->
+                                    <ColumnDefinition Width="Auto"/> <!-- FOLDER TYPE combo -->
                                 </Grid.ColumnDefinitions>
 
                                 <TextBlock Name="txtFolderActionsLabel" Grid.Column="0" Text="FOLDER ACTIONS" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center"/>
                                 <Button Grid.Column="2" Name="btnCompressBooks" Content="COMPRESS" Click="BtnCompressBooks_Click" Style="{StaticResource CompactCyanButton}" Width="94" Margin="0"/>
                                 <Button Grid.Column="4" Name="btnExtractBooks" Content="EXTRACT" Click="BtnExtractBooks_Click" Style="{StaticResource CompactPinkButton}" Width="86" Margin="0"/>
-                                <Button Grid.Column="6" Name="btnDownloadFolderType" Content="Download Folder type" Click="BtnDownloadFolderType_Click" Style="{StaticResource CompactCyanButton}" Width="150" Margin="0"/>
+                                <TextBlock Grid.Column="6" Text="DOWNLOAD FOLDER TYPE" Style="{StaticResource InputLabelStyle}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <ComboBox Grid.Column="8" Name="cmbDownloadFolderType" 
+                                          Style="{StaticResource CyberpunkComboBox}"
+                                          Height="26"
+                                          Width="120"
+                                          VerticalContentAlignment="Center"
+                                          HorizontalContentAlignment="Center"
+                                          SelectedIndex="0"
+                                          SelectionChanged="CmbDownloadFolderType_SelectionChanged">
+                                    <ComboBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Background="#121622"/>
+                                        </ItemsPanelTemplate>
+                                    </ComboBox.ItemsPanel>
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource CyberpunkComboBoxItemStyle}"/>
+                                    </ComboBox.ItemContainerStyle>
+                                    <ComboBoxItem Content="Single comic"/>
+                                    <ComboBoxItem Content="Multi-comic"/>
+                                </ComboBox>
 
                             </Grid>
 
