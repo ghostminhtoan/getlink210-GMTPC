@@ -1942,11 +1942,28 @@
                                 <TextBlock Name="txtWordWrapLabel" Text="WORD WRAP" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <ToggleButton Name="chkWordWrap" Style="{StaticResource ToggleButtonSwitch}" Height="20" Width="40"/>
                             </StackPanel>
-                            <Border Style="{StaticResource MetricCard}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Name="txtTotalBooksLabel" Text="Total Books: " Foreground="{StaticResource CyberpunkTextBrush}" FontSize="11" FontWeight="Bold"/>
-                                    <TextBlock Name="lblLinkCount" Text="0" Foreground="{StaticResource CyberpunkYellowBrush}" FontSize="11" FontWeight="Bold"/>
-                                </StackPanel>
+                             <Border Style="{StaticResource MetricCard}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Name="txtTotalBooksLabel" Text="Total Books: " Foreground="{StaticResource CyberpunkTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Name="lblLinkCount" Text="0" Foreground="{StaticResource CyberpunkYellowBrush}" FontSize="11" FontWeight="Bold"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Name="txtBooksCompleteLabel" Text="Books Complete: " Foreground="{StaticResource CyberpunkTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,4,0,0"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Name="lblBooksCompleteCount" Text="0" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="11" FontWeight="Bold" Margin="0,4,0,0"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Name="txtErrorBooksLabel" Text="Error Books: " Foreground="{StaticResource CyberpunkTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,4,0,0"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Name="lblErrorBooksCount" Text="0" Foreground="{StaticResource CyberpunkPinkBrush}" FontSize="11" FontWeight="Bold" Margin="0,4,0,0"/>
+                                </Grid>
                             </Border>
                         </StackPanel>
                     </Grid>

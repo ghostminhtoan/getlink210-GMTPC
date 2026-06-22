@@ -757,5 +757,41 @@ namespace get_link_manga
         {
             // Auto scroll disabled.
         }
+
+        internal void UpdateStats()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(new Action(UpdateStats));
+                return;
+            }
+
+            if (lblLinkCount == null || lblBooksCompleteCount == null || lblErrorBooksCount == null)
+            {
+                return;
+            }
+
+            int total = _scrapedItems.Count;
+            int complete = 0;
+            int error = 0;
+
+            foreach (var item in _scrapedItems)
+            {
+                if (item == null) continue;
+                string status = (item.Status ?? "").Trim().ToLowerInvariant();
+                if (status == "completed" || status == "done" || status == "hoan tat")
+                {
+                    complete++;
+                }
+                else if (status == "error" || status == "loi")
+                {
+                    error++;
+                }
+            }
+
+            lblLinkCount.Text = total.ToString();
+            lblBooksCompleteCount.Text = complete.ToString();
+            lblErrorBooksCount.Text = error.ToString();
+        }
     }
 }

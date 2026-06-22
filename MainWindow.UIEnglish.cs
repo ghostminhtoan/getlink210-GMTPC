@@ -309,7 +309,9 @@ namespace get_link_manga
             if (txtHeaderStepSecondaryTitle != null) txtHeaderStepSecondaryTitle.Text = "DOWNLOAD";
             if (txtLanguageLabel != null) txtLanguageLabel.Text = "ENG";
             if (txtLanguageTarget != null) txtLanguageTarget.Text = "VI";
-            if (txtTotalBooksLabel != null) txtTotalBooksLabel.Text = "Total titles: ";
+            if (txtTotalBooksLabel != null) txtTotalBooksLabel.Text = "Total books: ";
+            if (txtBooksCompleteLabel != null) txtBooksCompleteLabel.Text = "Books complete: ";
+            if (txtErrorBooksLabel != null) txtErrorBooksLabel.Text = "Error books: ";
             if (txtResultsHeader != null) txtResultsHeader.Text = "EXTRACTED GALLERY LINKS";
             if (btnShutdownMenu != null) btnShutdownMenu.Content = "⏰";
             if (btnShutdownMenu != null) btnShutdownMenu.ToolTip = "Shutdown options";

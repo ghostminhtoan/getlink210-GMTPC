@@ -69,6 +69,7 @@ namespace get_link_manga
             WirePauseButtonToggle();
             InitializeLogPanels();
             dgResults.ItemsSource = _scrapedItems;
+            UpdateStats();
 
             try
             {

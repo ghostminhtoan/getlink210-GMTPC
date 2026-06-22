@@ -141,6 +141,7 @@ namespace get_link_manga
             }
 
             RequestGalleryListAutosave(0);
+            UpdateStats();
         }
 
         private void LightNovelItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -277,13 +278,20 @@ namespace get_link_manga
         private void GalleryItem_AutosavePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (sender is GalleryItem item &&
-                !string.IsNullOrWhiteSpace(e?.PropertyName) &&
-                (string.Equals(e.PropertyName, nameof(GalleryItem.Status), StringComparison.Ordinal) ||
-                 string.Equals(e.PropertyName, nameof(GalleryItem.CurrentProcess), StringComparison.Ordinal) ||
-                 string.Equals(e.PropertyName, nameof(GalleryItem.CompletedChapters), StringComparison.Ordinal) ||
-                 string.Equals(e.PropertyName, nameof(GalleryItem.DownloadingChapter), StringComparison.Ordinal) ||
-                 string.Equals(e.PropertyName, nameof(GalleryItem.DownloadingPageProgress), StringComparison.Ordinal)))
+                !string.IsNullOrWhiteSpace(e?.PropertyName))
             {
+                if (string.Equals(e.PropertyName, nameof(GalleryItem.Status), StringComparison.Ordinal))
+                {
+                    UpdateStats();
+                }
+
+                if (string.Equals(e.PropertyName, nameof(GalleryItem.Status), StringComparison.Ordinal) ||
+                    string.Equals(e.PropertyName, nameof(GalleryItem.CurrentProcess), StringComparison.Ordinal) ||
+                    string.Equals(e.PropertyName, nameof(GalleryItem.CompletedChapters), StringComparison.Ordinal) ||
+                    string.Equals(e.PropertyName, nameof(GalleryItem.DownloadingChapter), StringComparison.Ordinal) ||
+                    string.Equals(e.PropertyName, nameof(GalleryItem.DownloadingPageProgress), StringComparison.Ordinal))
+                {
+                }
             }
 
             RequestGalleryListAutosave();

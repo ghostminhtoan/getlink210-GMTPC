@@ -17,6 +17,8 @@ namespace get_link_manga
             if (txtLanguageLabel != null) txtLanguageLabel.Text = "ENG";
             if (txtLanguageTarget != null) txtLanguageTarget.Text = "VI";
             if (txtTotalBooksLabel != null) txtTotalBooksLabel.Text = "Tổng truyện: ";
+            if (txtBooksCompleteLabel != null) txtBooksCompleteLabel.Text = "Hoàn tất: ";
+            if (txtErrorBooksLabel != null) txtErrorBooksLabel.Text = "Lỗi: ";
             if (txtResultsHeader != null) txtResultsHeader.Text = "DANH SÁCH CHỜ TẢI";
 
             if (btnShutdownMenu != null) btnShutdownMenu.Content = "⏰";
