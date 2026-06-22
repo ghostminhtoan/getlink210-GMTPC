@@ -133,12 +133,33 @@ namespace get_link_manga
 
         private string GetEffectiveDownloadRoot(string rootFolder)
         {
+            string effective = rootFolder;
             if (!string.IsNullOrWhiteSpace(_activeDownloadRoot))
             {
-                return _activeDownloadRoot;
+                effective = _activeDownloadRoot;
             }
 
-            return rootFolder;
+            return ConvertToLongPath(effective);
+        }
+
+        private static string ConvertToLongPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return path;
+            try
+            {
+                string fullPath = Path.GetFullPath(path);
+                if (fullPath.StartsWith(@"\\?\")) return fullPath;
+                fullPath = fullPath.Replace('/', '\\');
+                if (fullPath.StartsWith(@"\\"))
+                {
+                    return @"\\?\UNC\" + fullPath.Substring(2);
+                }
+                return @"\\?\" + fullPath;
+            }
+            catch
+            {
+                return path;
+            }
         }
 
         private string GetSiteDownloadRoot(string rootFolder, string siteKey)
@@ -1143,7 +1164,7 @@ namespace get_link_manga
                 item.SourceDomain = domain;
                 double num = ExtractNumber(item.LinkCount);
                 item.TotalChapters = num > 0 ? (int)Math.Ceiling(num) : 1;
-                item.DownloadPath = downloadRoot;
+                item.DownloadPath = ConvertToLongPath(downloadRoot);
 
                 if (!preserveExistingState)
                 {
