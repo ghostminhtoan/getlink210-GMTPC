@@ -2310,7 +2310,7 @@
                             <DataGridTemplateColumn x:Name="colSpeed" Width="0.75*" SortMemberPath="DownloadSpeedSortValue">
                                 <DataGridTemplateColumn.Header>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="SPEED" Foreground="{StaticResource CyberpunkPinkBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="txtSpeedHeader" Text="SPEED" Foreground="{StaticResource CyberpunkPinkBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                         <Button Name="btnSortBySpeed" Content="&#x21C5;" Click="BtnSortBySpeed_Click" Width="22" Height="18" Padding="0" FontSize="10" ToolTip="SORT BY SPEED">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">

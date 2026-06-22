@@ -534,7 +534,7 @@ namespace get_link_manga
 
         public string ConnectionDisplayText => $"{ConnectionCount} conn";
 
-        private static string FormatSpeedText(long bytesPerSecond)
+        public static string FormatSpeedText(long bytesPerSecond)
         {
             if (bytesPerSecond <= 0)
             {

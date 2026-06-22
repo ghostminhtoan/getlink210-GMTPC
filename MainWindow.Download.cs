@@ -36,6 +36,34 @@ namespace get_link_manga
         private int _nextDownloadStartOrder = 0;
         private bool _suppressDownloadToggleEvent;
 
+        private void UpdateTotalDownloadSpeedHeader()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (txtSpeedHeader == null) return;
+
+                long totalSpeed = 0;
+                foreach (var item in _scrapedItems)
+                {
+                    totalSpeed += item.DownloadSpeedBytesPerSecond;
+                }
+
+                if (totalSpeed > 0)
+                {
+                    txtSpeedHeader.Text = $"SPEED - {GalleryItem.FormatSpeedText(totalSpeed)}";
+                }
+                else
+                {
+                    txtSpeedHeader.Text = "SPEED";
+                }
+
+                if (colSpeed != null && colSpeed.SortDirection != null)
+                {
+                    ResultsView?.Refresh();
+                }
+            });
+        }
+
         internal void PauseAllDownloads()
         {
             _isDownloadPaused = true;
@@ -1288,6 +1316,7 @@ namespace get_link_manga
 
                     item.DownloadSpeedBytesPerSecond = 0;
                     item._downloadedBytesAccumulator = 0;
+                    UpdateTotalDownloadSpeedHeader();
 
                     speedTrackerCts = CancellationTokenSource.CreateLinkedTokenSource(token);
                     var capturedCts = speedTrackerCts;
@@ -1310,6 +1339,7 @@ namespace get_link_manga
                                 await Dispatcher.InvokeAsync(() =>
                                 {
                                     item.DownloadSpeedBytesPerSecond = speed;
+                                    UpdateTotalDownloadSpeedHeader();
                                 });
                             }
                         }
@@ -1319,6 +1349,7 @@ namespace get_link_manga
                             await Dispatcher.InvokeAsync(() =>
                             {
                                 item.DownloadSpeedBytesPerSecond = 0;
+                                UpdateTotalDownloadSpeedHeader();
                             });
                         }
                     });
