@@ -588,6 +588,8 @@ namespace get_link_manga
                     queueItem.Status = "Completed";
                     queueItem.CurrentProcess = "Done";
                 }
+
+                _scrapedItems.Remove(queueItem);
             }
 
             // 2. Xóa trong _checkErrors chính
