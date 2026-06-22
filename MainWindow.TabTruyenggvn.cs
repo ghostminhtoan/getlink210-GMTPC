@@ -1166,6 +1166,7 @@ namespace get_link_manga
 
                     tasks.Add(Task.Run(async () =>
                     {
+                        var pageWatch = System.Diagnostics.Stopwatch.StartNew();
                         while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
                         {
                             token.ThrowIfCancellationRequested();
@@ -1188,16 +1189,22 @@ namespace get_link_manga
                                 (File.Exists(unmergedFilePath) && new FileInfo(unmergedFilePath).Length > 1024) ||
                                 (File.Exists(mergedFilePath) && new FileInfo(mergedFilePath).Length > 1024))
                             {
+                                pageWatch.Stop();
                                 lock (lockObj)
                                 {
                                     completedPages++;
+                                    string processText = isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}";
+                                    UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, processText, 0, 0, isParentQueue);
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, processText, $"Trang {index + 1} đã có sẵn", imgUrl);
                                 }
                                 return;
                             }
 
+                            string downloadedPath = null;
                             try
                             {
                                 await DownloadUrlToFileWithRefererAsync(imgUrl, normalizedLink, localFilePath, token, isTruyenqq: true);
+                                downloadedPath = localFilePath;
                             }
                             catch (Exception ex)
                             {
@@ -1212,32 +1219,20 @@ namespace get_link_manga
                                 }
                             }
 
+                            pageWatch.Stop();
                             lock (lockObj)
                             {
                                 completedPages++;
-                                if (queueItem != null)
-                                {
-                                    Dispatcher.BeginInvoke((Action)(() =>
-                                    {
-                                        if (isParentQueue)
-                                        {
-                                            queueItem.CurrentProcess = $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})";
-                                        }
-                                        else
-                                        {
-                                            queueItem.CompletedChapters = completedPages;
-                                            queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
-                                        }
-                                    }));
-                                }
-
+                                long downloadedBytes = !string.IsNullOrWhiteSpace(downloadedPath) && File.Exists(downloadedPath) ? new FileInfo(downloadedPath).Length : 0;
+                                string processText = isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}";
+                                UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, processText, downloadedBytes, pageWatch.ElapsedMilliseconds, isParentQueue);
                                 WriteTempProgressLog(
                                     tempFolder,
                                     item,
                                     "Downloading",
                                     completedPages,
                                     imageUrls.Count,
-                                    isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}",
+                                    processText,
                                     $"Trang {index + 1} hoàn tất",
                                     imgUrl);
                             }

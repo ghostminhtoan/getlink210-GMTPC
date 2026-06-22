@@ -163,7 +163,7 @@ namespace get_link_manga
             }
         }
 
-        private void UpdateDownloadRowMetrics(GalleryItem item, int completedPages, int totalPages, string processText, long bytesDownloaded = 0, long elapsedMilliseconds = 0)
+        private void UpdateDownloadRowMetrics(GalleryItem item, int completedPages, int totalPages, string processText, long bytesDownloaded = 0, long elapsedMilliseconds = 0, bool isParentQueue = false)
         {
             if (item == null)
             {
@@ -174,15 +174,27 @@ namespace get_link_manga
                 ? Math.Min(100d, Math.Max(0d, (double)completedPages * 100d / totalPages))
                 : 0d;
 
-            long speed = bytesDownloaded > 0 && elapsedMilliseconds > 0
-                ? (long)(bytesDownloaded * 1000d / elapsedMilliseconds)
-                : 0L;
+            if (bytesDownloaded > 0)
+            {
+                System.Threading.Interlocked.Add(ref item._downloadedBytesAccumulator, bytesDownloaded);
+            }
 
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                item.CompletedChapters = completedPages;
-                item.DownloadProgressPercent = percent;
-                item.DownloadSpeedBytesPerSecond = speed;
+                if (!isParentQueue)
+                {
+                    item.CompletedChapters = completedPages;
+                    item.DownloadProgressPercent = percent;
+                }
+                else
+                {
+                    double currentChapterProgress = totalPages > 0 ? (double)completedPages / totalPages : 0d;
+                    double overallChapters = item.CompletedChapters + currentChapterProgress;
+                    double bookPercent = item.TotalChapters > 0
+                        ? Math.Min(100d, Math.Max(0d, overallChapters * 100d / item.TotalChapters))
+                        : 0d;
+                    item.DownloadProgressPercent = bookPercent;
+                }
                 item.CurrentProcess = processText;
             }));
         }
@@ -1255,6 +1267,8 @@ namespace get_link_manga
                 await _activeBookSemaphore.WaitAsync(token);
                 hasSemaphoreSlot = true;
                 Interlocked.Increment(ref _nextDownloadStartOrder);
+                CancellationTokenSource speedTrackerCts = null;
+                Task speedTrackerTask = null;
                 try
                 {
                     while (_isDownloadPaused || item.IsPaused)
@@ -1271,6 +1285,43 @@ namespace get_link_manga
                     });
 
                     Log($"[Download] Đang tải: {item.Name} ({item.Link})");
+
+                    item.DownloadSpeedBytesPerSecond = 0;
+                    item._downloadedBytesAccumulator = 0;
+
+                    speedTrackerCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                    var capturedCts = speedTrackerCts;
+                    speedTrackerTask = Task.Run(async () =>
+                    {
+                        long lastBytes = 0;
+                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                        try
+                        {
+                            while (!capturedCts.Token.IsCancellationRequested)
+                            {
+                                await Task.Delay(1000, capturedCts.Token);
+                                long currentBytes = System.Threading.Interlocked.Read(ref item._downloadedBytesAccumulator);
+                                long delta = currentBytes - lastBytes;
+                                lastBytes = currentBytes;
+                                double elapsedSec = sw.Elapsed.TotalSeconds;
+                                sw.Restart();
+                                
+                                long speed = elapsedSec > 0 ? (long)(delta / elapsedSec) : 0L;
+                                Dispatcher.BeginInvoke(new Action(() =>
+                                {
+                                    item.DownloadSpeedBytesPerSecond = speed;
+                                }));
+                            }
+                        }
+                        catch (OperationCanceledException) {}
+                        finally
+                        {
+                            Dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                item.DownloadSpeedBytesPerSecond = 0;
+                            }));
+                        }
+                    });
 
                     try
                     {
@@ -1379,6 +1430,15 @@ namespace get_link_manga
                     }
                     finally
                     {
+                        if (speedTrackerCts != null)
+                        {
+                            speedTrackerCts.Cancel();
+                            if (speedTrackerTask != null)
+                            {
+                                try { await speedTrackerTask; } catch {}
+                            }
+                            speedTrackerCts.Dispose();
+                        }
                         Interlocked.Increment(ref _downloadSessionCompletedGalleries);
                         UpdateDownloadProgressLabel();
                         UpdateQueueErrorLabel();

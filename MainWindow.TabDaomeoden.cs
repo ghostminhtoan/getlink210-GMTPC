@@ -718,10 +718,10 @@ namespace get_link_manga
         {
             var info = ParseDaomeodenChapterInfoFromChapterUrl(item.Link);
             await EnrichDaomeodenChapterInfoFromPageAsync(info, token);
-            return await DownloadDaomeodenChapterImagesAsync(item, rootFolder, token, queueItem, info);
+            return await DownloadDaomeodenChapterImagesAsync(item, rootFolder, token, queueItem, info, isParentQueue);
         }
 
-        private async Task<bool> DownloadDaomeodenChapterImagesAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, DaomeodenChapterInfo info)
+        private async Task<bool> DownloadDaomeodenChapterImagesAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, DaomeodenChapterInfo info, bool isParentQueue = false)
         {
             info.ChapterTitle = NormalizeChapterLabel(info.ChapterTitle);
             string safeManga = GetSafePathName(info.BookTitle);
@@ -766,6 +766,7 @@ namespace get_link_manga
 
                         tasks.Add(Task.Run(async () =>
                         {
+                            var pageWatch = System.Diagnostics.Stopwatch.StartNew();
                             while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
                             {
                                 token.ThrowIfCancellationRequested();
@@ -785,18 +786,51 @@ namespace get_link_manga
                                 }
                                 token.ThrowIfCancellationRequested();
 
-                                await DownloadUrlToFileWithRefererAsync(pageUrl, info.RefererUrl, filePath, token);
+                                if (File.Exists(filePath) && new FileInfo(filePath).Length > 1024)
+                                {
+                                    pageWatch.Stop();
+                                    lock (lockObj)
+                                    {
+                                        completedPages++;
+                                        string processText = isParentQueue ? $"{info.ChapterTitle} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}";
+                                        UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, processText, 0, 0, isParentQueue);
+                                        if (queueItem != null)
+                                        {
+                                            int pageNumber = completedPages;
+                                            Dispatcher.BeginInvoke((Action)(() =>
+                                            {
+                                                queueItem.DownloadingPageProgress = $"{pageNumber}/{imageUrls.Count}";
+                                            }));
+                                        }
+                                    }
+                                    return;
+                                }
 
+                                string downloadedPath = null;
+                                try
+                                {
+                                    await DownloadUrlToFileWithRefererAsync(pageUrl, info.RefererUrl, filePath, token);
+                                    downloadedPath = filePath;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log($"[daomeoden] Lỗi tải trang {index + 1} của chapter '{info.ChapterTitle}': {ex.Message}");
+                                }
+
+                                pageWatch.Stop();
                                 lock (lockObj)
                                 {
                                     completedPages++;
+                                    long downloadedBytes = !string.IsNullOrWhiteSpace(downloadedPath) && File.Exists(downloadedPath) ? new FileInfo(downloadedPath).Length : 0;
+                                    string processText = isParentQueue ? $"{info.ChapterTitle} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}";
+                                    UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, processText, downloadedBytes, pageWatch.ElapsedMilliseconds, isParentQueue);
                                     if (queueItem != null)
                                     {
                                         int pageNumber = completedPages;
-                                        Dispatcher.Invoke(() =>
+                                        Dispatcher.BeginInvoke((Action)(() =>
                                         {
                                             queueItem.DownloadingPageProgress = $"{pageNumber}/{imageUrls.Count}";
-                                        });
+                                        }));
                                     }
                                 }
                             }

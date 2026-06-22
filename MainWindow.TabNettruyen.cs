@@ -1347,6 +1347,7 @@ namespace get_link_manga
 
                     tasks.Add(Task.Run(async () =>
                     {
+                        var pageWatch = System.Diagnostics.Stopwatch.StartNew();
                         while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
                         {
                             token.ThrowIfCancellationRequested();
@@ -1375,33 +1376,23 @@ namespace get_link_manga
                                 (File.Exists(unmergedFilePath) && new FileInfo(unmergedFilePath).Length > 1024) ||
                                 (File.Exists(mergedFilePath) && new FileInfo(mergedFilePath).Length > 1024))
                             {
+                                pageWatch.Stop();
                                 lock (lockObj)
                                 {
                                     completedPages++;
-                                    if (queueItem != null)
-                                    {
-                                        Dispatcher.BeginInvoke((Action)(() =>
-                                        {
-                                            if (isParentQueue)
-                                            {
-                                                queueItem.CurrentProcess = $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})";
-                                            }
-                                            else
-                                            {
-                                                queueItem.CompletedChapters = completedPages;
-                                                queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
-                                            }
-                                        }));
-                                    }
-                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} đã có sẵn", imgUrl);
+                                    string processText = isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}";
+                                    UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, processText, 0, 0, isParentQueue);
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, processText, $"Trang {index + 1} đã có sẵn", imgUrl);
                                 }
                                 return;
                             }
 
+                            string downloadedPath = null;
                             try
                             {
                                 // Pass item.Link (which is the chapter page URL) as the Referer to bypass hotlinking protection
                                 await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isTruyenqq: true);
+                                downloadedPath = localFilePath;
                             }
                             catch (Exception ex)
                             {
@@ -1417,25 +1408,14 @@ namespace get_link_manga
                                 }
                             }
 
+                            pageWatch.Stop();
                             lock (lockObj)
                             {
                                 completedPages++;
-                                if (queueItem != null)
-                                {
-                                    Dispatcher.BeginInvoke((Action)(() =>
-                                    {
-                                        if (isParentQueue)
-                                        {
-                                            queueItem.CurrentProcess = $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})";
-                                        }
-                                        else
-                                        {
-                                            queueItem.CompletedChapters = completedPages;
-                                            queueItem.CurrentProcess = $"Trang {completedPages}/{imageUrls.Count}";
-                                        }
-                                    }));
-                                }
-                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}", $"Trang {index + 1} hoàn tất", imgUrl);
+                                long downloadedBytes = !string.IsNullOrWhiteSpace(downloadedPath) && File.Exists(downloadedPath) ? new FileInfo(downloadedPath).Length : 0;
+                                string processText = isParentQueue ? $"{cleanChapter} (trang {completedPages}/{imageUrls.Count})" : $"Trang {completedPages}/{imageUrls.Count}";
+                                UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, processText, downloadedBytes, pageWatch.ElapsedMilliseconds, isParentQueue);
+                                WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, processText, $"Trang {index + 1} hoàn tất", imgUrl);
                             }
                         }
                         finally

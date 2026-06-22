@@ -188,6 +188,7 @@ namespace get_link_manga
         private double _progressPercent;
         private double _downloadProgressPercent;
         private long _downloadSpeedBytesPerSecond;
+        internal long _downloadedBytesAccumulator;
         private int _connectionCount = 1;
         private int _multiDownloadCount = 2;
         private List<ErrorDetail> _errors = new List<ErrorDetail>();
