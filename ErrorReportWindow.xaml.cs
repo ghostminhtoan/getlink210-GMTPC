@@ -101,6 +101,18 @@ namespace get_link_manga
             }
         }
 
+        private void BtnClickErrorText_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is ErrorDisplayItem item)
+            {
+                var galleryItem = _mainWindow._scrapedItems.FirstOrDefault(x => string.Equals(x.Name, item.ComicName, StringComparison.OrdinalIgnoreCase) || string.Equals(x.Link, item.ComicUrl, StringComparison.OrdinalIgnoreCase));
+                if (galleryItem != null)
+                {
+                    _mainWindow.ScrollResultsItemIntoView(galleryItem);
+                }
+            }
+        }
+
         private async void BtnRetryFailed_Click(object sender, RoutedEventArgs e)
         {
             bool isVi = _mainWindow._isVietnameseUi;

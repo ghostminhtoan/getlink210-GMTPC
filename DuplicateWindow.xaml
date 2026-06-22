@@ -1,4 +1,4 @@
-﻿<Window x:Class="get_link_manga.DuplicateWindow"
+<Window x:Class="get_link_manga.DuplicateWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -166,10 +166,10 @@
                     <MenuItem Header="Copy link các dòng đang chọn (Copy Selected Links)" Click="MenuCopySelectedLinks_Click"/>
                     <Separator/>
                     <MenuItem Header="Xóa các dòng đang bôi đen (Delete Selected)" Click="MenuDeleteSelected_Click"/>
-                    <MenuItem Header="X�a c�c d�ng d� t�ch (Delete Checked)" Click="MenuDeleteChecked_Click"/>
+                    <MenuItem Header="Xóa các dòng đã tích (Delete Checked)" Click="MenuDeleteChecked_Click"/>
                     <Separator/>
                     <MenuItem Header="Tải các dòng đang bôi đen (Download highlighted lines)" Click="MenuDownloadSelected_Click"/>
-                    <MenuItem Header="T?i c�c d�ng d� t�ch (Download selected lines)" Click="MenuDownloadChecked_Click"/>
+                    <MenuItem Header="Tải các dòng đã tích (Download selected lines)" Click="MenuDownloadChecked_Click"/>
                 </ContextMenu>
             </DataGrid.ContextMenu>
             <DataGrid.Columns>

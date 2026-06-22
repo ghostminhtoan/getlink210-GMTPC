@@ -748,7 +748,7 @@ namespace get_link_manga
             {
                 Owner = this
             };
-            logWindow.ShowDialog();
+            logWindow.Show();
         }
 
         private void BtnOpenFolderInRow_Click_LegacyDoNotUse(object sender, RoutedEventArgs e)
