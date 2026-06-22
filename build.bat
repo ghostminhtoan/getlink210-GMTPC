@@ -6,6 +6,8 @@ chcp 65001 > nul
 cd /d "%~dp0"
 
 :: Tắt tiến trình nếu đang chạy (bỏ qua lỗi nếu không tìm thấy)
+:: Enable long paths for app + Explorer if running elevated
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 taskkill /im "Comic-GMTPC.exe" /f >nul 2>&1
 
 :: Khai báo biến thư mục đích để dùng lại cho gọn

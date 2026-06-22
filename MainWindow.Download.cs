@@ -1400,25 +1400,41 @@ namespace get_link_manga
                             ex.Message.IndexOf("too many requests", StringComparison.OrdinalIgnoreCase) >= 0 ||
                             ex.Message.IndexOf("too many request", StringComparison.OrdinalIgnoreCase) >= 0
                         );
-                        bool isHentaiVnBook = item.SourceDomain != null && (
-                            item.SourceDomain.IndexOf("vi-hentai", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            item.SourceDomain.IndexOf("hentaivn", StringComparison.OrdinalIgnoreCase) >= 0
-                        );
 
-                        if (is429 && isHentaiVnBook)
+                        if (is429)
                         {
-                            Log($"[HentaiVN 429] Phát hiện 429 cho '{item.Name}'. Tiến hành dừng tải và xử lý...");
+                            Log($"[RateLimit 429] Phát hiện 429 cho '{item.Name}'. Tiến hành dừng tải...");
                             
                             // 1. Dừng download
                             Dispatcher.Invoke(() => BtnStopDownload_Click(null, null));
 
-                            // 2. Xóa thư mục runtimes\webview2
-                            DeleteWebView2RuntimeDirectoryWithRetry();
+                            // 2. Chờ 5 giây
+                            Log("[RateLimit 429] Chờ 5 giây...");
+                            await Task.Delay(5000);
 
-                            // 3. Xóa process của book
+                            // 3. Xóa temp
+                            Log("[RateLimit 429] Đang xóa thư mục tạm (temp)...");
+                            DeleteWebView2RuntimeDirectoryWithRetry();
+                            CleanupActiveTempFolders();
                             DeleteProcessMarkdownForItem(item);
 
-                            // 4. Làm mới trạng thái trong extracted gallery links
+                            // 4. Xóa cookie
+                            Log("[RateLimit 429] Đang xóa cookie...");
+                            InitializeHttpClientState();
+                            try
+                            {
+                                PortableRuntimeBootstrap.ResetPortableRuntimeStorage();
+                            }
+                            catch (Exception exReset)
+                            {
+                                Log($"[RateLimit 429 Warning] Không thể reset portable storage: {exReset.Message}");
+                            }
+
+                            // 5. Đợi tiếp 5 giây
+                            Log("[RateLimit 429] Đợi thêm 5 giây trước khi tải lại...");
+                            await Task.Delay(5000);
+
+                            // 6. Làm mới trạng thái trong extracted gallery links
                             Dispatcher.Invoke(() =>
                             {
                                 item.Status = "Queued";
@@ -1429,11 +1445,11 @@ namespace get_link_manga
                                 item.IsChecked = true;
                             });
 
-                            // 5. Tải lại
-                            Log($"[HentaiVN 429] Đang bắt đầu tải lại '{item.Name}'...");
+                            // 7. Tải lại
+                            Log($"[RateLimit 429] Đang bắt đầu tải lại '{item.Name}'...");
                             _ = StartDownloadProcessAsync(new List<GalleryItem> { item }, preserveExistingState: false);
                             
-                            throw new OperationCanceledException("Cancelled due to HentaiVN 429", ex);
+                            throw new OperationCanceledException("Cancelled due to RateLimit 429", ex);
                         }
 
                         Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
@@ -1809,7 +1825,7 @@ namespace get_link_manga
                 string imgUrl = imgMatch.Groups["imgUrl"].Value;
                 
                 // Adjust file extension based on actual source URL
-                string actualExt = Path.GetExtension(imgUrl);
+                string actualExt = GetSafeImageExtensionFromUrl(imgUrl);
                 string finalPath = targetPath;
                 if (!string.IsNullOrEmpty(actualExt) && !targetPath.EndsWith(actualExt, StringComparison.OrdinalIgnoreCase))
                 {
@@ -2551,7 +2567,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 }
 
                 // Adjust file extension based on actual source URL
-                string actualExt = Path.GetExtension(imgUrl);
+                string actualExt = GetSafeImageExtensionFromUrl(imgUrl);
                 string finalPath = targetPath;
                 if (!string.IsNullOrEmpty(actualExt) && !targetPath.EndsWith(actualExt, StringComparison.OrdinalIgnoreCase))
                 {
@@ -2852,12 +2868,13 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             string safeName = Regex.Replace(processedName, @"\s*[:：]\s*", " - ");
             foreach (var c in invalid)
             {
-                safeName = safeName.Replace(c, ' ');
+                safeName = safeName.Replace(c, '-');
             }
 
-            // Remove multiple consecutive spaces
+            // ponytail: only keep safe folder chars; collapse repeat separators before trim.
+            safeName = Regex.Replace(safeName, @"-+", "-");
             safeName = Regex.Replace(safeName, @"\s+", " ");
-            safeName = safeName.Trim().TrimEnd('.');
+            safeName = safeName.Trim().TrimEnd('.', '-');
 
             if (maxLength > 8 && safeName.Length > maxLength)
             {
@@ -3164,6 +3181,43 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
 
             return filenames;
+        }
+
+        private static string GetSafeImageExtensionFromUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return ".jpg";
+            }
+
+            // ponytail: use URL path only; query string can poison Path.GetExtension().
+            string path = url;
+            if (Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
+            {
+                path = uri.AbsolutePath;
+            }
+            else
+            {
+                int queryIndex = url.IndexOf('?');
+                if (queryIndex >= 0)
+                {
+                    path = url.Substring(0, queryIndex);
+                }
+            }
+
+            string ext = Path.GetExtension(path);
+            switch ((ext ?? string.Empty).ToLowerInvariant())
+            {
+                case ".jpg":
+                case ".jpeg":
+                case ".png":
+                case ".gif":
+                case ".bmp":
+                case ".webp":
+                    return ext;
+                default:
+                    return ".jpg";
+            }
         }
 
         public static int ExtractPageNumberFromFilename(string filenameWithoutExt)
@@ -3828,7 +3882,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                     imgUrl = "https:" + imgUrl;
                 }
 
-                string actualExt = Path.GetExtension(imgUrl);
+                string actualExt = GetSafeImageExtensionFromUrl(imgUrl);
                 
                 // Ensure extension is strictly allowed
                 string[] allowedExts = new string[] { ".jpg", ".png", ".jpeg", ".bmp", ".gif", ".webp" };
