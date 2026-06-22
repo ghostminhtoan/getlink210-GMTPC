@@ -2247,9 +2247,9 @@
                                                      </Style>
                                                  </Grid.Style>
 
-                                                 <ProgressBar Value="{Binding ProgressPercent}" Minimum="0" Maximum="100" Foreground="{StaticResource CyberpunkCyanBrush}" Style="{StaticResource ProgressBarSuccess}" Height="12" VerticalAlignment="Center"/>
+                                                  <ProgressBar Value="{Binding DownloadProgressPercent}" Minimum="0" Maximum="100" Foreground="{StaticResource CyberpunkCyanBrush}" Style="{StaticResource ProgressBarSuccess}" Height="12" VerticalAlignment="Center"/>
                                                  
-                                                 <TextBlock Text="{Binding ProgressPercent, StringFormat={}{0:F0}%}" 
+                                                  <TextBlock Text="{Binding DownloadProgressText}" 
                                                             Foreground="Red" 
                                                             FontSize="8" 
                                                             FontWeight="Bold"
@@ -2262,7 +2262,7 @@
                              </DataGridTemplateColumn>
 
                              <!-- Process Column -->
-                            <DataGridTemplateColumn x:Name="colProcess" Width="1.5*" SortMemberPath="ProcessSortText">
+                             <DataGridTemplateColumn x:Name="colProcess" Width="1.0*" SortMemberPath="ProcessSortText">
                                 <DataGridTemplateColumn.Header>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="PROCESS" Foreground="{StaticResource CyberpunkPinkBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -2307,8 +2307,35 @@
                                  </DataGridTemplateColumn.CellTemplate>
                              </DataGridTemplateColumn>
 
+                            <DataGridTemplateColumn x:Name="colSpeed" Width="0.75*" SortMemberPath="DownloadSpeedSortValue">
+                                <DataGridTemplateColumn.Header>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="SPEED" Foreground="{StaticResource CyberpunkPinkBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <Button Name="btnSortBySpeed" Content="&#x21C5;" Click="BtnSortBySpeed_Click" Width="22" Height="18" Padding="0" FontSize="10" ToolTip="SORT BY SPEED">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource CyberpunkButtonCyan}">
+                                                    <Setter Property="Margin" Value="0"/>
+                                                    <Setter Property="MinWidth" Value="0"/>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
+                                </DataGridTemplateColumn.Header>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DownloadSpeedText}"
+                                                   Foreground="{StaticResource CyberpunkYellowBrush}"
+                                                   FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"
+                                                   TextAlignment="Center"
+                                                   Margin="2,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
                             <!-- Action Buttons Column -->
-                            <DataGridTemplateColumn x:Name="colChapter" Header="CHAPTER" Width="1.2*" SortMemberPath="ChapterSelectionText">
+                            <DataGridTemplateColumn x:Name="colChapter" Header="CHAPTER" Width="0.95*" SortMemberPath="ChapterSelectionText">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBox Text="{Binding ChapterSelectionText, UpdateSourceTrigger=PropertyChanged}"

@@ -160,7 +160,7 @@ if (-not (Test-Path -LiteralPath $projectPath)) {
 $namespaceManager = New-Object System.Xml.XmlNamespaceManager($projectXml.NameTable)
 $namespaceManager.AddNamespace("msb", $projectXml.DocumentElement.NamespaceURI)
 
-$projectIncludeNodes = $projectXml.SelectNodes("//msb:Compile[@Include] | //msb:Page[@Include] | //msb:ApplicationDefinition[@Include] | //msb:EmbeddedResource[@Include] | //msb:None[@Include]", $namespaceManager)
+$projectIncludeNodes = $projectXml.SelectNodes("//msb:Compile[@Include][not(ancestor::msb:Target)] | //msb:Page[@Include][not(ancestor::msb:Target)] | //msb:ApplicationDefinition[@Include][not(ancestor::msb:Target)] | //msb:EmbeddedResource[@Include][not(ancestor::msb:Target)] | //msb:None[@Include][not(ancestor::msb:Target)]", $namespaceManager)
 $projectMissingPaths = New-Object System.Collections.Generic.List[string]
 $projectIncludedFiles = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::OrdinalIgnoreCase)
 

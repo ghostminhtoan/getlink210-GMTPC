@@ -186,6 +186,8 @@ namespace get_link_manga
         private string _downloadPath;
         private string _chapterSelectionText;
         private double _progressPercent;
+        private double _downloadProgressPercent;
+        private long _downloadSpeedBytesPerSecond;
         private int _connectionCount = 1;
         private int _multiDownloadCount = 2;
         private List<ErrorDetail> _errors = new List<ErrorDetail>();
@@ -476,6 +478,33 @@ namespace get_link_manga
             set { if (_progressPercent != value) { _progressPercent = value; OnPropertyChanged(); } }
         }
 
+        public double DownloadProgressPercent
+        {
+            get => _downloadProgressPercent;
+            set { if (_downloadProgressPercent != value) { _downloadProgressPercent = value; OnPropertyChanged(); OnPropertyChanged(nameof(DownloadProgressText)); } }
+        }
+
+        public long DownloadSpeedBytesPerSecond
+        {
+            get => _downloadSpeedBytesPerSecond;
+            set
+            {
+                if (_downloadSpeedBytesPerSecond != value)
+                {
+                    _downloadSpeedBytesPerSecond = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(DownloadSpeedText));
+                    OnPropertyChanged(nameof(DownloadSpeedSortValue));
+                }
+            }
+        }
+
+        public long DownloadSpeedSortValue => _downloadSpeedBytesPerSecond;
+
+        public string DownloadProgressText => $"{DownloadProgressPercent:F0}%";
+
+        public string DownloadSpeedText => FormatSpeedText(_downloadSpeedBytesPerSecond);
+
         public int ConnectionCount
         {
             get => _connectionCount;
@@ -503,6 +532,34 @@ namespace get_link_manga
         }
 
         public string ConnectionDisplayText => $"{ConnectionCount} conn";
+
+        private static string FormatSpeedText(long bytesPerSecond)
+        {
+            if (bytesPerSecond <= 0)
+            {
+                return "-";
+            }
+
+            double value = bytesPerSecond;
+            string unit = "B/s";
+            if (value >= 1024)
+            {
+                value /= 1024;
+                unit = "KB/s";
+            }
+            if (value >= 1024)
+            {
+                value /= 1024;
+                unit = "MB/s";
+            }
+            if (value >= 1024)
+            {
+                value /= 1024;
+                unit = "GB/s";
+            }
+
+            return value >= 10 ? $"{value:0} {unit}" : $"{value:0.0} {unit}";
+        }
 
         public bool IsPaused
         {

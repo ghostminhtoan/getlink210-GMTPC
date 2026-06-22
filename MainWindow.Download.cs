@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -160,6 +161,30 @@ namespace get_link_manga
             {
                 return path;
             }
+        }
+
+        private void UpdateDownloadRowMetrics(GalleryItem item, int completedPages, int totalPages, string processText, long bytesDownloaded = 0, long elapsedMilliseconds = 0)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            double percent = totalPages > 0
+                ? Math.Min(100d, Math.Max(0d, (double)completedPages * 100d / totalPages))
+                : 0d;
+
+            long speed = bytesDownloaded > 0 && elapsedMilliseconds > 0
+                ? (long)(bytesDownloaded * 1000d / elapsedMilliseconds)
+                : 0L;
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                item.CompletedChapters = completedPages;
+                item.DownloadProgressPercent = percent;
+                item.DownloadSpeedBytesPerSecond = speed;
+                item.CurrentProcess = processText;
+            }));
         }
 
         private string GetSiteDownloadRoot(string rootFolder, string siteKey)
@@ -1607,22 +1632,18 @@ namespace get_link_manga
                             string fileName = isFastPath ? $"{pageNum:D3}.{ext}" : $"{pageNum:D3}.jpg";
                             string localFilePath = Path.Combine(tempFolder, fileName);
                             string finalFilePath = Path.Combine(targetFolder, fileName);
+                            string downloadedPath = localFilePath;
+                            var pageWatch = Stopwatch.StartNew();
 
                             // Skip if file already exists in either temp or final folder
                             if ((File.Exists(localFilePath) && new FileInfo(localFilePath).Length > 1024) ||
                                 (File.Exists(finalFilePath) && new FileInfo(finalFilePath).Length > 1024))
                             {
+                                pageWatch.Stop();
                                 lock (lockObj)
                                 {
                                     completedPages++;
-                                    if (queueItem != null)
-                                    {
-                                        Dispatcher.BeginInvoke(new Action(() =>
-                                        {
-                                            queueItem.CompletedChapters = completedPages;
-                                            queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                        }));
-                                    }
+                                    UpdateDownloadRowMetrics(queueItem, completedPages, totalPages, $"{completedPages}/{totalPages} pages", 0, 0);
                                 }
                                 return;
                             }
@@ -1637,25 +1658,24 @@ namespace get_link_manga
                                 catch (Exception ex)
                                 {
                                     Log($"[Fast Path] Lỗi trang {pageNum} ({ex.Message}). Thử Slow Path fallback...");
-                                    await DownloadPageSlowPathAsync(item, pageNum, localFilePath, token);
+                                    downloadedPath = await DownloadPageSlowPathAsync(item, pageNum, localFilePath, token);
                                 }
                             }
                             else
                             {
-                                await DownloadPageSlowPathAsync(item, pageNum, localFilePath, token);
+                                downloadedPath = await DownloadPageSlowPathAsync(item, pageNum, localFilePath, token);
                             }
+                            if (isFastPath && string.Equals(downloadedPath, localFilePath, StringComparison.Ordinal))
+                            {
+                                downloadedPath = localFilePath;
+                            }
+                            pageWatch.Stop();
 
                             lock (lockObj)
                             {
                                 completedPages++;
-                                if (queueItem != null)
-                                {
-                                    Dispatcher.BeginInvoke(new Action(() =>
-                                    {
-                                        queueItem.CompletedChapters = completedPages;
-                                        queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                    }));
-                                }
+                                long downloadedBytes = !string.IsNullOrWhiteSpace(downloadedPath) && File.Exists(downloadedPath) ? new FileInfo(downloadedPath).Length : 0;
+                                UpdateDownloadRowMetrics(queueItem, completedPages, totalPages, $"{completedPages}/{totalPages} pages", downloadedBytes, pageWatch.ElapsedMilliseconds);
                                 WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                             }
                         }
@@ -1676,7 +1696,7 @@ namespace get_link_manga
             }
         }
 
-        private async Task DownloadPageSlowPathAsync(GalleryItem item, int pageNum, string targetPath, CancellationToken token)
+        private async Task<string> DownloadPageSlowPathAsync(GalleryItem item, int pageNum, string targetPath, CancellationToken token)
         {
             // Respect pause check
             while (_isDownloadPaused || item.IsPaused)
@@ -1715,11 +1735,13 @@ namespace get_link_manga
                 token.ThrowIfCancellationRequested();
 
                 await DownloadUrlToFileWithRefererAsync(imgUrl, null, finalPath, token);
+                return finalPath;
             }
             else
             {
 throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang đọc {pageNum}");
-            }
+        }
+
         }
 
         private async Task<byte[]> GetByteArrayWithRefererAsync(string url, string referer)
@@ -1823,6 +1845,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                             string fileName = $"{pageNum:D3}.jpg";
                             string localFilePath = Path.Combine(tempFolder, fileName);
                             string finalFilePath = Path.Combine(targetFolder, fileName);
+                            string downloadedPath = localFilePath;
+                            var pageWatch = Stopwatch.StartNew();
 
                             // Skip if file already exists in either temp or final folder (with any common image extension)
                             bool alreadyExists = false;
@@ -1848,17 +1872,11 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                             if (alreadyExists)
                             {
+                                pageWatch.Stop();
                                 lock (lockObj)
                                 {
                                     completedPages++;
-                                    if (queueItem != null)
-                                    {
-                                        Dispatcher.BeginInvoke(new Action(() =>
-                                        {
-                                            queueItem.CompletedChapters = completedPages;
-                                            queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                        }));
-                                    }
+                                    UpdateDownloadRowMetrics(queueItem, completedPages, totalPages, $"{completedPages}/{totalPages} pages", 0, 0);
                                     WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} existed");
                                     Dispatcher.BeginInvoke(new Action(() =>
                                     {
@@ -1870,7 +1888,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                             try
                             {
-                                await DownloadNhentaiRedirectPageAsync(normalizedBookUrl, pageNum, localFilePath, token);
+                                downloadedPath = await DownloadNhentaiRedirectPageAsync(normalizedBookUrl, pageNum, localFilePath, token);
                             }
                             catch (Exception pageEx)
                             {
@@ -1897,14 +1915,9 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                             lock (lockObj)
                             {
                                 completedPages++;
-                                if (queueItem != null)
-                                {
-                                    Dispatcher.BeginInvoke(new Action(() =>
-                                    {
-                                        queueItem.CompletedChapters = completedPages;
-                                        queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                    }));
-                                }
+                                pageWatch.Stop();
+                                long downloadedBytes = !string.IsNullOrWhiteSpace(downloadedPath) && File.Exists(downloadedPath) ? new FileInfo(downloadedPath).Length : 0;
+                                UpdateDownloadRowMetrics(queueItem, completedPages, totalPages, $"{completedPages}/{totalPages} pages", downloadedBytes, pageWatch.ElapsedMilliseconds);
                                     WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                                 if (completedPages % 5 == 0 || completedPages == totalPages)
                                 {
@@ -1972,7 +1985,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             return 0;
         }
 
-        private async Task DownloadNhentaiRedirectPageAsync(string bookUrl, int pageNum, string targetPath, CancellationToken token)
+        private async Task<string> DownloadNhentaiRedirectPageAsync(string bookUrl, int pageNum, string targetPath, CancellationToken token)
         {
             while (_isDownloadPaused)
             {
@@ -1998,6 +2011,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             string finalPath = Path.ChangeExtension(targetPath, actualExt.TrimStart('.'));
             await DownloadUrlToFileWithRefererAsync(imageUrl, pageUrl, finalPath, token);
             Log($"[nhentai.xxx] Trang {pageNum} -> {imageUrl}");
+            return finalPath;
         }
 
         private string GuessImageExtensionFromContentType(string mediaType)
@@ -3555,6 +3569,8 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                                 string localFileWithoutExt = Path.Combine(tempFolder, $"{pageNum:D3}");
                                 string finalFileWithoutExt = Path.Combine(targetFolder, $"{pageNum:D3}");
+                                string downloadedPath = localFileWithoutExt;
+                                var pageWatch = Stopwatch.StartNew();
 
                                 bool exists = false;
                                 string[] extensions = new string[] { ".jpg", ".png", ".jpeg", ".webp" };
@@ -3570,17 +3586,11 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                                 if (exists)
                                 {
+                                    pageWatch.Stop();
                                     lock (lockObj)
                                     {
                                         completedPages++;
-                                        if (queueItem != null)
-                                        {
-                                            Dispatcher.BeginInvoke(new Action(() =>
-                                            {
-                                                queueItem.CompletedChapters = completedPages;
-                                                queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                            }));
-                                        }
+                                        UpdateDownloadRowMetrics(queueItem, completedPages, totalPages, $"{completedPages}/{totalPages} pages", 0, 0);
                                         WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} existed");
                                     }
                                     return;
@@ -3590,19 +3600,14 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                                 // Fetch hentaiera viewer page to extract image source
                                 // e.g. https://hentaiera.com/view/315003/1
-                                await DownloadHentaieraPageAsync(item, galleryId, pageNum, localFilePath, token);
+                                downloadedPath = await DownloadHentaieraPageAsync(item, galleryId, pageNum, localFilePath, token);
 
                                 lock (lockObj)
                                 {
                                     completedPages++;
-                                    if (queueItem != null)
-                                    {
-                                        Dispatcher.BeginInvoke(new Action(() =>
-                                        {
-                                            queueItem.CompletedChapters = completedPages;
-                                            queueItem.CurrentProcess = $"{completedPages}/{totalPages} pages";
-                                        }));
-                                    }
+                                    pageWatch.Stop();
+                                    long downloadedBytes = !string.IsNullOrWhiteSpace(downloadedPath) && File.Exists(downloadedPath) ? new FileInfo(downloadedPath).Length : 0;
+                                    UpdateDownloadRowMetrics(queueItem, completedPages, totalPages, $"{completedPages}/{totalPages} pages", downloadedBytes, pageWatch.ElapsedMilliseconds);
                                     WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, totalPages, $"{completedPages}/{totalPages} pages", $"Page {pageNum} completed");
                                 }
                             }
@@ -3641,7 +3646,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
         }
 
-        private async Task DownloadHentaieraPageAsync(GalleryItem item, string galleryId, int pageNum, string targetPath, CancellationToken token)
+        private async Task<string> DownloadHentaieraPageAsync(GalleryItem item, string galleryId, int pageNum, string targetPath, CancellationToken token)
         {
             while (_isDownloadPaused || item.IsPaused)
             {
@@ -3764,6 +3769,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
 
                 // Download using referer to avoid hotlinking protection
                 await DownloadUrlToFileWithRefererAsync(imgUrl, viewUrl, finalPath, token);
+                return finalPath;
             }
             else
             {

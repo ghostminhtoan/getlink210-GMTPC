@@ -1,5 +1,9 @@
 # Nhật ký Git Commit
 
+## 2026-06-22
+- fix(build): restore clean csproj to resolve MarkupCompilePass1 ChecksumAlgorithm build error
+- fix(build): update Verify-GitRestorePoint.ps1 to ignore Compile items inside Target elements
+
 ## 2026-06-21
 - feat(archive): delete incomplete archive file if compression is cancelled or fails
 - feat(captcha): delete the entire runtimes folder during cookie reset instead of selectively deleting directories
