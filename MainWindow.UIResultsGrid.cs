@@ -425,6 +425,22 @@ namespace get_link_manga
                 DeleteSelectedItems();
                 e.Handled = true;
             }
+            else if (e.Key == Key.Space)
+            {
+                if (dgResults.SelectedItems.Count > 0)
+                {
+                    var firstItem = dgResults.SelectedItems.Cast<GalleryItem>().FirstOrDefault();
+                    if (firstItem != null)
+                    {
+                        bool targetState = !firstItem.IsChecked;
+                        foreach (var item in dgResults.SelectedItems.Cast<GalleryItem>())
+                        {
+                            item.IsChecked = targetState;
+                        }
+                    }
+                    e.Handled = true;
+                }
+            }
         }
 
         private void DeleteSelectedItems()

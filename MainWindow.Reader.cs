@@ -629,7 +629,7 @@ namespace get_link_manga
             {
                 _readerLibraryWatcherDebounceTimer = new DispatcherTimer(DispatcherPriority.Background)
                 {
-                    Interval = TimeSpan.FromSeconds(1)
+                    Interval = TimeSpan.FromSeconds(5)
                 };
                 _readerLibraryWatcherDebounceTimer.Tick += async (sender, args) =>
                 {
@@ -645,7 +645,7 @@ namespace get_link_manga
             {
                 _readerNovelLibraryWatcherDebounceTimer = new DispatcherTimer(DispatcherPriority.Background)
                 {
-                    Interval = TimeSpan.FromSeconds(1)
+                    Interval = TimeSpan.FromSeconds(5)
                 };
                 _readerNovelLibraryWatcherDebounceTimer.Tick += async (sender, args) =>
                 {
@@ -711,13 +711,36 @@ namespace get_link_manga
             var watcher = new FileSystemWatcher(root)
             {
                 IncludeSubdirectories = true,
-                NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.FileName | NotifyFilters.LastWrite
+                NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.FileName
             };
 
-            FileSystemEventHandler changedHandler = (sender, args) => Dispatcher.BeginInvoke(onChanged);
-            RenamedEventHandler renamedHandler = (sender, args) => Dispatcher.BeginInvoke(onChanged);
+            FileSystemEventHandler changedHandler = (sender, args) => 
+            {
+                if (args.Name != null)
+                {
+                    string ext = Path.GetExtension(args.Name).ToLowerInvariant();
+                    if (ext == ".jpg" || ext == ".png" || ext == ".gif" || ext == ".webp" || ext == ".tmp" || ext == ".download")
+                    {
+                        return;
+                    }
+                }
+                Dispatcher.BeginInvoke(onChanged);
+            };
+
+            RenamedEventHandler renamedHandler = (sender, args) => 
+            {
+                if (args.Name != null)
+                {
+                    string ext = Path.GetExtension(args.Name).ToLowerInvariant();
+                    if (ext == ".jpg" || ext == ".png" || ext == ".gif" || ext == ".webp" || ext == ".tmp" || ext == ".download")
+                    {
+                        return;
+                    }
+                }
+                Dispatcher.BeginInvoke(onChanged);
+            };
+
             watcher.Created += changedHandler;
-            watcher.Changed += changedHandler;
             watcher.Deleted += changedHandler;
             watcher.Renamed += renamedHandler;
             watcher.EnableRaisingEvents = true;

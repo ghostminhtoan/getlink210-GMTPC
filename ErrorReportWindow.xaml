@@ -32,7 +32,7 @@
                 CornerRadius="3">
             <DataGrid Name="dgErrors"
                       AutoGenerateColumns="False"
-                      IsReadOnly="True"
+                      IsReadOnly="False"
                       Background="#06090e"
                       RowBackground="#06090e"
                       AlternatingRowBackground="#0c0f17"
@@ -43,7 +43,22 @@
                       HeadersVisibility="Column"
                       RowHeaderWidth="0"
                       CanUserSortColumns="True"
-                      SelectionMode="Extended">
+                      SelectionMode="Extended"
+                      PreviewKeyDown="DgErrors_PreviewKeyDown">
+
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Tích các dòng đang bôi đen (Check Selected)" Click="MenuCheckSelected_Click"/>
+                        <MenuItem Header="Bỏ tích các dòng đang bôi đen (Uncheck Selected)" Click="MenuUncheckSelected_Click"/>
+                        <MenuItem Header="Đảo ngược trạng thái tích (Invert Checked)" Click="MenuInvertChecked_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Mở link trong trình duyệt (Open in browser)" Click="MenuOpenInBrowser_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Sao chép các dòng đang chọn (Copy Selected)" Click="MenuCopySelected_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Xóa lỗi và truyện khỏi danh sách hiển thị (Delete errors and books)" Click="MenuDeleteErrorsAndBooks_Click"/>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
 
                 <DataGrid.ColumnHeaderStyle>
                     <Style TargetType="DataGridColumnHeader">
@@ -58,7 +73,23 @@
                 </DataGrid.ColumnHeaderStyle>
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="⚠" Binding="{Binding Icon}" Width="35"/>
+                    <!-- Checkbox Column -->
+                    <DataGridTemplateColumn Width="38" SortMemberPath="IsChecked">
+                        <DataGridTemplateColumn.Header>
+                            <Grid HorizontalAlignment="Center">
+                                <CheckBox Name="chkSelectAll" Click="ChkSelectAll_Click"/>
+                            </Grid>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}" 
+                                          HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="⚠" Binding="{Binding Icon}" Width="35" IsReadOnly="True"/>
 
                     <DataGridTemplateColumn Header="COMIC" Width="240" SortMemberPath="ComicName">
                         <DataGridTemplateColumn.CellTemplate>
@@ -114,7 +145,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*">
+                    <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="#ff4444"/>

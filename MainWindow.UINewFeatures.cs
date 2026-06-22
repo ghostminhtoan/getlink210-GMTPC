@@ -372,6 +372,27 @@ namespace get_link_manga
 
                     successfulRetries++;
                     Log($"[Retry] Đã tải thành công: {err.ChapterName}, Trang {err.PageNumber}");
+                    Dispatcher.Invoke(() =>
+                    {
+                        var keyToRemove = _checkErrorIndex.Keys.FirstOrDefault(k => {
+                            if (_checkErrorIndex.TryGetValue(k, out var val))
+                            {
+                                return string.Equals(val.BookName, queueItem.Name, StringComparison.OrdinalIgnoreCase) &&
+                                       string.Equals(val.ChapterName, err.ChapterName, StringComparison.OrdinalIgnoreCase) &&
+                                       val.PageNumber == err.PageNumber;
+                            }
+                            return false;
+                        });
+
+                        if (keyToRemove != null)
+                        {
+                            if (_checkErrorIndex.TryGetValue(keyToRemove, out var itemToRemove))
+                            {
+                                _checkErrors.Remove(itemToRemove);
+                            }
+                            _checkErrorIndex.Remove(keyToRemove);
+                        }
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -538,6 +559,60 @@ namespace get_link_manga
             string normalized = (value ?? string.Empty).ToLowerInvariant();
             normalized = Regex.Replace(normalized, @"[^a-z0-9]+", " ").Trim();
             return normalized;
+        }
+
+        internal void RemoveErrorFromGlobalAndQueue(string bookName, string chapterName, string pageNumberStr, string errorMessage)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(() => RemoveErrorFromGlobalAndQueue(bookName, chapterName, pageNumberStr, errorMessage));
+                return;
+            }
+
+            // 1. Xóa trong queueItem
+            var queueItem = _scrapedItems.FirstOrDefault(x => string.Equals(x.Name, bookName, StringComparison.OrdinalIgnoreCase));
+            if (queueItem != null)
+            {
+                int pNum = 0;
+                int.TryParse(pageNumberStr, out pNum);
+                var err = queueItem.Errors.FirstOrDefault(e => 
+                    string.Equals(e.ChapterName, chapterName, StringComparison.OrdinalIgnoreCase) && 
+                    e.PageNumber == pNum);
+                if (err != null)
+                {
+                    queueItem.Errors.Remove(err);
+                    queueItem.ErrorCount = queueItem.Errors.Count;
+                }
+                if (queueItem.Errors.Count == 0)
+                {
+                    queueItem.Status = "Completed";
+                    queueItem.CurrentProcess = "Done";
+                }
+            }
+
+            // 2. Xóa trong _checkErrors chính
+            int pageNum = 0;
+            int.TryParse(pageNumberStr, out pageNum);
+            var keyToRemove = _checkErrorIndex.Keys.FirstOrDefault(k => {
+                if (_checkErrorIndex.TryGetValue(k, out var val))
+                {
+                    return string.Equals(val.BookName, bookName, StringComparison.OrdinalIgnoreCase) &&
+                           string.Equals(val.ChapterName, chapterName, StringComparison.OrdinalIgnoreCase) &&
+                           val.PageNumber == pageNum;
+                }
+                return false;
+            });
+
+            if (keyToRemove != null)
+            {
+                if (_checkErrorIndex.TryGetValue(keyToRemove, out var itemToRemove))
+                {
+                    _checkErrors.Remove(itemToRemove);
+                }
+                _checkErrorIndex.Remove(keyToRemove);
+            }
+
+            UpdateStats();
         }
     }
 }

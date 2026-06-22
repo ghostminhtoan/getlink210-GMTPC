@@ -229,6 +229,74 @@ namespace get_link_manga
             return ShouldUseVerifyFindSequence(url) ? "verify" : "human";
         }
 
+        private async Task<bool> TryAutoSolveTruyenqqChallengeAsync(string url)
+        {
+            if (!IsTruyenqqChallengeUrl(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                return await await Dispatcher.InvokeAsync(async () =>
+                {
+                    if (webView.CoreWebView2 == null)
+                    {
+                        return false;
+                    }
+
+                    string script = @"
+                        (function() {
+                            function isVisible(el) {
+                                if (!el) return false;
+                                var style = window.getComputedStyle(el);
+                                if (!style || style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') {
+                                    return false;
+                                }
+                                var rect = el.getBoundingClientRect();
+                                return rect.width > 0 && rect.height > 0;
+                            }
+
+                            function clickElement(el) {
+                                if (!el || !isVisible(el)) return false;
+                                try { el.click(); return true; } catch (e) {}
+                                try { el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); return true; } catch (e2) {}
+                                return false;
+                            }
+
+                            var needles = ['verify', 'human', 'captcha', 'continue', 'next', 'xac minh', 'xác minh', 'robot', 'submit'];
+                            var elements = document.querySelectorAll('button, a, input, label, div, span');
+                            for (var i = 0; i < elements.length; i++) {
+                                var el = elements[i];
+                                var text = ((el.innerText || el.textContent || el.value || '') + '').trim().toLowerCase();
+                                if (!text || !isVisible(el)) continue;
+                                for (var n = 0; n < needles.length; n++) {
+                                    if (text.indexOf(needles[n]) !== -1 && clickElement(el)) {
+                                        return 'clicked';
+                                    }
+                                }
+                            }
+
+                            var checkboxes = document.querySelectorAll('input[type=""checkbox""], input[type=""radio""]');
+                            for (var j = 0; j < checkboxes.length; j++) {
+                                if (clickElement(checkboxes[j])) {
+                                    return 'clicked';
+                                }
+                            }
+
+                            return 'idle';
+                        })();";
+
+                    string result = await webView.CoreWebView2.ExecuteScriptAsync(script);
+                    return string.Equals((result ?? string.Empty).Trim('"'), "clicked", StringComparison.OrdinalIgnoreCase);
+                });
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private async Task SendCaptchaKeyboardBypassAsync(string url)
         {
             _isSendingBypassKeys = true;
@@ -573,6 +641,10 @@ namespace get_link_manga
                             {
                                 BypassWasNeeded = true;
                                 _lastCaptchaKeyboardAttempt = DateTime.Now;
+                                if (IsTruyenqqChallengeUrl(url) && await TryAutoSolveTruyenqqChallengeAsync(url))
+                                {
+                                    continue;
+                                }
                                 await SendCaptchaKeyboardBypassAsync(url);
                             }
                         }

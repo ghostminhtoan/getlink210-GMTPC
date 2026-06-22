@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace get_link_manga
 {
@@ -164,10 +166,139 @@ namespace get_link_manga
         {
             Close();
         }
+
+        private void ChkSelectAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox chk)
+            {
+                bool isChecked = chk.IsChecked ?? false;
+                foreach (var item in _displayItems)
+                {
+                    item.IsChecked = isChecked;
+                }
+            }
+        }
+
+        private void DgErrors_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Space)
+            {
+                if (dgErrors.SelectedItems.Count > 0)
+                {
+                    var firstItem = dgErrors.SelectedItems.Cast<ErrorDisplayItem>().FirstOrDefault();
+                    if (firstItem != null)
+                    {
+                        bool targetState = !firstItem.IsChecked;
+                        foreach (var item in dgErrors.SelectedItems.Cast<ErrorDisplayItem>())
+                        {
+                            item.IsChecked = targetState;
+                        }
+                    }
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void MenuCheckSelected_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in dgErrors.SelectedItems.Cast<ErrorDisplayItem>())
+            {
+                item.IsChecked = true;
+            }
+        }
+
+        private void MenuUncheckSelected_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in dgErrors.SelectedItems.Cast<ErrorDisplayItem>())
+            {
+                item.IsChecked = false;
+            }
+        }
+
+        private void MenuInvertChecked_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in _displayItems)
+            {
+                item.IsChecked = !item.IsChecked;
+            }
+        }
+
+        private void MenuOpenInBrowser_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in dgErrors.SelectedItems.Cast<ErrorDisplayItem>())
+            {
+                string url = !string.IsNullOrEmpty(item.ComicUrl) ? item.ComicUrl : item.ImageUrl;
+                if (!string.IsNullOrEmpty(url))
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = url,
+                            UseShellExecute = true
+                        });
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        private void MenuCopySelected_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgErrors.SelectedItems.Count == 0) return;
+            bool isVi = _mainWindow._isVietnameseUi;
+            var sb = new StringBuilder();
+            foreach (var error in dgErrors.SelectedItems.Cast<ErrorDisplayItem>())
+            {
+                sb.AppendLine(isVi
+                    ? $"❌ {error.ComicName} | {error.ChapterName}, Trang {error.PageNumber} — {error.ErrorMessage}"
+                    : $"❌ {error.ComicName} | {error.ChapterName}, Page {error.PageNumber} — {error.ErrorMessage}");
+
+                if (!string.IsNullOrWhiteSpace(error.ComicUrl))
+                {
+                    sb.AppendLine($"   Comic: {error.ComicUrl}");
+                }
+            }
+            Clipboard.SetText(sb.ToString());
+        }
+
+        private void MenuDeleteErrorsAndBooks_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgErrors.SelectedItems.Count == 0) return;
+
+            var itemsToRemove = dgErrors.SelectedItems.Cast<ErrorDisplayItem>().ToList();
+            foreach (var item in itemsToRemove)
+            {
+                _mainWindow.RemoveErrorFromGlobalAndQueue(item.ComicName, item.ChapterName, item.PageNumber, item.ErrorMessage);
+                _displayItems.Remove(item);
+            }
+
+            dgErrors.Items.Refresh();
+
+            var uniqueErrors = _queueItem.GetUniqueErrors();
+            bool isVi = _mainWindow._isVietnameseUi;
+            lblErrorSubtitle.Text = isVi
+                ? $"Nguồn: {_queueItem.SourceDomain} | Tổng lỗi theo trang: {uniqueErrors.Count}"
+                : $"Source: {_queueItem.SourceDomain} | Total errors by page: {uniqueErrors.Count}";
+        }
     }
 
-    public class ErrorDisplayItem
+    public class ErrorDisplayItem : INotifyPropertyChanged
     {
+        private bool _isChecked;
+        public bool IsChecked
+        {
+            get => _isChecked;
+            set
+            {
+                if (_isChecked != value)
+                {
+                    _isChecked = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public string Icon { get; set; }
         public string ComicName { get; set; }
         public string ComicUrl { get; set; }
@@ -176,5 +307,11 @@ namespace get_link_manga
         public string ErrorMessage { get; set; }
         public string ImageUrl { get; set; }
         public string ChapterUrl { get; set; }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

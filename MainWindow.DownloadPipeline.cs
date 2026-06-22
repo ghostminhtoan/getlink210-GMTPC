@@ -226,6 +226,14 @@ namespace get_link_manga
 
             try
             {
+                DateTime nowUtc = DateTime.UtcNow;
+                if (_processWriteTimes.TryGetValue(manifestPath, out DateTime lastWriteUtc) &&
+                    (nowUtc - lastWriteUtc).TotalMilliseconds < 1000)
+                {
+                    return;
+                }
+
+                _processWriteTimes[manifestPath] = nowUtc;
                 manifest.UpdatedUtc = DateTime.UtcNow;
                 Directory.CreateDirectory(Path.GetDirectoryName(manifestPath));
                 using (var stream = File.Create(manifestPath))

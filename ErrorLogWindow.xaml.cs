@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace get_link_manga
 {
@@ -154,6 +156,120 @@ namespace get_link_manga
         private void BtnClose_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void ChkSelectAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox chk)
+            {
+                bool isChecked = chk.IsChecked ?? false;
+                foreach (var item in _displayItems)
+                {
+                    item.IsChecked = isChecked;
+                }
+            }
+        }
+
+        private void DgLogs_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Space)
+            {
+                if (dgLogs.SelectedItems.Count > 0)
+                {
+                    var firstItem = dgLogs.SelectedItems.Cast<ErrorDisplayItem>().FirstOrDefault();
+                    if (firstItem != null)
+                    {
+                        bool targetState = !firstItem.IsChecked;
+                        foreach (var item in dgLogs.SelectedItems.Cast<ErrorDisplayItem>())
+                        {
+                            item.IsChecked = targetState;
+                        }
+                    }
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void MenuCheckSelected_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in dgLogs.SelectedItems.Cast<ErrorDisplayItem>())
+            {
+                item.IsChecked = true;
+            }
+        }
+
+        private void MenuUncheckSelected_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in dgLogs.SelectedItems.Cast<ErrorDisplayItem>())
+            {
+                item.IsChecked = false;
+            }
+        }
+
+        private void MenuInvertChecked_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in _displayItems)
+            {
+                item.IsChecked = !item.IsChecked;
+            }
+        }
+
+        private void MenuOpenInBrowser_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in dgLogs.SelectedItems.Cast<ErrorDisplayItem>())
+            {
+                string url = !string.IsNullOrEmpty(item.ComicUrl) ? item.ComicUrl : item.ImageUrl;
+                if (!string.IsNullOrEmpty(url))
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = url,
+                            UseShellExecute = true
+                        });
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        private void MenuCopySelected_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgLogs.SelectedItems.Count == 0) return;
+            bool isVi = _mainWindow._isVietnameseUi;
+            var sb = new StringBuilder();
+            foreach (var error in dgLogs.SelectedItems.Cast<ErrorDisplayItem>())
+            {
+                sb.AppendLine(isVi
+                    ? $"❌ {error.ComicName} | {error.ChapterName}, Trang {error.PageNumber} — {error.ErrorMessage}"
+                    : $"❌ {error.ComicName} | {error.ChapterName}, Page {error.PageNumber} — {error.ErrorMessage}");
+
+                if (!string.IsNullOrWhiteSpace(error.ComicUrl))
+                {
+                    sb.AppendLine($"   Comic: {error.ComicUrl}");
+                }
+            }
+            Clipboard.SetText(sb.ToString());
+        }
+
+        private void MenuDeleteErrorsAndBooks_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgLogs.SelectedItems.Count == 0) return;
+
+            var itemsToRemove = dgLogs.SelectedItems.Cast<ErrorDisplayItem>().ToList();
+            foreach (var item in itemsToRemove)
+            {
+                _mainWindow.RemoveErrorFromGlobalAndQueue(item.ComicName, item.ChapterName, item.PageNumber, item.ErrorMessage);
+                _displayItems.Remove(item);
+            }
+
+            dgLogs.Items.Refresh();
+            
+            bool isVi = _mainWindow._isVietnameseUi;
+            lblLogSubtitle.Text = isVi
+                ? $"Tổng truyện lỗi: {_displayItems.Select(x => x.ComicName).Distinct().Count()}"
+                : $"Errored comics: {_displayItems.Select(x => x.ComicName).Distinct().Count()}";
         }
     }
 }
