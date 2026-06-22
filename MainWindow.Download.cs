@@ -1307,19 +1307,19 @@ namespace get_link_manga
                                 sw.Restart();
                                 
                                 long speed = elapsedSec > 0 ? (long)(delta / elapsedSec) : 0L;
-                                Dispatcher.BeginInvoke(new Action(() =>
+                                await Dispatcher.InvokeAsync(() =>
                                 {
                                     item.DownloadSpeedBytesPerSecond = speed;
-                                }));
+                                });
                             }
                         }
                         catch (OperationCanceledException) {}
                         finally
                         {
-                            Dispatcher.BeginInvoke(new Action(() =>
+                            await Dispatcher.InvokeAsync(() =>
                             {
                                 item.DownloadSpeedBytesPerSecond = 0;
-                            }));
+                            });
                         }
                     });
 
