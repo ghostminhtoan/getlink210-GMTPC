@@ -1288,6 +1288,47 @@ namespace get_link_manga
                     }
                     catch (Exception ex)
                     {
+                        bool is429 = ex.Message != null && (
+                            ex.Message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            ex.Message.IndexOf("too many requests", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            ex.Message.IndexOf("too many request", StringComparison.OrdinalIgnoreCase) >= 0
+                        );
+                        bool isHentaiVnBook = item.SourceDomain != null && (
+                            item.SourceDomain.IndexOf("vi-hentai", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            item.SourceDomain.IndexOf("hentaivn", StringComparison.OrdinalIgnoreCase) >= 0
+                        );
+
+                        if (is429 && isHentaiVnBook)
+                        {
+                            Log($"[HentaiVN 429] Phát hiện 429 cho '{item.Name}'. Tiến hành dừng tải và xử lý...");
+                            
+                            // 1. Dừng download
+                            Dispatcher.Invoke(() => BtnStopDownload_Click(null, null));
+
+                            // 2. Xóa thư mục runtimes\webview2
+                            DeleteWebView2RuntimeDirectoryWithRetry();
+
+                            // 3. Xóa process của book
+                            DeleteProcessMarkdownForItem(item);
+
+                            // 4. Làm mới trạng thái trong extracted gallery links
+                            Dispatcher.Invoke(() =>
+                            {
+                                item.Status = "Queued";
+                                item.Errors.Clear();
+                                item.ErrorCount = 0;
+                                item.CurrentProcess = "Retrying after 429...";
+                                item.CompletedChapters = 0;
+                                item.IsChecked = true;
+                            });
+
+                            // 5. Tải lại
+                            Log($"[HentaiVN 429] Đang bắt đầu tải lại '{item.Name}'...");
+                            _ = StartDownloadProcessAsync(new List<GalleryItem> { item }, preserveExistingState: false);
+                            
+                            throw new OperationCanceledException("Cancelled due to HentaiVN 429", ex);
+                        }
+
                         Log($"[Lỗi] Không thể tải truyện '{item.Name}': {ex.Message}");
                         Dispatcher.Invoke(() =>
                         {
@@ -3209,6 +3250,25 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
 
             UpdateStats();
+        }
+
+        private void DeleteWebView2RuntimeDirectoryWithRetry()
+        {
+            string path = PortablePaths.WebView2RuntimeRoot;
+            if (!Directory.Exists(path)) return;
+            for (int i = 0; i < 5; i++)
+            {
+                try
+                {
+                    Directory.Delete(path, true);
+                    Log("[HentaiVN 429] Đã xóa thành công runtimes\\webview2");
+                    break;
+                }
+                catch
+                {
+                    System.Threading.Thread.Sleep(500);
+                }
+            }
         }
     }
 

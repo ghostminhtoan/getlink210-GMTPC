@@ -373,6 +373,39 @@ namespace get_link_manga
             }
         }
 
+        private string GetWebView2UserDataFolder()
+        {
+            string domain = "general";
+            try
+            {
+                if (!string.IsNullOrEmpty(_targetUrl))
+                {
+                    var uri = new Uri(_targetUrl);
+                    string host = uri.Host.ToLower();
+                    if (host.Contains("truyenqq")) domain = "truyenqq";
+                    else if (host.Contains("nettruyen")) domain = "nettruyen";
+                    else if (host.Contains("vi-hentai") || host.Contains("hentaivn")) domain = "hentaivn";
+                    else if (host.Contains("hentai2read")) domain = "hentai2read";
+                    else if (host.Contains("daomeoden")) domain = "daomeoden";
+                    else
+                    {
+                        var parts = host.Split('.');
+                        if (parts.Length >= 2)
+                        {
+                            domain = parts[parts.Length - 2];
+                        }
+                        else
+                        {
+                            domain = host;
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            return System.IO.Path.Combine(PortablePaths.WebView2RuntimeRoot, domain);
+        }
+
         private async void CaptchaWindow_Loaded(object sender, RoutedEventArgs e)
         {
             try
@@ -380,7 +413,7 @@ namespace get_link_manga
                 string browserArgs = "--disable-extensions --disable-component-extensions-with-background-pages --disable-background-networking --disable-sync --disable-default-apps --no-first-run --disable-features=msSmartScreenProtection,RendererCodeIntegrity";
                 var env = await CoreWebView2Environment.CreateAsync(
                     null,
-                    PortablePaths.WebView2CaptchaUserDataFolder,
+                    GetWebView2UserDataFolder(),
                     new CoreWebView2EnvironmentOptions(browserArgs));
                 await webView.EnsureCoreWebView2Async(env);
 

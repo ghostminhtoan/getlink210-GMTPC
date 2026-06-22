@@ -61,7 +61,7 @@ namespace get_link_manga
                 rid = "win-x86";
             }
 
-            return Path.Combine(WebView2RuntimeRoot, rid, "native");
+            return Path.Combine(RuntimeRoot, rid, "native");
         }
     }
 }
