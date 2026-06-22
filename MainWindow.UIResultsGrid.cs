@@ -459,9 +459,12 @@ namespace get_link_manga
             if (dgResults.SelectedItems.Count == 0) return;
 
             var itemsToRemove = dgResults.SelectedItems.Cast<GalleryItem>().ToList();
-            foreach (var item in itemsToRemove)
+            using (ResultsView.DeferRefresh())
             {
-                _scrapedItems.Remove(item);
+                foreach (var item in itemsToRemove)
+                {
+                    _scrapedItems.Remove(item);
+                }
             }
             
             lblLinkCount.Text = _scrapedItems.Count.ToString();
@@ -712,9 +715,12 @@ namespace get_link_manga
             var itemsToRemove = _scrapedItems.Where(item => item.IsChecked).ToList();
             if (!itemsToRemove.Any()) return;
 
-            foreach (var item in itemsToRemove)
+            using (ResultsView.DeferRefresh())
             {
-                _scrapedItems.Remove(item);
+                foreach (var item in itemsToRemove)
+                {
+                    _scrapedItems.Remove(item);
+                }
             }
 
             lblLinkCount.Text = _scrapedItems.Count.ToString();

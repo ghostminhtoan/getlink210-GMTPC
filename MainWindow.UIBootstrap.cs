@@ -332,10 +332,13 @@ namespace get_link_manga
                 return;
             }
 
-            foreach (var item in toRemove)
+            using (ResultsView.DeferRefresh())
             {
-                DeleteProcessMarkdownForItem(item);
-                _scrapedItems.Remove(item);
+                foreach (var item in toRemove)
+                {
+                    DeleteProcessMarkdownForItem(item);
+                    _scrapedItems.Remove(item);
+                }
             }
 
             Log($"Đã xóa {toRemove.Count} truyện hoàn thành khỏi danh sách.");
