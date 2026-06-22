@@ -991,14 +991,15 @@ namespace get_link_manga
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
             string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
             Directory.CreateDirectory(tempFolder);
-            var evalIndex = html.IndexOf("eval(function(h,u,n,t,e,r)");
-            if (evalIndex == -1)
+            var matchEval = Regex.Match(html, @"eval\s*\(\s*function\s*\(\s*h\s*,\s*u\s*,\s*n\s*,\s*t\s*,\s*e\s*,\s*r\s*\)", RegexOptions.IgnoreCase);
+            if (!matchEval.Success)
             {
                 throw new Exception("Không tìm thấy khối mã hóa ảnh trong trang (Obfuscated JS block not found).");
             }
+            int evalIndex = matchEval.Index;
 
             string sub = html.Substring(evalIndex);
-            var matchParams = Regex.Match(sub, @"}\s*\(\s*""(?<h>[^""]+)""\s*,\s*(?<u>\d+)\s*,\s*""(?<n>[^""]+)""\s*,\s*(?<t>\d+)\s*,\s*(?<e>\d+)\s*,\s*(?<r>\d+)\s*\)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            var matchParams = Regex.Match(sub, @"}\s*\(\s*['""](?<h>[^'""]+)['""]\s*,\s*(?<u>\d+)\s*,\s*['""](?<n>[^'""]+)['""]\s*,\s*(?<t>\d+)\s*,\s*(?<e>\d+)\s*,\s*(?<r>\d+)\s*\)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             if (!matchParams.Success)
             {
                 throw new Exception("Không thể phân tích tham số giải mã (Could not parse decoding parameters).");
