@@ -2392,6 +2392,7 @@
                                 <Button Name="btnCopyLinksOnly" Content="COPY BOOK LINKS" Click="BtnCopyLinksOnly_Click" Style="{StaticResource CompactCyanButton}" MinWidth="92" Width="Auto" Padding="10,2" FontWeight="Bold"/>
                                 <Button Name="btnCopyNamesAndLinks" Content="COPY BOOKS NAME + LINK" Click="BtnCopyNamesAndLinks_Click" Style="{StaticResource CompactPinkButton}" MinWidth="128" Width="Auto" Padding="10,2" FontWeight="Bold"/>
                                 <Button Name="btnCopyChaptersLink" Content="COPY CHAPTERS LINK" Click="BtnCopyChaptersLink_Click" Style="{StaticResource CompactCyanButton}" MinWidth="150" Width="Auto" Padding="10,2" FontWeight="Bold" Margin="4,0,0,0"/>
+                                <Button Name="btnRefreshStatus" Content="REFRESH STATUS" Click="BtnRefreshStatus_Click" Style="{StaticResource CompactCyanButton}" MinWidth="120" Width="Auto" Padding="10,2" FontWeight="Bold" Margin="4,0,0,0"/>
                                 <Button Name="btnClearResults" Content="CLEAR" Click="BtnClear_Click" Style="{StaticResource CompactCyanButton}" MinWidth="82" Width="Auto" Padding="10,2" FontWeight="Bold" Margin="4,0,0,0"/>
                             </WrapPanel>
 

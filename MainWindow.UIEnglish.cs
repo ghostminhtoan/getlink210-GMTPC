@@ -43,6 +43,7 @@ namespace get_link_manga
             ["SAVE LIST"] = "Lưu danh sách",
             ["LOAD LIST"] = "Tải danh sách",
             ["CLEAR"] = "Xóa",
+            ["REFRESH STATUS"] = "LÀM MỚI TRẠNG THÁI",
             ["WORD WRAP"] = "Xuống dòng",
             ["SEARCH"] = "Tìm kiếm",
             ["FOLDER ACTIONS"] = "Công cụ thư mục",

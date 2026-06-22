@@ -193,5 +193,53 @@ namespace get_link_manga
 
             return new List<string> { url };
         }
+
+        private void BtnRefreshStatus_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItems = dgResults.SelectedItems.Cast<GalleryItem>().ToList();
+            if (!selectedItems.Any())
+            {
+                MessageBox.Show(_isVietnameseUi ? "Vui lòng chọn ít nhất một truyện để làm mới." : "Please select at least one book to refresh.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            int count = 0;
+            foreach (var item in selectedItems)
+            {
+                if (item == null) continue;
+
+                item.Status = null;
+                item.CurrentProcess = "";
+                item.CompletedChapters = 0;
+                item.TotalChapters = 0;
+                item.ProgressPercent = 0;
+                item.DownloadProgressPercent = 0;
+                item.DownloadSpeedBytesPerSecond = 0;
+                item._downloadedBytesAccumulator = 0;
+                item.IsPaused = false;
+                item.IsStopped = false;
+                item.DownloadingChapter = "";
+                item.DownloadingPageProgress = "";
+                item.DownloadingPageLink = "";
+
+                if (item.Errors != null)
+                {
+                    item.Errors.Clear();
+                }
+                else
+                {
+                    item.Errors = new List<ErrorDetail>();
+                }
+                item.ErrorCount = 0;
+
+                DeleteProcessMarkdownForItem(item);
+                count++;
+            }
+
+            UpdateStats();
+
+            lblStatus.Text = _isVietnameseUi ? $"Đã làm mới trạng thái cho {count} truyện." : $"Refreshed status for {count} books.";
+            Log(_isVietnameseUi ? $"Đã làm mới trạng thái và xóa process file cho {count} truyện." : $"Refreshed status and deleted process files for {count} books.");
+        }
     }
 }
