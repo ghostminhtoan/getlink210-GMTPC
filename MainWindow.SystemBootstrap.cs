@@ -34,7 +34,7 @@ namespace get_link_manga
         private BookmarkHistoryWindow _bookmarkHistoryWindowInstance;
         private readonly System.Windows.Controls.ProgressBar progressBar = new System.Windows.Controls.ProgressBar();
         private bool _startupArchivePromptShown;
-        private int _currentMaxParallelBooks = 2;
+        private volatile int _currentMaxParallelBooks = 2;
         private DynamicSemaphore _activeBookSemaphore;
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
