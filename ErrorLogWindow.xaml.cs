@@ -271,5 +271,28 @@ namespace get_link_manga
                 ? $"Tổng truyện lỗi: {_displayItems.Select(x => x.ComicName).Distinct().Count()}"
                 : $"Errored comics: {_displayItems.Select(x => x.ComicName).Distinct().Count()}";
         }
+
+        private void DgLogs_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            e.Handled = true;
+            var column = e.Column;
+            var sortMember = column.SortMemberPath;
+            if (string.IsNullOrEmpty(sortMember)) return;
+
+            var view = System.Windows.Data.CollectionViewSource.GetDefaultView(dgLogs.ItemsSource) as System.Windows.Data.ListCollectionView;
+            if (view == null) return;
+
+            ListSortDirection direction = (column.SortDirection == ListSortDirection.Ascending)
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
+
+            foreach (var col in dgLogs.Columns)
+            {
+                col.SortDirection = null;
+            }
+            column.SortDirection = direction;
+
+            view.CustomSort = new ErrorDisplayItemComparer(sortMember, direction);
+        }
     }
 }

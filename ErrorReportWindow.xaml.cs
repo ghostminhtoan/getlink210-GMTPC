@@ -281,6 +281,29 @@ namespace get_link_manga
                 ? $"Nguồn: {_queueItem.SourceDomain} | Tổng lỗi theo trang: {uniqueErrors.Count}"
                 : $"Source: {_queueItem.SourceDomain} | Total errors by page: {uniqueErrors.Count}";
         }
+
+        private void DgErrors_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            e.Handled = true;
+            var column = e.Column;
+            var sortMember = column.SortMemberPath;
+            if (string.IsNullOrEmpty(sortMember)) return;
+
+            var view = System.Windows.Data.CollectionViewSource.GetDefaultView(dgErrors.ItemsSource) as System.Windows.Data.ListCollectionView;
+            if (view == null) return;
+
+            ListSortDirection direction = (column.SortDirection == ListSortDirection.Ascending)
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
+
+            foreach (var col in dgErrors.Columns)
+            {
+                col.SortDirection = null;
+            }
+            column.SortDirection = direction;
+
+            view.CustomSort = new ErrorDisplayItemComparer(sortMember, direction);
+        }
     }
 
     public class ErrorDisplayItem : INotifyPropertyChanged
@@ -312,6 +335,122 @@ namespace get_link_manga
         protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public class ErrorDisplayItemComparer : System.Collections.IComparer
+    {
+        private readonly string _property;
+        private readonly ListSortDirection _direction;
+
+        public ErrorDisplayItemComparer(string property, ListSortDirection direction)
+        {
+            _property = property;
+            _direction = direction;
+        }
+
+        public int Compare(object x, object y)
+        {
+            if (x == null && y == null) return 0;
+            if (x == null) return _direction == ListSortDirection.Ascending ? -1 : 1;
+            if (y == null) return _direction == ListSortDirection.Ascending ? 1 : -1;
+
+            var itemX = (ErrorDisplayItem)x;
+            var itemY = (ErrorDisplayItem)y;
+
+            int compareResult = 0;
+
+            switch (_property)
+            {
+                case "ComicName":
+                    compareResult = string.Compare(itemX.ComicName, itemY.ComicName, StringComparison.OrdinalIgnoreCase);
+                    if (compareResult == 0)
+                    {
+                        compareResult = CompareChapters(itemX.ChapterName, itemY.ChapterName);
+                    }
+                    if (compareResult == 0)
+                    {
+                        compareResult = ComparePages(itemX.PageNumber, itemY.PageNumber);
+                    }
+                    break;
+
+                case "ChapterName":
+                    compareResult = CompareChapters(itemX.ChapterName, itemY.ChapterName);
+                    if (compareResult == 0)
+                    {
+                        compareResult = ComparePages(itemX.PageNumber, itemY.PageNumber);
+                    }
+                    break;
+
+                case "PageNumber":
+                    compareResult = ComparePages(itemX.PageNumber, itemY.PageNumber);
+                    break;
+
+                case "ErrorMessage":
+                    compareResult = string.Compare(itemX.ErrorMessage, itemY.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+                    if (compareResult == 0)
+                    {
+                        compareResult = CompareChapters(itemX.ChapterName, itemY.ChapterName);
+                    }
+                    if (compareResult == 0)
+                    {
+                        compareResult = ComparePages(itemX.PageNumber, itemY.PageNumber);
+                    }
+                    break;
+
+                default:
+                    compareResult = 0;
+                    break;
+            }
+
+            return _direction == ListSortDirection.Ascending ? compareResult : -compareResult;
+        }
+
+        private int ComparePages(string pageA, string pageB)
+        {
+            if (pageA == pageB) return 0;
+            if (pageA == null) return -1;
+            if (pageB == null) return 1;
+
+            var matchA = System.Text.RegularExpressions.Regex.Match(pageA, @"\d+");
+            var matchB = System.Text.RegularExpressions.Regex.Match(pageB, @"\d+");
+
+            if (matchA.Success && matchB.Success)
+            {
+                if (int.TryParse(matchA.Value, out int valA) && int.TryParse(matchB.Value, out int valB))
+                {
+                    int numCompare = valA.CompareTo(valB);
+                    if (numCompare != 0) return numCompare;
+                }
+            }
+
+            return string.Compare(pageA, pageB, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private int CompareChapters(string chapA, string chapB)
+        {
+            if (chapA == chapB) return 0;
+            if (chapA == null) return -1;
+            if (chapB == null) return 1;
+
+            var matchA = System.Text.RegularExpressions.Regex.Match(chapA, @"\d+(\.\d+)?");
+            var matchB = System.Text.RegularExpressions.Regex.Match(chapB, @"\d+(\.\d+)?");
+
+            if (matchA.Success && matchB.Success)
+            {
+                string prefixA = chapA.Substring(0, matchA.Index);
+                string prefixB = chapB.Substring(0, matchB.Index);
+                int prefixCompare = string.Compare(prefixA, prefixB, StringComparison.OrdinalIgnoreCase);
+                if (prefixCompare != 0) return prefixCompare;
+
+                if (double.TryParse(matchA.Value, out double valA) && double.TryParse(matchB.Value, out double valB))
+                {
+                    int numCompare = valA.CompareTo(valB);
+                    if (numCompare != 0) return numCompare;
+                }
+            }
+
+            return string.Compare(chapA, chapB, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

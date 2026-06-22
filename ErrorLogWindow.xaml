@@ -44,7 +44,8 @@
                       RowHeaderWidth="0"
                       CanUserSortColumns="True"
                       SelectionMode="Extended"
-                      PreviewKeyDown="DgLogs_PreviewKeyDown">
+                      PreviewKeyDown="DgLogs_PreviewKeyDown"
+                      Sorting="DgLogs_Sorting">
 
                 <DataGrid.ContextMenu>
                     <ContextMenu>
@@ -91,7 +92,13 @@
 
                     <DataGridTextColumn Header="⚠" Binding="{Binding Icon}" Width="35" IsReadOnly="True"/>
 
-                    <DataGridTemplateColumn Header="COMIC" Width="240" SortMemberPath="ComicName">
+                    <DataGridTemplateColumn Width="240" SortMemberPath="ComicName">
+                        <DataGridTemplateColumn.Header>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="COMIC" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <Path Data="M 0,3 L 3,0 L 6,3 M 0,5 L 3,8 L 6,5" Stroke="{StaticResource CyberpunkCyanBrush}" StrokeThickness="1.2" Width="6" Height="8" Stretch="Fill" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            </StackPanel>
+                        </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="{Binding ComicName}"
@@ -109,7 +116,13 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="CHAPTER" Width="130" SortMemberPath="ChapterName">
+                    <DataGridTemplateColumn Width="130" SortMemberPath="ChapterName">
+                        <DataGridTemplateColumn.Header>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="CHAPTER" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <Path Data="M 0,3 L 3,0 L 6,3 M 0,5 L 3,8 L 6,5" Stroke="{StaticResource CyberpunkCyanBrush}" StrokeThickness="1.2" Width="6" Height="8" Stretch="Fill" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            </StackPanel>
+                        </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="{Binding ChapterName}"
@@ -127,7 +140,13 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="PAGE" Width="65" SortMemberPath="PageNumber">
+                    <DataGridTemplateColumn Width="65" SortMemberPath="PageNumber">
+                        <DataGridTemplateColumn.Header>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="PAGE" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <Path Data="M 0,3 L 3,0 L 6,3 M 0,5 L 3,8 L 6,5" Stroke="{StaticResource CyberpunkCyanBrush}" StrokeThickness="1.2" Width="6" Height="8" Stretch="Fill" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            </StackPanel>
+                        </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="{Binding PageNumber}"
@@ -145,7 +164,13 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Header="ERROR" Binding="{Binding ErrorMessage}" Width="*" IsReadOnly="True">
+                    <DataGridTextColumn Binding="{Binding ErrorMessage}" Width="*" IsReadOnly="True" SortMemberPath="ErrorMessage">
+                        <DataGridTextColumn.Header>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="ERROR" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <Path Data="M 0,3 L 3,0 L 6,3 M 0,5 L 3,8 L 6,5" Stroke="{StaticResource CyberpunkCyanBrush}" StrokeThickness="1.2" Width="6" Height="8" Stretch="Fill" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            </StackPanel>
+                        </DataGridTextColumn.Header>
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="#ff4444"/>
