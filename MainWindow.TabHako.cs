@@ -624,7 +624,7 @@ namespace get_link_manga
             return sb.ToString();
         }
 
-                private async void BtnHakoFetchInfo_Click(object sender, RoutedEventArgs e)
+        private async void BtnHakoFetchInfo_Click(object sender, RoutedEventArgs e)
         {
             string rawUrl = txtHakoTagUrl.Text.Trim();
             if (string.IsNullOrWhiteSpace(rawUrl))
@@ -803,7 +803,7 @@ namespace get_link_manga
                 btnHakoFetchInfo.IsEnabled = true;
             }
         }
-private int ExtractHakoMaxPage(string html, string pageUrl)
+        private int ExtractHakoMaxPage(string html, string pageUrl)
         {
             int maxPage = 1;
             string absoluteBase = NormalizeHakoUrl(pageUrl);

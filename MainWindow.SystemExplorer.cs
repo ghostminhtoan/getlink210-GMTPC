@@ -6,7 +6,7 @@ namespace get_link_manga
 {
     public partial class MainWindow : Window
     {
-                private void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
+        private void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new VistaFolderBrowser
             {
@@ -125,7 +125,8 @@ namespace get_link_manga
                     MessageBoxImage.Warning);
             }
         }
-private void EnsureFolderExistsForExplorer(string path)
+
+        private void EnsureFolderExistsForExplorer(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || Directory.Exists(path))
             {
