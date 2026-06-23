@@ -947,7 +947,9 @@ namespace get_link_manga
                 }
 
                 Log($"[Download] Đã thêm {addedCount} truyện vào hàng tải hiện tại.");
-                lblStatus.Text = $"Added {addedCount} books to active queue...";
+                lblStatus.Text = _isVietnameseUi
+                    ? $"Đã thêm {addedCount} truyện vào hàng chờ..."
+                    : $"Added {addedCount} books to active queue...";
                 return;
             }
 
@@ -986,7 +988,9 @@ namespace get_link_manga
                 }
 
                 Log($"[Download] Đã thêm {addedCount} truyện vào hàng tải hiện tại.");
-                lblStatus.Text = $"Added {addedCount} books to active queue...";
+                lblStatus.Text = _isVietnameseUi
+                    ? $"Đã thêm {addedCount} truyện vào hàng chờ..."
+                    : $"Added {addedCount} books to active queue...";
                 return;
             }
 
@@ -1103,7 +1107,7 @@ namespace get_link_manga
             QueueDownloadsForCurrentSession(itemsToDownload, preserveExistingState);
                 await WaitForAllScheduledDownloadsAsync(token);
 
-                lblStatus.Text = "Tải xuống hoàn tất! (Downloads completed)";
+                lblStatus.Text = _isVietnameseUi ? "Tải xuống hoàn tất!" : "Downloads completed!";
                 Log("Tải xuống toàn bộ thành công!");
 
                 if (_shutdownAfterCompleted)
@@ -1117,12 +1121,12 @@ namespace get_link_manga
             catch (OperationCanceledException)
             {
                 Log("Quá trình tải xuống đã bị dừng bởi người dùng.");
-                lblStatus.Text = "Download stopped.";
+                lblStatus.Text = _isVietnameseUi ? "Đã dừng tải." : "Download stopped.";
             }
             catch (Exception ex)
             {
                 Log($"Critical download error: {ex.Message}");
-                lblStatus.Text = "Download failed.";
+                lblStatus.Text = _isVietnameseUi ? "Tải xuống thất bại." : "Download failed.";
             }
             finally
             {
@@ -1266,7 +1270,9 @@ namespace get_link_manga
                 try
                 {
                     btnStartDownload.IsChecked = isRunning;
-                    btnStartDownload.ToolTip = isRunning ? "STOP DOWNLOAD" : "DOWNLOAD ALL";
+                    btnStartDownload.ToolTip = _isVietnameseUi
+                        ? (isRunning ? "DỪNG TẢI" : "TẢI TẤT CẢ")
+                        : (isRunning ? "STOP DOWNLOAD" : "DOWNLOAD ALL");
                 }
                 finally
                 {
@@ -1566,7 +1572,9 @@ namespace get_link_manga
 
             Dispatcher.Invoke(() =>
             {
-                lblStatus.Text = $"Downloading {completed}/{total} galleries...";
+                lblStatus.Text = _isVietnameseUi
+                    ? $"Đang tải {completed}/{total} truyện..."
+                    : $"Downloading {completed}/{total} galleries...";
             });
         }
 

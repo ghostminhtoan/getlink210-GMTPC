@@ -14,6 +14,20 @@ namespace get_link_manga
             ["📌 BOOKMARKS"] = "📌 Đánh dấu",
             ["🏠 HOMEPAGE"] = "🏠 Trang chủ",
             ["DOWNLOAD MULTIPLE WITH TAG OR ARTIST"] = "Dán link danh sách, tag, thể loại hoặc tác giả",
+            ["BASE 100% = 1360x768"] = "100% = chuẩn cho 1360x768",
+            ["Watch manga"] = "Xem manga",
+            ["Watch novel"] = "Xem novel",
+            ["Download Manga"] = "Tải Manga",
+            ["Download Novel"] = "Tải Novel",
+            ["Open picture with"] = "Mở bằng",
+            ["Open viewer"] = "Mở trình xem",
+            ["Missing chapters"] = "Chương thiếu",
+            ["Download queue"] = "Hàng chờ tải",
+            ["Watch offline"] = "Đọc offline",
+            ["About"] = "Giới thiệu",
+            ["Update"] = "Cập nhật",
+            ["Search"] = "Tìm kiếm",
+            ["Word wrap"] = "Xuống dòng",
             ["TARGET TAG URL"] = "Link mục tiêu",
             ["ANALYZE TARGET PAGE"] = "1) Kiểm tra link",
             ["DELETE COOKIE"] = "Xóa cookie",
@@ -340,7 +354,7 @@ namespace get_link_manga
             if (btnDuplicateName != null) btnDuplicateName.Content = "Duplicate names";
             if (btnNoLinkViHentai != null) btnNoLinkViHentai.Content = "No chapters";
             if (btnReverseOrder != null) btnReverseOrder.Content = "Reverse order";
-            if (btnClearComplete != null) btnClearComplete.Content = "Hide completed";
+            if (btnClearComplete != null) btnClearComplete.Content = "Remove completed";
 
             UpdateLatestChapterButtonLabel();
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -624,18 +624,24 @@ namespace get_link_manga
             return sb.ToString();
         }
 
-        private async void BtnHakoFetchInfo_Click(object sender, RoutedEventArgs e)
+                private async void BtnHakoFetchInfo_Click(object sender, RoutedEventArgs e)
         {
             string rawUrl = txtHakoTagUrl.Text.Trim();
             if (string.IsNullOrWhiteSpace(rawUrl))
             {
-                ShowWarning("Vui lòng nhập URL tag của Hako.", "Thông báo");
+                ShowLocalizedMessageBox(
+                    "Please enter a Hako tag URL.",
+                    "Vui lòng nhập URL tag của Hako.",
+                    "Information",
+                    "Thông báo",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
             btnHakoFetchInfo.IsEnabled = false;
             progressBar.IsIndeterminate = true;
-            lblStatus.Text = "Đang phân tích trang Hako...";
+            lblStatus.Text = _isVietnameseUi ? "Đang phân tích trang Hako..." : "Analyzing Hako page...";
 
             try
             {
@@ -646,14 +652,16 @@ namespace get_link_manga
                 int totalPages = ExtractHakoMaxPage(html, normalizedUrl);
                 txtHakoTotalPages.Text = totalPages.ToString(CultureInfo.InvariantCulture);
                 txtHakoPageTo.Text = totalPages.ToString(CultureInfo.InvariantCulture);
-                lblStatus.Text = $"Phân tích xong. Phát hiện {totalPages} trang. Bấm GET LINK để nạp truyện vào danh sách.";
+                lblStatus.Text = _isVietnameseUi
+                    ? $"Phân tích xong. Phát hiện {totalPages} trang. Bấm GET LINK để nạp truyện vào danh sách."
+                    : $"Analysis done. Found {totalPages} pages. Click GET LINK to load books into the list.";
             }
             catch (Exception ex)
             {
                 HakoLog("Lỗi khi phân tích: " + ex.Message);
                 txtHakoTotalPages.Text = "1";
                 txtHakoPageTo.Text = "1";
-                lblStatus.Text = "Phân tích thất bại.";
+                lblStatus.Text = _isVietnameseUi ? "Phân tích thất bại." : "Analysis failed.";
             }
             finally
             {
@@ -675,7 +683,7 @@ namespace get_link_manga
             if (_cts != null)
             {
                 _cts.Cancel();
-                btnHakoScrape.Content = "CANCELLING...";
+                btnHakoScrape.Content = _isVietnameseUi ? "ĐANG HỦY..." : "CANCELLING...";
                 btnHakoScrape.IsEnabled = false;
                 if (btnHakoCrawlMore != null)
                 {
@@ -692,7 +700,7 @@ namespace get_link_manga
             if (_cts != null)
             {
                 _cts.Cancel();
-                btnHakoCrawlMore.Content = "CANCELLING...";
+                btnHakoCrawlMore.Content = _isVietnameseUi ? "ĐANG HỦY..." : "CANCELLING...";
                 btnHakoCrawlMore.IsEnabled = false;
                 btnHakoScrape.IsEnabled = false;
                 return;
@@ -706,24 +714,36 @@ namespace get_link_manga
             string rawUrl = txtHakoTagUrl.Text.Trim();
             if (!int.TryParse(txtHakoPageFrom.Text, out int pageFrom) || pageFrom < 1)
             {
-                ShowWarning("Trang bắt đầu không hợp lệ.", "Thông báo");
+                ShowLocalizedMessageBox(
+                    "Start page is invalid.",
+                    "Trang bắt đầu không hợp lệ.",
+                    "Information",
+                    "Thông báo",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
             if (!int.TryParse(txtHakoPageTo.Text, out int pageTo) || pageTo < pageFrom)
             {
-                ShowWarning("Trang kết thúc không hợp lệ.", "Thông báo");
+                ShowLocalizedMessageBox(
+                    "End page is invalid.",
+                    "Trang kết thúc không hợp lệ.",
+                    "Information",
+                    "Thông báo",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
             _cts = new CancellationTokenSource();
             CancellationToken token = _cts.Token;
 
-            btnHakoScrape.Content = "STOP CRAWLER";
-            btnHakoCrawlMore.Content = "STOP CRAWLER";
+            btnHakoScrape.Content = _isVietnameseUi ? "DỪNG CÀO" : "STOP CRAWLER";
+            btnHakoCrawlMore.Content = _isVietnameseUi ? "DỪNG CÀO" : "STOP CRAWLER";
             btnHakoFetchInfo.IsEnabled = false;
             progressBar.Value = 0;
-            lblStatus.Text = "Đang cào Hako...";
+            lblStatus.Text = _isVietnameseUi ? "Đang cào Hako..." : "Crawling Hako...";
 
             if (clearExisting)
             {
@@ -754,35 +774,36 @@ namespace get_link_manga
 
                     double progress = ((double)(page - pageFrom + 1) / totalPages) * 100;
                     progressBar.Value = progress;
-                    lblStatus.Text = $"Đang quét trang {page}/{pageTo} ({progress:0}%)";
+                    lblStatus.Text = _isVietnameseUi
+                        ? $"Đang quét trang {page}/{pageTo} ({progress:0}%)"
+                        : $"Scanning page {page}/{pageTo} ({progress:0}%)";
                     RefreshLightNovelSummary();
                 }
 
                 RefreshLightNovelSummary();
-                lblStatus.Text = "Cào Hako hoàn tất.";
+                lblStatus.Text = _isVietnameseUi ? "Cào Hako hoàn tất." : "Hako crawl completed.";
             }
             catch (OperationCanceledException)
             {
-                lblStatus.Text = "Đã hủy cào Hako.";
+                lblStatus.Text = _isVietnameseUi ? "Đã hủy cào Hako." : "Hako crawl cancelled.";
             }
             catch (Exception ex)
             {
                 HakoLog("Lỗi khi cào: " + ex.Message);
-                lblStatus.Text = "Cào Hako thất bại.";
+                lblStatus.Text = _isVietnameseUi ? "Cào Hako thất bại." : "Hako crawl failed.";
             }
             finally
             {
                 _cts.Dispose();
                 _cts = null;
-                btnHakoScrape.Content = "GET LINK";
-                btnHakoCrawlMore.Content = "GET MORE";
+                btnHakoScrape.Content = _isVietnameseUi ? "LẤY LINK" : "GET LINK";
+                btnHakoCrawlMore.Content = _isVietnameseUi ? "LẤY THÊM" : "GET MORE";
                 btnHakoScrape.IsEnabled = true;
                 btnHakoCrawlMore.IsEnabled = true;
                 btnHakoFetchInfo.IsEnabled = true;
             }
         }
-
-        private int ExtractHakoMaxPage(string html, string pageUrl)
+private int ExtractHakoMaxPage(string html, string pageUrl)
         {
             int maxPage = 1;
             string absoluteBase = NormalizeHakoUrl(pageUrl);

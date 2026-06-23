@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Windows;
 
@@ -6,11 +6,11 @@ namespace get_link_manga
 {
     public partial class MainWindow : Window
     {
-        private void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
+                private void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new VistaFolderBrowser
             {
-                Title = "Chá»n thÆ° má»¥c lÆ°u truyá»‡n (Select Download Folder)",
+                Title = _isVietnameseUi ? "Chọn thư mục lưu truyện" : "Select download folder",
                 InitialFolder = PortablePaths.PortableDataRoot
             };
 
@@ -27,7 +27,13 @@ namespace get_link_manga
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
             {
-                MessageBox.Show("Vui lòng chọn thư mục lưu trước (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowLocalizedMessageBox(
+                    "Please select a download folder first.",
+                    "Vui lòng chọn thư mục lưu trước.",
+                    "Information",
+                    "Thông tin",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
@@ -36,7 +42,13 @@ namespace get_link_manga
 
             if (!ShellFolderLauncher.TryOpenFolder(targetFolder, out string openError))
             {
-                MessageBox.Show($"Không thể mở thư mục: {openError}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowLocalizedMessageBox(
+                    $"Cannot open folder: {openError}",
+                    $"Không thể mở thư mục: {openError}",
+                    "Error",
+                    "Lỗi",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
@@ -46,7 +58,13 @@ namespace get_link_manga
             ClearTempRootFolder(Path.Combine(PortablePaths.AppRoot, ".tmp"));
             if (string.IsNullOrWhiteSpace(downloadRoot))
             {
-                MessageBox.Show("Vui lòng chọn thư mục tải trước.", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowLocalizedMessageBox(
+                    "Please select a download folder first.",
+                    "Vui lòng chọn thư mục tải trước.",
+                    "Information",
+                    "Thông tin",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
@@ -54,13 +72,13 @@ namespace get_link_manga
             if (!Directory.Exists(tempRoot))
             {
                 Log($"Temp root not found: {tempRoot}");
-                lblStatus.Text = "Temp đã sạch.";
+                lblStatus.Text = _isVietnameseUi ? "Temp đã sạch." : "Temp is already clean.";
                 return;
             }
 
             ClearTempRootFolder(tempRoot);
             Log($"Cleared temp root: {tempRoot}");
-            lblStatus.Text = "Temp đã được xóa.";
+            lblStatus.Text = _isVietnameseUi ? "Temp đã được xóa." : "Temp cleared.";
         }
 
         private void BtnOpenFolderInRow_Click(object sender, RoutedEventArgs e)
@@ -74,23 +92,40 @@ namespace get_link_manga
             string targetFolder = ResolveBestFolderForGalleryItem(item);
             if (string.IsNullOrWhiteSpace(targetFolder))
             {
-                MessageBox.Show("Chưa xác định được thư mục của truyện này.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowLocalizedMessageBox(
+                    "Cannot determine this book folder.",
+                    "Chưa xác định được thư mục của truyện này.",
+                    "Warning",
+                    "Cảnh báo",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
             if (!Directory.Exists(targetFolder))
             {
-                MessageBox.Show($"Thư mục không tồn tại:\n{targetFolder}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowLocalizedMessageBox(
+                    $"Folder does not exist:\n{targetFolder}",
+                    $"Thư mục không tồn tại:\n{targetFolder}",
+                    "Warning",
+                    "Cảnh báo",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
             if (!ShellFolderLauncher.TryOpenFolder(targetFolder, out string error))
             {
-                MessageBox.Show($"Không thể mở thư mục: {error}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowLocalizedMessageBox(
+                    $"Cannot open folder: {error}",
+                    $"Không thể mở thư mục: {error}",
+                    "Warning",
+                    "Cảnh báo",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
         }
-
-        private void EnsureFolderExistsForExplorer(string path)
+private void EnsureFolderExistsForExplorer(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || Directory.Exists(path))
             {

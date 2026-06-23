@@ -82,7 +82,7 @@ namespace get_link_manga
             catch (Exception ex)
             {
                 Log($"[Archive Error] Không thể nén sách: {ex.Message}");
-                lblStatus.Text = "Compress failed.";
+                lblStatus.Text = _isVietnameseUi ? "Nén sách thất bại." : "Compress failed.";
                 if (File.Exists(archivePath))
                 {
                     try { File.Delete(archivePath); } catch { }
@@ -182,7 +182,7 @@ namespace get_link_manga
             catch (Exception ex)
             {
                 Log($"[Archive Error] Không thể giải nén sách: {ex.Message}");
-                lblStatus.Text = "Extract failed.";
+                lblStatus.Text = _isVietnameseUi ? "Giải nén sách thất bại." : "Extract failed.";
                 MessageBox.Show($"Lỗi khi giải nén sách: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
@@ -211,7 +211,7 @@ namespace get_link_manga
             string targetFolder = GetActiveTargetFolder(downloadRoot);
 
             Log($"[Merge] Bắt đầu gộp thư mục tại: {targetFolder}");
-            lblStatus.Text = "Merging folders...";
+            lblStatus.Text = _isVietnameseUi ? "Đang gộp thư mục..." : "Merging folders...";
 
             try
             {
@@ -223,19 +223,19 @@ namespace get_link_manga
                 if (mergedCount == 0)
                 {
                     Log("[Merge] Không tìm thấy nhóm thư mục nào có tên giống nhau trước dấu gạch nối.");
-                    lblStatus.Text = "Merge completed. No folders merged.";
+                    lblStatus.Text = _isVietnameseUi ? "Gộp xong. Không có thư mục nào được gộp." : "Merge completed. No folders merged.";
                     MessageBox.Show("Không tìm thấy thư mục nào có tên giống nhau trước dấu gạch nối để gộp (No matching folders found to merge).", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
                 Log($"[Merge] Hoàn tất gộp {mergedCount} thư mục.");
-                lblStatus.Text = $"Merge completed. Merged {mergedCount} folders.";
+                lblStatus.Text = _isVietnameseUi ? $"Đã gộp {mergedCount} thư mục." : $"Merge completed. Merged {mergedCount} folders.";
                 MessageBox.Show($"Đã gộp thành công {mergedCount} thư mục!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 Log($"[Merge Error] Lỗi nghiêm trọng khi gộp thư mục: {ex.Message}");
-                lblStatus.Text = "Merge failed.";
+                lblStatus.Text = _isVietnameseUi ? "Gộp thư mục thất bại." : "Merge failed.";
                 MessageBox.Show($"Lỗi khi gộp thư mục: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -258,7 +258,7 @@ namespace get_link_manga
             string targetFolder = GetActiveTargetFolder(downloadRoot);
 
             Log($"[Split] Bắt đầu tách thư mục tại: {targetFolder}");
-            lblStatus.Text = "Splitting folders...";
+            lblStatus.Text = _isVietnameseUi ? "Đang tách thư mục..." : "Splitting folders...";
 
             try
             {
@@ -268,13 +268,13 @@ namespace get_link_manga
                 await Task.Delay(3000);
 
                 Log($"[Split] Hoàn tất tách {splitCount} thư mục.");
-                lblStatus.Text = $"Split completed. Split {splitCount} folders.";
+                lblStatus.Text = _isVietnameseUi ? $"Đã tách {splitCount} thư mục." : $"Split completed. Split {splitCount} folders.";
                 MessageBox.Show($"Đã tách thành công {splitCount} thư mục!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 Log($"[Split Error] Lỗi nghiêm trọng khi tách thư mục: {ex.Message}");
-                lblStatus.Text = "Split failed.";
+                lblStatus.Text = _isVietnameseUi ? "Tách thư mục thất bại." : "Split failed.";
                 MessageBox.Show($"Lỗi khi tách thư mục: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
