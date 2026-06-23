@@ -140,7 +140,6 @@ namespace get_link_manga
         private ListBox _readerMangaList;
         private ListBox _readerChapterList;
         private TextBlock _readerChapterStatsText;
-        private Button _readerChapterMissingButton;
         private ContentControl _readerChapterContentHost;
         private Border _readerChapterIssuePanel;
         private DataGrid _readerChapterIssueGrid;
@@ -304,11 +303,12 @@ namespace get_link_manga
             RefreshReaderSortButtonLabel(_readerMangaDomainSortNameButton, _readerMangaDomainSortState, ReaderWatchSortField.Name, "NAME");
             RefreshReaderSortButtonLabel(_readerMangaBookSortDateButton, _readerMangaBookSortState, ReaderWatchSortField.DateModified, "DATE");
             RefreshReaderSortButtonLabel(_readerMangaBookSortNameButton, _readerMangaBookSortState, ReaderWatchSortField.Name, "NAME");
+            var readerChapterMissingButton = CreateReaderMiniButton("Missing chapters", ReaderChapterMissing_Click, 140);
 
             var panelBoard = CreateWatchPanelBoard(
                 CreateReaderWatchPanel("Root / Domain", _readerDomainList, _readerMangaDomainSortDateButton, _readerMangaDomainSortNameButton),
                 CreateReaderWatchPanel("Domain / Book", _readerMangaList, _readerMangaBookSortDateButton, _readerMangaBookSortNameButton),
-                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), _readerChapterMissingButton),
+                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), readerChapterMissingButton),
                 CreateReaderWatchPanel("Chapter / Image", _readerFileList));
 
             _readerFullscreenButton = CreateReaderMiniButton("Open viewer", ReaderFullscreen_Click, 92);
@@ -546,27 +546,13 @@ namespace get_link_manga
         {
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
             Grid.SetRow(_readerChapterStatsText, 0);
             grid.Children.Add(_readerChapterStatsText);
 
-            var headerHost = new Grid
-            {
-                Margin = new Thickness(0, 0, 0, 6)
-            };
-
-            Grid.SetRow(headerHost, 1);
-            grid.Children.Add(headerHost);
-
-            _readerChapterMissingButton = CreateReaderMiniButton("Missing chapters", ReaderChapterMissing_Click, 128);
-            _readerChapterMissingButton.HorizontalAlignment = HorizontalAlignment.Right;
-            _readerChapterMissingButton.Margin = new Thickness(0, 0, 0, 0);
-            headerHost.Children.Add(_readerChapterMissingButton);
-
             _readerChapterContentHost = new ContentControl();
-            Grid.SetRow(_readerChapterContentHost, 2);
+            Grid.SetRow(_readerChapterContentHost, 1);
             grid.Children.Add(_readerChapterContentHost);
 
             _readerChapterContentHost.Content = _readerChapterList;
@@ -582,7 +568,6 @@ namespace get_link_manga
                 Child = _readerChapterIssueGrid
             };
 
-            _readerChapterContentHost.Content = _readerChapterList;
             return grid;
         }
 
