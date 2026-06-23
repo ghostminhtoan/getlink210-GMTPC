@@ -140,6 +140,7 @@ namespace get_link_manga
         private ListBox _readerMangaList;
         private ListBox _readerChapterList;
         private TextBlock _readerChapterStatsText;
+        private Button _readerChapterFocusButton;
         private ComboBox _readerPageCombo;
         private ListBox _readerFileList;
         private ListBox _readerDomainList;
@@ -190,6 +191,7 @@ namespace get_link_manga
         private ListBox _readerNovelBookList;
         private ListBox _readerNovelChapterList;
         private ListBox _readerNovelFileList;
+        private Button _readerNovelChapterFocusButton;
         private TextBlock _readerNovelSummaryText;
         private TextBlock _readerNovelStatusText;
         private TextBlock _readerNovelCurrentTitleText;
@@ -284,6 +286,7 @@ namespace get_link_manga
             _readerMangaList = CreateWatchListBox();
             _readerChapterList = CreateWatchChapterListBox();
             _readerChapterStatsText = CreateWatchChapterStatsText();
+            _readerChapterFocusButton = CreateReaderMiniButton("FOCUS", ReaderChapterFocus_Click, 72);
             _readerFileList = CreateWatchListBox();
 
             _readerDomainList.SelectionChanged += ReaderDomainList_SelectionChanged;
@@ -304,7 +307,7 @@ namespace get_link_manga
             var panelBoard = CreateWatchPanelBoard(
                 CreateReaderWatchPanel("Root / Domain", _readerDomainList, _readerMangaDomainSortDateButton, _readerMangaDomainSortNameButton),
                 CreateReaderWatchPanel("Domain / Book", _readerMangaList, _readerMangaBookSortDateButton, _readerMangaBookSortNameButton),
-                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent()),
+                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), _readerChapterFocusButton),
                 CreateReaderWatchPanel("Chapter / Image", _readerFileList));
 
             _readerFullscreenButton = CreateReaderMiniButton("Open viewer", ReaderFullscreen_Click, 92);
@@ -345,6 +348,7 @@ namespace get_link_manga
             _readerNovelDomainList = CreateWatchListBox();
             _readerNovelBookList = CreateWatchListBox();
             _readerNovelChapterList = CreateWatchListBox();
+            _readerNovelChapterFocusButton = CreateReaderMiniButton("FOCUS", ReaderNovelChapterFocus_Click, 72);
             _readerNovelFileList = CreateWatchListBox();
             _readerNovelPreviewTextBox = CreateWatchPreviewTextBox();
 
@@ -366,7 +370,7 @@ namespace get_link_manga
             var panelBoard = CreateWatchPanelBoard(
                 CreateReaderWatchPanel("Root / Domain", _readerNovelDomainList, _readerNovelDomainSortDateButton, _readerNovelDomainSortNameButton),
                 CreateReaderWatchPanel("Domain / Book", _readerNovelBookList, _readerNovelBookSortDateButton, _readerNovelBookSortNameButton),
-                CreateReaderWatchPanel("Book / Chapter", _readerNovelChapterList),
+                CreateReaderWatchPanel("Book / Chapter", _readerNovelChapterList, _readerNovelChapterFocusButton),
                 CreateReaderWatchPanel("Chapter / MD", CreateWatchNovelPreviewPanel()));
 
             _readerNovelStatusText = CreateWatchStatusText();
@@ -634,6 +638,42 @@ namespace get_link_manga
             panelBoard.Children.Add(bookChapterPanel);
             panelBoard.Children.Add(chapterFilePanel);
             return panelBoard;
+        }
+
+        private void ScrollReaderChapterIntoView(ReaderChapterItem chapter)
+        {
+            if (_readerChapterList == null || chapter == null)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(() => _readerChapterList.ScrollIntoView(chapter)), DispatcherPriority.Background);
+        }
+
+        private void ScrollReaderNovelChapterIntoView(ReaderNovelChapterItem chapter)
+        {
+            if (_readerNovelChapterList == null || chapter == null)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(() => _readerNovelChapterList.ScrollIntoView(chapter)), DispatcherPriority.Background);
+        }
+
+        private void ReaderChapterFocus_Click(object sender, RoutedEventArgs e)
+        {
+            if (_readerChapterList?.SelectedItem is ReaderChapterItem chapter)
+            {
+                ScrollReaderChapterIntoView(chapter);
+            }
+        }
+
+        private void ReaderNovelChapterFocus_Click(object sender, RoutedEventArgs e)
+        {
+            if (_readerNovelChapterList?.SelectedItem is ReaderNovelChapterItem chapter)
+            {
+                ScrollReaderNovelChapterIntoView(chapter);
+            }
         }
 
         private Button CreateReaderMiniButton(string text, RoutedEventHandler clickHandler, double minWidth = 54)
@@ -2472,6 +2512,7 @@ namespace get_link_manga
             if (nextChapter != null)
             {
                 UpdateReaderFileListItems(nextChapter.Pages);
+                ScrollReaderChapterIntoView(nextChapter);
             }
             else
             {
@@ -2582,6 +2623,7 @@ namespace get_link_manga
             if (nextChapter != null)
             {
                 UpdateReaderNovelFileListItems(nextChapter.Files);
+                ScrollReaderNovelChapterIntoView(nextChapter);
             }
             else
             {
@@ -2620,6 +2662,7 @@ namespace get_link_manga
             UpdateReaderNovelFileListItems(chapter.Files);
             _readerNovelFileList.SelectedItem = null;
             _readerSelectionGuard = false;
+            ScrollReaderNovelChapterIntoView(chapter);
             SetReaderNovelCurrentTitle();
             _readerNovelPreviewTextBox.Text = string.Empty;
             UpdateReaderNovelStatus(chapter.Files.Count > 0
@@ -2641,6 +2684,7 @@ namespace get_link_manga
             ReaderMarkdownItem firstFile = chapter.Files.FirstOrDefault();
             _readerNovelFileList.SelectedItem = firstFile;
             _readerSelectionGuard = false;
+            ScrollReaderNovelChapterIntoView(chapter);
             SetReaderNovelCurrentTitle();
             if (firstFile != null)
             {
@@ -2781,6 +2825,7 @@ namespace get_link_manga
             _readerChapterList.SelectedItem = chapter;
             UpdateReaderFileListItems(chapter.Pages);
             _readerSelectionGuard = false;
+            ScrollReaderChapterIntoView(chapter);
 
             int safePageIndex = Math.Max(0, Math.Min(chapter.Pages.Count - 1, pageIndex));
             _forceReaderRenderOnNextPageOpen = true;
@@ -2801,6 +2846,7 @@ namespace get_link_manga
             UpdateReaderFileListItems(chapter.Pages);
             _readerFileList.SelectedItem = null;
             _readerSelectionGuard = false;
+            ScrollReaderChapterIntoView(chapter);
             SetReaderCurrentTitle();
             RenderReaderPlaceholder();
             UpdateReaderStatus(chapter.Pages.Count > 0
