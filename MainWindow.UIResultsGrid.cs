@@ -18,7 +18,6 @@ namespace get_link_manga
         private bool _isNameSortAscending = true;
         private bool _isStatusSortAscending = true;
         private bool _isProcessSortAscending = true;
-        private bool _isSpeedSortAscending = true;
         private Point _resultsDragStartPoint;
         private GalleryItem _resultsDragItem;
 
@@ -110,10 +109,6 @@ namespace get_link_manga
             {
                 _isProcessSortAscending = direction != ListSortDirection.Ascending;
             }
-            else if (ReferenceEquals(e.Column, colSpeed))
-            {
-                _isSpeedSortAscending = false;
-            }
         }
 
         private void TxtFilter_TextChanged(object sender, TextChangedEventArgs e)
@@ -162,7 +157,6 @@ namespace get_link_manga
 
         private void BtnSortBySpeed_Click(object sender, RoutedEventArgs e)
         {
-            _isSpeedSortAscending = false;
             ClearResultsColumnSortDirections(colSpeed);
             if (colSpeed != null)
             {
@@ -181,7 +175,6 @@ namespace get_link_manga
             _isNameSortAscending = true;
             _isStatusSortAscending = true;
             _isProcessSortAscending = true;
-            _isSpeedSortAscending = true;
             ClearResultsColumnSortDirections();
             ApplyResultsSort("OriginalIndex", ListSortDirection.Ascending, logMessage);
         }

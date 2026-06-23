@@ -219,6 +219,10 @@ namespace get_link_manga
 
             _readerChapterList.ItemsSource = null;
             _readerChapterList.SelectedItem = null;
+            if (_readerChapterStatsText != null)
+            {
+                _readerChapterStatsText.Text = string.Empty;
+            }
         }
 
         private void UpdateReaderFileListItems(IList<ReaderPageItem> pages)

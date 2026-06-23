@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Windows.Media;
 
 namespace get_link_manga
 {
@@ -65,6 +66,14 @@ namespace get_link_manga
         public List<ReaderPageItem> Pages { get; set; } = new List<ReaderPageItem>();
 
         public bool IsCompleted { get; set; }
+
+        public double? ParsedChapterNumber { get; set; }
+
+        public bool IsDecimalChapter { get; set; }
+
+        public bool HasMissingIntegerGap { get; set; }
+
+        public Brush DisplayForeground { get; set; }
 
         public string DisplayLabel
         {

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -9,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -136,6 +139,7 @@ namespace get_link_manga
         private Cursor _readerMousePanPreviousCursor;
         private ListBox _readerMangaList;
         private ListBox _readerChapterList;
+        private TextBlock _readerChapterStatsText;
         private ComboBox _readerPageCombo;
         private ListBox _readerFileList;
         private ListBox _readerDomainList;
@@ -199,8 +203,22 @@ namespace get_link_manga
         private string _readerNovelLibraryRootOverride;
         private TextBox _readerNovelPreviewTextBox;
 
+        private sealed class ReaderChapterAnalysis
+        {
+            public int IntegerCount { get; set; }
+
+            public int DecimalCount { get; set; }
+
+            public int UnknownCount { get; set; }
+
+            public List<string> MissingRanges { get; } = new List<string>();
+        }
+
         private FrameworkElement CreateWatchSection()
         {
+#if DEBUG
+            RunReaderChapterAnalysisSelfCheck();
+#endif
             _readerRootGrid = new Grid();
 
             var watchTabs = new TabControl
@@ -264,7 +282,8 @@ namespace get_link_manga
             _readerSummaryText = CreateWatchSummaryText();
             _readerDomainList = CreateWatchListBox();
             _readerMangaList = CreateWatchListBox();
-            _readerChapterList = CreateWatchListBox();
+            _readerChapterList = CreateWatchChapterListBox();
+            _readerChapterStatsText = CreateWatchChapterStatsText();
             _readerFileList = CreateWatchListBox();
 
             _readerDomainList.SelectionChanged += ReaderDomainList_SelectionChanged;
@@ -285,7 +304,7 @@ namespace get_link_manga
             var panelBoard = CreateWatchPanelBoard(
                 CreateReaderWatchPanel("Root / Domain", _readerDomainList, _readerMangaDomainSortDateButton, _readerMangaDomainSortNameButton),
                 CreateReaderWatchPanel("Domain / Book", _readerMangaList, _readerMangaBookSortDateButton, _readerMangaBookSortNameButton),
-                CreateReaderWatchPanel("Book / Chapter", _readerChapterList),
+                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent()),
                 CreateReaderWatchPanel("Chapter / Image", _readerFileList));
 
             _readerFullscreenButton = CreateReaderMiniButton("Open viewer", ReaderFullscreen_Click, 92);
@@ -491,6 +510,48 @@ namespace get_link_manga
             return listBox;
         }
 
+        private ListBox CreateWatchChapterListBox()
+        {
+            var listBox = CreateWatchListBox();
+            listBox.ItemContainerStyle = new Style(typeof(ListBoxItem))
+            {
+                Setters =
+                {
+                    new Setter(Control.ForegroundProperty, new Binding(nameof(ReaderChapterItem.DisplayForeground))
+                    {
+                        FallbackValue = (Brush)TryFindResource("CyberpunkTextBrush") ?? Brushes.White,
+                        TargetNullValue = (Brush)TryFindResource("CyberpunkTextBrush") ?? Brushes.White
+                    })
+                }
+            };
+            return listBox;
+        }
+
+        private TextBlock CreateWatchChapterStatsText()
+        {
+            return new TextBlock
+            {
+                Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush"),
+                FontSize = 9.5,
+                Margin = new Thickness(0, 0, 0, 6),
+                TextWrapping = TextWrapping.Wrap
+            };
+        }
+
+        private UIElement CreateReaderChapterPanelContent()
+        {
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            Grid.SetRow(_readerChapterStatsText, 0);
+            grid.Children.Add(_readerChapterStatsText);
+
+            Grid.SetRow(_readerChapterList, 1);
+            grid.Children.Add(_readerChapterList);
+            return grid;
+        }
+
         private TextBox CreateWatchPreviewTextBox()
         {
             return new TextBox
@@ -525,6 +586,28 @@ namespace get_link_manga
             grid.Children.Add(_readerNovelPreviewTextBox);
             return grid;
         }
+
+#if DEBUG
+        private static void RunReaderChapterAnalysisSelfCheck()
+        {
+            var chapters = new List<ReaderChapterItem>
+            {
+                new ReaderChapterItem { Name = "chap 01" },
+                new ReaderChapterItem { Name = "chap 02" },
+                new ReaderChapterItem { Name = "chap 02.5" },
+                new ReaderChapterItem { Name = "chap 04" }
+            };
+
+            ReaderChapterAnalysis analysis = AnalyzeReaderChapterNumbers(chapters);
+
+            Debug.Assert(analysis.IntegerCount == 3);
+            Debug.Assert(analysis.DecimalCount == 1);
+            Debug.Assert(analysis.MissingRanges.Count == 1 && analysis.MissingRanges[0] == "3");
+            Debug.Assert(chapters[1].HasMissingIntegerGap);
+            Debug.Assert(chapters[3].HasMissingIntegerGap);
+            Debug.Assert(chapters[2].IsDecimalChapter);
+        }
+#endif
 
         private Grid CreateWatchPanelBoard(Border rootDomainPanel, Border domainBookPanel, Border bookChapterPanel, Border chapterFilePanel)
         {
@@ -1351,6 +1434,166 @@ namespace get_link_manga
                 Chapters = chapters,
                 IsCompleted = isCompleted
             };
+        }
+
+        private static bool TryParseReaderChapterNumber(string chapterName, out double number, out bool isDecimal)
+        {
+            number = 0d;
+            isDecimal = false;
+
+            if (string.IsNullOrWhiteSpace(chapterName))
+            {
+                return false;
+            }
+
+            Match match = Regex.Match(chapterName, @"(?<!\d)(\d+(?:[.,]\d+)?)", RegexOptions.CultureInvariant);
+            if (!match.Success)
+            {
+                return false;
+            }
+
+            string token = match.Groups[1].Value.Replace(',', '.');
+            if (!double.TryParse(token, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out number))
+            {
+                return false;
+            }
+
+            isDecimal = Math.Abs(number - Math.Truncate(number)) > 0.0001d;
+            return true;
+        }
+
+        private static ReaderChapterAnalysis AnalyzeReaderChapterNumbers(IList<ReaderChapterItem> chapters)
+        {
+            var analysis = new ReaderChapterAnalysis();
+            if (chapters == null || chapters.Count == 0)
+            {
+                return analysis;
+            }
+
+            var integerMap = new Dictionary<int, List<ReaderChapterItem>>();
+            var integerNumbers = new List<int>();
+
+            foreach (ReaderChapterItem chapter in chapters)
+            {
+                if (chapter == null)
+                {
+                    continue;
+                }
+
+                chapter.ParsedChapterNumber = null;
+                chapter.IsDecimalChapter = false;
+                chapter.HasMissingIntegerGap = false;
+                chapter.DisplayForeground = null;
+
+                if (!TryParseReaderChapterNumber(chapter.Name, out double chapterNumber, out bool isDecimal))
+                {
+                    analysis.UnknownCount++;
+                    continue;
+                }
+
+                chapter.ParsedChapterNumber = chapterNumber;
+                chapter.IsDecimalChapter = isDecimal;
+                if (isDecimal)
+                {
+                    analysis.DecimalCount++;
+                    continue;
+                }
+
+                analysis.IntegerCount++;
+                int integerNumber = (int)Math.Round(chapterNumber);
+                if (!integerMap.TryGetValue(integerNumber, out List<ReaderChapterItem> items))
+                {
+                    items = new List<ReaderChapterItem>();
+                    integerMap[integerNumber] = items;
+                    integerNumbers.Add(integerNumber);
+                }
+
+                items.Add(chapter);
+            }
+
+            integerNumbers.Sort();
+            var gapBoundaries = new HashSet<int>();
+            for (int i = 1; i < integerNumbers.Count; i++)
+            {
+                int previous = integerNumbers[i - 1];
+                int current = integerNumbers[i];
+                int missing = current - previous - 1;
+                if (missing <= 0)
+                {
+                    continue;
+                }
+
+                gapBoundaries.Add(previous);
+                gapBoundaries.Add(current);
+
+                analysis.MissingRanges.Add(missing == 1
+                    ? (previous + 1).ToString(CultureInfo.InvariantCulture)
+                    : (previous + 1).ToString(CultureInfo.InvariantCulture) + "-" + (current - 1).ToString(CultureInfo.InvariantCulture));
+            }
+
+            foreach (KeyValuePair<int, List<ReaderChapterItem>> pair in integerMap)
+            {
+                bool isGapBoundary = gapBoundaries.Contains(pair.Key);
+                foreach (ReaderChapterItem chapter in pair.Value)
+                {
+                    chapter.HasMissingIntegerGap = isGapBoundary;
+                }
+            }
+
+            return analysis;
+        }
+
+        private void ApplyReaderChapterPresentation(ReaderMangaItem manga)
+        {
+            if (_readerChapterList == null)
+            {
+                return;
+            }
+
+            if (manga == null || manga.Chapters == null || manga.Chapters.Count == 0)
+            {
+                if (_readerChapterStatsText != null)
+                {
+                    _readerChapterStatsText.Text = string.Empty;
+                }
+
+                return;
+            }
+
+            ReaderChapterAnalysis analysis = AnalyzeReaderChapterNumbers(manga.Chapters);
+            Brush normalBrush = (Brush)TryFindResource("CyberpunkTextBrush") ?? Brushes.White;
+
+            foreach (ReaderChapterItem chapter in manga.Chapters)
+            {
+                if (chapter == null)
+                {
+                    continue;
+                }
+
+                if (chapter.IsDecimalChapter)
+                {
+                    chapter.DisplayForeground = Brushes.Cyan;
+                }
+                else if (chapter.HasMissingIntegerGap)
+                {
+                    chapter.DisplayForeground = Brushes.Yellow;
+                }
+                else
+                {
+                    chapter.DisplayForeground = normalBrush;
+                }
+            }
+
+            if (_readerChapterStatsText != null)
+            {
+                string missingText = analysis.MissingRanges.Count == 0
+                    ? (_isVietnameseUi ? "không thiếu chap nguyên" : "no missing integers")
+                    : string.Join(", ", analysis.MissingRanges);
+
+                _readerChapterStatsText.Text = _isVietnameseUi
+                    ? $"Chap nguyên: {analysis.IntegerCount} | chap thập phân: {analysis.DecimalCount} | chap khác: {analysis.UnknownCount} | thiếu: {missingText}"
+                    : $"Integer chapters: {analysis.IntegerCount} | decimal chapters: {analysis.DecimalCount} | other: {analysis.UnknownCount} | missing: {missingText}";
+            }
         }
 
         private ReaderChapterItem BuildReaderChapterItem(string folderPath, string chapterName)
@@ -2218,6 +2461,7 @@ namespace get_link_manga
             }
             _readerSelectionGuard = true;
             _readerMangaList.SelectedItem = manga;
+            ApplyReaderChapterPresentation(manga);
             _readerChapterList.ItemsSource = manga.Chapters;
 
             ReaderChapterItem nextChapter = keepChapterSelection && _currentReaderChapter != null
@@ -2501,6 +2745,7 @@ namespace get_link_manga
 
             _readerSelectionGuard = true;
             _readerMangaList.SelectedItem = manga;
+            ApplyReaderChapterPresentation(manga);
             _readerChapterList.ItemsSource = manga.Chapters;
             _readerChapterList.SelectedItem = chapter;
             UpdateReaderFileListItems(chapter.Pages);
