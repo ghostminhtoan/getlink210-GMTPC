@@ -115,11 +115,55 @@ namespace get_link_manga
                     Name = group.Key,
                     FolderPath = GetReaderCommonParentFolder(domainBooks.Select(item => item.FolderPath)),
                     LastModifiedUtc = domainBooks.Count == 0 ? DateTime.MinValue : domainBooks.Max(item => item.LastModifiedUtc),
-                    Books = domainBooks
+                    Books = domainBooks,
+                    DownloadStateText = GetReaderDomainDownloadStateText(domainBooks)
                 });
             }
 
             return domains;
+        }
+
+        private static string GetReaderDomainDownloadStateText(IEnumerable<ReaderMangaItem> books)
+        {
+            if (books == null)
+            {
+                return null;
+            }
+
+            bool hasDownloading = false;
+            bool hasCompleted = false;
+
+            foreach (ReaderMangaItem book in books)
+            {
+                string stateText = (book?.DownloadStateText ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(stateText))
+                {
+                    if (book != null && book.IsCompleted)
+                    {
+                        hasCompleted = true;
+                    }
+
+                    continue;
+                }
+
+                if (stateText == "downloading")
+                {
+                    hasDownloading = true;
+                    continue;
+                }
+
+                if (stateText == "completed")
+                {
+                    hasCompleted = true;
+                }
+            }
+
+            if (hasDownloading)
+            {
+                return "downloading";
+            }
+
+            return hasCompleted ? "completed" : null;
         }
 
         private void UpdateReaderDomainListItems(IList<ReaderDomainItem> domains)

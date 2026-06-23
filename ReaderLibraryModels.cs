@@ -104,12 +104,18 @@ namespace get_link_manga
 
         public bool IsCompleted { get; set; }
 
+        public string DownloadStateText { get; set; }
+
         public string DisplayLabel
         {
             get
             {
                 string prefix = string.IsNullOrWhiteSpace(SourceGroup) ? string.Empty : SourceGroup + " - ";
                 string suffix = IsCompleted ? " - completed" : string.Empty;
+                if (!string.IsNullOrWhiteSpace(DownloadStateText))
+                {
+                    suffix = " - " + DownloadStateText.Trim().ToLowerInvariant();
+                }
                 return $"{prefix}{Name} ({Chapters.Count} chap{(Chapters.Count == 1 ? string.Empty : "ters")}){suffix}";
             }
         }
@@ -130,7 +136,18 @@ namespace get_link_manga
 
         public List<ReaderMangaItem> Books { get; set; } = new List<ReaderMangaItem>();
 
-        public string DisplayLabel => $"{Name} ({Books.Count} book{(Books.Count == 1 ? string.Empty : "s")})";
+        public string DownloadStateText { get; set; }
+
+        public string DisplayLabel
+        {
+            get
+            {
+                string suffix = string.IsNullOrWhiteSpace(DownloadStateText)
+                    ? string.Empty
+                    : " - " + DownloadStateText.Trim().ToLowerInvariant();
+                return $"{Name} ({Books.Count} book{(Books.Count == 1 ? string.Empty : "s")}){suffix}";
+            }
+        }
 
         public override string ToString()
         {

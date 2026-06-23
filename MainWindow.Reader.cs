@@ -217,10 +217,40 @@ namespace get_link_manga
             public List<string> MissingRanges { get; } = new List<string>();
         }
 
+        private sealed class ReaderDownloadWatchState
+        {
+            private readonly Dictionary<string, string> _stateByBook = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            public void Add(string bookName, string stateText)
+            {
+                string key = NormalizeReaderCompletionKey(bookName);
+                string value = NormalizeReaderDownloadStateText(stateText);
+
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
+                {
+                    return;
+                }
+
+                _stateByBook[key] = value;
+            }
+
+            public string Get(string bookName)
+            {
+                string key = NormalizeReaderCompletionKey(bookName);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    return null;
+                }
+
+                return _stateByBook.TryGetValue(key, out string value) ? value : null;
+            }
+        }
+
         private FrameworkElement CreateWatchSection()
         {
 #if DEBUG
             RunReaderChapterAnalysisSelfCheck();
+            RunReaderDownloadWatchStateSelfCheck();
 #endif
             _readerRootGrid = new Grid();
 
@@ -842,6 +872,13 @@ namespace get_link_manga
             Debug.Assert(chapters[1].HasMissingIntegerGap);
             Debug.Assert(chapters[3].HasMissingIntegerGap);
             Debug.Assert(chapters[2].IsDecimalChapter);
+        }
+
+        private static void RunReaderDownloadWatchStateSelfCheck()
+        {
+            Debug.Assert(string.Equals(SummarizeReaderDownloadWatchState(new[] { "Done" }), "completed", StringComparison.OrdinalIgnoreCase));
+            Debug.Assert(string.Equals(SummarizeReaderDownloadWatchState(new[] { "Done", "Pending" }), "downloading", StringComparison.OrdinalIgnoreCase));
+            Debug.Assert(string.Equals(NormalizeReaderDownloadStateText("hoan tat"), "completed", StringComparison.OrdinalIgnoreCase));
         }
 #endif
 
@@ -1592,6 +1629,7 @@ namespace get_link_manga
             ReaderCompletionState completionState = ShouldShowReaderCompletionBadges(root)
                 ? LoadReaderCompletionState(root)
                 : null;
+            ReaderDownloadWatchState downloadState = LoadReaderDownloadWatchState(root);
 
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string domainFolder in SafeGetDirectories(root))
@@ -1604,12 +1642,12 @@ namespace get_link_manga
 
                 foreach (string bookFolder in SafeGetDirectories(domainFolder))
                 {
-                    TryAddReaderBook(bookFolder, domainName, completionState, seen, result);
+                    TryAddReaderBook(bookFolder, domainName, completionState, downloadState, seen, result);
                 }
 
                 if (!result.Any(item => string.Equals(item.SourceGroup, domainName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    TryAddReaderBook(domainFolder, domainName, completionState, seen, result);
+                    TryAddReaderBook(domainFolder, domainName, completionState, downloadState, seen, result);
                 }
             }
 
@@ -1619,7 +1657,7 @@ namespace get_link_manga
                 .ToList();
         }
 
-        private void TryAddReaderBook(string folderPath, string sourceGroup, ReaderCompletionState completionState, ISet<string> seen, ICollection<ReaderMangaItem> result)
+        private void TryAddReaderBook(string folderPath, string sourceGroup, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState, ISet<string> seen, ICollection<ReaderMangaItem> result)
         {
             if (seen.Contains(folderPath))
             {
@@ -1633,7 +1671,7 @@ namespace get_link_manga
                 return;
             }
 
-            ReaderMangaItem book = BuildReaderMangaItem(folderPath, sourceGroup, completionState);
+            ReaderMangaItem book = BuildReaderMangaItem(folderPath, sourceGroup, completionState, downloadState);
             if (book == null || book.Chapters.Count == 0)
             {
                 return;
@@ -1643,7 +1681,7 @@ namespace get_link_manga
             result.Add(book);
         }
 
-        private ReaderMangaItem BuildReaderMangaItem(string folderPath, string sourceGroup, ReaderCompletionState completionState)
+        private ReaderMangaItem BuildReaderMangaItem(string folderPath, string sourceGroup, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState)
         {
             var chapters = new List<ReaderChapterItem>();
             string bookName = Path.GetFileName(folderPath);
@@ -1681,6 +1719,8 @@ namespace get_link_manga
                 isCompleted = chapters.All(chapter => chapter != null && chapter.IsCompleted);
             }
 
+            string downloadStateText = downloadState != null ? downloadState.Get(bookName) : null;
+
             return new ReaderMangaItem
             {
                 Name = bookName,
@@ -1688,7 +1728,8 @@ namespace get_link_manga
                 FolderPath = folderPath,
                 LastModifiedUtc = chapters.Max(item => item.LastModifiedUtc),
                 Chapters = chapters,
-                IsCompleted = isCompleted
+                IsCompleted = isCompleted,
+                DownloadStateText = downloadStateText
             };
         }
 
@@ -2351,6 +2392,130 @@ namespace get_link_manga
             return ShouldShowReaderCompletionBadges(root)
                 ? LoadReaderCompletionState(root)
                 : null;
+        }
+
+        private ReaderDownloadWatchState LoadReaderDownloadWatchState(string root)
+        {
+            var state = new ReaderDownloadWatchState();
+
+            foreach (string processFile in EnumerateReaderProcessMarkdownFiles(root))
+            {
+                string currentBookName = null;
+                var rowStatuses = new List<string>();
+
+                try
+                {
+                    foreach (string line in File.ReadLines(processFile, Encoding.UTF8))
+                    {
+                        if (line.StartsWith("Book:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            currentBookName = line.Substring("Book:".Length).Trim();
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(currentBookName) || !line.StartsWith("|", StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        if (line.StartsWith("| No.", StringComparison.OrdinalIgnoreCase) ||
+                            line.StartsWith("| :---", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        string[] cells = line.Split('|');
+                        if (cells.Length < 4)
+                        {
+                            continue;
+                        }
+
+                        string rowStatus = cells.Length > 2 ? cells[2].Trim() : string.Empty;
+                        if (!string.IsNullOrWhiteSpace(rowStatus))
+                        {
+                            rowStatuses.Add(rowStatus);
+                        }
+                    }
+
+                    string summary = SummarizeReaderDownloadWatchState(rowStatuses);
+                    if (!string.IsNullOrWhiteSpace(currentBookName) && !string.IsNullOrWhiteSpace(summary))
+                    {
+                        state.Add(currentBookName, summary);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return state;
+        }
+
+        private static string SummarizeReaderDownloadWatchState(IReadOnlyList<string> rowStatuses)
+        {
+            if (rowStatuses == null || rowStatuses.Count == 0)
+            {
+                return null;
+            }
+
+            bool hasPending = false;
+            bool hasDone = false;
+
+            foreach (string rowStatus in rowStatuses)
+            {
+                string normalized = NormalizeReaderDownloadStateText(rowStatus);
+                if (string.IsNullOrWhiteSpace(normalized))
+                {
+                    continue;
+                }
+
+                if (string.Equals(normalized, "completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasDone = true;
+                    continue;
+                }
+
+                if (string.Equals(normalized, "downloading", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(normalized, "pending", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(normalized, "retrying", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(normalized, "error", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasPending = true;
+                }
+                else
+                {
+                    hasPending = true;
+                }
+            }
+
+            if (hasPending)
+            {
+                return "downloading";
+            }
+
+            return hasDone ? "completed" : null;
+        }
+
+        private static string NormalizeReaderDownloadStateText(string value)
+        {
+            string text = (value ?? string.Empty).Trim().ToLowerInvariant();
+            switch (text)
+            {
+                case "done":
+                case "completed":
+                case "hoan tat":
+                case "hoàn tất":
+                    return "completed";
+                case "downloading":
+                case "pending":
+                case "retrying":
+                case "error":
+                case "cancelled":
+                case "paused":
+                    return "downloading";
+                default:
+                    return text;
+            }
         }
 
         private ReaderCompletionState LoadReaderCompletionState(string root)
@@ -4152,7 +4317,7 @@ namespace get_link_manga
                 return null;
             }
 
-            ReaderMangaItem parentManga = BuildReaderMangaItem(parent.FullName, sourceGroup, GetReaderCompletionStateForCurrentRoot());
+            ReaderMangaItem parentManga = BuildReaderMangaItem(parent.FullName, sourceGroup, GetReaderCompletionStateForCurrentRoot(), LoadReaderDownloadWatchState(GetCurrentReaderLibraryRoot()));
             if (parentManga == null)
             {
                 return null;
@@ -4236,7 +4401,7 @@ namespace get_link_manga
                 return null;
             }
 
-            return BuildReaderMangaItem(folderPath, entry.SourceDomain, GetReaderCompletionStateForCurrentRoot());
+            return BuildReaderMangaItem(folderPath, entry.SourceDomain, GetReaderCompletionStateForCurrentRoot(), LoadReaderDownloadWatchState(GetCurrentReaderLibraryRoot()));
         }
 
         private static bool ReaderMangaContainsChapterFolder(ReaderMangaItem manga, string chapterFolderPath)
