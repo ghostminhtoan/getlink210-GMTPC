@@ -223,6 +223,10 @@ namespace get_link_manga
             {
                 _readerChapterStatsText.Text = string.Empty;
             }
+            if (_readerChapterIssueGrid != null)
+            {
+                _readerChapterIssueGrid.ItemsSource = null;
+            }
         }
 
         private void UpdateReaderFileListItems(IList<ReaderPageItem> pages)

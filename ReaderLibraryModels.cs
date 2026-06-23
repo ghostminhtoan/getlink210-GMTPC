@@ -200,4 +200,25 @@ namespace get_link_manga
             return DisplayLabel;
         }
     }
+
+    internal sealed class ReaderChapterIssueItem
+    {
+        public string BookName { get; set; }
+
+        public string ChapterLabel { get; set; }
+
+        public string MissingChapterLabel { get; set; }
+
+        public string DecimalChapterLabel { get; set; }
+
+        public ReaderChapterItem ChapterTarget { get; set; }
+
+        public ReaderChapterItem MissingTarget { get; set; }
+
+        public ReaderChapterItem DecimalTarget { get; set; }
+
+        public bool HasMissingChapter => !string.IsNullOrWhiteSpace(MissingChapterLabel);
+
+        public bool HasDecimalChapter => !string.IsNullOrWhiteSpace(DecimalChapterLabel);
+    }
 }

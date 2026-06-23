@@ -140,7 +140,9 @@ namespace get_link_manga
         private ListBox _readerMangaList;
         private ListBox _readerChapterList;
         private TextBlock _readerChapterStatsText;
-        private Button _readerChapterFocusButton;
+        private Button _readerChapterMissingButton;
+        private TabControl _readerChapterTabControl;
+        private DataGrid _readerChapterIssueGrid;
         private ComboBox _readerPageCombo;
         private ListBox _readerFileList;
         private ListBox _readerDomainList;
@@ -191,7 +193,6 @@ namespace get_link_manga
         private ListBox _readerNovelBookList;
         private ListBox _readerNovelChapterList;
         private ListBox _readerNovelFileList;
-        private Button _readerNovelChapterFocusButton;
         private TextBlock _readerNovelSummaryText;
         private TextBlock _readerNovelStatusText;
         private TextBlock _readerNovelCurrentTitleText;
@@ -286,7 +287,7 @@ namespace get_link_manga
             _readerMangaList = CreateWatchListBox();
             _readerChapterList = CreateWatchChapterListBox();
             _readerChapterStatsText = CreateWatchChapterStatsText();
-            _readerChapterFocusButton = CreateReaderMiniButton("FOCUS", ReaderChapterFocus_Click, 72);
+            _readerChapterMissingButton = CreateReaderMiniButton("Missing chapters", ReaderChapterMissing_Click, 128);
             _readerFileList = CreateWatchListBox();
 
             _readerDomainList.SelectionChanged += ReaderDomainList_SelectionChanged;
@@ -307,7 +308,7 @@ namespace get_link_manga
             var panelBoard = CreateWatchPanelBoard(
                 CreateReaderWatchPanel("Root / Domain", _readerDomainList, _readerMangaDomainSortDateButton, _readerMangaDomainSortNameButton),
                 CreateReaderWatchPanel("Domain / Book", _readerMangaList, _readerMangaBookSortDateButton, _readerMangaBookSortNameButton),
-                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), _readerChapterFocusButton),
+                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), _readerChapterMissingButton),
                 CreateReaderWatchPanel("Chapter / Image", _readerFileList));
 
             _readerFullscreenButton = CreateReaderMiniButton("Open viewer", ReaderFullscreen_Click, 92);
@@ -348,7 +349,6 @@ namespace get_link_manga
             _readerNovelDomainList = CreateWatchListBox();
             _readerNovelBookList = CreateWatchListBox();
             _readerNovelChapterList = CreateWatchListBox();
-            _readerNovelChapterFocusButton = CreateReaderMiniButton("FOCUS", ReaderNovelChapterFocus_Click, 72);
             _readerNovelFileList = CreateWatchListBox();
             _readerNovelPreviewTextBox = CreateWatchPreviewTextBox();
 
@@ -370,7 +370,7 @@ namespace get_link_manga
             var panelBoard = CreateWatchPanelBoard(
                 CreateReaderWatchPanel("Root / Domain", _readerNovelDomainList, _readerNovelDomainSortDateButton, _readerNovelDomainSortNameButton),
                 CreateReaderWatchPanel("Domain / Book", _readerNovelBookList, _readerNovelBookSortDateButton, _readerNovelBookSortNameButton),
-                CreateReaderWatchPanel("Book / Chapter", _readerNovelChapterList, _readerNovelChapterFocusButton),
+                CreateReaderWatchPanel("Book / Chapter", _readerNovelChapterList),
                 CreateReaderWatchPanel("Chapter / MD", CreateWatchNovelPreviewPanel()));
 
             _readerNovelStatusText = CreateWatchStatusText();
@@ -551,9 +551,225 @@ namespace get_link_manga
             Grid.SetRow(_readerChapterStatsText, 0);
             grid.Children.Add(_readerChapterStatsText);
 
-            Grid.SetRow(_readerChapterList, 1);
-            grid.Children.Add(_readerChapterList);
+            _readerChapterTabControl = new TabControl
+            {
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Margin = new Thickness(0)
+            };
+
+            _readerChapterTabControl.Items.Add(new TabItem
+            {
+                Header = "Chapters",
+                Content = _readerChapterList
+            });
+
+            _readerChapterIssueGrid = CreateWatchChapterIssueGrid();
+            _readerChapterTabControl.Items.Add(new TabItem
+            {
+                Header = "Missing chapters",
+                Content = _readerChapterIssueGrid
+            });
+
+            Grid.SetRow(_readerChapterTabControl, 1);
+            grid.Children.Add(_readerChapterTabControl);
             return grid;
+        }
+
+        private DataGrid CreateWatchChapterIssueGrid()
+        {
+            var grid = new DataGrid
+            {
+                Background = new SolidColorBrush(Color.FromRgb(0x09, 0x0D, 0x16)),
+                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
+                BorderThickness = new Thickness(1),
+                Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
+                AutoGenerateColumns = false,
+                CanUserAddRows = false,
+                CanUserDeleteRows = false,
+                CanUserResizeRows = false,
+                CanUserReorderColumns = false,
+                IsReadOnly = true,
+                HeadersVisibility = DataGridHeadersVisibility.Column,
+                SelectionMode = DataGridSelectionMode.Single,
+                SelectionUnit = DataGridSelectionUnit.FullRow,
+                GridLinesVisibility = DataGridGridLinesVisibility.None,
+                RowHeaderWidth = 0
+            };
+
+            grid.Columns.Add(new DataGridTextColumn
+            {
+                Header = "Book",
+                Binding = new Binding(nameof(ReaderChapterIssueItem.BookName))
+            });
+            grid.Columns.Add(CreateIssueButtonColumn("Chapter", nameof(ReaderChapterIssueItem.ChapterLabel), nameof(ReaderChapterIssueItem.ChapterTarget), ReaderChapterIssueChapter_Click));
+            grid.Columns.Add(CreateIssueButtonColumn("Missing chapter", nameof(ReaderChapterIssueItem.MissingChapterLabel), nameof(ReaderChapterIssueItem.MissingTarget), ReaderChapterIssueMissing_Click));
+            grid.Columns.Add(CreateIssueButtonColumn("Decimal chapter", nameof(ReaderChapterIssueItem.DecimalChapterLabel), nameof(ReaderChapterIssueItem.DecimalTarget), ReaderChapterIssueDecimal_Click));
+
+            return grid;
+        }
+
+        private DataGridTemplateColumn CreateIssueButtonColumn(string header, string labelPath, string targetPath, RoutedEventHandler clickHandler)
+        {
+            var template = new DataTemplate();
+            var button = new FrameworkElementFactory(typeof(Button));
+            button.SetValue(Button.PaddingProperty, new Thickness(4, 1, 4, 1));
+            button.SetValue(Button.MarginProperty, new Thickness(0, 1, 0, 1));
+            button.SetValue(Button.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
+            button.SetValue(Button.HorizontalContentAlignmentProperty, HorizontalAlignment.Left);
+            button.SetValue(Button.BackgroundProperty, Brushes.Transparent);
+            button.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
+            button.SetValue(Button.ForegroundProperty, Brushes.Cyan);
+            button.SetValue(Button.CursorProperty, Cursors.Hand);
+            button.SetBinding(ContentControl.ContentProperty, new Binding(labelPath));
+            button.SetBinding(Button.TagProperty, new Binding(targetPath));
+            button.AddHandler(Button.ClickEvent, clickHandler);
+            template.VisualTree = button;
+
+            return new DataGridTemplateColumn
+            {
+                Header = header,
+                CellTemplate = template
+            };
+        }
+
+        private void RefreshReaderChapterIssueGrid(ReaderMangaItem manga)
+        {
+            if (_readerChapterIssueGrid == null)
+            {
+                return;
+            }
+
+            _readerChapterIssueGrid.ItemsSource = BuildReaderChapterIssueRows(manga);
+        }
+
+        private void ShowReaderChapterIssues()
+        {
+            RefreshReaderChapterIssueGrid(_currentReaderManga);
+            if (_readerChapterTabControl != null && _readerChapterTabControl.Items.Count > 1)
+            {
+                _readerChapterTabControl.SelectedIndex = 1;
+            }
+        }
+
+        private void GoToReaderChapterIssueTarget(ReaderChapterItem target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            SelectReaderChapter(target);
+            if (_readerChapterTabControl != null && _readerChapterTabControl.Items.Count > 0)
+            {
+                _readerChapterTabControl.SelectedIndex = 0;
+            }
+        }
+
+        private List<ReaderChapterIssueItem> BuildReaderChapterIssueRows(ReaderMangaItem manga)
+        {
+            var rows = new List<ReaderChapterIssueItem>();
+            if (manga == null || manga.Chapters == null || manga.Chapters.Count == 0)
+            {
+                return rows;
+            }
+
+            var parsed = manga.Chapters
+                .Select(chapter =>
+                {
+                    bool ok = TryParseReaderChapterNumber(chapter?.Name, out double number, out bool isDecimal);
+                    return new
+                    {
+                        Chapter = chapter,
+                        Parsed = ok,
+                        Number = number,
+                        IsDecimal = isDecimal,
+                        IntegerNumber = ok && !isDecimal ? (int)Math.Round(number) : (int?)null
+                    };
+                })
+                .Where(item => item.Chapter != null)
+                .ToList();
+
+            foreach (var item in parsed.Where(item => item.Parsed && item.IsDecimal))
+            {
+                rows.Add(new ReaderChapterIssueItem
+                {
+                    BookName = manga.Name,
+                    ChapterLabel = item.Chapter.Name,
+                    DecimalChapterLabel = item.Chapter.Name,
+                    DecimalTarget = item.Chapter,
+                    ChapterTarget = item.Chapter
+                });
+            }
+
+            var integerItems = parsed
+                .Where(item => item.Parsed && !item.IsDecimal && item.IntegerNumber.HasValue)
+                .GroupBy(item => item.IntegerNumber.Value)
+                .OrderBy(group => group.Key)
+                .ToList();
+
+            for (int i = 1; i < integerItems.Count; i++)
+            {
+                int previous = integerItems[i - 1].Key;
+                int current = integerItems[i].Key;
+                if (current - previous <= 1)
+                {
+                    continue;
+                }
+
+                ReaderChapterItem previousChapter = integerItems[i - 1].OrderBy(item => item.Chapter.Name, _readerSortComparer).First().Chapter;
+                string missingLabel = current - previous == 2
+                    ? FormatReaderChapterNumber(previous + 1)
+                    : FormatReaderChapterNumber(previous + 1) + "-" + FormatReaderChapterNumber(current - 1);
+
+                rows.Add(new ReaderChapterIssueItem
+                {
+                    BookName = manga.Name,
+                    ChapterLabel = previousChapter?.Name ?? FormatReaderChapterNumber(previous),
+                    MissingChapterLabel = missingLabel,
+                    ChapterTarget = previousChapter,
+                    MissingTarget = previousChapter
+                });
+            }
+
+            return rows
+                .OrderBy(row => row.ChapterTarget?.ParsedChapterNumber ?? double.MaxValue)
+                .ThenBy(row => row.DecimalTarget == null ? 0 : 1)
+                .ToList();
+        }
+
+        private static string FormatReaderChapterNumber(int value)
+        {
+            return value.ToString("00", CultureInfo.InvariantCulture);
+        }
+
+        private void ReaderChapterMissing_Click(object sender, RoutedEventArgs e)
+        {
+            ShowReaderChapterIssues();
+        }
+
+        private void ReaderChapterIssueChapter_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is ReaderChapterItem target)
+            {
+                GoToReaderChapterIssueTarget(target);
+            }
+        }
+
+        private void ReaderChapterIssueMissing_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is ReaderChapterItem target)
+            {
+                GoToReaderChapterIssueTarget(target);
+            }
+        }
+
+        private void ReaderChapterIssueDecimal_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is ReaderChapterItem target)
+            {
+                GoToReaderChapterIssueTarget(target);
+            }
         }
 
         private TextBox CreateWatchPreviewTextBox()
@@ -658,22 +874,6 @@ namespace get_link_manga
             }
 
             Dispatcher.BeginInvoke(new Action(() => _readerNovelChapterList.ScrollIntoView(chapter)), DispatcherPriority.Background);
-        }
-
-        private void ReaderChapterFocus_Click(object sender, RoutedEventArgs e)
-        {
-            if (_readerChapterList?.SelectedItem is ReaderChapterItem chapter)
-            {
-                ScrollReaderChapterIntoView(chapter);
-            }
-        }
-
-        private void ReaderNovelChapterFocus_Click(object sender, RoutedEventArgs e)
-        {
-            if (_readerNovelChapterList?.SelectedItem is ReaderNovelChapterItem chapter)
-            {
-                ScrollReaderNovelChapterIntoView(chapter);
-            }
         }
 
         private Button CreateReaderMiniButton(string text, RoutedEventHandler clickHandler, double minWidth = 54)
@@ -1596,11 +1796,13 @@ namespace get_link_manga
                 {
                     _readerChapterStatsText.Text = string.Empty;
                 }
+                RefreshReaderChapterIssueGrid(null);
 
                 return;
             }
 
             ReaderChapterAnalysis analysis = AnalyzeReaderChapterNumbers(manga.Chapters);
+            RefreshReaderChapterIssueGrid(manga);
             Brush normalBrush = (Brush)TryFindResource("CyberpunkTextBrush") ?? Brushes.White;
 
             foreach (ReaderChapterItem chapter in manga.Chapters)
