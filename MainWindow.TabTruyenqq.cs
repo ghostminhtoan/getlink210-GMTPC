@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -1031,7 +1032,30 @@ namespace get_link_manga
                 string chapLink = chapterLinks[idx];
 
                 var chapItem = new GalleryItem { Link = chapLink, Name = item.Name };
-                bool chapterCompleted = await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
+                bool chapterCompleted = false;
+                try
+                {
+                    chapterCompleted = await DownloadTruyenqqChapterAsync(chapItem, rootFolder, token, queueItem, isParentQueue: true);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    string chapterLabel = NormalizeChapterLabel("chap " + Math.Max(1d, ParseChapterNumber(chapLink)).ToString("0.##", CultureInfo.InvariantCulture));
+                    TruyenqqLog($"[truyenqq] Bỏ qua {chapterLabel} của '{item.Name}': {ex.Message}");
+                    if (queueItem != null)
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            queueItem.AddError(chapterLabel, 0, ex.Message, chapLink, item.Link);
+                        });
+                        RecordCheckError("truyenqq", queueItem.Name ?? item.Name, chapterLabel, 0, ex.Message, chapLink);
+                    }
+                    continue;
+                }
+
                 if (chapterCompleted)
                 {
                     MarkChapterProcessDone(rootFolder, "truyenqq", item, chapLink);
