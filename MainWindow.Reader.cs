@@ -141,7 +141,8 @@ namespace get_link_manga
         private ListBox _readerChapterList;
         private TextBlock _readerChapterStatsText;
         private Button _readerChapterMissingButton;
-        private TabControl _readerChapterTabControl;
+        private ContentControl _readerChapterContentHost;
+        private Border _readerChapterIssuePanel;
         private DataGrid _readerChapterIssueGrid;
         private ComboBox _readerPageCombo;
         private ListBox _readerFileList;
@@ -287,7 +288,6 @@ namespace get_link_manga
             _readerMangaList = CreateWatchListBox();
             _readerChapterList = CreateWatchChapterListBox();
             _readerChapterStatsText = CreateWatchChapterStatsText();
-            _readerChapterMissingButton = CreateReaderMiniButton("Missing chapters", ReaderChapterMissing_Click, 128);
             _readerFileList = CreateWatchListBox();
 
             _readerDomainList.SelectionChanged += ReaderDomainList_SelectionChanged;
@@ -546,33 +546,43 @@ namespace get_link_manga
         {
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
             Grid.SetRow(_readerChapterStatsText, 0);
             grid.Children.Add(_readerChapterStatsText);
 
-            _readerChapterTabControl = new TabControl
+            var headerHost = new Grid
             {
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-                Margin = new Thickness(0)
+                Margin = new Thickness(0, 0, 0, 6)
             };
 
-            _readerChapterTabControl.Items.Add(new TabItem
-            {
-                Header = "Chapters",
-                Content = _readerChapterList
-            });
+            Grid.SetRow(headerHost, 1);
+            grid.Children.Add(headerHost);
+
+            _readerChapterMissingButton = CreateReaderMiniButton("Missing chapters", ReaderChapterMissing_Click, 128);
+            _readerChapterMissingButton.HorizontalAlignment = HorizontalAlignment.Right;
+            _readerChapterMissingButton.Margin = new Thickness(0, 0, 0, 0);
+            headerHost.Children.Add(_readerChapterMissingButton);
+
+            _readerChapterContentHost = new ContentControl();
+            Grid.SetRow(_readerChapterContentHost, 2);
+            grid.Children.Add(_readerChapterContentHost);
+
+            _readerChapterContentHost.Content = _readerChapterList;
 
             _readerChapterIssueGrid = CreateWatchChapterIssueGrid();
-            _readerChapterTabControl.Items.Add(new TabItem
+            _readerChapterIssuePanel = new Border
             {
-                Header = "Missing chapters",
-                Content = _readerChapterIssueGrid
-            });
+                Background = (Brush)TryFindResource("CyberpunkCardBrush") ?? new SolidColorBrush(Color.FromRgb(0x0D, 0x12, 0x1F)),
+                BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(8),
+                Child = _readerChapterIssueGrid
+            };
 
-            Grid.SetRow(_readerChapterTabControl, 1);
-            grid.Children.Add(_readerChapterTabControl);
+            _readerChapterContentHost.Content = _readerChapterList;
             return grid;
         }
 
@@ -584,6 +594,7 @@ namespace get_link_manga
                 BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
                 BorderThickness = new Thickness(1),
                 Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
+                Style = TryFindResource("CyberpunkDataGrid") as Style,
                 AutoGenerateColumns = false,
                 CanUserAddRows = false,
                 CanUserDeleteRows = false,
@@ -596,6 +607,10 @@ namespace get_link_manga
                 GridLinesVisibility = DataGridGridLinesVisibility.None,
                 RowHeaderWidth = 0
             };
+
+            grid.ColumnHeaderStyle = TryFindResource("CyberpunkDataGridColumnHeader") as Style;
+            grid.RowStyle = TryFindResource("CyberpunkDataGridRow") as Style;
+            grid.CellStyle = TryFindResource("CyberpunkDataGridCell") as Style;
 
             grid.Columns.Add(new DataGridTextColumn
             {
@@ -646,9 +661,17 @@ namespace get_link_manga
         private void ShowReaderChapterIssues()
         {
             RefreshReaderChapterIssueGrid(_currentReaderManga);
-            if (_readerChapterTabControl != null && _readerChapterTabControl.Items.Count > 1)
+            if (_readerChapterContentHost != null && _readerChapterIssuePanel != null)
             {
-                _readerChapterTabControl.SelectedIndex = 1;
+                _readerChapterContentHost.Content = _readerChapterIssuePanel;
+            }
+        }
+
+        private void ShowReaderChapterList()
+        {
+            if (_readerChapterContentHost != null)
+            {
+                _readerChapterContentHost.Content = _readerChapterList;
             }
         }
 
@@ -660,10 +683,7 @@ namespace get_link_manga
             }
 
             SelectReaderChapter(target);
-            if (_readerChapterTabControl != null && _readerChapterTabControl.Items.Count > 0)
-            {
-                _readerChapterTabControl.SelectedIndex = 0;
-            }
+            ShowReaderChapterList();
         }
 
         private List<ReaderChapterIssueItem> BuildReaderChapterIssueRows(ReaderMangaItem manga)
@@ -745,6 +765,17 @@ namespace get_link_manga
 
         private void ReaderChapterMissing_Click(object sender, RoutedEventArgs e)
         {
+            if (_readerChapterContentHost == null || _readerChapterIssuePanel == null)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(_readerChapterContentHost.Content, _readerChapterIssuePanel))
+            {
+                ShowReaderChapterList();
+                return;
+            }
+
             ShowReaderChapterIssues();
         }
 
