@@ -1108,15 +1108,26 @@ namespace get_link_manga
                 await WaitForAllScheduledDownloadsAsync(token);
 
                 lblStatus.Text = _isVietnameseUi ? "Tải xuống hoàn tất!" : "Downloads completed!";
-                Log("Tải xuống toàn bộ thành công!");
+                bool allSucceeded = itemsToDownload != null &&
+                                    itemsToDownload.Where(item => item != null).All(item => item.IsSuccessfullyCompleted());
 
-                if (_shutdownAfterCompleted)
+                if (allSucceeded)
                 {
-                    Log("[Shutdown] Tải hoàn tất và tùy chọn tự động tắt máy đang bật. Hệ thống sẽ tắt sau 15 giây.");
-                    System.Diagnostics.Process.Start("shutdown", "-s -t 15");
-                }
+                    Log("Tải xuống toàn bộ thành công!");
 
-                MessageBox.Show("Đã tải xong toàn bộ truyện được chọn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (_shutdownAfterCompleted)
+                    {
+                        Log("[Shutdown] Tải hoàn tất và tùy chọn tự động tắt máy đang bật. Hệ thống sẽ tắt sau 15 giây.");
+                        System.Diagnostics.Process.Start("shutdown", "-s -t 15");
+                    }
+
+                    MessageBox.Show("Đã tải xong toàn bộ truyện được chọn!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    Log("Tải xong nhưng còn truyện/chapter lỗi.");
+                    MessageBox.Show("Có truyện chưa tải xong. Xem cột trạng thái.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             catch (OperationCanceledException)
             {

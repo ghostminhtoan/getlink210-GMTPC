@@ -864,6 +864,7 @@ namespace get_link_manga
                 });
             }
 
+            int completedCount = 0;
             for (int i = 0; i < chapterLinks.Count; i++)
             {
                 token.ThrowIfCancellationRequested();
@@ -878,12 +879,12 @@ namespace get_link_manga
                 if (chapterCompleted)
                 {
                     MarkChapterProcessDone(rootFolder, Hentai2readSiteFolder, item, chapterLinks[i]);
+                    completedCount++;
                 }
 
-                if (queueItem != null)
+                if (queueItem != null && chapterCompleted)
                 {
-                    int completed = i + 1;
-                    Dispatcher.Invoke(() => queueItem.CompletedChapters = completed);
+                    Dispatcher.Invoke(() => queueItem.CompletedChapters = completedCount);
                 }
             }
         }
@@ -958,7 +959,7 @@ namespace get_link_manga
 
             string safeBook = GetCanonicalBookFolderName(item, bookTitle, "Unknown Book");
             string aliasSafeBook = GetSafePathName(bookTitle);
-            string safeChapter = GetSafeChapterPathName(bookTitle, chapterTitle);
+            string safeChapter = GetDownloadChapterFolderName(bookTitle, chapterTitle);
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, Hentai2readSiteFolder);
             await NormalizeChapterFolderAliasAsync(siteRootFolder, safeBook, aliasSafeBook, safeChapter, token);
 

@@ -1096,6 +1096,7 @@ namespace get_link_manga
                 }));
             }
 
+            int completedCount = 0;
             for (int idx = 0; idx < chapterLinks.Count; idx++)
             {
                 token.ThrowIfCancellationRequested();
@@ -1106,14 +1107,14 @@ namespace get_link_manga
                 if (chapterCompleted)
                 {
                     MarkChapterProcessDone(rootFolder, "nettruyen", item, chapLink);
+                    completedCount++;
                 }
 
-                if (queueItem != null)
+                if (queueItem != null && chapterCompleted)
                 {
-                    int currentIdx = idx + 1;
                     Dispatcher.BeginInvoke((Action)(() =>
                     {
-                        queueItem.CompletedChapters = currentIdx;
+                        queueItem.CompletedChapters = completedCount;
                     }));
                 }
             }
@@ -1201,7 +1202,7 @@ namespace get_link_manga
 
             cleanChapter = NormalizeChapterLabel(cleanChapter);
             string safeManga = GetSafePathName(cleanManga);
-            string safeChapter = GetSafeChapterPathName(cleanManga, cleanChapter);
+            string safeChapter = GetDownloadChapterFolderName(cleanManga, cleanChapter);
             string progressKey = $"nettruyen|{GetSafePathName(cleanManga)}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;

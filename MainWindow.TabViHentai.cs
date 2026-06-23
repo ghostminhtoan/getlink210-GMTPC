@@ -899,6 +899,7 @@ namespace get_link_manga
                 });
             }
 
+            int completedCount = 0;
             for (int idx = 0; idx < chapterLinks.Count; idx++)
             {
                 token.ThrowIfCancellationRequested();
@@ -909,14 +910,14 @@ namespace get_link_manga
                 if (chapterCompleted)
                 {
                     MarkChapterProcessDone(rootFolder, "vi-hentai.pro", item, chapLink);
+                    completedCount++;
                 }
 
-                if (queueItem != null)
+                if (queueItem != null && chapterCompleted)
                 {
-                    int currentIdx = idx + 1;
                     Dispatcher.Invoke(() =>
                     {
-                        queueItem.CompletedChapters = currentIdx;
+                        queueItem.CompletedChapters = completedCount;
                     });
                 }
 
@@ -978,7 +979,7 @@ namespace get_link_manga
             chapterTitle = NormalizeChapterLabel(chapterTitle);
             string safeManga = GetCanonicalBookFolderName(item, mangaTitle, "Unknown Manga");
             string aliasSafeManga = GetSafePathName(mangaTitle);
-            string safeChapter = GetSafeChapterPathName(mangaTitle, chapterTitle);
+            string safeChapter = GetDownloadChapterFolderName(mangaTitle, chapterTitle);
             string progressKey = $"vi-hentai.pro|{safeManga}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;

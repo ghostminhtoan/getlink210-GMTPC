@@ -1055,6 +1055,7 @@ namespace get_link_manga
                 }));
             }
 
+            int completedCount = 0;
             for (int i = 0; i < chapterLinks.Count; i++)
             {
                 token.ThrowIfCancellationRequested();
@@ -1070,14 +1071,14 @@ namespace get_link_manga
                 if (chapterCompleted)
                 {
                     MarkChapterProcessDone(rootFolder, TruyenggvnSiteFolder, item, chapLink);
+                    completedCount++;
                 }
 
-                if (queueItem != null)
+                if (queueItem != null && chapterCompleted)
                 {
-                    int completed = i + 1;
                     Dispatcher.BeginInvoke((Action)(() =>
                     {
-                        queueItem.CompletedChapters = completed;
+                        queueItem.CompletedChapters = completedCount;
                     }));
                 }
             }
@@ -1124,7 +1125,7 @@ namespace get_link_manga
             cleanChapter = NormalizeChapterLabel(cleanChapter);
             string safeManga = GetCanonicalBookFolderName(item, cleanManga, "SayHentai");
             string aliasSafeManga = GetSafePathName(cleanManga);
-            string safeChapter = GetSafeChapterPathName(cleanManga, cleanChapter);
+            string safeChapter = GetDownloadChapterFolderName(cleanManga, cleanChapter);
             string progressKey = $"sayhentai|{safeManga}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
             int currentChapterForLog = queueItem != null ? Math.Max(1, Math.Min(queueItem.CompletedChapters + 1, totalChaptersForLog)) : 1;
