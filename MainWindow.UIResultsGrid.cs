@@ -82,9 +82,17 @@ namespace get_link_manga
 
             e.Handled = true;
 
-            ListSortDirection direction = e.Column.SortDirection == ListSortDirection.Ascending
-                ? ListSortDirection.Descending
-                : ListSortDirection.Ascending;
+            ListSortDirection direction;
+            if (ReferenceEquals(e.Column, colSpeed))
+            {
+                direction = ListSortDirection.Descending;
+            }
+            else
+            {
+                direction = e.Column.SortDirection == ListSortDirection.Ascending
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending;
+            }
 
             ClearResultsColumnSortDirections(e.Column);
             e.Column.SortDirection = direction;
@@ -104,37 +112,47 @@ namespace get_link_manga
             }
             else if (ReferenceEquals(e.Column, colSpeed))
             {
-                _isSpeedSortAscending = direction != ListSortDirection.Ascending;
+                _isSpeedSortAscending = false;
             }
         }
 
         private void TxtFilter_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var view = ResultsView;
-            if (view != null)
+            ApplyResultsFilter();
+        }
+
+        private void ApplyResultsFilter()
+        {
+            ApplyResultsFilter(ResultsView, txtFilter?.Text?.Trim() ?? string.Empty);
+            ApplyResultsFilter(CollectionViewSource.GetDefaultView(_lightNovelItems), string.Empty);
+        }
+
+        private void ApplyResultsFilter(ICollectionView view, string filterText)
+        {
+            if (view == null)
             {
-                string filterText = txtFilter.Text.Trim();
+                return;
+            }
+
+            view.Filter = item =>
+            {
+                if (!(item is GalleryItem galleryItem))
+                {
+                    return false;
+                }
+
                 if (string.IsNullOrEmpty(filterText))
                 {
-                    view.Filter = null;
+                    return true;
                 }
-                else
-                {
-                    view.Filter = item =>
-                    {
-                        if (item is GalleryItem galleryItem)
-                        {
-                            return (galleryItem.Name != null && galleryItem.Name.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                                   (galleryItem.Link != null && galleryItem.Link.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                                   (galleryItem.Status != null && galleryItem.Status.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                                   (galleryItem.CurrentProcess != null && galleryItem.CurrentProcess.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                                   (galleryItem.DownloadingChapter != null && galleryItem.DownloadingChapter.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                                   (galleryItem.DownloadingPageProgress != null && galleryItem.DownloadingPageProgress.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0);
-                        }
-                        return false;
-                    };
-                }
-            }
+
+                return (galleryItem.Name != null && galleryItem.Name.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                       (galleryItem.Link != null && galleryItem.Link.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                       (galleryItem.Status != null && galleryItem.Status.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                       (galleryItem.CurrentProcess != null && galleryItem.CurrentProcess.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                       (galleryItem.DownloadingChapter != null && galleryItem.DownloadingChapter.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                       (galleryItem.DownloadingPageProgress != null && galleryItem.DownloadingPageProgress.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0);
+            };
         }
 
         private void BtnSortByName_Click(object sender, RoutedEventArgs e)
@@ -144,7 +162,13 @@ namespace get_link_manga
 
         private void BtnSortBySpeed_Click(object sender, RoutedEventArgs e)
         {
-            ApplyResultsSort(colSpeed, "DownloadSpeedSortValue", ref _isSpeedSortAscending, "download speed");
+            _isSpeedSortAscending = false;
+            ClearResultsColumnSortDirections(colSpeed);
+            if (colSpeed != null)
+            {
+                colSpeed.SortDirection = ListSortDirection.Descending;
+            }
+            ApplyResultsSort("DownloadSpeedSortValue", ListSortDirection.Descending, "Sorted download speed descending.");
         }
 
         private void BtnRestoreOrder_Click(object sender, RoutedEventArgs e)

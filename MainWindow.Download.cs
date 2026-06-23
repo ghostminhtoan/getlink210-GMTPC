@@ -56,11 +56,6 @@ namespace get_link_manga
                 {
                     txtSpeedHeader.Text = "SPEED";
                 }
-
-                if (colSpeed != null && colSpeed.SortDirection != null)
-                {
-                    ResultsView?.Refresh();
-                }
             });
         }
 
@@ -355,6 +350,13 @@ namespace get_link_manga
                 ? NormalizeChapterLabel(chapterTitle)
                 : CompactSingleLine(bookTitle) + " - " + NormalizeChapterLabel(chapterTitle);
             return GetSafePathName(combined, maxLength);
+        }
+
+        private string GetDownloadChapterFolderName(string bookTitle, string chapterTitle)
+        {
+            return _isSingleComicFolderType
+                ? GetSafeChapterPathName(chapterTitle)
+                : GetSafeChapterPathName(bookTitle, chapterTitle);
         }
 
         private static string ZeroPadChapterNumberToken(string numberToken)
@@ -1297,6 +1299,7 @@ namespace get_link_manga
                 Interlocked.Increment(ref _nextDownloadStartOrder);
                 CancellationTokenSource speedTrackerCts = null;
                 Task speedTrackerTask = null;
+                bool countAsCompleted = true;
                 try
                 {
                     while (_isDownloadPaused || item.IsPaused)
@@ -1403,38 +1406,27 @@ namespace get_link_manga
 
                         if (is429)
                         {
-                            Log($"[RateLimit 429] Phát hiện 429 cho '{item.Name}'. Tiến hành dừng tải...");
-                            
-                            // 1. Dừng download
-                            Dispatcher.Invoke(() => BtnStopDownload_Click(null, null));
+                            Log($"[RateLimit 429] Phát hiện 429 cho '{item.Name}'. Tạm dừng tải...");
+                            countAsCompleted = false;
+                            PauseAllDownloads();
+                            Dispatcher.Invoke(() =>
+                            {
+                                item.Status = "Paused";
+                                item.CurrentProcess = "429 pause";
+                            });
 
-                            // 2. Chờ 5 giây
                             Log("[RateLimit 429] Chờ 5 giây...");
-                            await Task.Delay(5000);
+                            await Task.Delay(5000, token);
 
-                            // 3. Xóa temp
-                            Log("[RateLimit 429] Đang xóa thư mục tạm (temp)...");
-                            DeleteWebView2RuntimeDirectoryWithRetry();
-                            CleanupActiveTempFolders();
-                            DeleteProcessMarkdownForItem(item);
+                            Log("[RateLimit 429] Đang xóa temp/process/webview2 theo book...");
+                            Delete429ArtifactsForItem(item, downloadRoot);
 
-                            // 4. Xóa cookie
                             Log("[RateLimit 429] Đang xóa cookie...");
                             InitializeHttpClientState();
-                            try
-                            {
-                                PortableRuntimeBootstrap.ResetPortableRuntimeStorage();
-                            }
-                            catch (Exception exReset)
-                            {
-                                Log($"[RateLimit 429 Warning] Không thể reset portable storage: {exReset.Message}");
-                            }
 
-                            // 5. Đợi tiếp 5 giây
                             Log("[RateLimit 429] Đợi thêm 5 giây trước khi tải lại...");
-                            await Task.Delay(5000);
+                            await Task.Delay(5000, token);
 
-                            // 6. Làm mới trạng thái trong extracted gallery links
                             Dispatcher.Invoke(() =>
                             {
                                 item.Status = "Queued";
@@ -1445,7 +1437,7 @@ namespace get_link_manga
                                 item.IsChecked = true;
                             });
 
-                            // 7. Tải lại
+                            ResumeAllDownloads();
                             Log($"[RateLimit 429] Đang bắt đầu tải lại '{item.Name}'...");
                             _ = StartDownloadProcessAsync(new List<GalleryItem> { item }, preserveExistingState: false);
                             
@@ -1486,7 +1478,10 @@ namespace get_link_manga
                             }
                             speedTrackerCts.Dispose();
                         }
-                        Interlocked.Increment(ref _downloadSessionCompletedGalleries);
+                        if (countAsCompleted)
+                        {
+                            Interlocked.Increment(ref _downloadSessionCompletedGalleries);
+                        }
                         UpdateDownloadProgressLabel();
                         UpdateQueueErrorLabel();
                     }
@@ -3386,12 +3381,6 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
             queueItem.ErrorCount = queueItem.Errors.Count;
 
-            if (queueItem.Errors.Count == 0)
-            {
-                queueItem.Status = "Completed";
-                queueItem.CurrentProcess = "Done";
-            }
-
             var keysToRemove = _checkErrorIndex.Keys.Where(k => {
                 if (_checkErrorIndex.TryGetValue(k, out var val))
                 {
@@ -3413,17 +3402,107 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             UpdateStats();
         }
 
-        private void DeleteWebView2RuntimeDirectoryWithRetry()
+        private void Delete429ArtifactsForItem(GalleryItem item, string downloadRoot)
         {
-            string path = PortablePaths.WebView2RuntimeRoot;
+            DeleteBookTempFolderForItem(item, downloadRoot);
+            DeleteProcessMarkdownForItem(item);
+            DeleteWebView2RuntimeDirectoryWithRetry(GetWebView2DomainFolderName(item));
+        }
+
+        private void DeleteBookTempFolderForItem(GalleryItem item, string downloadRoot)
+        {
+            string tempFolder = GetBookTempFolderForItem(item, downloadRoot);
+            if (string.IsNullOrWhiteSpace(tempFolder) || !Directory.Exists(tempFolder))
+            {
+                return;
+            }
+
+            TryDeleteDirectoryWithRetry(tempFolder, $"[RateLimit 429] Đã xóa temp book: {tempFolder}");
+        }
+
+        private string GetBookTempFolderForItem(GalleryItem item, string downloadRoot)
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            string root = item.DownloadPath;
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                root = downloadRoot;
+            }
+
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                return null;
+            }
+
+            string safeTitle = GetSafePathName(item.Name);
+            return Path.Combine(GetEffectiveDownloadRoot(root), ".tmp", $"{safeTitle}-tmp");
+        }
+
+        private string GetWebView2DomainFolderName(GalleryItem item)
+        {
+            try
+            {
+                string url = item?.Link ?? string.Empty;
+                var uri = new Uri(url);
+                string host = (uri.Host ?? string.Empty).ToLowerInvariant();
+
+                if (host.Contains("truyenqq")) return "truyenqq";
+                if (host.Contains("nettruyen")) return "nettruyen";
+                if (host.Contains("vi-hentai") || host.Contains("hentaivn")) return "hentaivn";
+                if (host.Contains("hentai2read")) return "hentai2read";
+                if (host.Contains("daomeoden")) return "daomeoden";
+
+                var parts = host.Split('.');
+                if (parts.Length >= 2)
+                {
+                    return parts[parts.Length - 2];
+                }
+
+                return host;
+            }
+            catch
+            {
+                return GetSafePathName(item?.SourceDomain ?? "general");
+            }
+        }
+
+        private void DeleteWebView2RuntimeDirectoryWithRetry(string domainFolder)
+        {
+            if (string.IsNullOrWhiteSpace(domainFolder))
+            {
+                return;
+            }
+
+            string path = Path.Combine(PortablePaths.WebView2RuntimeRoot, domainFolder);
             if (!Directory.Exists(path)) return;
             for (int i = 0; i < 5; i++)
             {
                 try
                 {
                     Directory.Delete(path, true);
-                    Log("[HentaiVN 429] Đã xóa thành công runtimes\\webview2");
+                    Log($"[RateLimit 429] Đã xóa WebView2 domain: {path}");
                     break;
+                }
+                catch
+                {
+                    System.Threading.Thread.Sleep(500);
+                }
+            }
+        }
+
+        private void TryDeleteDirectoryWithRetry(string path, string logLabel)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                try
+                {
+                    Directory.Delete(path, true);
+                    Log(logLabel);
+                    return;
                 }
                 catch
                 {
@@ -3934,4 +4013,3 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
         }
     }
 }
-
