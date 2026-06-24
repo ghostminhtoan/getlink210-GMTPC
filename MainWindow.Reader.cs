@@ -1691,6 +1691,18 @@ namespace get_link_manga
             }
         }
 
+        private async Task RefreshReaderLibraryWhenIdleAsync(bool forceRefresh)
+        {
+            int waitedMs = 0;
+            while (_readerLibraryRefreshInProgress && waitedMs < 10000)
+            {
+                await Task.Delay(50);
+                waitedMs += 50;
+            }
+
+            await RefreshReaderLibraryAsync(forceRefresh);
+        }
+
         private string GetCurrentReaderNovelLibraryRoot()
         {
             if (!string.IsNullOrWhiteSpace(_readerNovelLibraryRootOverride))
@@ -1793,6 +1805,18 @@ namespace get_link_manga
                 _readerNovelLibraryRefreshInProgress = false;
                 HideReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText);
             }
+        }
+
+        private async Task RefreshReaderNovelLibraryWhenIdleAsync(bool forceRefresh)
+        {
+            int waitedMs = 0;
+            while (_readerNovelLibraryRefreshInProgress && waitedMs < 10000)
+            {
+                await Task.Delay(50);
+                waitedMs += 50;
+            }
+
+            await RefreshReaderNovelLibraryAsync(forceRefresh);
         }
         private List<ReaderMangaItem> ScanReaderLibrary(string root, int totalUnits, Action onUnitProcessed)
         {
@@ -3036,7 +3060,7 @@ namespace get_link_manga
             }
 
             _readerLibraryRootOverride = dialog.SelectedPath;
-            await RefreshReaderLibraryAsync(forceRefresh: true);
+            await RefreshReaderLibraryWhenIdleAsync(forceRefresh: true);
         }
 
         private async void OpenOtherReaderNovelFolder_Click(object sender, RoutedEventArgs e)
@@ -3059,7 +3083,7 @@ namespace get_link_manga
             }
 
             _readerNovelLibraryRootOverride = dialog.SelectedPath;
-            await RefreshReaderNovelLibraryAsync(forceRefresh: true);
+            await RefreshReaderNovelLibraryWhenIdleAsync(forceRefresh: true);
         }
 
         private void InstallMdReader_Click(object sender, RoutedEventArgs e)
