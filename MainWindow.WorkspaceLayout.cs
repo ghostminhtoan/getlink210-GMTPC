@@ -1017,7 +1017,6 @@ namespace get_link_manga
                     _readerHasUserClickedInWatch = false;
                     EnsureReaderReady();
                     RefreshReaderLibraryIfNeeded(forceRefresh: false);
-                    StartReaderAutoRefresh();
                     break;
                 case AppSection.About:
                     _sectionContentHost.Content = _aboutSection;
