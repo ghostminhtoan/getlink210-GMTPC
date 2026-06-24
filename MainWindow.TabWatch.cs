@@ -48,9 +48,9 @@ namespace get_link_manga
                                 new TextBlock
                                 {
                                     Text = title,
-                                    Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                                    FontSize = 11,
-                                    FontWeight = FontWeights.Bold,
+                                    Foreground = (Brush)TryFindResource("CyberpunkYellowBrush") ?? Brushes.Yellow,
+                                    FontSize = 13,
+                                    FontWeight = FontWeights.ExtraBold,
                                     VerticalAlignment = VerticalAlignment.Center
                                 }
                             }

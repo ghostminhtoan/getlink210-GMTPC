@@ -463,14 +463,17 @@ namespace get_link_manga
             watchToolbar.Children.Add(otherFolderButton);
 
             rootFolderButton = CreateReaderMiniButton(_isVietnameseUi ? "Mở thư mục gốc" : "Load root folder", rootFolderClick, 132);
+            rootFolderButton.FontSize = 11.5;
+            rootFolderButton.FontWeight = FontWeights.Bold;
+            rootFolderButton.Foreground = (Brush)TryFindResource("CyberpunkYellowBrush") ?? Brushes.Yellow;
             Grid.SetColumn(rootFolderButton, 2);
             watchToolbar.Children.Add(rootFolderButton);
 
             titleText = new TextBlock
             {
-                Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                FontSize = 11,
-                FontWeight = FontWeights.Bold,
+                Foreground = (Brush)TryFindResource("CyberpunkYellowBrush") ?? Brushes.Yellow,
+                FontSize = 12.5,
+                FontWeight = FontWeights.ExtraBold,
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 TextAlignment = TextAlignment.Left,
@@ -1664,13 +1667,7 @@ namespace get_link_manga
                 return;
             }
 
-            bool folderHasImages = DirectoryContainsImages(folderPath);
-            bool hasChapterDirectories = Directory.GetDirectories(folderPath).Any(DirectoryContainsImages);
-            if (!folderHasImages && !hasChapterDirectories)
-            {
-                return;
-            }
-
+            // ponytail: skip pre-check scan; BuildReaderMangaItem already does one pass.
             ReaderMangaItem book = BuildReaderMangaItem(folderPath, sourceGroup, completionState, downloadState);
             if (book == null || book.Chapters.Count == 0)
             {
@@ -1679,6 +1676,7 @@ namespace get_link_manga
 
             seen.Add(folderPath);
             result.Add(book);
+            Debug.Assert(book.Chapters.Count > 0, "Reader book scan returned empty chapter list.");
         }
 
         private ReaderMangaItem BuildReaderMangaItem(string folderPath, string sourceGroup, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState)
@@ -2191,13 +2189,7 @@ namespace get_link_manga
                 return;
             }
 
-            bool folderHasMarkdown = DirectoryContainsMarkdown(folderPath);
-            bool hasChapterDirectories = Directory.GetDirectories(folderPath).Any(DirectoryContainsMarkdown);
-            if (!folderHasMarkdown && !hasChapterDirectories)
-            {
-                return;
-            }
-
+            // ponytail: same trick as manga scan. One build pass, no pre-check double hit.
             ReaderNovelBookItem book = BuildReaderNovelBookItem(folderPath, sourceGroup);
             if (book == null || book.Chapters.Count == 0)
             {
@@ -2206,6 +2198,7 @@ namespace get_link_manga
 
             seen.Add(folderPath);
             result.Add(book);
+            Debug.Assert(book.Chapters.Count > 0, "Reader novel scan returned empty chapter list.");
         }
 
         private ReaderNovelBookItem BuildReaderNovelBookItem(string folderPath, string sourceGroup)
