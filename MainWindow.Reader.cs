@@ -148,6 +148,8 @@ namespace get_link_manga
         private ListBox _readerDomainList;
         private TextBlock _readerSummaryText;
         private TextBlock _readerStatusText;
+        private ProgressBar _readerStatusProgressBar;
+        private TextBlock _readerStatusProgressText;
         private TextBlock _readerCurrentTitleText;
         private Button _readerPrevChapterButton;
         private Button _readerPrevPageButton;
@@ -195,6 +197,8 @@ namespace get_link_manga
         private ListBox _readerNovelFileList;
         private TextBlock _readerNovelSummaryText;
         private TextBlock _readerNovelStatusText;
+        private ProgressBar _readerNovelStatusProgressBar;
+        private TextBlock _readerNovelStatusProgressText;
         private TextBlock _readerNovelCurrentTitleText;
         private Button _readerNovelOtherFolderButton;
         private Button _readerNovelRootFolderButton;
@@ -342,16 +346,16 @@ namespace get_link_manga
                 CreateReaderWatchPanel("Chapter / Image", _readerFileList));
 
             _readerFullscreenButton = CreateReaderMiniButton("Open viewer", ReaderFullscreen_Click, 92);
-            _readerStatusText = CreateWatchStatusText();
+            var readerStatusPanel = CreateWatchStatusPanel(out _readerStatusText, out _readerStatusProgressBar, out _readerStatusProgressText);
 
             Grid.SetRow(watchToolbar, 0);
             Grid.SetRow(_readerSummaryText, 1);
             Grid.SetRow(panelBoard, 2);
-            Grid.SetRow(_readerStatusText, 3);
+            Grid.SetRow(readerStatusPanel, 3);
             mainGrid.Children.Add(watchToolbar);
             mainGrid.Children.Add(_readerSummaryText);
             mainGrid.Children.Add(panelBoard);
-            mainGrid.Children.Add(_readerStatusText);
+            mainGrid.Children.Add(readerStatusPanel);
             return mainCard;
         }
 
@@ -403,16 +407,16 @@ namespace get_link_manga
                 CreateReaderWatchPanel("Book / Chapter", _readerNovelChapterList),
                 CreateReaderWatchPanel("Chapter / MD", CreateWatchNovelPreviewPanel()));
 
-            _readerNovelStatusText = CreateWatchStatusText();
+            var readerNovelStatusPanel = CreateWatchStatusPanel(out _readerNovelStatusText, out _readerNovelStatusProgressBar, out _readerNovelStatusProgressText);
 
             Grid.SetRow(watchToolbar, 0);
             Grid.SetRow(_readerNovelSummaryText, 1);
             Grid.SetRow(panelBoard, 2);
-            Grid.SetRow(_readerNovelStatusText, 3);
+            Grid.SetRow(readerNovelStatusPanel, 3);
             mainGrid.Children.Add(watchToolbar);
             mainGrid.Children.Add(_readerNovelSummaryText);
             mainGrid.Children.Add(panelBoard);
-            mainGrid.Children.Add(_readerNovelStatusText);
+            mainGrid.Children.Add(readerNovelStatusPanel);
             return mainCard;
         }
 
@@ -527,6 +531,50 @@ namespace get_link_manga
                 FontSize = 13,
                 FontWeight = FontWeights.Bold,
                 TextWrapping = TextWrapping.Wrap
+            };
+        }
+
+        private FrameworkElement CreateWatchStatusPanel(out TextBlock statusText, out ProgressBar progressBar, out TextBlock progressText)
+        {
+            statusText = CreateWatchStatusText();
+            progressText = new TextBlock
+            {
+                Foreground = (Brush)TryFindResource("CyberpunkYellowBrush") ?? Brushes.Yellow,
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(8, 5, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Text = "0%",
+                Visibility = Visibility.Collapsed
+            };
+            progressBar = new ProgressBar
+            {
+                Minimum = 0,
+                Maximum = 100,
+                Value = 0,
+                Height = 10,
+                Margin = new Thickness(0, 5, 0, 0),
+                Foreground = (Brush)TryFindResource("CyberpunkCyanBrush") ?? Brushes.Cyan,
+                Style = TryFindResource("ProgressBarSuccess") as Style,
+                Visibility = Visibility.Collapsed
+            };
+
+            return new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                Children =
+                {
+                    statusText,
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Children =
+                        {
+                            progressBar,
+                            progressText
+                        }
+                    }
+                }
             };
         }
 
@@ -895,20 +943,22 @@ namespace get_link_manga
             panelBoard.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             panelBoard.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             panelBoard.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            panelBoard.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            panelBoard.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            panelBoard.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            Grid.SetRow(rootDomainPanel, 0);
+            var topRow = new Grid();
+            topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var bottomRow = new Grid();
+            bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
             Grid.SetColumn(rootDomainPanel, 0);
-            Grid.SetRow(domainBookPanel, 0);
             Grid.SetColumn(domainBookPanel, 2);
-            Grid.SetRow(bookChapterPanel, 2);
             Grid.SetColumn(bookChapterPanel, 0);
-            Grid.SetRow(chapterFilePanel, 2);
             Grid.SetColumn(chapterFilePanel, 2);
 
-            // ponytail: 4 splitter riêng. Mỗi splitter chỉ kéo 1 cặp panel, không ghép cụm.
             var topVerticalSplitter = new GridSplitter
             {
                 Width = 6,
@@ -919,7 +969,6 @@ namespace get_link_manga
                 ResizeDirection = GridResizeDirection.Columns,
                 ResizeBehavior = GridResizeBehavior.PreviousAndNext
             };
-            Grid.SetRow(topVerticalSplitter, 0);
             Grid.SetColumn(topVerticalSplitter, 1);
 
             var bottomVerticalSplitter = new GridSplitter
@@ -932,10 +981,20 @@ namespace get_link_manga
                 ResizeDirection = GridResizeDirection.Columns,
                 ResizeBehavior = GridResizeBehavior.PreviousAndNext
             };
-            Grid.SetRow(bottomVerticalSplitter, 2);
             Grid.SetColumn(bottomVerticalSplitter, 1);
 
-            var leftHorizontalSplitter = new GridSplitter
+            topRow.Children.Add(rootDomainPanel);
+            topRow.Children.Add(domainBookPanel);
+            topRow.Children.Add(topVerticalSplitter);
+
+            bottomRow.Children.Add(bookChapterPanel);
+            bottomRow.Children.Add(chapterFilePanel);
+            bottomRow.Children.Add(bottomVerticalSplitter);
+
+            Grid.SetRow(topRow, 0);
+            Grid.SetRow(bottomRow, 2);
+
+            var horizontalSplitter = new GridSplitter
             {
                 Height = 6,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -945,33 +1004,13 @@ namespace get_link_manga
                 ResizeDirection = GridResizeDirection.Rows,
                 ResizeBehavior = GridResizeBehavior.PreviousAndNext
             };
-            Grid.SetRow(leftHorizontalSplitter, 1);
-            Grid.SetColumn(leftHorizontalSplitter, 0);
+            Grid.SetRow(horizontalSplitter, 1);
 
-            var rightHorizontalSplitter = new GridSplitter
-            {
-                Height = 6,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                Background = Brushes.Transparent,
-                ShowsPreview = true,
-                ResizeDirection = GridResizeDirection.Rows,
-                ResizeBehavior = GridResizeBehavior.PreviousAndNext
-            };
-            Grid.SetRow(rightHorizontalSplitter, 1);
-            Grid.SetColumn(rightHorizontalSplitter, 2);
-
-            panelBoard.Children.Add(rootDomainPanel);
-            panelBoard.Children.Add(domainBookPanel);
-            panelBoard.Children.Add(bookChapterPanel);
-            panelBoard.Children.Add(chapterFilePanel);
-            panelBoard.Children.Add(topVerticalSplitter);
-            panelBoard.Children.Add(bottomVerticalSplitter);
-            panelBoard.Children.Add(leftHorizontalSplitter);
-            panelBoard.Children.Add(rightHorizontalSplitter);
+            panelBoard.Children.Add(topRow);
+            panelBoard.Children.Add(horizontalSplitter);
+            panelBoard.Children.Add(bottomRow);
             return panelBoard;
         }
-
         private void ScrollReaderChapterIntoView(ReaderChapterItem chapter)
         {
             if (_readerChapterList == null || chapter == null)
@@ -1553,7 +1592,15 @@ namespace get_link_manga
             UpdateReaderStatus(_isVietnameseUi ? "Đang quét root/domain/book..." : "Scanning root/domain/book...");
             _lastReaderAutoRefreshUtc = DateTime.UtcNow;
 
-            List<ReaderMangaItem> library = await Task.Run(() => ScanReaderLibrary(root));
+            int totalUnits = CountReaderLibraryScanUnits(root);
+            int currentUnits = 0;
+            UpdateReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText, 0, totalUnits);
+
+            List<ReaderMangaItem> library = await Task.Run(() => ScanReaderLibrary(root, totalUnits, () =>
+            {
+                currentUnits++;
+                Dispatcher.BeginInvoke(new Action(() => UpdateReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText, currentUnits, totalUnits)));
+            }));
             _lastReaderLibraryRoot = root;
             _readerLibrary = library;
             _readerDomains = BuildReaderDomainItems(_readerLibrary);
@@ -1578,6 +1625,7 @@ namespace get_link_manga
                 UpdateReaderStatus(_isVietnameseUi
                     ? "Chưa tìm thấy thư mục manga hợp lệ trong download root."
                     : "No valid manga folders were found in the current download root.");
+                HideReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText);
                 return;
             }
 
@@ -1597,6 +1645,7 @@ namespace get_link_manga
             }
 
             OpenReaderDomain(selectedDomain, keepBookSelection: true);
+            HideReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText);
         }
 
         private string GetCurrentReaderNovelLibraryRoot()
@@ -1650,7 +1699,15 @@ namespace get_link_manga
             EnsureReaderLibraryWatcher(root, isNovel: true);
             UpdateReaderNovelStatus(_isVietnameseUi ? "Đang quét root/domain/book novel..." : "Scanning novel root/domain/book...");
 
-            List<ReaderNovelBookItem> library = await Task.Run(() => ScanReaderNovelLibrary(root));
+            int totalUnits = CountReaderNovelLibraryScanUnits(root);
+            int currentUnits = 0;
+            UpdateReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText, 0, totalUnits);
+
+            List<ReaderNovelBookItem> library = await Task.Run(() => ScanReaderNovelLibrary(root, totalUnits, () =>
+            {
+                currentUnits++;
+                Dispatcher.BeginInvoke(new Action(() => UpdateReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText, currentUnits, totalUnits)));
+            }));
             _readerNovelLibrary = library;
             _readerNovelDomains = BuildReaderNovelDomainItems(_readerNovelLibrary);
             ApplyReaderNovelWatchSorts(keepSelection: true);
@@ -1671,6 +1728,7 @@ namespace get_link_manga
                 UpdateReaderNovelStatus(_isVietnameseUi
                     ? "Chưa tìm thấy thư mục novel có file .md."
                     : "No novel folders with .md files were found.");
+                HideReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText);
                 return;
             }
 
@@ -1679,9 +1737,10 @@ namespace get_link_manga
                 : _readerNovelDomains.FirstOrDefault();
 
             OpenReaderNovelDomain(selectedDomain, keepBookSelection: true);
+            HideReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText);
         }
 
-        private List<ReaderMangaItem> ScanReaderLibrary(string root)
+        private List<ReaderMangaItem> ScanReaderLibrary(string root, int totalUnits, Action onUnitProcessed)
         {
             var result = new List<ReaderMangaItem>();
             if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
@@ -1697,6 +1756,7 @@ namespace get_link_manga
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string domainFolder in SafeGetDirectories(root))
             {
+                onUnitProcessed?.Invoke();
                 string domainName = Path.GetFileName(domainFolder);
                 if (string.IsNullOrWhiteSpace(domainName))
                 {
@@ -1706,6 +1766,7 @@ namespace get_link_manga
                 foreach (string bookFolder in SafeGetDirectories(domainFolder))
                 {
                     TryAddReaderBook(bookFolder, domainName, completionState, downloadState, seen, result);
+                    onUnitProcessed?.Invoke();
                 }
 
                 if (!result.Any(item => string.Equals(item.SourceGroup, domainName, StringComparison.OrdinalIgnoreCase)))
@@ -2202,7 +2263,7 @@ namespace get_link_manga
             ApplyReaderNovelWatchSorts(keepSelection: true);
         }
 
-        private List<ReaderNovelBookItem> ScanReaderNovelLibrary(string root)
+        private List<ReaderNovelBookItem> ScanReaderNovelLibrary(string root, int totalUnits, Action onUnitProcessed)
         {
             var result = new List<ReaderNovelBookItem>();
             if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
@@ -2213,6 +2274,7 @@ namespace get_link_manga
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string domainFolder in SafeGetDirectories(root))
             {
+                onUnitProcessed?.Invoke();
                 string domainName = Path.GetFileName(domainFolder);
                 if (string.IsNullOrWhiteSpace(domainName) || domainName.StartsWith(".", StringComparison.Ordinal))
                 {
@@ -2222,6 +2284,7 @@ namespace get_link_manga
                 foreach (string bookFolder in SafeGetDirectories(domainFolder))
                 {
                     TryAddReaderNovelBook(bookFolder, domainName, seen, result);
+                    onUnitProcessed?.Invoke();
                 }
 
                 if (!result.Any(item => string.Equals(item.SourceGroup, domainName, StringComparison.OrdinalIgnoreCase)))
@@ -2404,6 +2467,49 @@ namespace get_link_manga
             {
                 return Array.Empty<string>();
             }
+        }
+
+        private int CountReaderLibraryScanUnits(string root)
+        {
+            return CountReaderScanUnits(root, isNovel: false);
+        }
+
+        private int CountReaderNovelLibraryScanUnits(string root)
+        {
+            return CountReaderScanUnits(root, isNovel: true);
+        }
+
+        private int CountReaderScanUnits(string root, bool isNovel)
+        {
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+            {
+                return 0;
+            }
+
+            int total = 0;
+            foreach (string domainFolder in SafeGetDirectories(root))
+            {
+                string domainName = Path.GetFileName(domainFolder);
+                if (string.IsNullOrWhiteSpace(domainName) || domainName.StartsWith(".", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                total++;
+                foreach (string bookFolder in SafeGetDirectories(domainFolder))
+                {
+                    string bookName = Path.GetFileName(bookFolder);
+                    if (string.IsNullOrWhiteSpace(bookName) || bookName.StartsWith(".", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    total++;
+                }
+            }
+
+            // ponytail: progress counts folders examined, not final valid books. Exact enough for load bar.
+            return total;
         }
 
         private static IEnumerable<string> SafeGetFiles(string folderPath, string searchPattern, SearchOption searchOption)
@@ -3397,6 +3503,45 @@ namespace get_link_manga
             if (_readerStatusText != null)
             {
                 _readerStatusText.Text = text;
+            }
+        }
+
+        private void UpdateReaderWatchLoadProgress(ProgressBar progressBar, TextBlock progressText, int current, int total)
+        {
+            if (progressBar == null)
+            {
+                return;
+            }
+
+            int safeTotal = Math.Max(1, total);
+            int safeCurrent = Math.Max(0, Math.Min(current, safeTotal));
+            double percent = (safeCurrent * 100d) / safeTotal;
+
+            progressBar.Visibility = Visibility.Visible;
+            progressBar.Minimum = 0;
+            progressBar.Maximum = 100;
+            progressBar.Value = percent;
+
+            if (progressText != null)
+            {
+                progressText.Text = $"{percent:0}%";
+                progressText.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void HideReaderWatchLoadProgress(ProgressBar progressBar, TextBlock progressText)
+        {
+            if (progressBar == null)
+            {
+                return;
+            }
+
+            progressBar.Value = 0;
+            progressBar.Visibility = Visibility.Collapsed;
+            if (progressText != null)
+            {
+                progressText.Text = "0%";
+                progressText.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -5930,3 +6075,4 @@ private bool HandleReaderHotkeys(KeyEventArgs e)
         }
     }
 }
+
