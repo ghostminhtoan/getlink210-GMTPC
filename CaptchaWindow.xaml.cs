@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
@@ -522,24 +522,29 @@ namespace get_link_manga
                                          
                                          if (window.viewMoreClicked) {
                                              var elapsed = Date.now() - window.viewMoreClickedTime;
-                                             return elapsed < 4000 ? 'waiting' : 'ready';
+                                             var chapterCount = getChapterLinks();
+                                             var baseline = window.viewMoreChapterBaseline || 0;
+                                             if (chapterCount > baseline) {
+                                                 return 'ready';
+                                             }
+                                             return elapsed < 12000 ? 'waiting' : (chapterCount > 0 ? 'ready' : 'waiting');
                                          }
                                          
                                          // Prioritize the correct chapter-list view-more button
-                                         var xemThem = document.querySelector('.list-chapter .view-more:not(.hidden)') || 
-                                                       document.querySelector('#nt_listchapter .view-more:not(.hidden)') ||
-                                                       document.querySelector('.view-more:not(.morelink):not(.hidden)');
+                                         var xemThem = document.querySelector('.list-chapter .view-more') ||
+                                                       document.querySelector('#nt_listchapter .view-more') ||
+                                                       document.querySelector('.view-more:not(.morelink)');
                                          
                                          if (!xemThem) {
                                              var allEls = document.querySelectorAll('a, button, span, div');
                                              for (var i = 0; i < allEls.length; i++) {
                                                  var el = allEls[i];
                                                  // Exclude description expand links
-                                                 if (el.classList.contains('morelink') || el.closest('.shortened') || el.closest('.detail-content') || el.classList.contains('hidden')) {
+                                                 if (el.classList.contains('morelink') || el.closest('.shortened') || el.closest('.detail-content')) {
                                                      continue;
                                                  }
-                                                 var txt = (el.textContent || '').trim();
-                                                 if (txt === 'Xem thêm' || txt === '+ Xem thêm' || txt === 'xem thêm' || txt === '+ xem thêm') {
+                                                var txt = (el.textContent || '').trim();
+                                                 if (/^\+?\s*xem\s*th.*m$/i.test(txt)) {
                                                      xemThem = el;
                                                      break;
                                                  }
@@ -547,6 +552,7 @@ namespace get_link_manga
                                          }
 
                                          if (xemThem) {
+                                              window.viewMoreChapterBaseline = getChapterLinks();
                                               xemThem.classList.remove('hidden');
                                               xemThem.style.display = '';
                                               xemThem.style.visibility = 'visible';
