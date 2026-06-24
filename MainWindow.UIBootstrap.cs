@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
@@ -188,9 +188,31 @@ namespace get_link_manga
 
         private void BtnMainMaximize_Click(object sender, RoutedEventArgs e)
         {
-            WindowState = WindowState == WindowState.Maximized
-                ? WindowState.Normal
-                : WindowState.Maximized;
+            Rect workArea = SystemParameters.WorkArea;
+
+            if (_windowPseudoMaximized)
+            {
+                _windowPseudoMaximized = false;
+                WindowState = WindowState.Normal;
+                Left = _restoreWindowLeft;
+                Top = _restoreWindowTop;
+                Width = _restoreWindowWidth;
+                Height = _restoreWindowHeight;
+            }
+            else
+            {
+                _restoreWindowLeft = Left;
+                _restoreWindowTop = Top;
+                _restoreWindowWidth = Width;
+                _restoreWindowHeight = Height;
+                _windowPseudoMaximized = true;
+                WindowState = WindowState.Normal;
+                Left = workArea.Left;
+                Top = workArea.Top;
+                Width = workArea.Width;
+                Height = workArea.Height;
+            }
+
             UpdateMainWindowChromeButtons();
         }
 
@@ -203,8 +225,8 @@ namespace get_link_manga
         {
             if (btnMainMaximize != null)
             {
-                btnMainMaximize.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
-                btnMainMaximize.ToolTip = WindowState == WindowState.Maximized ? "Restore" : "Maximize";
+                btnMainMaximize.Content = (_windowPseudoMaximized || WindowState == WindowState.Maximized) ? "\uE923" : "\uE922";
+                btnMainMaximize.ToolTip = (_windowPseudoMaximized || WindowState == WindowState.Maximized) ? "Restore" : "Maximize";
             }
 
             if (btnPinWindow != null)

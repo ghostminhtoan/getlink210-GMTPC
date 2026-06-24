@@ -15,6 +15,11 @@ namespace get_link_manga
         private ComboBox _dpiPresetCombo;
         private TextBlock _sectionTitleText;
         private TextBlock _sectionHintText;
+        private bool _windowPseudoMaximized;
+        private double _restoreWindowLeft;
+        private double _restoreWindowTop;
+        private double _restoreWindowWidth;
+        private double _restoreWindowHeight;
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
@@ -60,7 +65,7 @@ namespace get_link_manga
 
             if (rootLayout != null)
             {
-                rootLayout.Margin = WindowState == WindowState.Maximized
+                rootLayout.Margin = (_windowPseudoMaximized || WindowState == WindowState.Maximized)
                     ? new Thickness(0)
                     : ultraCompact
                         ? new Thickness(8)
@@ -129,6 +134,16 @@ namespace get_link_manga
                 scaleCard.MinWidth = 0;
                 scaleCard.MaxWidth = double.PositiveInfinity;
                 scaleCard.HorizontalAlignment = HorizontalAlignment.Left;
+            }
+
+            if (windowControlsHost != null)
+            {
+                windowControlsHost.Margin = (_windowPseudoMaximized || WindowState == WindowState.Maximized)
+                    ? new Thickness(0, 0, -4, 0)
+                    : new Thickness(0);
+                windowControlsHost.Padding = (_windowPseudoMaximized || WindowState == WindowState.Maximized)
+                    ? new Thickness(4, 5, 2, 5)
+                    : new Thickness(5);
             }
         }
 

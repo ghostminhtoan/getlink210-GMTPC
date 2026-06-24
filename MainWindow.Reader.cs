@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -183,6 +183,8 @@ namespace get_link_manga
         private FileSystemWatcher _readerNovelLibraryWatcher;
         private DispatcherTimer _readerLibraryWatcherDebounceTimer;
         private DispatcherTimer _readerNovelLibraryWatcherDebounceTimer;
+        private bool _readerLibraryRefreshInProgress;
+        private bool _readerNovelLibraryRefreshInProgress;
         private string _readerWatcherRoot;
         private string _readerNovelWatcherRoot;
         private List<ReaderNovelBookItem> _readerNovelLibrary = new List<ReaderNovelBookItem>();
@@ -338,11 +340,12 @@ namespace get_link_manga
             RefreshReaderSortButtonLabel(_readerMangaBookSortDateButton, _readerMangaBookSortState, ReaderWatchSortField.DateModified, "DATE");
             RefreshReaderSortButtonLabel(_readerMangaBookSortNameButton, _readerMangaBookSortState, ReaderWatchSortField.Name, "NAME");
             var readerChapterMissingButton = CreateReaderMiniButton("Missing chapters", ReaderChapterMissing_Click, 140);
+            var readerCopyMissingButton = CreateReaderMiniButton("Copy missing", CopyReaderMissingChapters_Click, 120);
 
             var panelBoard = CreateWatchPanelBoard(
                 CreateReaderWatchPanel("Root / Domain", _readerDomainList, _readerMangaDomainSortDateButton, _readerMangaDomainSortNameButton),
                 CreateReaderWatchPanel("Domain / Book", _readerMangaList, _readerMangaBookSortDateButton, _readerMangaBookSortNameButton),
-                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), readerChapterMissingButton),
+                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), readerChapterMissingButton, readerCopyMissingButton),
                 CreateReaderWatchPanel("Chapter / Image", _readerFileList));
 
             _readerFullscreenButton = CreateReaderMiniButton("Open viewer", ReaderFullscreen_Click, 92);
@@ -537,6 +540,7 @@ namespace get_link_manga
         private FrameworkElement CreateWatchStatusPanel(out TextBlock statusText, out ProgressBar progressBar, out TextBlock progressText)
         {
             statusText = CreateWatchStatusText();
+            statusText.FontSize = 14;
             progressText = new TextBlock
             {
                 Foreground = (Brush)TryFindResource("CyberpunkYellowBrush") ?? Brushes.Yellow,
@@ -552,12 +556,21 @@ namespace get_link_manga
                 Minimum = 0,
                 Maximum = 100,
                 Value = 0,
-                Height = 10,
+                Height = 12,
                 Margin = new Thickness(0, 5, 0, 0),
                 Foreground = (Brush)TryFindResource("CyberpunkCyanBrush") ?? Brushes.Cyan,
                 Style = TryFindResource("ProgressBarSuccess") as Style,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 Visibility = Visibility.Collapsed
             };
+
+            var progressRow = new Grid();
+            progressRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            progressRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(progressBar, 0);
+            Grid.SetColumn(progressText, 1);
+            progressRow.Children.Add(progressBar);
+            progressRow.Children.Add(progressText);
 
             return new StackPanel
             {
@@ -565,15 +578,7 @@ namespace get_link_manga
                 Children =
                 {
                     statusText,
-                    new StackPanel
-                    {
-                        Orientation = Orientation.Horizontal,
-                        Children =
-                        {
-                            progressBar,
-                            progressText
-                        }
-                    }
+                    progressRow
                 }
             };
         }
@@ -846,6 +851,25 @@ namespace get_link_manga
             ShowReaderChapterIssues();
         }
 
+        private void CopyReaderMissingChapters_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentReaderManga == null || _currentReaderManga.Chapters == null || _currentReaderManga.Chapters.Count == 0)
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Chưa có chap để copy." : "No chapters to copy.");
+                return;
+            }
+
+            string missingText = string.Join("; ", AnalyzeReaderChapterNumbers(_currentReaderManga.Chapters).MissingRanges);
+            if (string.IsNullOrWhiteSpace(missingText))
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Không có chap thiếu." : "No missing chapters.");
+                return;
+            }
+
+            Clipboard.SetText(missingText);
+            UpdateReaderStatus(_isVietnameseUi ? $"Đã copy chap thiếu: {missingText}" : $"Copied missing chapters: {missingText}");
+        }
+
         private void ReaderChapterIssueChapter_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is ReaderChapterItem target)
@@ -1060,6 +1084,8 @@ namespace get_link_manga
             {
                 if (_currentSection != AppSection.Watch ||
                     _readerAutoRefreshInProgress ||
+                    _readerLibraryRefreshInProgress ||
+                    _readerNovelLibraryRefreshInProgress ||
                     _isReaderFullscreen)
                 {
                     return;
@@ -1112,7 +1138,7 @@ namespace get_link_manga
                 _readerLibraryWatcherDebounceTimer.Tick += async (sender, args) =>
                 {
                     _readerLibraryWatcherDebounceTimer.Stop();
-                    if (_currentSection == AppSection.Watch && !_isReaderFullscreen)
+                    if (_currentSection == AppSection.Watch && !_isReaderFullscreen && !_readerLibraryRefreshInProgress)
                     {
                         await RefreshReaderLibraryAsync(forceRefresh: true);
                     }
@@ -1128,7 +1154,7 @@ namespace get_link_manga
                 _readerNovelLibraryWatcherDebounceTimer.Tick += async (sender, args) =>
                 {
                     _readerNovelLibraryWatcherDebounceTimer.Stop();
-                    if (_currentSection == AppSection.Watch && !_isReaderFullscreen)
+                    if (_currentSection == AppSection.Watch && !_isReaderFullscreen && !_readerNovelLibraryRefreshInProgress)
                     {
                         await RefreshReaderNovelLibraryAsync(forceRefresh: true);
                     }
@@ -1194,6 +1220,11 @@ namespace get_link_manga
 
             FileSystemEventHandler changedHandler = (sender, args) => 
             {
+                if (_readerAutoRefreshInProgress || _readerLibraryRefreshInProgress || _readerNovelLibraryRefreshInProgress)
+                {
+                    return;
+                }
+
                 if (args.Name != null)
                 {
                     string ext = Path.GetExtension(args.Name).ToLowerInvariant();
@@ -1207,6 +1238,11 @@ namespace get_link_manga
 
             RenamedEventHandler renamedHandler = (sender, args) => 
             {
+                if (_readerAutoRefreshInProgress || _readerLibraryRefreshInProgress || _readerNovelLibraryRefreshInProgress)
+                {
+                    return;
+                }
+
                 if (args.Name != null)
                 {
                     string ext = Path.GetExtension(args.Name).ToLowerInvariant();
@@ -1576,7 +1612,7 @@ namespace get_link_manga
                 return;
             }
 
-            if (_readerAutoRefreshInProgress && !forceRefresh)
+            if ((_readerAutoRefreshInProgress && !forceRefresh) || _readerLibraryRefreshInProgress)
             {
                 return;
             }
@@ -1596,56 +1632,63 @@ namespace get_link_manga
             int currentUnits = 0;
             UpdateReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText, 0, totalUnits);
 
-            List<ReaderMangaItem> library = await Task.Run(() => ScanReaderLibrary(root, totalUnits, () =>
+            _readerLibraryRefreshInProgress = true;
+            try
             {
-                currentUnits++;
-                Dispatcher.BeginInvoke(new Action(() => UpdateReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText, currentUnits, totalUnits)));
-            }));
-            _lastReaderLibraryRoot = root;
-            _readerLibrary = library;
-            _readerDomains = BuildReaderDomainItems(_readerLibrary);
-            ApplyReaderMangaWatchSorts(keepSelection: true);
-            _readerSummaryText.Text = _isVietnameseUi
-                ? $"Root: {root}\nTìm thấy {_readerDomains.Count} domain / {_readerLibrary.Count} book."
-                : $"Root: {root}\nFound {_readerDomains.Count} domains / {_readerLibrary.Count} books.";
+                List<ReaderMangaItem> library = await Task.Run(() => ScanReaderLibrary(root, totalUnits, () =>
+                {
+                    currentUnits++;
+                    Dispatcher.BeginInvoke(new Action(() => UpdateReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText, currentUnits, totalUnits)));
+                }));
+                _lastReaderLibraryRoot = root;
+                _readerLibrary = library;
+                _readerDomains = BuildReaderDomainItems(_readerLibrary);
+                ApplyReaderMangaWatchSorts(keepSelection: true);
+                _readerSummaryText.Text = _isVietnameseUi
+                    ? $"Root: {root}\nTìm thấy {_readerDomains.Count} domain / {_readerLibrary.Count} book."
+                    : $"Root: {root}\nFound {_readerDomains.Count} domains / {_readerLibrary.Count} books.";
 
-            if (_readerLibrary.Count == 0)
+                if (_readerLibrary.Count == 0)
+                {
+                    ClearReaderDomainList();
+                    ClearReaderBookList();
+                    ClearReaderChapterList();
+                    _readerChapterList.ItemsSource = null;
+                    ClearReaderFileList();
+                    _currentReaderManga = null;
+                    _currentReaderDomain = null;
+                    _currentReaderChapter = null;
+                    _currentReaderPage = null;
+                    RenderReaderPlaceholder();
+                    UpdateReaderNavigationState();
+                    UpdateReaderStatus(_isVietnameseUi
+                        ? "Chưa tìm thấy thư mục manga hợp lệ trong download root."
+                        : "No valid manga folders were found in the current download root.");
+                    return;
+                }
+
+                ReaderDomainItem selectedDomain = _currentReaderDomain != null
+                    ? _readerDomains.FirstOrDefault(item => string.Equals(item.Name, _currentReaderDomain.Name, StringComparison.OrdinalIgnoreCase))
+                    : null;
+
+                if (selectedDomain == null && _currentReaderManga != null)
+                {
+                    selectedDomain = _readerDomains.FirstOrDefault(item =>
+                        item.Books.Any(book => string.Equals(book.FolderPath, _currentReaderManga.FolderPath, StringComparison.OrdinalIgnoreCase)));
+                }
+
+                if (selectedDomain == null)
+                {
+                    selectedDomain = _readerDomains.First();
+                }
+
+                OpenReaderDomain(selectedDomain, keepBookSelection: true);
+            }
+            finally
             {
-                ClearReaderDomainList();
-                ClearReaderBookList();
-                ClearReaderChapterList();
-                _readerChapterList.ItemsSource = null;
-                ClearReaderFileList();
-                _currentReaderManga = null;
-                _currentReaderDomain = null;
-                _currentReaderChapter = null;
-                _currentReaderPage = null;
-                RenderReaderPlaceholder();
-                UpdateReaderNavigationState();
-                UpdateReaderStatus(_isVietnameseUi
-                    ? "Chưa tìm thấy thư mục manga hợp lệ trong download root."
-                    : "No valid manga folders were found in the current download root.");
+                _readerLibraryRefreshInProgress = false;
                 HideReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText);
-                return;
             }
-
-            ReaderDomainItem selectedDomain = _currentReaderDomain != null
-                ? _readerDomains.FirstOrDefault(item => string.Equals(item.Name, _currentReaderDomain.Name, StringComparison.OrdinalIgnoreCase))
-                : null;
-
-            if (selectedDomain == null && _currentReaderManga != null)
-            {
-                selectedDomain = _readerDomains.FirstOrDefault(item =>
-                    item.Books.Any(book => string.Equals(book.FolderPath, _currentReaderManga.FolderPath, StringComparison.OrdinalIgnoreCase)));
-            }
-
-            if (selectedDomain == null)
-            {
-                selectedDomain = _readerDomains.First();
-            }
-
-            OpenReaderDomain(selectedDomain, keepBookSelection: true);
-            HideReaderWatchLoadProgress(_readerStatusProgressBar, _readerStatusProgressText);
         }
 
         private string GetCurrentReaderNovelLibraryRoot()
@@ -1695,6 +1738,11 @@ namespace get_link_manga
                 return;
             }
 
+            if (_readerNovelLibraryRefreshInProgress)
+            {
+                return;
+            }
+
             string root = GetCurrentReaderNovelLibraryRoot();
             EnsureReaderLibraryWatcher(root, isNovel: true);
             UpdateReaderNovelStatus(_isVietnameseUi ? "Đang quét root/domain/book novel..." : "Scanning novel root/domain/book...");
@@ -1703,43 +1751,49 @@ namespace get_link_manga
             int currentUnits = 0;
             UpdateReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText, 0, totalUnits);
 
-            List<ReaderNovelBookItem> library = await Task.Run(() => ScanReaderNovelLibrary(root, totalUnits, () =>
+            _readerNovelLibraryRefreshInProgress = true;
+            try
             {
-                currentUnits++;
-                Dispatcher.BeginInvoke(new Action(() => UpdateReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText, currentUnits, totalUnits)));
-            }));
-            _readerNovelLibrary = library;
-            _readerNovelDomains = BuildReaderNovelDomainItems(_readerNovelLibrary);
-            ApplyReaderNovelWatchSorts(keepSelection: true);
-            _readerNovelSummaryText.Text = _isVietnameseUi
-                ? $"Root: {root}\nTìm thấy {_readerNovelDomains.Count} domain / {_readerNovelLibrary.Count} book."
-                : $"Root: {root}\nFound {_readerNovelDomains.Count} domains / {_readerNovelLibrary.Count} books.";
+                List<ReaderNovelBookItem> library = await Task.Run(() => ScanReaderNovelLibrary(root, totalUnits, () =>
+                {
+                    currentUnits++;
+                    Dispatcher.BeginInvoke(new Action(() => UpdateReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText, currentUnits, totalUnits)));
+                }));
+                _readerNovelLibrary = library;
+                _readerNovelDomains = BuildReaderNovelDomainItems(_readerNovelLibrary);
+                ApplyReaderNovelWatchSorts(keepSelection: true);
+                _readerNovelSummaryText.Text = _isVietnameseUi
+                    ? $"Root: {root}\nTìm thấy {_readerNovelDomains.Count} domain / {_readerNovelLibrary.Count} book."
+                    : $"Root: {root}\nFound {_readerNovelDomains.Count} domains / {_readerNovelLibrary.Count} books.";
 
-            if (_readerNovelLibrary.Count == 0)
-            {
-                ClearReaderNovelDomainList();
-                ClearReaderNovelBookList();
-                ClearReaderNovelChapterList();
-                ClearReaderNovelFileList();
-                _currentReaderNovelDomain = null;
-                _currentReaderNovelBook = null;
-                _currentReaderNovelChapter = null;
-                _currentReaderNovelFile = null;
-                UpdateReaderNovelStatus(_isVietnameseUi
-                    ? "Chưa tìm thấy thư mục novel có file .md."
-                    : "No novel folders with .md files were found.");
-                HideReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText);
-                return;
+                if (_readerNovelLibrary.Count == 0)
+                {
+                    ClearReaderNovelDomainList();
+                    ClearReaderNovelBookList();
+                    ClearReaderNovelChapterList();
+                    ClearReaderNovelFileList();
+                    _currentReaderNovelDomain = null;
+                    _currentReaderNovelBook = null;
+                    _currentReaderNovelChapter = null;
+                    _currentReaderNovelFile = null;
+                    UpdateReaderNovelStatus(_isVietnameseUi
+                        ? "Chưa tìm thấy thư mục novel có file .md."
+                        : "No novel folders with .md files were found.");
+                    return;
+                }
+
+                ReaderNovelDomainItem selectedDomain = _currentReaderNovelDomain != null
+                    ? _readerNovelDomains.FirstOrDefault(item => string.Equals(item.Name, _currentReaderNovelDomain.Name, StringComparison.OrdinalIgnoreCase))
+                    : _readerNovelDomains.FirstOrDefault();
+
+                OpenReaderNovelDomain(selectedDomain, keepBookSelection: true);
             }
-
-            ReaderNovelDomainItem selectedDomain = _currentReaderNovelDomain != null
-                ? _readerNovelDomains.FirstOrDefault(item => string.Equals(item.Name, _currentReaderNovelDomain.Name, StringComparison.OrdinalIgnoreCase))
-                : _readerNovelDomains.FirstOrDefault();
-
-            OpenReaderNovelDomain(selectedDomain, keepBookSelection: true);
-            HideReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText);
+            finally
+            {
+                _readerNovelLibraryRefreshInProgress = false;
+                HideReaderWatchLoadProgress(_readerNovelStatusProgressBar, _readerNovelStatusProgressText);
+            }
         }
-
         private List<ReaderMangaItem> ScanReaderLibrary(string root, int totalUnits, Action onUnitProcessed)
         {
             var result = new List<ReaderMangaItem>();
