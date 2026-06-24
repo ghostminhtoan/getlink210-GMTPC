@@ -224,15 +224,7 @@ namespace get_link_manga
                 {
                     if (tabManga != null && tabManga.SelectedItem is System.Windows.Controls.TabItem selectedMangaTab)
                     {
-                        string header = selectedMangaTab.Header?.ToString().ToLower() ?? "";
-                        if (header.Contains("truyenqq"))
-                            siteKey = "truyenqq";
-                        else if (header.Contains("nettruyen"))
-                            siteKey = "nettruyen";
-                        else if (header.Contains("daomeoden"))
-                            siteKey = "daomeoden.net";
-                        else if (header.Contains("truyengg"))
-                            siteKey = "truyenggvn";
+                        siteKey = GetSiteKeyFromTabHeader(selectedMangaTab.Header?.ToString());
                     }
                     else
                     {
@@ -243,28 +235,14 @@ namespace get_link_manga
                 {
                     if (tabHentai != null && tabHentai.SelectedItem is System.Windows.Controls.TabItem selectedHentaiTab)
                     {
-                        string header = selectedHentaiTab.Header?.ToString().ToLower() ?? "";
-                        if (header.Contains("hentaiforce"))
-                            siteKey = "hentaiforce.net";
-                        else if (header.Contains("nhentai"))
-                            siteKey = "nhentai.xxx";
-                        else if (header.Contains("hentaivn"))
-                            siteKey = "vi-hentai.pro";
-                        else if (header.Contains("hentaiera"))
-                            siteKey = "hentaiera.com";
-                        else if (header.Contains("hentai2read"))
-                            siteKey = "hentai2read.com";
-                        else if (header.Contains("daomeoden"))
-                            siteKey = "daomeoden.net";
+                        siteKey = GetSiteKeyFromTabHeader(selectedHentaiTab.Header?.ToString());
                     }
                 }
                 else if (tabLeftPanel.SelectedIndex == 2)
                 {
                     if (tabLightNovel != null && tabLightNovel.SelectedItem is System.Windows.Controls.TabItem selectedLightNovelTab)
                     {
-                        string header = selectedLightNovelTab.Header?.ToString().ToLower() ?? "";
-                        if (header.Contains("hako"))
-                            siteKey = "ln.hako.vn";
+                        siteKey = GetSiteKeyFromTabHeader(selectedLightNovelTab.Header?.ToString());
                     }
                 }
             });
@@ -272,6 +250,37 @@ namespace get_link_manga
             return string.IsNullOrEmpty(siteKey)
                 ? downloadRoot
                 : GetConfiguredDownloadRoot(downloadRoot, siteKey);
+        }
+
+        private static string GetSiteKeyFromTabHeader(string header)
+        {
+            string lower = (header ?? string.Empty).ToLowerInvariant();
+            if (lower.Contains("truyenqq"))
+                return "truyenqq";
+            if (lower.Contains("nettruyen"))
+                return "nettruyen";
+            if (lower.Contains("dilib"))
+                return "dilib.vn";
+            if (lower.Contains("daomeoden"))
+                return "daomeoden.net";
+            if (lower.Contains("truyengg"))
+                return "truyenggvn";
+            if (lower.Contains("sayhentai"))
+                return "sayhentai";
+            if (lower.Contains("hentaivn") || lower.Contains("vi-hentai") || lower.Contains("vihentai"))
+                return "vi-hentai.pro";
+            if (lower.Contains("hentaiforce"))
+                return "hentaiforce.net";
+            if (lower.Contains("nhentai"))
+                return "nhentai.xxx";
+            if (lower.Contains("hentaiera"))
+                return "hentaiera.com";
+            if (lower.Contains("hentai2read"))
+                return "hentai2read.com";
+            if (lower.Contains("hako"))
+                return "ln.hako.vn";
+
+            return string.Empty;
         }
     }
 }
