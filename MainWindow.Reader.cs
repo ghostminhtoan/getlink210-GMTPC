@@ -523,8 +523,9 @@ namespace get_link_manga
         {
             return new TextBlock
             {
-                Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush"),
-                FontSize = 11,
+                Foreground = (Brush)TryFindResource("CyberpunkCyanBrush") ?? Brushes.Cyan,
+                FontSize = 13,
+                FontWeight = FontWeights.Bold,
                 TextWrapping = TextWrapping.Wrap
             };
         }
@@ -892,23 +893,55 @@ namespace get_link_manga
                 Margin = new Thickness(0)
             };
             panelBoard.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            panelBoard.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             panelBoard.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             panelBoard.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            panelBoard.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             panelBoard.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
             Grid.SetRow(rootDomainPanel, 0);
             Grid.SetColumn(rootDomainPanel, 0);
             Grid.SetRow(domainBookPanel, 0);
-            Grid.SetColumn(domainBookPanel, 1);
-            Grid.SetRow(bookChapterPanel, 1);
+            Grid.SetColumn(domainBookPanel, 2);
+            Grid.SetRow(bookChapterPanel, 2);
             Grid.SetColumn(bookChapterPanel, 0);
-            Grid.SetRow(chapterFilePanel, 1);
-            Grid.SetColumn(chapterFilePanel, 1);
+            Grid.SetRow(chapterFilePanel, 2);
+            Grid.SetColumn(chapterFilePanel, 2);
+
+            var verticalSplitter = new GridSplitter
+            {
+                Width = 6,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Background = Brushes.Transparent,
+                ShowsPreview = true,
+                ResizeDirection = GridResizeDirection.Columns,
+                ResizeBehavior = GridResizeBehavior.PreviousAndNext
+            };
+            Grid.SetRow(verticalSplitter, 0);
+            Grid.SetRowSpan(verticalSplitter, 3);
+            Grid.SetColumn(verticalSplitter, 1);
+
+            var horizontalSplitter = new GridSplitter
+            {
+                Height = 6,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Background = Brushes.Transparent,
+                ShowsPreview = true,
+                ResizeDirection = GridResizeDirection.Rows,
+                ResizeBehavior = GridResizeBehavior.PreviousAndNext
+            };
+            Grid.SetRow(horizontalSplitter, 1);
+            Grid.SetColumn(horizontalSplitter, 0);
+            Grid.SetColumnSpan(horizontalSplitter, 3);
 
             panelBoard.Children.Add(rootDomainPanel);
             panelBoard.Children.Add(domainBookPanel);
             panelBoard.Children.Add(bookChapterPanel);
             panelBoard.Children.Add(chapterFilePanel);
+            panelBoard.Children.Add(verticalSplitter);
+            panelBoard.Children.Add(horizontalSplitter);
             return panelBoard;
         }
 
