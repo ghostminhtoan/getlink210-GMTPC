@@ -908,7 +908,8 @@ namespace get_link_manga
             Grid.SetRow(chapterFilePanel, 2);
             Grid.SetColumn(chapterFilePanel, 2);
 
-            var verticalSplitter = new GridSplitter
+            // ponytail: 4 splitter riêng. Mỗi splitter chỉ kéo 1 cặp panel, không ghép cụm.
+            var topVerticalSplitter = new GridSplitter
             {
                 Width = 6,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -918,11 +919,23 @@ namespace get_link_manga
                 ResizeDirection = GridResizeDirection.Columns,
                 ResizeBehavior = GridResizeBehavior.PreviousAndNext
             };
-            Grid.SetRow(verticalSplitter, 0);
-            Grid.SetRowSpan(verticalSplitter, 3);
-            Grid.SetColumn(verticalSplitter, 1);
+            Grid.SetRow(topVerticalSplitter, 0);
+            Grid.SetColumn(topVerticalSplitter, 1);
 
-            var horizontalSplitter = new GridSplitter
+            var bottomVerticalSplitter = new GridSplitter
+            {
+                Width = 6,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Background = Brushes.Transparent,
+                ShowsPreview = true,
+                ResizeDirection = GridResizeDirection.Columns,
+                ResizeBehavior = GridResizeBehavior.PreviousAndNext
+            };
+            Grid.SetRow(bottomVerticalSplitter, 2);
+            Grid.SetColumn(bottomVerticalSplitter, 1);
+
+            var leftHorizontalSplitter = new GridSplitter
             {
                 Height = 6,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -932,16 +945,30 @@ namespace get_link_manga
                 ResizeDirection = GridResizeDirection.Rows,
                 ResizeBehavior = GridResizeBehavior.PreviousAndNext
             };
-            Grid.SetRow(horizontalSplitter, 1);
-            Grid.SetColumn(horizontalSplitter, 0);
-            Grid.SetColumnSpan(horizontalSplitter, 3);
+            Grid.SetRow(leftHorizontalSplitter, 1);
+            Grid.SetColumn(leftHorizontalSplitter, 0);
+
+            var rightHorizontalSplitter = new GridSplitter
+            {
+                Height = 6,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Background = Brushes.Transparent,
+                ShowsPreview = true,
+                ResizeDirection = GridResizeDirection.Rows,
+                ResizeBehavior = GridResizeBehavior.PreviousAndNext
+            };
+            Grid.SetRow(rightHorizontalSplitter, 1);
+            Grid.SetColumn(rightHorizontalSplitter, 2);
 
             panelBoard.Children.Add(rootDomainPanel);
             panelBoard.Children.Add(domainBookPanel);
             panelBoard.Children.Add(bookChapterPanel);
             panelBoard.Children.Add(chapterFilePanel);
-            panelBoard.Children.Add(verticalSplitter);
-            panelBoard.Children.Add(horizontalSplitter);
+            panelBoard.Children.Add(topVerticalSplitter);
+            panelBoard.Children.Add(bottomVerticalSplitter);
+            panelBoard.Children.Add(leftHorizontalSplitter);
+            panelBoard.Children.Add(rightHorizontalSplitter);
             return panelBoard;
         }
 
