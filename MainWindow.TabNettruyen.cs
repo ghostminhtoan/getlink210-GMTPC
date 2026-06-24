@@ -268,6 +268,19 @@ namespace get_link_manga
             return chapterLinks;
         }
 
+        private static bool HasNettruyenViewMoreButton(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return false;
+            }
+
+            // ponytail: tiny heuristic. Upgrade path: DOM parse if site changes markup again.
+            return Regex.IsMatch(html, @"<a\b[^>]*class=[""'][^""']*\bview-more\b[^""']*[""'][^>]*>", RegexOptions.IgnoreCase) ||
+                   Regex.IsMatch(html, @"\bxem\s*th[eê]m\b", RegexOptions.IgnoreCase) ||
+                   Regex.IsMatch(html, @"\bview-more\b", RegexOptions.IgnoreCase);
+        }
+
         private async Task<string> LoadExpandedNettruyenChapterHtmlAsync(string cleanLink)
         {
             string webViewHtml = null;
@@ -276,7 +289,7 @@ namespace get_link_manga
             {
                 await await Dispatcher.InvokeAsync(async () =>
                 {
-                    var captchaWin = CreateCaptchaWindow(cleanLink, autoDeleteCookiesOnLoad: false, headlessAutomation: _lightNovelAutoFocusEnabled);
+                    var captchaWin = CreateWatchMoreCaptcha(cleanLink, autoDeleteCookiesOnLoad: false, headlessAutomation: _lightNovelAutoFocusEnabled);
                     captchaWin.Owner = this;
                     captchaWin.Title = "ĐANG TẢI DANH SÁCH CHƯƠNG - VUI LÒNG CHỜ...";
 
@@ -859,6 +872,31 @@ namespace get_link_manga
                 }
 
                 string chapterListHtml = html;
+                string expandedChapterListHtml = null;
+                bool expandedViaWebView = false;
+
+                async Task<string> GetExpandedChapterListHtmlAsync()
+                {
+                    if (expandedChapterListHtml == null)
+                    {
+                        expandedChapterListHtml = await LoadExpandedNettruyenChapterHtmlAsync(cleanLink);
+                    }
+
+                    return expandedChapterListHtml;
+                }
+
+                bool pageHasViewMore = HasNettruyenViewMoreButton(html);
+                if (pageHasViewMore)
+                {
+                    Log("[nettruyen] Thấy nút 'Xem thêm'. Đang click để bung danh sách chapter...");
+                    string webViewHtml = await GetExpandedChapterListHtmlAsync();
+                    if (!string.IsNullOrEmpty(webViewHtml))
+                    {
+                        chapterListHtml = webViewHtml;
+                        expandedViaWebView = true;
+                        Log("[nettruyen] Đã lấy HTML đầy đủ sau khi click 'Xem thêm'.");
+                    }
+                }
 
                 if (!string.IsNullOrEmpty(storyId))
                 {
@@ -952,31 +990,16 @@ namespace get_link_manga
                     }
                 }
 
-                // Detect if the original page has a "Xem thêm" button (chapters hidden behind expand)
-                bool pageHasViewMore = html.Contains("Xem thêm") || html.Contains("xem thêm") || html.Contains("view-more") || html.Contains("show-more");
-
-                // If AJAX failed, try WebView to click "Xem thêm"
-                if (chapterListHtml == html && pageHasViewMore)
-                {
-                    Log("[nettruyen] AJAX không lấy được danh sách chương. Mở trình duyệt để click 'Xem thêm'...");
-                    string webViewHtml = await LoadExpandedNettruyenChapterHtmlAsync(cleanLink);
-                    if (!string.IsNullOrEmpty(webViewHtml))
-                    {
-                        chapterListHtml = webViewHtml;
-                        Log("[nettruyen] Đã lấy được HTML đầy đủ từ trình duyệt sau khi click 'Xem thêm'.");
-                    }
-                }
-
                 var chapterLinks = ExtractNettruyenChapterLinks(chapterListHtml, activeDomain, parentPath);
 
                 // If AJAX succeeded but page originally had "Xem thêm", verify AJAX returned more chapters than visible HTML
-                if (chapterListHtml != html && pageHasViewMore)
+                if (!expandedViaWebView && chapterListHtml != html && pageHasViewMore)
                 {
                     var htmlVisibleLinks = ExtractNettruyenChapterLinks(html, activeDomain, parentPath);
                     if (chapterLinks.Count <= htmlVisibleLinks.Count)
                     {
                         Log($"[nettruyen] AJAX trả về {chapterLinks.Count} chương, HTML visible có {htmlVisibleLinks.Count}. AJAX không bung thêm. Mở trình duyệt click 'Xem thêm'...");
-                        string webViewHtml = await LoadExpandedNettruyenChapterHtmlAsync(cleanLink);
+                        string webViewHtml = await GetExpandedChapterListHtmlAsync();
                         if (!string.IsNullOrEmpty(webViewHtml))
                         {
                             var webViewLinks = ExtractNettruyenChapterLinks(webViewHtml, activeDomain, parentPath);
@@ -1002,7 +1025,7 @@ namespace get_link_manga
                         ? $"{originalChapterCount} link, chap mới nhất ~ {expectedLatestChapter:0.##}"
                         : $"{originalChapterCount} link, trang có nút 'Xem thêm'";
                     Log($"[nettruyen] Danh sách chương có vẻ thiếu ({reason}). Thử mở trình duyệt để bung đủ danh sách...");
-                    string webViewHtml = await LoadExpandedNettruyenChapterHtmlAsync(cleanLink);
+                    string webViewHtml = await GetExpandedChapterListHtmlAsync();
                     if (!string.IsNullOrEmpty(webViewHtml))
                     {
                         var retriedLinks = ExtractNettruyenChapterLinks(webViewHtml, activeDomain, parentPath);
