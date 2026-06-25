@@ -2250,31 +2250,17 @@ namespace get_link_manga
                     continue;
                 }
 
-                CollectReaderBooksRecursive(domainFolder, domainName, 0, completionState, downloadState, seen, result, onUnitProcessed);
+                foreach (string bookFolder in SafeGetDirectories(domainFolder))
+                {
+                    onUnitProcessed?.Invoke();
+                    TryAddReaderBook(bookFolder, domainName, 1, completionState, downloadState, seen, result);
+                }
             }
 
             return result
                 .OrderBy(item => item.SourceGroup ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(item => item.FolderDepth)
                 .ThenBy(item => item.Name, _readerSortComparer)
                 .ToList();
-        }
-
-        private void CollectReaderBooksRecursive(string folderPath, string sourceGroup, int depth, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState, ISet<string> seen, ICollection<ReaderMangaItem> result, Action onUnitProcessed)
-        {
-            string folderName = Path.GetFileName(folderPath);
-            if (string.IsNullOrWhiteSpace(folderPath) || seen.Contains(folderPath) || string.IsNullOrWhiteSpace(folderName) || folderName.StartsWith(".", StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            TryAddReaderBook(folderPath, sourceGroup, depth, completionState, downloadState, seen, result);
-            onUnitProcessed?.Invoke();
-
-            foreach (string childFolder in SafeGetDirectories(folderPath))
-            {
-                CollectReaderBooksRecursive(childFolder, sourceGroup, depth + 1, completionState, downloadState, seen, result, onUnitProcessed);
-            }
         }
 
         private void TryAddReaderBook(string folderPath, string sourceGroup, int depth, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState, ISet<string> seen, ICollection<ReaderMangaItem> result)
@@ -3006,26 +2992,11 @@ namespace get_link_manga
             int total = 0;
             foreach (string domainFolder in SafeGetDirectories(root))
             {
-                total += CountReaderScanUnitsRecursive(domainFolder);
+                total += 1;
+                total += SafeGetDirectories(domainFolder).Count();
             }
 
-            // ponytail: progress counts folders examined, not final valid books. Exact enough for load bar.
-            return total;
-        }
-
-        private int CountReaderScanUnitsRecursive(string folderPath)
-        {
-            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
-            {
-                return 0;
-            }
-
-            int total = 1;
-            foreach (string childFolder in SafeGetDirectories(folderPath))
-            {
-                total += CountReaderScanUnitsRecursive(childFolder);
-            }
-
+            // ponytail: progress counts direct domain/book folders only. Exact enough and avoids deep scan lag.
             return total;
         }
 

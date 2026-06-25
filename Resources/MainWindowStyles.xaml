@@ -219,12 +219,16 @@
                             SnapsToDevicePixels="True"
                             Cursor="Hand">
                         <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="3"/>
+                            </Grid.RowDefinitions>
                             <Border x:Name="accentBar"
-                                    Height="3"
-                                    VerticalAlignment="Bottom"
+                                    Grid.Row="1"
                                     Background="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
                                     Opacity="0.95"/>
                             <TextBlock x:Name="headerText"
+                                       Grid.Row="0"
                                        Text="{TemplateBinding Header}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
@@ -238,7 +242,6 @@
                             <Setter TargetName="border" Property="Background" Value="#122238"/>
                             <Setter TargetName="border" Property="BorderBrush" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="headerText" Property="Foreground" Value="#FFFFFF"/>
-                            <Setter TargetName="accentBar" Property="Height" Value="4"/>
                             <Setter TargetName="accentBar" Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="False">
