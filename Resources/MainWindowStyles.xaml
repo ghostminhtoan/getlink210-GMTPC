@@ -218,23 +218,33 @@
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="True"
                             Cursor="Hand">
-                        <TextBlock x:Name="headerText"
-                                   Text="{TemplateBinding Header}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontWeight="{TemplateBinding FontWeight}"
-                                   FontSize="{TemplateBinding FontSize}"
-                                   Foreground="{TemplateBinding Foreground}"/>
+                        <Grid>
+                            <Border x:Name="accentBar"
+                                    Height="3"
+                                    VerticalAlignment="Bottom"
+                                    Background="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                    Opacity="0.95"/>
+                            <TextBlock x:Name="headerText"
+                                       Text="{TemplateBinding Header}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       Foreground="{TemplateBinding Foreground}"/>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="border" Property="Background" Value="#122238"/>
                             <Setter TargetName="border" Property="BorderBrush" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="headerText" Property="Foreground" Value="#FFFFFF"/>
+                            <Setter TargetName="accentBar" Property="Height" Value="4"/>
+                            <Setter TargetName="accentBar" Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="False">
-                            <Setter TargetName="border" Property="BorderBrush" Value="Transparent"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="#223550"/>
                             <Setter TargetName="headerText" Property="Foreground" Value="#EAF6FF"/>
+                            <Setter TargetName="border" Property="Opacity" Value="0.95"/>
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -243,6 +253,7 @@
                             </MultiTrigger.Conditions>
                             <Setter TargetName="border" Property="Background" Value="#17304A"/>
                             <Setter TargetName="headerText" Property="Foreground" Value="#FFFFFF"/>
+                            <Setter TargetName="border" Property="Opacity" Value="1"/>
                         </MultiTrigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -251,6 +262,7 @@
                             </MultiTrigger.Conditions>
                             <Setter TargetName="border" Property="Background" Value="#17304A"/>
                             <Setter TargetName="headerText" Property="Foreground" Value="#FFFFFF"/>
+                            <Setter TargetName="accentBar" Property="Opacity" Value="1"/>
                         </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
