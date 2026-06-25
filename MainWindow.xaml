@@ -706,6 +706,54 @@
                             </ScrollViewer>
                         </TabItem>
 
+                        <TabItem Header="dilib.vn" Style="{StaticResource CyberpunkTabItem}">
+                            <TabItem.Tag>
+                                <SolidColorBrush Color="#ffcc33"/>
+                            </TabItem.Tag>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True" Background="Transparent" BorderThickness="0" Padding="0">
+                            <Grid Margin="0,10,0,0">
+                                <Border Name="borderDilibLeftPanel" Style="{StaticResource CyberpunkCard}" Padding="15">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+
+                                        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                                            <TextBlock Text="PARAMETERS CONFIG" Foreground="{StaticResource CyberpunkCyanBrush}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            <WrapPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                                <Button Name="btnOpenHomepageDilib" Tag="dilib.vn" Content="HOME" Click="BtnOpenHomepage_Click" Style="{StaticResource CompactCyanButton}" MinWidth="86" Padding="8,0" FontWeight="Bold"/>
+                                                <Button Content="HISTORY" Click="BtnOpenHistory_Click" Style="{StaticResource CompactCyanButton}" MinWidth="78" Padding="8,0" FontWeight="Bold"/>
+                                                <Button Content="BOOKMARKS" Click="BtnOpenBookmarks_Click" Style="{StaticResource CompactCyanButton}" MinWidth="94" Padding="8,0" FontWeight="Bold"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                            <TextBlock Text="TARGET URL" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                            <TextBox Name="txtDilibTagUrl"
+                                                     Text="https://dilib.vn/"
+                                                     Background="#0e121a"
+                                                     BorderBrush="{StaticResource CyberpunkBorderBrush}"
+                                                     Foreground="{StaticResource CyberpunkTextBrush}"
+                                                     CaretBrush="{StaticResource CyberpunkCyanBrush}"
+                                                     Height="32"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                                            <TextBlock Text="Dilib tab restored. Use HOME button or paste tag URL." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                        </StackPanel>
+
+                                        <Border Grid.Row="3" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="12">
+                                            <TextBlock Text="If you need full dilib scrape controls again, I can wire them next." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                            </ScrollViewer>
+                        </TabItem>
+
                         <TabItem Header="daomeoden" Style="{StaticResource CyberpunkTabItem}">
                             <TabItem.Tag>
                                 <SolidColorBrush Color="#7dff9b"/>
