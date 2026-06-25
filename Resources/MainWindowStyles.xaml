@@ -201,7 +201,7 @@
     <Style x:Key="CyberpunkTabItem" TargetType="TabItem">
         <Setter Property="Background" Value="#0D1A2A"/>
         <Setter Property="BorderBrush" Value="#223550"/>
-        <Setter Property="Foreground" Value="#C6D5E5"/>
+        <Setter Property="Foreground" Value="#EAF6FF"/>
         <Setter Property="Padding" Value="6,8"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="FontSize" Value="10"/>
@@ -230,11 +230,11 @@
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="border" Property="Background" Value="#122238"/>
                             <Setter TargetName="border" Property="BorderBrush" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
-                            <Setter TargetName="headerText" Property="Foreground" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="headerText" Property="Foreground" Value="#FFFFFF"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="False">
                             <Setter TargetName="border" Property="BorderBrush" Value="Transparent"/>
-                            <Setter TargetName="headerText" Property="Foreground" Value="#c8d4e2"/>
+                            <Setter TargetName="headerText" Property="Foreground" Value="#EAF6FF"/>
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -242,7 +242,7 @@
                                 <Condition Property="IsSelected" Value="False"/>
                             </MultiTrigger.Conditions>
                             <Setter TargetName="border" Property="Background" Value="#17304A"/>
-                            <Setter TargetName="headerText" Property="Foreground" Value="#ffffff"/>
+                            <Setter TargetName="headerText" Property="Foreground" Value="#FFFFFF"/>
                         </MultiTrigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -250,7 +250,7 @@
                                 <Condition Property="IsSelected" Value="True"/>
                             </MultiTrigger.Conditions>
                             <Setter TargetName="border" Property="Background" Value="#17304A"/>
-                            <Setter TargetName="headerText" Property="Foreground" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="headerText" Property="Foreground" Value="#FFFFFF"/>
                         </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
