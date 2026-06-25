@@ -387,6 +387,7 @@ namespace get_link_manga
             _readerNovelSummaryText = CreateWatchSummaryText();
             _readerNovelDomainList = CreateWatchListBox();
             _readerNovelBookList = CreateWatchListBox();
+            _readerNovelBookList.ItemContainerStyle = CreateReaderWatchItemContainerStyle(nameof(ReaderNovelBookItem.DisplayForeground));
             _readerNovelChapterList = CreateWatchListBox();
             _readerNovelFileList = CreateWatchListBox();
             _readerNovelPreviewTextBox = CreateWatchPreviewTextBox();
@@ -2085,25 +2086,34 @@ namespace get_link_manga
                     continue;
                 }
 
-                foreach (string bookFolder in SafeGetDirectories(domainFolder))
-                {
-                    TryAddReaderBook(bookFolder, domainName, completionState, downloadState, seen, result);
-                    onUnitProcessed?.Invoke();
-                }
-
-                if (!result.Any(item => string.Equals(item.SourceGroup, domainName, StringComparison.OrdinalIgnoreCase)))
-                {
-                    TryAddReaderBook(domainFolder, domainName, completionState, downloadState, seen, result);
-                }
+                CollectReaderBooksRecursive(domainFolder, domainName, 0, completionState, downloadState, seen, result, onUnitProcessed);
             }
 
             return result
                 .OrderBy(item => item.SourceGroup ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.FolderDepth)
                 .ThenBy(item => item.Name, _readerSortComparer)
                 .ToList();
         }
 
-        private void TryAddReaderBook(string folderPath, string sourceGroup, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState, ISet<string> seen, ICollection<ReaderMangaItem> result)
+        private void CollectReaderBooksRecursive(string folderPath, string sourceGroup, int depth, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState, ISet<string> seen, ICollection<ReaderMangaItem> result, Action onUnitProcessed)
+        {
+            string folderName = Path.GetFileName(folderPath);
+            if (string.IsNullOrWhiteSpace(folderPath) || seen.Contains(folderPath) || string.IsNullOrWhiteSpace(folderName) || folderName.StartsWith(".", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            TryAddReaderBook(folderPath, sourceGroup, depth, completionState, downloadState, seen, result);
+            onUnitProcessed?.Invoke();
+
+            foreach (string childFolder in SafeGetDirectories(folderPath))
+            {
+                CollectReaderBooksRecursive(childFolder, sourceGroup, depth + 1, completionState, downloadState, seen, result, onUnitProcessed);
+            }
+        }
+
+        private void TryAddReaderBook(string folderPath, string sourceGroup, int depth, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState, ISet<string> seen, ICollection<ReaderMangaItem> result)
         {
             if (seen.Contains(folderPath))
             {
@@ -2111,7 +2121,7 @@ namespace get_link_manga
             }
 
             // ponytail: skip pre-check scan; BuildReaderMangaItem already does one pass.
-            ReaderMangaItem book = BuildReaderMangaItem(folderPath, sourceGroup, completionState, downloadState);
+            ReaderMangaItem book = BuildReaderMangaItem(folderPath, sourceGroup, depth, completionState, downloadState);
             if (book == null || book.Chapters.Count == 0)
             {
                 return;
@@ -2122,31 +2132,12 @@ namespace get_link_manga
             Debug.Assert(book.Chapters.Count > 0, "Reader book scan returned empty chapter list.");
         }
 
-        private ReaderMangaItem BuildReaderMangaItem(string folderPath, string sourceGroup, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState)
+        private ReaderMangaItem BuildReaderMangaItem(string folderPath, string sourceGroup, int depth, ReaderCompletionState completionState, ReaderDownloadWatchState downloadState)
         {
             var chapters = new List<ReaderChapterItem>();
             string bookName = Path.GetFileName(folderPath);
 
-            if (DirectoryContainsImages(folderPath))
-            {
-                chapters.Add(BuildReaderChapterItem(folderPath, Path.GetFileName(folderPath)));
-            }
-            else
-            {
-                foreach (string chapterDir in Directory.GetDirectories(folderPath).OrderBy(path => Path.GetFileName(path), _readerSortComparer))
-                {
-                    if (!DirectoryContainsImages(chapterDir))
-                    {
-                        continue;
-                    }
-
-                    var chapter = BuildReaderChapterItem(chapterDir, Path.GetFileName(chapterDir));
-                    if (chapter != null)
-                    {
-                        chapters.Add(chapter);
-                    }
-                }
-            }
+            CollectReaderChapterItems(folderPath, 0, chapters);
 
             if (chapters.Count == 0)
             {
@@ -2168,12 +2159,36 @@ namespace get_link_manga
                 Name = bookName,
                 SourceGroup = sourceGroup,
                 FolderPath = folderPath,
+                FolderDepth = depth,
                 LastModifiedUtc = chapters.Max(item => item.LastModifiedUtc),
                 Chapters = chapters,
                 IsCompleted = isCompleted,
                 DownloadStateText = downloadStateText,
                 HasMissingIntegerGap = analysis.MissingRanges.Count > 0
             };
+        }
+
+        private void CollectReaderChapterItems(string folderPath, int depth, ICollection<ReaderChapterItem> chapters)
+        {
+            string folderName = Path.GetFileName(folderPath);
+            if (chapters == null || string.IsNullOrWhiteSpace(folderPath) || string.IsNullOrWhiteSpace(folderName) || folderName.StartsWith(".", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (DirectoryContainsImages(folderPath))
+            {
+                ReaderChapterItem chapter = BuildReaderChapterItem(folderPath, Path.GetFileName(folderPath), depth);
+                if (chapter != null)
+                {
+                    chapters.Add(chapter);
+                }
+            }
+
+            foreach (string childFolder in SafeGetDirectories(folderPath))
+            {
+                CollectReaderChapterItems(childFolder, depth + 1, chapters);
+            }
         }
 
         private static bool TryParseReaderChapterNumber(string chapterName, out double number, out bool isDecimal)
@@ -2338,7 +2353,7 @@ namespace get_link_manga
             }
         }
 
-        private ReaderChapterItem BuildReaderChapterItem(string folderPath, string chapterName)
+        private ReaderChapterItem BuildReaderChapterItem(string folderPath, string chapterName, int depth)
         {
             string[] pageFiles = Directory.GetFiles(folderPath)
                 .Where(IsSupportedReaderImageFile)
@@ -2365,6 +2380,7 @@ namespace get_link_manga
             {
                 Name = chapterName,
                 FolderPath = folderPath,
+                FolderDepth = depth,
                 LastModifiedUtc = pages.Max(item => item.LastModifiedUtc),
                 Pages = pages
             };
@@ -2605,25 +2621,34 @@ namespace get_link_manga
                     continue;
                 }
 
-                foreach (string bookFolder in SafeGetDirectories(domainFolder))
-                {
-                    TryAddReaderNovelBook(bookFolder, domainName, seen, result);
-                    onUnitProcessed?.Invoke();
-                }
-
-                if (!result.Any(item => string.Equals(item.SourceGroup, domainName, StringComparison.OrdinalIgnoreCase)))
-                {
-                    TryAddReaderNovelBook(domainFolder, domainName, seen, result);
-                }
+                CollectReaderNovelBooksRecursive(domainFolder, domainName, 0, seen, result, onUnitProcessed);
             }
 
             return result
                 .OrderBy(item => item.SourceGroup ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.FolderDepth)
                 .ThenBy(item => item.Name, _readerSortComparer)
                 .ToList();
         }
 
-        private void TryAddReaderNovelBook(string folderPath, string sourceGroup, ISet<string> seen, ICollection<ReaderNovelBookItem> result)
+        private void CollectReaderNovelBooksRecursive(string folderPath, string sourceGroup, int depth, ISet<string> seen, ICollection<ReaderNovelBookItem> result, Action onUnitProcessed)
+        {
+            string folderName = Path.GetFileName(folderPath);
+            if (string.IsNullOrWhiteSpace(folderPath) || seen.Contains(folderPath) || string.IsNullOrWhiteSpace(folderName) || folderName.StartsWith(".", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            TryAddReaderNovelBook(folderPath, sourceGroup, depth, seen, result);
+            onUnitProcessed?.Invoke();
+
+            foreach (string childFolder in SafeGetDirectories(folderPath))
+            {
+                CollectReaderNovelBooksRecursive(childFolder, sourceGroup, depth + 1, seen, result, onUnitProcessed);
+            }
+        }
+
+        private void TryAddReaderNovelBook(string folderPath, string sourceGroup, int depth, ISet<string> seen, ICollection<ReaderNovelBookItem> result)
         {
             if (seen.Contains(folderPath))
             {
@@ -2637,7 +2662,7 @@ namespace get_link_manga
             }
 
             // ponytail: same trick as manga scan. One build pass, no pre-check double hit.
-            ReaderNovelBookItem book = BuildReaderNovelBookItem(folderPath, sourceGroup);
+            ReaderNovelBookItem book = BuildReaderNovelBookItem(folderPath, sourceGroup, depth);
             if (book == null || book.Chapters.Count == 0)
             {
                 return;
@@ -2648,33 +2673,12 @@ namespace get_link_manga
             Debug.Assert(book.Chapters.Count > 0, "Reader novel scan returned empty chapter list.");
         }
 
-        private ReaderNovelBookItem BuildReaderNovelBookItem(string folderPath, string sourceGroup)
+        private ReaderNovelBookItem BuildReaderNovelBookItem(string folderPath, string sourceGroup, int depth)
         {
             var chapters = new List<ReaderNovelChapterItem>();
             string bookName = Path.GetFileName(folderPath);
 
-            if (DirectoryContainsMarkdown(folderPath))
-            {
-                ReaderNovelChapterItem rootChapter = BuildReaderNovelChapterItem(folderPath, Path.GetFileName(folderPath));
-                if (rootChapter != null)
-                {
-                    chapters.Add(rootChapter);
-                }
-            }
-
-            foreach (string chapterDir in Directory.GetDirectories(folderPath).OrderBy(path => Path.GetFileName(path), _readerSortComparer))
-            {
-                if (!DirectoryContainsMarkdown(chapterDir))
-                {
-                    continue;
-                }
-
-                ReaderNovelChapterItem chapter = BuildReaderNovelChapterItem(chapterDir, Path.GetFileName(chapterDir));
-                if (chapter != null)
-                {
-                    chapters.Add(chapter);
-                }
-            }
+            CollectReaderNovelChapterItems(folderPath, 0, chapters);
 
             if (chapters.Count == 0)
             {
@@ -2686,12 +2690,36 @@ namespace get_link_manga
                 Name = bookName,
                 SourceGroup = sourceGroup,
                 FolderPath = folderPath,
+                FolderDepth = depth,
                 LastModifiedUtc = chapters.Max(item => item.LastModifiedUtc),
                 Chapters = chapters
             };
         }
 
-        private ReaderNovelChapterItem BuildReaderNovelChapterItem(string folderPath, string chapterName)
+        private void CollectReaderNovelChapterItems(string folderPath, int depth, ICollection<ReaderNovelChapterItem> chapters)
+        {
+            string folderName = Path.GetFileName(folderPath);
+            if (chapters == null || string.IsNullOrWhiteSpace(folderPath) || string.IsNullOrWhiteSpace(folderName) || folderName.StartsWith(".", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (DirectoryContainsMarkdown(folderPath))
+            {
+                ReaderNovelChapterItem chapter = BuildReaderNovelChapterItem(folderPath, Path.GetFileName(folderPath), depth);
+                if (chapter != null)
+                {
+                    chapters.Add(chapter);
+                }
+            }
+
+            foreach (string childFolder in SafeGetDirectories(folderPath))
+            {
+                CollectReaderNovelChapterItems(childFolder, depth + 1, chapters);
+            }
+        }
+
+        private ReaderNovelChapterItem BuildReaderNovelChapterItem(string folderPath, string chapterName, int depth)
         {
             string[] markdownFiles = Directory.GetFiles(folderPath, "*.md", SearchOption.TopDirectoryOnly)
                 .OrderBy(path => Path.GetFileNameWithoutExtension(path), _readerSortComparer)
@@ -2717,6 +2745,7 @@ namespace get_link_manga
             {
                 Name = chapterName,
                 FolderPath = folderPath,
+                FolderDepth = depth,
                 LastModifiedUtc = files.Max(item => item.LastModifiedUtc),
                 Files = files
             };
@@ -2813,26 +2842,26 @@ namespace get_link_manga
             int total = 0;
             foreach (string domainFolder in SafeGetDirectories(root))
             {
-                string domainName = Path.GetFileName(domainFolder);
-                if (string.IsNullOrWhiteSpace(domainName) || domainName.StartsWith(".", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                total++;
-                foreach (string bookFolder in SafeGetDirectories(domainFolder))
-                {
-                    string bookName = Path.GetFileName(bookFolder);
-                    if (string.IsNullOrWhiteSpace(bookName) || bookName.StartsWith(".", StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
-                    total++;
-                }
+                total += CountReaderScanUnitsRecursive(domainFolder);
             }
 
             // ponytail: progress counts folders examined, not final valid books. Exact enough for load bar.
+            return total;
+        }
+
+        private int CountReaderScanUnitsRecursive(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+            {
+                return 0;
+            }
+
+            int total = 1;
+            foreach (string childFolder in SafeGetDirectories(folderPath))
+            {
+                total += CountReaderScanUnitsRecursive(childFolder);
+            }
+
             return total;
         }
 
@@ -3357,6 +3386,13 @@ namespace get_link_manga
                 return;
             }
 
+            if (manga.IsNavigationItem && !string.IsNullOrWhiteSpace(manga.NavigationTargetFolderPath))
+            {
+                _readerLibraryRootOverride = manga.NavigationTargetFolderPath;
+                RefreshReaderLibraryIfNeeded(forceRefresh: true);
+                return;
+            }
+
             _currentReaderManga = manga;
             _currentReaderDomain = _readerDomains.FirstOrDefault(item =>
                 item.Books.Any(book => string.Equals(book.FolderPath, manga.FolderPath, StringComparison.OrdinalIgnoreCase)));
@@ -3465,6 +3501,13 @@ namespace get_link_manga
         {
             if (book == null)
             {
+                return;
+            }
+
+            if (book.IsNavigationItem && !string.IsNullOrWhiteSpace(book.NavigationTargetFolderPath))
+            {
+                _readerNovelLibraryRootOverride = book.NavigationTargetFolderPath;
+                RefreshReaderNovelLibraryIfNeeded(forceRefresh: true);
                 return;
             }
 
@@ -4839,7 +4882,7 @@ namespace get_link_manga
                 return null;
             }
 
-            ReaderMangaItem parentManga = BuildReaderMangaItem(parent.FullName, sourceGroup, GetReaderCompletionStateForCurrentRoot(), LoadReaderDownloadWatchState(GetCurrentReaderLibraryRoot()));
+            ReaderMangaItem parentManga = BuildReaderMangaItem(parent.FullName, sourceGroup, 0, GetReaderCompletionStateForCurrentRoot(), LoadReaderDownloadWatchState(GetCurrentReaderLibraryRoot()));
             if (parentManga == null)
             {
                 return null;
@@ -4923,7 +4966,7 @@ namespace get_link_manga
                 return null;
             }
 
-            return BuildReaderMangaItem(folderPath, entry.SourceDomain, GetReaderCompletionStateForCurrentRoot(), LoadReaderDownloadWatchState(GetCurrentReaderLibraryRoot()));
+            return BuildReaderMangaItem(folderPath, entry.SourceDomain, 0, GetReaderCompletionStateForCurrentRoot(), LoadReaderDownloadWatchState(GetCurrentReaderLibraryRoot()));
         }
 
         private static bool ReaderMangaContainsChapterFolder(ReaderMangaItem manga, string chapterFolderPath)

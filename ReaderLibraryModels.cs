@@ -70,6 +70,8 @@ namespace get_link_manga
 
         public string FolderPath { get; set; }
 
+        public int FolderDepth { get; set; }
+
         public DateTime LastModifiedUtc { get; set; }
 
         public List<ReaderPageItem> Pages { get; set; } = new List<ReaderPageItem>();
@@ -91,7 +93,8 @@ namespace get_link_manga
             get
             {
                 string suffix = IsCompleted ? " - completed" : string.Empty;
-                return $"{Name} ({Pages.Count} page{(Pages.Count == 1 ? string.Empty : "s")}){suffix}";
+                string prefix = FolderDepth <= 0 ? string.Empty : new string('.', FolderDepth * 2) + " ";
+                return $"{prefix}{Name} ({Pages.Count} page{(Pages.Count == 1 ? string.Empty : "s")}){suffix}";
             }
         }
 
@@ -109,6 +112,12 @@ namespace get_link_manga
 
         public string FolderPath { get; set; }
 
+        public int FolderDepth { get; set; }
+
+        public bool IsNavigationItem { get; set; }
+
+        public string NavigationTargetFolderPath { get; set; }
+
         public DateTime LastModifiedUtc { get; set; }
 
         public List<ReaderChapterItem> Chapters { get; set; } = new List<ReaderChapterItem>();
@@ -121,19 +130,25 @@ namespace get_link_manga
 
         public bool HasMissingIntegerGap { get; set; }
 
-        public Brush DisplayForeground => HasMissingIntegerGap ? Brushes.Cyan : null;
+        public Brush DisplayForeground => IsNavigationItem ? Brushes.Yellow : (HasMissingIntegerGap ? Brushes.Cyan : (FolderDepth > 0 ? Brushes.Cyan : null));
 
         public string DisplayLabel
         {
             get
             {
+                if (IsNavigationItem)
+                {
+                    return "..";
+                }
+
                 string prefix = string.IsNullOrWhiteSpace(SourceGroup) ? string.Empty : SourceGroup + " - ";
+                string depthPrefix = FolderDepth <= 0 ? string.Empty : new string('.', FolderDepth * 2) + " ";
                 string suffix = IsCompleted ? " - completed" : string.Empty;
                 if (!string.IsNullOrWhiteSpace(DownloadStateText))
                 {
                     suffix = " - " + DownloadStateText.Trim().ToLowerInvariant();
                 }
-                return $"{prefix}{Name} ({Chapters.Count} chap{(Chapters.Count == 1 ? string.Empty : "ters")}){suffix}";
+                return $"{depthPrefix}{prefix}{Name} ({Chapters.Count} chap{(Chapters.Count == 1 ? string.Empty : "ters")}){suffix}";
             }
         }
 
@@ -180,13 +195,15 @@ namespace get_link_manga
 
         public string FolderPath { get; set; }
 
+        public int FolderDepth { get; set; }
+
         public DateTime LastModifiedUtc { get; set; }
 
         public List<ReaderMarkdownItem> Files { get; set; } = new List<ReaderMarkdownItem>();
 
         public bool IsChecked { get; set; }
 
-        public string DisplayLabel => $"{Name} ({Files.Count} md)";
+        public string DisplayLabel => $"{(FolderDepth <= 0 ? string.Empty : new string('.', FolderDepth * 2) + " ")}{Name} ({Files.Count} md)";
 
         public override string ToString()
         {
@@ -202,18 +219,32 @@ namespace get_link_manga
 
         public string FolderPath { get; set; }
 
+        public int FolderDepth { get; set; }
+
+        public bool IsNavigationItem { get; set; }
+
+        public string NavigationTargetFolderPath { get; set; }
+
         public DateTime LastModifiedUtc { get; set; }
 
         public List<ReaderNovelChapterItem> Chapters { get; set; } = new List<ReaderNovelChapterItem>();
 
         public bool IsChecked { get; set; }
 
+        public Brush DisplayForeground => IsNavigationItem ? Brushes.Yellow : (FolderDepth > 0 ? Brushes.Cyan : null);
+
         public string DisplayLabel
         {
             get
             {
+                if (IsNavigationItem)
+                {
+                    return "..";
+                }
+
                 string prefix = string.IsNullOrWhiteSpace(SourceGroup) ? string.Empty : SourceGroup + " - ";
-                return $"{prefix}{Name} ({Chapters.Count} chapter{(Chapters.Count == 1 ? string.Empty : "s")})";
+                string depthPrefix = FolderDepth <= 0 ? string.Empty : new string('.', FolderDepth * 2) + " ";
+                return $"{depthPrefix}{prefix}{Name} ({Chapters.Count} chapter{(Chapters.Count == 1 ? string.Empty : "s")})";
             }
         }
 
