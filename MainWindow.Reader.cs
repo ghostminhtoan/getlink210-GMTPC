@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -321,6 +322,7 @@ namespace get_link_manga
             _readerSummaryText = CreateWatchSummaryText();
             _readerDomainList = CreateWatchListBox();
             _readerMangaList = CreateWatchListBox();
+            _readerMangaList.ItemContainerStyle = CreateReaderWatchItemContainerStyle(nameof(ReaderMangaItem.DisplayForeground));
             _readerChapterList = CreateWatchChapterListBox();
             _readerChapterStatsText = CreateWatchChapterStatsText();
             _readerFileList = CreateWatchListBox();
@@ -583,7 +585,7 @@ namespace get_link_manga
             };
         }
 
-        private ListBox CreateWatchListBox()
+        private ListBox CreateWatchListBox(string foregroundProperty = null)
         {
             var listBox = new ListBox
             {
@@ -591,31 +593,272 @@ namespace get_link_manga
                 BorderBrush = (Brush)TryFindResource("CyberpunkBorderBrush"),
                 BorderThickness = new Thickness(1),
                 Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                DisplayMemberPath = "DisplayLabel",
-                MinHeight = 140
+                MinHeight = 140,
+                SelectionMode = SelectionMode.Extended,
+                ItemTemplate = CreateReaderWatchItemTemplate()
             };
+            listBox.ItemContainerStyle = CreateReaderWatchItemContainerStyle(foregroundProperty);
             ScrollViewer.SetHorizontalScrollBarVisibility(listBox, ScrollBarVisibility.Auto);
             ScrollViewer.SetVerticalScrollBarVisibility(listBox, ScrollBarVisibility.Auto);
             ScrollViewer.SetCanContentScroll(listBox, false);
             listBox.PreviewMouseLeftButtonDown += (sender, args) => _readerHasUserClickedInWatch = true;
+            listBox.PreviewKeyDown += ReaderWatchList_PreviewKeyDown;
             return listBox;
         }
 
         private ListBox CreateWatchChapterListBox()
         {
-            var listBox = CreateWatchListBox();
-            listBox.ItemContainerStyle = new Style(typeof(ListBoxItem))
+            return CreateWatchListBox(nameof(ReaderChapterItem.DisplayForeground));
+        }
+
+        private Style CreateReaderWatchItemContainerStyle(string foregroundProperty = null)
+        {
+            var style = new Style(typeof(ListBoxItem));
+            style.Setters.Add(new EventSetter(FrameworkElement.ContextMenuOpeningEvent, new ContextMenuEventHandler(ReaderWatchItem_ContextMenuOpening)));
+            style.Setters.Add(new EventSetter(FrameworkElement.PreviewMouseRightButtonDownEvent, new MouseButtonEventHandler(ReaderWatchItem_PreviewMouseRightButtonDown)));
+            if (!string.IsNullOrWhiteSpace(foregroundProperty))
             {
-                Setters =
+                style.Setters.Add(new Setter(Control.ForegroundProperty, new Binding(foregroundProperty)
                 {
-                    new Setter(Control.ForegroundProperty, new Binding(nameof(ReaderChapterItem.DisplayForeground))
-                    {
-                        FallbackValue = (Brush)TryFindResource("CyberpunkTextBrush") ?? Brushes.White,
-                        TargetNullValue = (Brush)TryFindResource("CyberpunkTextBrush") ?? Brushes.White
-                    })
-                }
-            };
-            return listBox;
+                    FallbackValue = (Brush)TryFindResource("CyberpunkTextBrush") ?? Brushes.White,
+                    TargetNullValue = (Brush)TryFindResource("CyberpunkTextBrush") ?? Brushes.White
+                }));
+            }
+            return style;
+        }
+
+        private DataTemplate CreateReaderWatchItemTemplate()
+        {
+            var template = new DataTemplate();
+            var panel = new FrameworkElementFactory(typeof(StackPanel));
+            panel.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+
+            var checkBox = new FrameworkElementFactory(typeof(CheckBox));
+            checkBox.SetValue(CheckBox.VerticalAlignmentProperty, VerticalAlignment.Center);
+            checkBox.SetValue(CheckBox.MarginProperty, new Thickness(0, 0, 8, 0));
+            checkBox.SetBinding(ToggleButton.IsCheckedProperty, new Binding(nameof(IReaderWatchCheckable.IsChecked))
+            {
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+            });
+
+            var text = new FrameworkElementFactory(typeof(TextBlock));
+            text.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+            text.SetValue(TextBlock.TextWrappingProperty, TextWrapping.NoWrap);
+            text.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+            text.SetBinding(TextBlock.TextProperty, new Binding("DisplayLabel"));
+
+            panel.AppendChild(checkBox);
+            panel.AppendChild(text);
+            template.VisualTree = panel;
+            return template;
+        }
+
+        private ContextMenu CreateReaderWatchItemContextMenu()
+        {
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Chọn" : "Check", ReaderWatchMenuCheckSelected_Click));
+            menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Bỏ chọn" : "Uncheck", ReaderWatchMenuUncheckSelected_Click));
+            menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Đảo chọn" : "Toggle", ReaderWatchMenuToggleSelected_Click));
+            menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Chọn tất cả" : "Check all", ReaderWatchMenuCheckAll_Click));
+            menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Bỏ chọn tất cả" : "Uncheck all", ReaderWatchMenuUncheckAll_Click));
+            menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Copy nhãn" : "Copy labels", ReaderWatchMenuCopySelected_Click));
+            return menu;
+        }
+
+        private MenuItem CreateReaderWatchMenuItem(string text, RoutedEventHandler clickHandler)
+        {
+            var item = new MenuItem { Header = text };
+            item.Click += clickHandler;
+            return item;
+        }
+
+        private void ReaderWatchItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!(sender is ListBoxItem item) || !(ItemsControl.ItemsControlFromItemContainer(item) is ListBox listBox))
+            {
+                return;
+            }
+
+            item.IsSelected = true;
+            listBox.Focus();
+        }
+
+        private void ReaderWatchItem_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (!(sender is ListBoxItem item) || !(item.DataContext is IReaderWatchCheckable))
+            {
+                return;
+            }
+
+            item.ContextMenu = CreateReaderWatchItemContextMenu();
+            item.ContextMenu.PlacementTarget = item;
+        }
+
+        private void ReaderWatchList_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!(sender is ListBox listBox) || listBox.SelectedItems.Count == 0)
+            {
+                return;
+            }
+
+            if (e.Key == Key.Space)
+            {
+                ToggleReaderWatchSelection(listBox);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                CopyReaderWatchSelection(listBox);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.A && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                listBox.SelectAll();
+                e.Handled = true;
+            }
+        }
+
+        private IEnumerable<IReaderWatchCheckable> GetReaderWatchSelectedItems(ListBox listBox)
+        {
+            if (listBox == null)
+            {
+                return Enumerable.Empty<IReaderWatchCheckable>();
+            }
+
+            return listBox.SelectedItems.Cast<object>().OfType<IReaderWatchCheckable>();
+        }
+
+        private void ToggleReaderWatchSelection(ListBox listBox)
+        {
+            var items = GetReaderWatchSelectedItems(listBox).ToList();
+            if (items.Count == 0)
+            {
+                return;
+            }
+
+            bool target = !items[0].IsChecked;
+            foreach (var item in items)
+            {
+                item.IsChecked = target;
+            }
+        }
+
+        private void SetReaderWatchSelection(ListBox listBox, bool value)
+        {
+            foreach (var item in GetReaderWatchSelectedItems(listBox))
+            {
+                item.IsChecked = value;
+            }
+        }
+
+        private void SetReaderWatchAllItemsChecked(ListBox listBox, bool value)
+        {
+            if (listBox == null)
+            {
+                return;
+            }
+
+            foreach (var item in listBox.Items.Cast<object>().OfType<IReaderWatchCheckable>())
+            {
+                item.IsChecked = value;
+            }
+        }
+
+        private void CopyReaderWatchSelection(ListBox listBox)
+        {
+            var labels = listBox.SelectedItems.Cast<object>()
+                .Select(item => item?.ToString())
+                .Where(text => !string.IsNullOrWhiteSpace(text))
+                .ToList();
+
+            if (labels.Count == 0)
+            {
+                return;
+            }
+
+            Clipboard.SetText(string.Join("\r\n", labels));
+        }
+
+        private void ReaderWatchMenuCheckSelected_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyReaderWatchMenuAction(sender, item => item.IsChecked = true);
+        }
+
+        private void ReaderWatchMenuUncheckSelected_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyReaderWatchMenuAction(sender, item => item.IsChecked = false);
+        }
+
+        private void ReaderWatchMenuToggleSelected_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyReaderWatchMenuAction(sender, item => item.IsChecked = !item.IsChecked);
+        }
+
+        private void ReaderWatchMenuCheckAll_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyReaderWatchMenuAll(sender, true);
+        }
+
+        private void ReaderWatchMenuUncheckAll_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyReaderWatchMenuAll(sender, false);
+        }
+
+        private void ReaderWatchMenuCopySelected_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetReaderWatchListBox(sender, out ListBox listBox))
+            {
+                return;
+            }
+
+            CopyReaderWatchSelection(listBox);
+        }
+
+        private void ApplyReaderWatchMenuAction(object sender, Action<IReaderWatchCheckable> action)
+        {
+            if (!TryGetReaderWatchListBox(sender, out ListBox listBox))
+            {
+                return;
+            }
+
+            foreach (var item in GetReaderWatchSelectedItems(listBox))
+            {
+                action(item);
+            }
+        }
+
+        private void ApplyReaderWatchMenuAll(object sender, bool value)
+        {
+            if (!TryGetReaderWatchListBox(sender, out ListBox listBox))
+            {
+                return;
+            }
+
+            SetReaderWatchAllItemsChecked(listBox, value);
+        }
+
+        private bool TryGetReaderWatchListBox(object sender, out ListBox listBox)
+        {
+            listBox = null;
+            if (!(sender is MenuItem menuItem) || !(menuItem.Parent is ContextMenu contextMenu) || !(contextMenu.PlacementTarget is ListBoxItem container) || !(container.DataContext is IReaderWatchCheckable))
+            {
+                return false;
+            }
+
+            listBox = ItemsControl.ItemsControlFromItemContainer(container) as ListBox;
+            if (listBox == null)
+            {
+                return false;
+            }
+
+            container.IsSelected = true;
+            listBox.Focus();
+            return true;
         }
 
         private TextBlock CreateWatchChapterStatsText()
@@ -948,6 +1191,7 @@ namespace get_link_manga
             Debug.Assert(chapters[1].HasMissingIntegerGap);
             Debug.Assert(chapters[3].HasMissingIntegerGap);
             Debug.Assert(chapters[2].IsDecimalChapter);
+            Debug.Assert(new ReaderMangaItem { HasMissingIntegerGap = true }.DisplayForeground == Brushes.Cyan);
         }
 
         private static void RunReaderDownloadWatchStateSelfCheck()
@@ -1916,6 +2160,7 @@ namespace get_link_manga
                 isCompleted = chapters.All(chapter => chapter != null && chapter.IsCompleted);
             }
 
+            ReaderChapterAnalysis analysis = AnalyzeReaderChapterNumbers(chapters);
             string downloadStateText = downloadState != null ? downloadState.Get(bookName) : null;
 
             return new ReaderMangaItem
@@ -1926,7 +2171,8 @@ namespace get_link_manga
                 LastModifiedUtc = chapters.Max(item => item.LastModifiedUtc),
                 Chapters = chapters,
                 IsCompleted = isCompleted,
-                DownloadStateText = downloadStateText
+                DownloadStateText = downloadStateText,
+                HasMissingIntegerGap = analysis.MissingRanges.Count > 0
             };
         }
 

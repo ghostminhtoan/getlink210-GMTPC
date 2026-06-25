@@ -4,6 +4,11 @@ using System.Windows.Media;
 
 namespace get_link_manga
 {
+    internal interface IReaderWatchCheckable
+    {
+        bool IsChecked { get; set; }
+    }
+
     internal sealed class UiZoomPreset
     {
         public UiZoomPreset(int percent)
@@ -19,7 +24,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderPageItem
+    internal sealed class ReaderPageItem : IReaderWatchCheckable
     {
         public int Index { get; set; }
 
@@ -28,6 +33,8 @@ namespace get_link_manga
         public string FilePath { get; set; }
 
         public DateTime LastModifiedUtc { get; set; }
+
+        public bool IsChecked { get; set; }
 
         public string DisplayLabel => $"Page {Index + 1:000} - {Name}";
 
@@ -37,7 +44,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderMarkdownItem
+    internal sealed class ReaderMarkdownItem : IReaderWatchCheckable
     {
         public int Index { get; set; }
 
@@ -47,6 +54,8 @@ namespace get_link_manga
 
         public DateTime LastModifiedUtc { get; set; }
 
+        public bool IsChecked { get; set; }
+
         public string DisplayLabel => $"MD {Index + 1:000} - {Name}";
 
         public override string ToString()
@@ -55,7 +64,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderChapterItem
+    internal sealed class ReaderChapterItem : IReaderWatchCheckable
     {
         public string Name { get; set; }
 
@@ -64,6 +73,8 @@ namespace get_link_manga
         public DateTime LastModifiedUtc { get; set; }
 
         public List<ReaderPageItem> Pages { get; set; } = new List<ReaderPageItem>();
+
+        public bool IsChecked { get; set; }
 
         public bool IsCompleted { get; set; }
 
@@ -90,7 +101,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderMangaItem
+    internal sealed class ReaderMangaItem : IReaderWatchCheckable
     {
         public string Name { get; set; }
 
@@ -102,9 +113,15 @@ namespace get_link_manga
 
         public List<ReaderChapterItem> Chapters { get; set; } = new List<ReaderChapterItem>();
 
+        public bool IsChecked { get; set; }
+
         public bool IsCompleted { get; set; }
 
         public string DownloadStateText { get; set; }
+
+        public bool HasMissingIntegerGap { get; set; }
+
+        public Brush DisplayForeground => HasMissingIntegerGap ? Brushes.Cyan : null;
 
         public string DisplayLabel
         {
@@ -126,7 +143,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderDomainItem
+    internal sealed class ReaderDomainItem : IReaderWatchCheckable
     {
         public string Name { get; set; }
 
@@ -135,6 +152,8 @@ namespace get_link_manga
         public DateTime LastModifiedUtc { get; set; }
 
         public List<ReaderMangaItem> Books { get; set; } = new List<ReaderMangaItem>();
+
+        public bool IsChecked { get; set; }
 
         public string DownloadStateText { get; set; }
 
@@ -155,7 +174,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderNovelChapterItem
+    internal sealed class ReaderNovelChapterItem : IReaderWatchCheckable
     {
         public string Name { get; set; }
 
@@ -165,6 +184,8 @@ namespace get_link_manga
 
         public List<ReaderMarkdownItem> Files { get; set; } = new List<ReaderMarkdownItem>();
 
+        public bool IsChecked { get; set; }
+
         public string DisplayLabel => $"{Name} ({Files.Count} md)";
 
         public override string ToString()
@@ -173,7 +194,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderNovelBookItem
+    internal sealed class ReaderNovelBookItem : IReaderWatchCheckable
     {
         public string Name { get; set; }
 
@@ -184,6 +205,8 @@ namespace get_link_manga
         public DateTime LastModifiedUtc { get; set; }
 
         public List<ReaderNovelChapterItem> Chapters { get; set; } = new List<ReaderNovelChapterItem>();
+
+        public bool IsChecked { get; set; }
 
         public string DisplayLabel
         {
@@ -200,7 +223,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderNovelDomainItem
+    internal sealed class ReaderNovelDomainItem : IReaderWatchCheckable
     {
         public string Name { get; set; }
 
@@ -210,6 +233,8 @@ namespace get_link_manga
 
         public List<ReaderNovelBookItem> Books { get; set; } = new List<ReaderNovelBookItem>();
 
+        public bool IsChecked { get; set; }
+
         public string DisplayLabel => $"{Name} ({Books.Count} book{(Books.Count == 1 ? string.Empty : "s")})";
 
         public override string ToString()
@@ -218,7 +243,7 @@ namespace get_link_manga
         }
     }
 
-    internal sealed class ReaderChapterIssueItem
+    internal sealed class ReaderChapterIssueItem : IReaderWatchCheckable
     {
         public string BookName { get; set; }
 
@@ -233,6 +258,8 @@ namespace get_link_manga
         public ReaderChapterItem MissingTarget { get; set; }
 
         public ReaderChapterItem DecimalTarget { get; set; }
+
+        public bool IsChecked { get; set; }
 
         public bool HasMissingChapter => !string.IsNullOrWhiteSpace(MissingChapterLabel);
 
