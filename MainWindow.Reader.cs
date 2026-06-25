@@ -664,6 +664,8 @@ namespace get_link_manga
             menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Chọn tất cả" : "Check all", ReaderWatchMenuCheckAll_Click));
             menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Bỏ chọn tất cả" : "Uncheck all", ReaderWatchMenuUncheckAll_Click));
             menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Copy nhãn" : "Copy labels", ReaderWatchMenuCopySelected_Click));
+            menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Xóa" : "Delete", ReaderWatchMenuDeleteSelected_Click));
+            menu.Items.Add(CreateReaderWatchMenuItem(_isVietnameseUi ? "Xóa tất cả" : "Delete all", ReaderWatchMenuDeleteAll_Click));
             return menu;
         }
 
@@ -820,6 +822,69 @@ namespace get_link_manga
             CopyReaderWatchSelection(listBox);
         }
 
+        private async void ReaderWatchMenuDeleteSelected_Click(object sender, RoutedEventArgs e)
+        {
+            await DeleteReaderWatchItemsAsync(sender, deleteAll: false);
+        }
+
+        private async void ReaderWatchMenuDeleteAll_Click(object sender, RoutedEventArgs e)
+        {
+            await DeleteReaderWatchItemsAsync(sender, deleteAll: true);
+        }
+
+        private async Task DeleteReaderWatchItemsAsync(object sender, bool deleteAll)
+        {
+            if (!TryGetReaderWatchListBox(sender, out ListBox listBox))
+            {
+                return;
+            }
+
+            List<IReaderWatchCheckable> items = deleteAll
+                ? listBox.Items.Cast<object>().OfType<IReaderWatchCheckable>().ToList()
+                : GetReaderWatchSelectedItems(listBox).ToList();
+
+            List<string> targets = GetReaderWatchDeletionTargets(items);
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            string prompt = deleteAll
+                ? (_isVietnameseUi ? "Xóa toàn bộ mục trong panel này?" : "Delete all items in this panel?")
+                : (_isVietnameseUi ? "Xóa mục đang chọn?" : "Delete selected item(s)?");
+
+            if (!ShowConfirm(prompt))
+            {
+                return;
+            }
+
+            int deletedCount = 0;
+            int skippedCount = 0;
+            foreach (string target in targets.OrderByDescending(path => path.Length))
+            {
+                if (TryDeleteReaderWatchPath(target))
+                {
+                    deletedCount++;
+                }
+                else
+                {
+                    skippedCount++;
+                }
+            }
+
+            UpdateReaderStatus(_isVietnameseUi
+                ? $"Đã xóa {deletedCount} mục."
+                : $"Deleted {deletedCount} item(s).");
+
+            // ponytail: refresh whole manga tree after delete; simple, safe, enough for current library size.
+            await RefreshReaderLibraryAsync(forceRefresh: true);
+
+            if (skippedCount > 0)
+            {
+                Log($"[Reader] Skipped {skippedCount} delete target(s).");
+            }
+        }
+
         private void ApplyReaderWatchMenuAction(object sender, Action<IReaderWatchCheckable> action)
         {
             if (!TryGetReaderWatchListBox(sender, out ListBox listBox))
@@ -841,6 +906,105 @@ namespace get_link_manga
             }
 
             SetReaderWatchAllItemsChecked(listBox, value);
+        }
+
+        private List<string> GetReaderWatchDeletionTargets(IEnumerable<IReaderWatchCheckable> items)
+        {
+            var targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (items == null)
+            {
+                return targets.ToList();
+            }
+
+            foreach (IReaderWatchCheckable item in items)
+            {
+                string target = GetReaderWatchDeletionTarget(item);
+                if (!string.IsNullOrWhiteSpace(target))
+                {
+                    targets.Add(target);
+                }
+            }
+
+            return targets.ToList();
+        }
+
+        private static string GetReaderWatchDeletionTarget(IReaderWatchCheckable item)
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            if (item is ReaderPageItem page)
+            {
+                return page.FilePath;
+            }
+
+            if (item is ReaderMarkdownItem file)
+            {
+                return file.FilePath;
+            }
+
+            if (item is ReaderChapterItem chapter)
+            {
+                return chapter.FolderPath;
+            }
+
+            if (item is ReaderMangaItem manga)
+            {
+                return manga.FolderPath;
+            }
+
+            if (item is ReaderDomainItem domain)
+            {
+                return domain.FolderPath;
+            }
+
+            if (item is ReaderNovelChapterItem novelChapter)
+            {
+                return novelChapter.FolderPath;
+            }
+
+            if (item is ReaderNovelBookItem novelBook)
+            {
+                return novelBook.FolderPath;
+            }
+
+            if (item is ReaderNovelDomainItem novelDomain)
+            {
+                return novelDomain.FolderPath;
+            }
+
+            return null;
+        }
+
+        private bool TryDeleteReaderWatchPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                    return true;
+                }
+
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, true);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[Reader] Delete skip '{path}': {ex.Message}");
+            }
+
+            return false;
         }
 
         private bool TryGetReaderWatchListBox(object sender, out ListBox listBox)
