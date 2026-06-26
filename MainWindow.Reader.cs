@@ -3250,7 +3250,7 @@ namespace get_link_manga
 
         private IEnumerable<string> EnumerateReaderProcessMarkdownFiles(string root)
         {
-            string tempProcessRoot = Path.Combine(root, ".tmp", ".process");
+            string tempProcessRoot = Path.Combine(PortablePaths.PortableTempRoot, ".process");
             foreach (string path in SafeGetFiles(tempProcessRoot, "*.md", SearchOption.AllDirectories))
             {
                 yield return path;
@@ -6218,7 +6218,7 @@ private bool HandleReaderHotkeys(KeyEventArgs e)
         {
             if (!_webViewReady) return;
 
-            string tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".tmp");
+            string tempDir = PortablePaths.PortableTempRoot;
             string tempFile = Path.Combine(tempDir, "reader.html");
             if (File.Exists(tempFile))
             {

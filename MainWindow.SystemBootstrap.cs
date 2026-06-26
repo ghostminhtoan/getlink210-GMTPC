@@ -129,6 +129,7 @@ namespace get_link_manga
                 _lightNovelFloatingControlWindow?.Close();
                 StopGlobalAutoPasteClipboard();
                 SaveActiveGalleryListSnapshot();
+                CleanupActiveTempFolders();
 
                 if (_hwndSource != null)
                 {

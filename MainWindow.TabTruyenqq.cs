@@ -1305,9 +1305,16 @@ namespace get_link_manga
                                 {
                                     if (queueItem != null)
                                     {
-                                        string pageName = Path.GetFileNameWithoutExtension(pageFilenames[index]);
-                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl, item.Link, pageName);
-                                        RecordCheckError("truyenqq", queueItem.Name ?? cleanManga, cleanChapter, index + 1, ex.Message, imgUrl, pageName);
+                                        int pageNumber = index + 1;
+                                        string pageName = pageNumber.ToString(CultureInfo.InvariantCulture);
+                                        if (TryGetTruyenqqImagePageNumber(imgUrl, out int actualPageNumber))
+                                        {
+                                            pageNumber = actualPageNumber;
+                                            pageName = actualPageNumber.ToString(CultureInfo.InvariantCulture);
+                                        }
+
+                                        queueItem.AddError(cleanChapter, pageNumber, ex.Message, imgUrl, item.Link, pageName);
+                                        RecordCheckError("truyenqq", queueItem.Name ?? cleanManga, cleanChapter, pageNumber, ex.Message, imgUrl, pageName);
                                     }
                                     Log($"[truyenqq] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");
                                 }
@@ -1351,10 +1358,7 @@ namespace get_link_manga
             }
 
             // Check for missing files
-            var pageImageUrls = imageUrls
-                .Select((url, index) => new { Page = index + 1, Url = url })
-                .ToDictionary(x => x.Page, x => x.Url);
-            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageImageUrls, chapterUrl: item.Link);
+            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, chapterUrl: item.Link);
         }
 
         private List<string> ExtractTruyenqqImageUrls(string contentArea, string pageUrl)
@@ -1556,6 +1560,35 @@ namespace get_link_manga
                 return num;
             }
             return 0.0;
+        }
+
+        private static bool TryGetTruyenqqImagePageNumber(string imageUrl, out int pageNumber)
+        {
+            pageNumber = 0;
+            if (string.IsNullOrWhiteSpace(imageUrl))
+            {
+                return false;
+            }
+
+            string fileName = imageUrl;
+            try
+            {
+                if (Uri.TryCreate(imageUrl, UriKind.Absolute, out Uri uri))
+                {
+                    fileName = Path.GetFileNameWithoutExtension(uri.AbsolutePath);
+                }
+                else
+                {
+                    fileName = Path.GetFileNameWithoutExtension(imageUrl.Split('?')[0]);
+                }
+            }
+            catch
+            {
+                fileName = Path.GetFileNameWithoutExtension(imageUrl.Split('?')[0]);
+            }
+
+            var match = Regex.Match(fileName ?? string.Empty, @"(?<num>\d+)(?!.*\d)");
+            return match.Success && int.TryParse(match.Groups["num"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out pageNumber);
         }
 
         private static void ParseMangaNameAndLatestChap(string rawTitle, out string mangaName, out string latestChap)

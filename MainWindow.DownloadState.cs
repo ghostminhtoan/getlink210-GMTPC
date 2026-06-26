@@ -11,8 +11,7 @@ namespace get_link_manga
 
         internal void RegisterTempFolder(string path)
         {
-            if (!string.IsNullOrEmpty(path) &&
-                path.IndexOf(@"\.tmp\", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (!string.IsNullOrEmpty(path))
             {
                 _activeTempFolders.TryAdd(path, 0);
             }
@@ -20,8 +19,7 @@ namespace get_link_manga
 
         internal void UnregisterTempFolder(string path)
         {
-            if (!string.IsNullOrEmpty(path) &&
-                path.IndexOf(@"\.tmp\", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (!string.IsNullOrEmpty(path))
             {
                 _activeTempFolders.TryRemove(path, out _);
             }
@@ -33,17 +31,15 @@ namespace get_link_manga
             {
                 try
                 {
-                    if (!string.IsNullOrWhiteSpace(path) &&
-                        path.IndexOf(@"\.tmp\", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                        System.IO.Directory.Exists(path))
+                    if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
                     {
-                        System.IO.Directory.Delete(path, true);
-                        Log($"[Cleanup] Đã xóa thư mục tạm tải dở: {path}");
+                        HandleDownloadStopOrInterruption(path);
+                        Log($"[Cleanup] Đã di chuyển thư mục dở dang về .tmp: {path}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log($"[Cleanup Warning] Không thể xóa thư mục tạm '{path}': {ex.Message}");
+                    Log($"[Cleanup Warning] Không thể xử lý thư mục tạm '{path}': {ex.Message}");
                 }
                 finally
                 {

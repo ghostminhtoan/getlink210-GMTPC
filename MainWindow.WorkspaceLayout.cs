@@ -272,7 +272,7 @@ namespace get_link_manga
 
         private void BtnClearTempFloating_Click(object sender, RoutedEventArgs e)
         {
-            ClearTempRootFolder(Path.Combine(PortablePaths.AppRoot, ".tmp"));
+            ClearTempRootFolder(PortablePaths.PortableTempRoot);
 
             string downloadRoot = txtDownloadPath?.Text?.Trim() ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(downloadRoot))
@@ -469,7 +469,7 @@ namespace get_link_manga
 
             _showFloatRailButton = new Button
             {
-                Width = 110,
+                Width = 116,
                 MinHeight = 32,
                 Margin = new Thickness(0, 8, 0, 8),
                 Style = TryFindResource("SidebarMenuButton") as Style
@@ -484,11 +484,11 @@ namespace get_link_manga
             navStack.Children.Add(_navigationButtonHost);
             navStack.Children.Add(_sidebarToolsHost);
 
-            AddNavigationButton(AppSection.ChooseSource, "Source");
-            AddNavigationButton(AppSection.Download, "Download");
-            AddNavigationButton(AppSection.Watch, "Watch");
-            AddNavigationButton(AppSection.About, "About");
-            AddNavigationButton(AppSection.Update, "Update");
+            AddNavigationButton(AppSection.ChooseSource, "Source", "Ctrl+Shift+S");
+            AddNavigationButton(AppSection.Download, "Download", "Ctrl+Shift+D");
+            AddNavigationButton(AppSection.Watch, "Watch", "Ctrl+Shift+W");
+            AddNavigationButton(AppSection.About, "About", "Ctrl+Shift+A");
+            AddNavigationButton(AppSection.Update, "Update", "Ctrl+Shift+U");
 
             BuildSidebarToolSections();
 
@@ -498,29 +498,52 @@ namespace get_link_manga
             gridMainContent.Children.Add(_navigationRailBorder);
         }
 
-        private void AddNavigationButton(AppSection section, string text)
+        private void AddNavigationButton(AppSection section, string text, string shortcut)
         {
             var button = new Button
             {
-                Width = 110,
-                MinHeight = 52,
+                Width = 116,
+                MinHeight = 58,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Style = TryFindResource("SidebarMenuButton") as Style
             };
 
-            button.Content = new TextBlock
-            {
-                Text = text,
-                TextWrapping = TextWrapping.Wrap,
-                TextAlignment = TextAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                FontSize = 9.8
-            };
+            button.Content = CreateNavigationButtonContent(text, shortcut);
 
             button.Click += (sender, args) => SelectAppSection(section);
             _navigationButtons[section] = button;
             _navigationButtonHost.Children.Add(button);
+        }
+
+        private static UIElement CreateNavigationButtonContent(string text, string shortcut)
+        {
+            return new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = text,
+                        TextWrapping = TextWrapping.NoWrap,
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        FontSize = 10.2,
+                        FontWeight = FontWeights.SemiBold
+                    },
+                    new TextBlock
+                    {
+                        Text = shortcut,
+                        TextWrapping = TextWrapping.NoWrap,
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Foreground = new SolidColorBrush(Color.FromRgb(0x8F, 0x9E, 0xB2)),
+                        FontSize = 9.2,
+                        Margin = new Thickness(0, 2, 0, 0)
+                    }
+                }
+            };
         }
 
         private void BuildSidebarToolSections()
@@ -1188,11 +1211,11 @@ namespace get_link_manga
 
             if (_navigationButtons.Count > 0)
             {
-                _navigationButtons[AppSection.ChooseSource].Content = "Source";
-                _navigationButtons[AppSection.Download].Content = _isVietnameseUi ? "Tải về" : "Download";
-                _navigationButtons[AppSection.Watch].Content = _isVietnameseUi ? "Xem truyện" : "Watch";
-                _navigationButtons[AppSection.About].Content = _isVietnameseUi ? "Giới thiệu" : "About";
-                _navigationButtons[AppSection.Update].Content = _isVietnameseUi ? "Cập nhật" : "Update";
+                _navigationButtons[AppSection.ChooseSource].Content = CreateNavigationButtonContent("Source", "Ctrl+Shift+S");
+                _navigationButtons[AppSection.Download].Content = CreateNavigationButtonContent(_isVietnameseUi ? "Tải về" : "Download", "Ctrl+Shift+D");
+                _navigationButtons[AppSection.Watch].Content = CreateNavigationButtonContent(_isVietnameseUi ? "Xem truyện" : "Watch", "Ctrl+Shift+W");
+                _navigationButtons[AppSection.About].Content = CreateNavigationButtonContent(_isVietnameseUi ? "Giới thiệu" : "About", "Ctrl+Shift+A");
+                _navigationButtons[AppSection.Update].Content = CreateNavigationButtonContent(_isVietnameseUi ? "Cập nhật" : "Update", "Ctrl+Shift+U");
             }
 
             if (_showFloatRailButton != null)
@@ -1200,16 +1223,7 @@ namespace get_link_manga
                 _showFloatRailButton.Background = new SolidColorBrush(Color.FromRgb(0x3A, 0x1A, 0x00));
                 _showFloatRailButton.BorderBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xA6, 0x00));
                 _showFloatRailButton.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD4, 0x6A));
-                _showFloatRailButton.Content = new TextBlock
-                {
-                    Text = _isVietnameseUi ? "Float button" : "Float button",
-                    TextWrapping = TextWrapping.Wrap,
-                    TextAlignment = TextAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    FontSize = 10.2,
-                    FontWeight = FontWeights.Bold
-                };
+                _showFloatRailButton.Content = CreateNavigationButtonContent("Float button", "Ctrl+Shift+F");
             }
 
 

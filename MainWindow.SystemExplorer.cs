@@ -55,7 +55,7 @@ namespace get_link_manga
         private void BtnClearTemp_Click(object sender, RoutedEventArgs e)
         {
             string downloadRoot = txtDownloadPath?.Text?.Trim() ?? string.Empty;
-            ClearTempRootFolder(Path.Combine(PortablePaths.AppRoot, ".tmp"));
+            ClearTempRootFolder(PortablePaths.PortableTempRoot);
             if (string.IsNullOrWhiteSpace(downloadRoot))
             {
                 ShowLocalizedMessageBox(

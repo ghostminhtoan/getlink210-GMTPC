@@ -158,7 +158,7 @@ namespace get_link_manga
                 safeBookKey = safeBookKey.Substring(0, 120).Trim();
             }
 
-            return Path.Combine(rootFolder, ".tmp", ".manifest", safeSite, safeBookKey + ".json");
+            return Path.Combine(PortablePaths.PortableTempRoot, ".manifest", safeSite, safeBookKey + ".json");
         }
 
         private DownloadManifest LoadOrCreateManifest(string rootFolder, string siteFolder, GalleryItem item, int expectedPageCount, SiteDownloadProfile profile)

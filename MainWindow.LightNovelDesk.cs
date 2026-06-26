@@ -1290,6 +1290,34 @@ namespace get_link_manga
             lblStatus.Text = "Đã mở float auto copy text.";
         }
 
+        private void ToggleLightNovelFloatingControlWindow()
+        {
+            EnsureLightNovelFloatingControlWindow();
+            if (_lightNovelFloatingControlWindow == null)
+            {
+                return;
+            }
+
+            if (_lightNovelFloatingControlWindow.IsVisible)
+            {
+                _lightNovelFloatingControlWindow.PrepareForTrayHide();
+                _lightNovelFloatingControlWindow.Hide();
+                lblStatus.Text = "Đã tắt float auto copy text.";
+            }
+            else
+            {
+                if (_lightNovelFloatingControlWindow.WindowState == WindowState.Minimized)
+                {
+                    _lightNovelFloatingControlWindow.WindowState = WindowState.Normal;
+                }
+
+                _lightNovelFloatingControlWindow.ShowWithoutActivationSafe();
+                lblStatus.Text = "Đã mở float auto copy text.";
+            }
+
+            UpdateLightNovelFloatingControlState();
+        }
+
         private async System.Threading.Tasks.Task StartLightNovelAutoCopyAsync()
         {
             if (_lightNovelCopyCts != null)

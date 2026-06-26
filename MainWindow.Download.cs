@@ -71,13 +71,51 @@ namespace get_link_manga
 
         internal string BuildStableTempFolderPath(string rootFolder, string siteFolder, params string[] identityParts)
         {
-            string prefixSource = identityParts != null && identityParts.Length > 0 ? identityParts[0] : "item";
-            string prefix = GetSafePathName(prefixSource);
-            if (string.IsNullOrWhiteSpace(prefix))
-                prefix = "item";
+            string finalTargetFolder;
+            
+            bool isChapterSite = siteFolder == "truyenqq" ||
+                                 siteFolder == "vi-hentai.pro" ||
+                                 siteFolder == "nettruyen" ||
+                                 siteFolder == "sayhentai.tv" ||
+                                 siteFolder == "truyenggvn.com" ||
+                                 (siteFolder != null && (
+                                     siteFolder.IndexOf("truyenqq", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     siteFolder.IndexOf("vi-hentai", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     siteFolder.IndexOf("nettruyen", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     siteFolder.IndexOf("hentai2read", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     siteFolder.IndexOf("dilib", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     siteFolder.IndexOf("daomeoden", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     siteFolder.IndexOf("ggvn", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     siteFolder.IndexOf("sayhentai", StringComparison.OrdinalIgnoreCase) >= 0
+                                 ));
 
-            string effectiveRoot = GetEffectiveDownloadRoot(rootFolder);
-            return Path.Combine(effectiveRoot, ".tmp", $"{prefix}-tmp");
+            if (isChapterSite && identityParts != null && identityParts.Length >= 2)
+            {
+                string safeManga = identityParts[0];
+                string safeChapter = identityParts[1];
+                string unmergedPath = Path.Combine(rootFolder, $"{safeManga}-{safeChapter}");
+                string mergedPath = Path.Combine(rootFolder, safeManga, safeChapter);
+                finalTargetFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            }
+            else if (siteFolder == HakoSiteFolder && identityParts != null && identityParts.Length > 0)
+            {
+                finalTargetFolder = Path.Combine(rootFolder, identityParts[0]);
+            }
+            else
+            {
+                string prefixSource = identityParts != null && identityParts.Length > 0 ? identityParts[0] : "item";
+                string prefix = GetSafePathName(prefixSource);
+                if (string.IsNullOrWhiteSpace(prefix))
+                    prefix = "item";
+                finalTargetFolder = Path.Combine(rootFolder, prefix);
+            }
+
+            finalTargetFolder = ConvertToLongPath(finalTargetFolder);
+
+            // Attempt to resume from .tmp if any partial folder exists
+            HandleDownloadResume(finalTargetFolder);
+
+            return finalTargetFolder;
         }
 
         internal string BuildStableChapterTempFolderPath(string rootFolder, string siteFolder, params string[] identityParts)
@@ -561,6 +599,10 @@ namespace get_link_manga
         {
             try
             {
+                if (string.Equals(tempFolder, targetFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
                 if (!Directory.Exists(tempFolder))
                 {
                     return;
@@ -575,6 +617,11 @@ namespace get_link_manga
                 if (Directory.Exists(targetFolder))
                 {
                     MergeDirectoryContents(tempFolder, targetFolder);
+                    try
+                    {
+                        Directory.Delete(tempFolder, true);
+                    }
+                    catch {}
                 }
                 else
                 {
@@ -588,6 +635,109 @@ namespace get_link_manga
             finally
             {
                 UnregisterTempFolder(tempFolder);
+            }
+        }
+
+        internal string GetChapterTempFolder(string finalTargetFolder)
+        {
+            if (string.IsNullOrWhiteSpace(finalTargetFolder)) return null;
+            
+            string normalized = Path.GetFullPath(finalTargetFolder).Replace('/', '\\');
+            string[] parts = normalized.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            string nameSegment = "";
+            if (parts.Length >= 3)
+            {
+                nameSegment = $"{parts[parts.Length - 3]}_{parts[parts.Length - 2]}_{parts[parts.Length - 1]}";
+            }
+            else if (parts.Length >= 2)
+            {
+                nameSegment = $"{parts[parts.Length - 2]}_{parts[parts.Length - 1]}";
+            }
+            else
+            {
+                nameSegment = parts[parts.Length - 1];
+            }
+            
+            nameSegment = GetSafePathName(nameSegment);
+            return Path.Combine(PortablePaths.PortableTempRoot, $"{nameSegment}-tmp");
+        }
+
+        internal void HandleDownloadResume(string finalTargetFolder)
+        {
+            try
+            {
+                string tempFolder = GetChapterTempFolder(finalTargetFolder);
+                if (string.IsNullOrWhiteSpace(tempFolder) || !Directory.Exists(tempFolder))
+                {
+                    return;
+                }
+
+                Log($"[Resume] Khôi phục thư mục tạm từ .tmp về: {finalTargetFolder}");
+                if (!Directory.Exists(finalTargetFolder))
+                {
+                    string parent = Path.GetDirectoryName(finalTargetFolder);
+                    if (!string.IsNullOrWhiteSpace(parent))
+                    {
+                        Directory.CreateDirectory(parent);
+                    }
+                    Directory.Move(tempFolder, finalTargetFolder);
+                }
+                else
+                {
+                    MergeDirectoryContents(tempFolder, finalTargetFolder);
+                    try
+                    {
+                        Directory.Delete(tempFolder, true);
+                    }
+                    catch {}
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[Warning] Không thể khôi phục thư mục tạm: {ex.Message}");
+            }
+        }
+
+        internal void HandleDownloadStopOrInterruption(string finalTargetFolder)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(finalTargetFolder) || !Directory.Exists(finalTargetFolder))
+                {
+                    return;
+                }
+
+                string tempFolder = GetChapterTempFolder(finalTargetFolder);
+                if (string.IsNullOrWhiteSpace(tempFolder))
+                {
+                    return;
+                }
+
+                Log($"[Stop/Pause] Di chuyển thư mục dở dang về .tmp: {tempFolder}");
+                string parent = Path.GetDirectoryName(tempFolder);
+                if (!string.IsNullOrWhiteSpace(parent))
+                {
+                    Directory.CreateDirectory(parent);
+                }
+
+                if (Directory.Exists(tempFolder))
+                {
+                    MergeDirectoryContents(finalTargetFolder, tempFolder);
+                    try
+                    {
+                        Directory.Delete(finalTargetFolder, true);
+                    }
+                    catch {}
+                }
+                else
+                {
+                    Directory.Move(finalTargetFolder, tempFolder);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[Warning] Không thể di chuyển thư mục dở dang về .tmp: {ex.Message}");
             }
         }
 

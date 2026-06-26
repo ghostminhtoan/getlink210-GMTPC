@@ -27,6 +27,8 @@ namespace get_link_manga
 
         internal static string DefaultDownloadRoot => Path.Combine(AppRoot, "root");
 
+        internal static string PortableTempRoot => Path.Combine(AppRoot, ".tmp");
+
         internal static string PortableGalleryListPath => Path.Combine(AppRoot, "save gallery.md");
 
         internal static string SevenZipRoot => Path.Combine(PortableDataRoot, "7-Zip");

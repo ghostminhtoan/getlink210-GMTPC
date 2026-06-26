@@ -139,12 +139,16 @@ namespace get_link_manga
                 }
             }
 
-            if ((Keyboard.Modifiers & ModifierKeys.Control) != ModifierKeys.Control)
+            ModifierKeys modifiers = Keyboard.Modifiers;
+            bool hasControl = (modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            bool hasShift = (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+
+            if (!hasControl)
             {
                 return;
             }
 
-            if (e.Key == Key.V)
+            if (!hasShift && e.Key == Key.V)
             {
                 if (!isTextInputFocused && (_currentSection == AppSection.Download || _currentSection == AppSection.ChooseSource))
                 {
@@ -167,37 +171,34 @@ namespace get_link_manga
                 }
             }
 
+            if (!hasShift)
+            {
+                return;
+            }
+
             switch (e.Key)
             {
-                case Key.D1:
-                case Key.NumPad1:
-                    EnsureLightNovelFloatingControlWindow();
-                    _lightNovelFloatingControlWindow?.ShowWithoutActivationSafe();
-                    UpdateLightNovelFloatingControlState();
+                case Key.F:
+                    ToggleLightNovelFloatingControlWindow();
                     e.Handled = true;
                     return;
-                case Key.D2:
-                case Key.NumPad2:
+                case Key.S:
                     SelectAppSection(AppSection.ChooseSource);
                     e.Handled = true;
                     return;
-                case Key.D3:
-                case Key.NumPad3:
+                case Key.D:
                     SelectAppSection(AppSection.Download);
                     e.Handled = true;
                     return;
-                case Key.D4:
-                case Key.NumPad4:
+                case Key.W:
                     SelectAppSection(AppSection.Watch);
                     e.Handled = true;
                     return;
-                case Key.D5:
-                case Key.NumPad5:
+                case Key.A:
                     SelectAppSection(AppSection.About);
                     e.Handled = true;
                     return;
-                case Key.D6:
-                case Key.NumPad6:
+                case Key.U:
                     SelectAppSection(AppSection.Update);
                     e.Handled = true;
                     return;
