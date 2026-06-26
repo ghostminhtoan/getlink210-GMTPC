@@ -1172,8 +1172,11 @@ namespace get_link_manga
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, "truyenqq");
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
-            Directory.CreateDirectory(tempFolder);            // Isolate images using Safe Chapter HTML (no comments section)
+            string finalTargetFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            string tempFolder = BuildStableTempFolderPath(siteRootFolder, "truyenqq", safeManga, safeChapter, item.Link);
+            Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
+            // Isolate images using Safe Chapter HTML (no comments section)
             string safeHtml = GetSafeChapterHtml(html);
 
             // Isolate reading container contents to avoid ads/logo/header images
@@ -1336,10 +1339,7 @@ namespace get_link_manga
                 {
                     WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
                 }
-                if (_isSingleComicFolderType)
-                {
-                    await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
-                }
+                MoveTempFolderToTarget(tempFolder, finalTargetFolder, "truyenqq");
                 UpsertMainLogLine(progressKey, $"[truyenqq] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
             }
             catch (Exception ex)
@@ -1351,7 +1351,6 @@ namespace get_link_manga
             }
 
             // Check for missing files
-            string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
             var pageImageUrls = imageUrls
                 .Select((url, index) => new { Page = index + 1, Url = url })
                 .ToDictionary(x => x.Page, x => x.Url);

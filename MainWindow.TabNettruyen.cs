@@ -1234,8 +1234,11 @@ namespace get_link_manga
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, "nettruyen");
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
-            Directory.CreateDirectory(tempFolder);            // Isolate images inside reading area
+            string finalTargetFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            string tempFolder = BuildStableTempFolderPath(siteRootFolder, "nettruyen", safeManga, safeChapter, item.Link);
+            Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
+            // Isolate images inside reading area
             string safeHtml = GetSafeChapterHtml(html);
             int startIndex = -1;
             string[] containerMarkers = new[]
@@ -1455,27 +1458,11 @@ namespace get_link_manga
             if (Directory.Exists(tempFolder))
             {
                 WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (_isSingleComicFolderType)
-                        {
-                            await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
-                        }
-                        UpsertMainLogLine(progressKey, $"[nettruyen] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"[nettruyen] [Lỗi] Không thể di chuyển thư mục tạm: {ex.Message}");
-                    }
-                    finally
-                    {
-                    }
-                });
+                MoveTempFolderToTarget(tempFolder, finalTargetFolder, "nettruyen");
+                UpsertMainLogLine(progressKey, $"[nettruyen] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
             }
 
-            return true;
+            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, pageImageUrls: null, chapterUrl: item.Link);
         }
     }
 }

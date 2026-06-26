@@ -206,26 +206,7 @@ namespace get_link_manga
                 return;
             }
 
-            var items = new List<ReaderMangaItem>();
-            string root = GetCurrentReaderLibraryRoot();
-            DirectoryInfo parent = !string.IsNullOrWhiteSpace(root) && Directory.Exists(root) ? Directory.GetParent(root) : null;
-            if (parent != null)
-            {
-                items.Add(new ReaderMangaItem
-                {
-                    Name = "..",
-                    FolderPath = parent.FullName,
-                    NavigationTargetFolderPath = parent.FullName,
-                    IsNavigationItem = true
-                });
-            }
-
-            if (books != null)
-            {
-                items.AddRange(books);
-            }
-
-            _readerMangaList.ItemsSource = items;
+            _readerMangaList.ItemsSource = books;
         }
 
         private void SyncReaderBookListSelection(ReaderMangaItem book)
@@ -399,26 +380,7 @@ namespace get_link_manga
                 return;
             }
 
-            var items = new List<ReaderNovelBookItem>();
-            string root = GetCurrentReaderNovelLibraryRoot();
-            DirectoryInfo parent = !string.IsNullOrWhiteSpace(root) && Directory.Exists(root) ? Directory.GetParent(root) : null;
-            if (parent != null)
-            {
-                items.Add(new ReaderNovelBookItem
-                {
-                    Name = "..",
-                    FolderPath = parent.FullName,
-                    NavigationTargetFolderPath = parent.FullName,
-                    IsNavigationItem = true
-                });
-            }
-
-            if (books != null)
-            {
-                items.AddRange(books);
-            }
-
-            _readerNovelBookList.ItemsSource = items;
+            _readerNovelBookList.ItemsSource = books;
         }
 
         private void SyncReaderNovelBookListSelection(ReaderNovelBookItem book)

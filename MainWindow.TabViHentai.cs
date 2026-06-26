@@ -990,8 +990,10 @@ namespace get_link_manga
 
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            string finalTargetFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            string tempFolder = BuildStableTempFolderPath(siteRootFolder, "vi-hentai.pro", safeManga, safeChapter, item.Link);
             Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
             var matchEval = Regex.Match(html, @"eval\s*\(\s*function\s*\(\s*h\s*,\s*u\s*,\s*n\s*,\s*t\s*,\s*e\s*,\s*r\s*\)", RegexOptions.IgnoreCase);
             if (!matchEval.Success)
             {
@@ -1149,9 +1151,9 @@ namespace get_link_manga
                     {
                         WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
                     }
+                    MoveTempFolderToTarget(tempFolder, finalTargetFolder, "vi-hentai");
                     if (_isSingleComicFolderType)
                     {
-                        await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
                         await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
                     }
                     UpsertMainLogLine(progressKey, $"[vi-hentai.pro] Đã tải xong {mangaTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
@@ -1165,7 +1167,6 @@ namespace get_link_manga
                 }
 
                 // Check for missing files
-                string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
                 return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, chapterTitle, chapterUrl: item.Link);
             }
         }

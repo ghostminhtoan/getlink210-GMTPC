@@ -965,8 +965,10 @@ namespace get_link_manga
 
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeBook}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeBook, safeChapter);
-            string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            string finalTargetFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            string tempFolder = BuildStableTempFolderPath(siteRootFolder, Hentai2readSiteFolder, safeBook, safeChapter, chapterUrl);
             Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
 
             string progressKey = $"hentai2read.com|{safeBook}";
             int totalChaptersForLog = queueItem != null ? Math.Max(1, queueItem.TotalChapters) : 1;
@@ -1074,14 +1076,13 @@ namespace get_link_manga
                     WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{chapterTitle} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
                 }
 
+                MoveTempFolderToTarget(tempFolder, finalTargetFolder, "hentai2read");
                 if (_isSingleComicFolderType)
                 {
-                    await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
                     await NormalizeChapterFolderAliasAsync(siteRootFolder, safeBook, aliasSafeBook, safeChapter, token);
                 }
                 UpsertMainLogLine(progressKey, $"[hentai2read.com] Đã tải xong {bookTitle} - {chapterTitle} ({currentChapterForLog}/{totalChaptersForLog})");
 
-                string finalTargetFolder = Directory.Exists(mergedPath) ? mergedPath : unmergedPath;
                 return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem ?? item, chapterTitle, chapterUrl: item.Link);
             }
         }

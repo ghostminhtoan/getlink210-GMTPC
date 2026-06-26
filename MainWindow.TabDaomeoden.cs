@@ -728,9 +728,10 @@ namespace get_link_manga
             string safeChapter = GetSafeChapterPathName(info.BookTitle, info.ChapterTitle);
             string siteRootFolder = GetSiteDownloadRoot(rootFolder, DaomeodenSiteFolder);
             string targetFolder = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = targetFolder;
+            string tempFolder = BuildStableTempFolderPath(siteRootFolder, DaomeodenSiteFolder, safeManga, safeChapter, item.Link);
 
             Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
 
             try
             {
@@ -846,6 +847,7 @@ namespace get_link_manga
                 var pageMap = imageUrls
                     .Select((url, index) => new { url, index })
                     .ToDictionary(x => x.index + 1, x => x.url);
+                MoveTempFolderToTarget(tempFolder, targetFolder, "daomeoden");
                 return ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem ?? item, info.ChapterTitle, pageMap, chapterUrl: item.Link);
             }
             finally

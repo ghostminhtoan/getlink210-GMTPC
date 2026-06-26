@@ -1137,8 +1137,10 @@ namespace get_link_manga
 
             string unmergedPath = Path.Combine(siteRootFolder, $"{safeManga}-{safeChapter}");
             string mergedPath = Path.Combine(siteRootFolder, safeManga, safeChapter);
-            string tempFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            string finalTargetFolder = _isSingleComicFolderType ? mergedPath : unmergedPath;
+            string tempFolder = BuildStableTempFolderPath(siteRootFolder, TruyenggvnSiteFolder, safeManga, safeChapter, normalizedLink);
             Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
             WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {cleanChapter}");
 
             int maxThreads = GetBookConnectionLimit(queueItem ?? item);
@@ -1251,24 +1253,15 @@ namespace get_link_manga
             if (Directory.Exists(tempFolder))
             {
                 WriteTempProgressLog(tempFolder, item, "Done", imageUrls.Count, imageUrls.Count, isParentQueue ? $"{cleanChapter} (trang {imageUrls.Count}/{imageUrls.Count})" : $"Trang {imageUrls.Count}/{imageUrls.Count}", "Download completed");
-                _ = Task.Run(async () =>
+                MoveTempFolderToTarget(tempFolder, finalTargetFolder, "sayhentai");
+                if (_isSingleComicFolderType)
                 {
-                    try
-                    {
-                        if (_isSingleComicFolderType)
-                        {
-                            await AutoMergeChapterFolderAsync(unmergedPath, mergedPath, token);
-                            await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
-                        }
-                        UpsertMainLogLine(progressKey, $"[sayhentai] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
-                    }
-                    finally
-                    {
-                    }
-                });
+                    await NormalizeChapterFolderAliasAsync(siteRootFolder, safeManga, aliasSafeManga, safeChapter, token);
+                }
+                UpsertMainLogLine(progressKey, $"[sayhentai] Đã tải xong {cleanManga} - {cleanChapter} ({currentChapterForLog}/{totalChaptersForLog})");
             }
 
-            return true;
+            return ValidateDownloadedFiles(finalTargetFolder, imageUrls.Count, queueItem, cleanChapter, chapterUrl: normalizedLink);
         }
 
         private void ParseTruyenggvnPageTitle(string pageTitle, string fallbackName, string link, out string mangaTitle, out string chapterTitle)
