@@ -104,12 +104,18 @@ namespace get_link_manga
                 return;
             }
 
+            var focusedElement = FocusManager.GetFocusedElement(this);
+            bool isTextInputFocused =
+                focusedElement is System.Windows.Controls.TextBox ||
+                focusedElement is System.Windows.Controls.Primitives.TextBoxBase ||
+                focusedElement is System.Windows.Controls.PasswordBox ||
+                focusedElement is System.Windows.Controls.ComboBox;
+
             if (e.Key == Key.Enter)
             {
                 if (_currentSection == AppSection.Download || _currentSection == AppSection.ChooseSource)
                 {
-                    var focusedElement = FocusManager.GetFocusedElement(this);
-                    if (focusedElement is System.Windows.Controls.TextBox)
+                    if (isTextInputFocused)
                     {
                         return;
                     }
@@ -140,7 +146,7 @@ namespace get_link_manga
 
             if (e.Key == Key.V)
             {
-                if (_currentSection == AppSection.Download || _currentSection == AppSection.ChooseSource)
+                if (!isTextInputFocused && (_currentSection == AppSection.Download || _currentSection == AppSection.ChooseSource))
                 {
                     try
                     {

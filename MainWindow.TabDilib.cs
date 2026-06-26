@@ -136,11 +136,15 @@ namespace get_link_manga
             {
                 path = path + "/page/" + page;
             }
+            else
+            {
+                path = path + "/";
+            }
 
             return new UriBuilder(uri)
             {
                 Path = path
-            }.Uri.AbsoluteUri.TrimEnd('/');
+            }.Uri.AbsoluteUri;
         }
 
         private string HumanizeDilibSlug(string value)
