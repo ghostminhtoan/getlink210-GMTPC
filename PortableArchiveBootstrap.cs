@@ -1,25 +1,32 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Net;
 
 namespace get_link_manga
 {
     internal static class PortableArchiveBootstrap
     {
-        private const string SevenZipResourcePrefix = "7-Zip/";
         private const string FastStoneResourcePrefix = "FastStone Image Viewer/";
+        private const string SevenZipDownloadUrl = "https://github.com/ghostminhtoan/getlink210-GMTPC/releases/download/accessories/7-Zip.zip";
 
         internal static void EnsurePortableSevenZip()
         {
+            if (File.Exists(PortablePaths.SevenZipExePath))
+            {
+                return;
+            }
+
             try
             {
-                ExtractEmbeddedResourceTree(SevenZipResourcePrefix, PortablePaths.SevenZipRoot);
+                DownloadAndExtractSevenZip();
             }
             catch
             {
-                // Best effort only. Compression features will validate the tool
-                // again when the user clicks the archive buttons.
+                // Best effort only. Compression features will validate the tool again
+                // when the user clicks the archive buttons.
             }
         }
 
@@ -79,6 +86,34 @@ namespace get_link_manga
                     .Replace('/', Path.DirectorySeparatorChar);
                 string destinationPath = Path.Combine(destinationRoot, relativePath);
                 ExtractEmbeddedResource(assembly, resourceName, destinationPath);
+            }
+        }
+
+        private static void DownloadAndExtractSevenZip()
+        {
+            Directory.CreateDirectory(PortablePaths.PortableDataRoot);
+
+            if (Directory.Exists(PortablePaths.SevenZipRoot))
+            {
+                Directory.Delete(PortablePaths.SevenZipRoot, true);
+            }
+
+            string tempZipPath = Path.Combine(Path.GetTempPath(), $"7-Zip-{Guid.NewGuid():N}.zip");
+            try
+            {
+                using (var client = new WebClient())
+                {
+                    client.DownloadFile(SevenZipDownloadUrl, tempZipPath);
+                }
+
+                ZipFile.ExtractToDirectory(tempZipPath, PortablePaths.PortableDataRoot);
+            }
+            finally
+            {
+                if (File.Exists(tempZipPath))
+                {
+                    File.Delete(tempZipPath);
+                }
             }
         }
 

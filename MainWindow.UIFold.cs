@@ -127,7 +127,7 @@ namespace get_link_manga
                             string text = Clipboard.GetText()?.Trim();
                             if (!string.IsNullOrWhiteSpace(text))
                             {
-                                AppendSupportedInputLinks(text);
+                                _ = AppendSupportedInputLinks(text);
                                 e.Handled = true;
                                 return;
                             }
@@ -155,7 +155,7 @@ namespace get_link_manga
                             string text = Clipboard.GetText()?.Trim();
                             if (!string.IsNullOrWhiteSpace(text))
                             {
-                                AppendSupportedInputLinks(text);
+                                _ = AppendSupportedInputLinks(text);
                                 e.Handled = true;
                                 return;
                             }

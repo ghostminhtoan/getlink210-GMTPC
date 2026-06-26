@@ -1577,6 +1577,8 @@ namespace get_link_manga
             if (match.Success)
             {
                 mangaName = match.Groups["manga"].Value.Trim();
+                mangaName = Regex.Replace(mangaName, @"\s*(?:\||-)\s*tới\s*$", "", RegexOptions.IgnoreCase).Trim();
+                mangaName = Regex.Replace(mangaName, @"\s+tới\s*$", "", RegexOptions.IgnoreCase).Trim();
                 latestChap = match.Groups["indicator"].Value.Trim() + " " + match.Groups["val"].Value.Trim();
             }
         }

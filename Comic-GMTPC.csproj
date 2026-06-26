@@ -391,9 +391,6 @@
     <EmbeddedResource Include="runtimes\webview2\win-arm64\native\WebView2Loader.dll">
       <LogicalName>runtimes/webview2/win-arm64/native/WebView2Loader.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="7-Zip\**\*">
-      <LogicalName>7-Zip/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-    </EmbeddedResource>
   </ItemGroup>
   <Target Name="GenerateBuildInfo"
           BeforeTargets="BeforeBuild"
