@@ -18,6 +18,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using ImageMagick;
 
 namespace get_link_manga
 {
@@ -506,7 +507,7 @@ namespace get_link_manga
                 FontWeight = FontWeights.ExtraBold,
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
-                TextAlignment = TextAlignment.Left,
+                TextAlignment = System.Windows.TextAlignment.Left,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(12, 0, 0, 4)
             };
@@ -4139,7 +4140,7 @@ namespace get_link_manga
                 {
                     Text = message,
                     Foreground = (Brush)TryFindResource("CyberpunkTextBrush"),
-                    TextAlignment = TextAlignment.Center,
+                    TextAlignment = System.Windows.TextAlignment.Center,
                     TextWrapping = TextWrapping.Wrap,
                     MaxWidth = 460
                 }
@@ -5394,11 +5395,17 @@ namespace get_link_manga
 
             try
             {
-                int targetHeight = ResolveReaderPdfTargetHeight(sourceFolder);
-                UpdateReaderStatus((_isVietnameseUi ? "Đang tải KCC c2p type " : "Downloading KCC c2p type ") + type + "...");
-                await EnsureKccC2pReadyAsync();
-                StartKccC2p(sourceFolder, targetHeight);
-                UpdateReaderStatus((_isVietnameseUi ? "Đã chạy convert PDF type " : "Started PDF convert type ") + type + ": " + sourceFolder);
+                string outputPdfPath = BuildReaderPdfOutputPath(sourceFolder, type);
+                List<string> imageFiles = await Task.Run(() => CollectReaderPdfImageFiles(sourceFolder));
+                if (imageFiles.Count == 0)
+                {
+                    UpdateReaderStatus(_isVietnameseUi ? "Folder này không có ảnh để convert PDF." : "This folder has no images to convert.");
+                    return;
+                }
+
+                UpdateReaderStatus((_isVietnameseUi ? "Đang convert PDF type " : "Converting PDF type ") + type + "...");
+                await Task.Run(() => WriteReaderPdf(outputPdfPath, imageFiles));
+                UpdateReaderStatus((_isVietnameseUi ? "Đã xuất PDF: " : "PDF exported: ") + outputPdfPath);
             }
             catch (Exception ex)
             {
@@ -5457,73 +5464,79 @@ namespace get_link_manga
             return parent != null ? parent.FullName : null;
         }
 
-        private static int ResolveReaderPdfTargetHeight(string sourceFolder)
+        private string BuildReaderPdfOutputPath(string sourceFolder, int type)
         {
-            if (string.IsNullOrWhiteSpace(sourceFolder) || !Directory.Exists(sourceFolder))
+            string folderName = Path.GetFileName(sourceFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (string.IsNullOrWhiteSpace(folderName))
             {
-                return 1600;
+                folderName = "output";
             }
 
-            string firstImagePath = Directory.GetFiles(sourceFolder, "*.*", SearchOption.AllDirectories)
-                .FirstOrDefault(path =>
-                {
-                    string ext = Path.GetExtension(path);
-                    return string.Equals(ext, ".jpg", StringComparison.OrdinalIgnoreCase) ||
-                           string.Equals(ext, ".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                           string.Equals(ext, ".png", StringComparison.OrdinalIgnoreCase) ||
-                           string.Equals(ext, ".webp", StringComparison.OrdinalIgnoreCase) ||
-                           string.Equals(ext, ".bmp", StringComparison.OrdinalIgnoreCase) ||
-                           string.Equals(ext, ".gif", StringComparison.OrdinalIgnoreCase);
-                });
-
-            if (string.IsNullOrWhiteSpace(firstImagePath))
-            {
-                return 1600;
-            }
-
-            try
-            {
-                using (var image = System.Drawing.Image.FromFile(firstImagePath))
-                {
-                    return Math.Max(1, image.Height);
-                }
-            }
-            catch
-            {
-                return 1600;
-            }
+            string safeName = new string(folderName.Select(ch => Path.GetInvalidFileNameChars().Contains(ch) ? '_' : ch).ToArray());
+            string suffix = " Type " + type;
+            return Path.Combine(sourceFolder, safeName + suffix + ".pdf");
         }
 
-        private async Task EnsureKccC2pReadyAsync()
+        private List<string> CollectReaderPdfImageFiles(string folderPath)
         {
-            if (File.Exists(PortablePaths.KccC2pExePath))
+            var files = new List<string>();
+            CollectReaderPdfImageFilesRecursive(folderPath, files);
+            return files;
+        }
+
+        private void CollectReaderPdfImageFilesRecursive(string folderPath, ICollection<string> files)
+        {
+            if (files == null || string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
             {
                 return;
             }
 
-            Directory.CreateDirectory(PortablePaths.PortableDataRoot);
-            using (var response = await _httpClient.GetAsync("https://github.com/ciromattia/kcc/releases/download/v10.2.0/KCC_c2p_10.2.0.exe", HttpCompletionOption.ResponseHeadersRead))
+            foreach (string filePath in Directory.GetFiles(folderPath)
+                .Where(IsSupportedReaderImageFile)
+                .OrderBy(path => Path.GetFileNameWithoutExtension(path), _readerSortComparer)
+                .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
             {
-                response.EnsureSuccessStatusCode();
-                using (var input = await response.Content.ReadAsStreamAsync())
-                using (var output = File.Open(PortablePaths.KccC2pExePath, FileMode.Create, FileAccess.Write, FileShare.None))
-                {
-                    await input.CopyToAsync(output);
-                }
+                files.Add(filePath);
+            }
+
+            foreach (string childFolder in SafeGetDirectories(folderPath))
+            {
+                CollectReaderPdfImageFilesRecursive(childFolder, files);
             }
         }
 
-        private void StartKccC2p(string sourceFolder, int targetHeight)
+        private static void WriteReaderPdf(string outputPdfPath, IReadOnlyList<string> imageFiles)
         {
-            var psi = new ProcessStartInfo
+            if (string.IsNullOrWhiteSpace(outputPdfPath))
             {
-                FileName = PortablePaths.KccC2pExePath,
-                Arguments = "-y " + targetHeight.ToString(CultureInfo.InvariantCulture) + " \"" + sourceFolder + "\"",
-                WorkingDirectory = PortablePaths.PortableDataRoot,
-                UseShellExecute = true
-            };
+                return;
+            }
 
-            Process.Start(psi);
+            string directory = Path.GetDirectoryName(outputPdfPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            if (File.Exists(outputPdfPath))
+            {
+                File.Delete(outputPdfPath);
+            }
+
+            using (var collection = new MagickImageCollection())
+            {
+                foreach (string imagePath in imageFiles)
+                {
+                    using (var image = new MagickImage(imagePath))
+                    {
+                        image.Alpha(AlphaOption.Remove);
+                        image.BackgroundColor = MagickColors.White;
+                        collection.Add(image);
+                    }
+                }
+
+                collection.Write(outputPdfPath, MagickFormat.Pdf);
+            }
         }
 
         public void ToggleReaderFullscreen()
