@@ -704,7 +704,7 @@ namespace get_link_manga
             return string.Empty;
         }
 
-        private List<string> ExtractDilibImageUrlsFromHtml(string html)
+        private List<string> ExtractDilibImageUrlsFromHtml(string html, string pageUrl = null)
         {
             var results = new List<string>();
             if (string.IsNullOrWhiteSpace(html))
@@ -712,15 +712,21 @@ namespace get_link_manga
                 return results;
             }
 
+            Uri baseUri = null;
+            if (!string.IsNullOrWhiteSpace(pageUrl))
+            {
+                Uri.TryCreate(NormalizeDilibUrl(pageUrl), UriKind.Absolute, out baseUri);
+            }
+
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var matches = Regex.Matches(
                 html,
-                @"(?:src|data-src)\s*=\s*[""'](?<url>https?://(?:www\.)?dilib\.vn/[^""'?#>]+/img[^""'?#>]+\.(?:webp|gif|jpg|jpeg|png|bmp)(?:\?[^""'<>]*)?)[""']",
+                @"(?:src|data-src|data-original|data-lazy-src|data-url)\s*=\s*[""'](?<url>(?:https?://(?:www\.)?dilib\.vn)?/[^""'?#>]+/img[^""'?#>]+\.(?:webp|gif|jpg|jpeg|png|bmp)(?:\?[^""'<>]*)?)[""']",
                 RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
             foreach (Match match in matches)
             {
-                string imageUrl = match.Groups["url"].Value.Trim();
+                string imageUrl = ResolveDilibUrl(baseUri, match.Groups["url"].Value.Trim());
                 if (string.IsNullOrWhiteSpace(imageUrl))
                 {
                     continue;
@@ -747,7 +753,7 @@ namespace get_link_manga
 
                 foreach (Match match in fallbackMatches)
                 {
-                    string imageUrl = match.Value.Trim();
+                    string imageUrl = ResolveDilibUrl(baseUri, match.Value.Trim());
                     string fileName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
                     if (!fileName.StartsWith("img", StringComparison.OrdinalIgnoreCase))
                     {
@@ -762,6 +768,38 @@ namespace get_link_manga
             }
 
             return results;
+        }
+
+        private string ResolveDilibUrl(Uri baseUri, string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            string normalized = value.Trim().Trim('"', '\'');
+            if (normalized.StartsWith("//", StringComparison.Ordinal))
+            {
+                normalized = "https:" + normalized;
+            }
+
+            if (normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return normalized;
+            }
+
+            if (baseUri != null && Uri.TryCreate(baseUri, normalized, out Uri resolved))
+            {
+                return resolved.AbsoluteUri;
+            }
+
+            if (normalized.StartsWith("/"))
+            {
+                return DilibBaseUrl + normalized;
+            }
+
+            return DilibBaseUrl + "/" + normalized;
         }
 
         private async Task DownloadDilibGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
@@ -836,7 +874,7 @@ namespace get_link_manga
             string chapterTitle = GetDilibChapterTitleFromHtml(html, normalized);
             item.Name = FormatGalleryTitle($"{bookTitle} - {chapterTitle}");
 
-            var imageUrls = ExtractDilibImageUrlsFromHtml(html);
+            var imageUrls = ExtractDilibImageUrlsFromHtml(html, normalized);
             if (imageUrls.Count == 0)
             {
                 throw new Exception("Không tìm thấy ảnh chapter hợp lệ.");
