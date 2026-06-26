@@ -443,25 +443,15 @@ namespace get_link_manga
                 string bookTitle = GetDilibBookTitleFromHtml(html, normalized);
                 var chapters = ExtractDilibChapterLinksFromBookHtml(html, normalized);
 
-                if (chapters.Count == 0)
+                results.Add(new GalleryItem
                 {
-                    results.Add(new GalleryItem
-                    {
-                        Link = normalized,
-                        Name = FormatGalleryTitle(bookTitle),
-                        SourceDomain = DilibSiteFolder,
-                        OriginalIndex = 0,
-                        IsChecked = false
-                    });
-                    return results;
-                }
-
-                foreach (var chapter in chapters)
-                {
-                    chapter.SourceDomain = DilibSiteFolder;
-                    chapter.Name = FormatGalleryTitle($"{bookTitle} - {chapter.Name}");
-                    results.Add(chapter);
-                }
+                    Link = normalized,
+                    Name = FormatGalleryTitle(bookTitle),
+                    LinkCount = chapters.Count > 0 ? chapters.Count + " chapters" : string.Empty,
+                    SourceDomain = DilibSiteFolder,
+                    OriginalIndex = 0,
+                    IsChecked = false
+                });
 
                 return results;
             }
