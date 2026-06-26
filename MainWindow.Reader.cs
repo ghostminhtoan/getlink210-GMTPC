@@ -175,6 +175,7 @@ namespace get_link_manga
         private ReaderFitMode _lastRenderedReaderFitMode = ReaderFitMode.FitWidth;
         private bool _readerUsesFastStone = true;
         private ReaderWatchExternalApp _readerWatchExternalApp = ReaderWatchExternalApp.FastStone;
+        private bool _readerWatchAppSelected;
         private bool _readerHasUserClickedInWatch;
         private bool _readerAutoRefreshInProgress;
         private bool _readerSuppressAutoLaunch;
@@ -318,6 +319,15 @@ namespace get_link_manga
             _readerWatchWithButton.Margin = new Thickness(0, 0, 6, 4);
             watchToolbar.Children.Add(_readerWatchWithButton);
             UpdateReaderWatchWithButtonLabel();
+
+            var xnConvertButton = CreateReaderMiniButton("XnConvert", XnConvert_Click, 104);
+            xnConvertButton.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x00));
+            xnConvertButton.BorderBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xD2, 0x66));
+            xnConvertButton.Foreground = Brushes.Black;
+            Grid.SetColumn(xnConvertButton, 4);
+            xnConvertButton.HorizontalAlignment = HorizontalAlignment.Left;
+            xnConvertButton.Margin = new Thickness(0, 0, 6, 4);
+            watchToolbar.Children.Add(xnConvertButton);
 
             _readerSummaryText = CreateWatchSummaryText();
             _readerDomainList = CreateWatchListBox();
@@ -490,7 +500,7 @@ namespace get_link_manga
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(12, 0, 0, 4)
             };
-            Grid.SetColumn(titleText, 4);
+            Grid.SetColumn(titleText, 5);
             watchToolbar.Children.Add(titleText);
             return watchToolbar;
         }
@@ -1778,8 +1788,8 @@ namespace get_link_manga
             if (string.IsNullOrWhiteSpace(fastStoneExePath) || !File.Exists(fastStoneExePath))
             {
                 errorMessage = _isVietnameseUi
-                    ? "Không tìm thấy FSViewer.exe trong bundle portable."
-                    : "FSViewer.exe was not found in the portable bundle.";
+                    ? $"Không tìm thấy {GetReaderWatchCurrentAppDisplayName()} trong bundle portable."
+                    : $"{GetReaderWatchCurrentAppDisplayName()} was not found in the portable bundle.";
                 return false;
             }
 
@@ -1806,7 +1816,7 @@ namespace get_link_manga
             }
             catch (Exception ex)
             {
-                errorMessage = (_isVietnameseUi ? "Không thể mở FastStone Image Viewer: " : "Failed to open FastStone Image Viewer: ") + ex.Message;
+                errorMessage = (_isVietnameseUi ? "Không thể mở " : "Failed to open ") + GetReaderWatchCurrentAppDisplayName() + ": " + ex.Message;
                 return false;
             }
         }
@@ -1852,7 +1862,7 @@ namespace get_link_manga
             string targetLabel = preferChapterFolder
                 ? (_currentReaderChapter?.Name ?? _currentReaderManga?.Name ?? appName)
                 : (_currentReaderPage?.DisplayLabel ?? _currentReaderChapter?.Name ?? appName);
-            UpdateReaderStatus((_isVietnameseUi ? "Đã mở bằng FastStone Image Viewer: " : "Opened in FastStone Image Viewer: ") + targetLabel);
+            UpdateReaderStatus((_isVietnameseUi ? "Đã mở bằng " : "Opened in ") + appName + ": " + targetLabel);
         }
 
         private void ReaderScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -3567,8 +3577,8 @@ namespace get_link_manga
             SetReaderCurrentTitle();
             RenderReaderPlaceholder();
             UpdateReaderStatus(_isVietnameseUi
-                ? "Chọn chapter hoặc ảnh trong panel bên trái để mở FastStone."
-                : "Pick a chapter or an image in the left panels to open FastStone.");
+                ? $"Chọn chapter hoặc ảnh trong panel bên trái để mở {GetReaderWatchCurrentAppDisplayName()}."
+                : $"Pick a chapter or an image in the left panels to open {GetReaderWatchCurrentAppDisplayName()}.");
             UpdateReaderNavigationState();
         }
 
@@ -3852,8 +3862,8 @@ namespace get_link_manga
             {
                 RenderReaderPlaceholder();
                 UpdateReaderStatus(_isVietnameseUi
-                    ? "Đã chọn chapter. Chỉ click page mới mở FastStone."
-                    : "Chapter selected. Only page click opens FastStone.");
+                    ? $"Đã chọn chapter. Chỉ click page mới mở {GetReaderWatchCurrentAppDisplayName()}."
+                    : $"Chapter selected. Only page click opens {GetReaderWatchCurrentAppDisplayName()}.");
             }
             else
             {
@@ -3900,7 +3910,7 @@ namespace get_link_manga
             SetReaderCurrentTitle();
             RenderReaderPlaceholder();
             UpdateReaderStatus(chapter.Pages.Count > 0
-                ? (_isVietnameseUi ? "Đã chọn chapter. Double-click ảnh để mở bằng FastStone." : "Chapter selected. Double-click image to open in FastStone.")
+                ? (_isVietnameseUi ? $"Đã chọn chapter. Double-click ảnh để mở bằng {GetReaderWatchCurrentAppDisplayName()}." : $"Chapter selected. Double-click image to open in {GetReaderWatchCurrentAppDisplayName()}.")
                 : (_isVietnameseUi ? "Chapter này chưa có ảnh." : "This chapter has no images."));
             UpdateReaderNavigationState();
         }
@@ -3929,8 +3939,8 @@ namespace get_link_manga
                 {
                     RenderReaderPlaceholder();
                     UpdateReaderStatus(_isVietnameseUi
-                        ? "Chọn page để mở FastStone."
-                        : "Select a page to open FastStone.");
+                        ? $"Chọn page để mở {GetReaderWatchCurrentAppDisplayName()}."
+                        : $"Select a page to open {GetReaderWatchCurrentAppDisplayName()}.");
                 }
             }
             else
@@ -4104,13 +4114,13 @@ namespace get_link_manga
             _readerStagePanel.FlowDirection = FlowDirection.LeftToRight;
 
             string message = _isVietnameseUi
-                ? "Chọn domain, book, chapter, hoặc ảnh ở cột trái.\nClick chapter hoặc ảnh để mở FastStone."
-                : "Pick a domain, book, chapter, or image from the left.\nClick a chapter or image to open FastStone.";
+                ? $"Chọn domain, book, chapter, hoặc ảnh ở cột trái.\nClick chapter hoặc ảnh để mở {GetReaderWatchCurrentAppDisplayName()}."
+                : $"Pick a domain, book, chapter, or image from the left.\nClick a chapter or image to open {GetReaderWatchCurrentAppDisplayName()}.";
             if (_readerUsesFastStone)
             {
                 message = _isVietnameseUi
-                    ? "Watch dùng FastStone Image Viewer.\nChỉ click chapter hoặc ảnh để mở."
-                    : "Watch uses FastStone Image Viewer.\nOnly click a chapter or image to open it.";
+                    ? $"Watch dùng {GetReaderWatchCurrentAppDisplayName()}.\nChỉ click chapter hoặc ảnh để mở."
+                    : $"Watch uses {GetReaderWatchCurrentAppDisplayName()}.\nOnly click a chapter or image to open it.";
             }
             _readerStagePanel.Children.Add(new Border
             {
@@ -5198,9 +5208,10 @@ namespace get_link_manga
 
         private void ReaderFullscreen_Click(object sender, RoutedEventArgs e)
         {
+            string appName = GetReaderWatchCurrentAppDisplayName();
             UpdateReaderStatus(_isVietnameseUi
-                ? "FastStone chỉ mở khi click chapter hoặc ảnh."
-                : "FastStone opens only when you click a chapter or an image.");
+                ? $"{appName} chỉ mở khi click chapter hoặc ảnh."
+                : $"{appName} opens only when you click a chapter or an image.");
         }
 
         private void ReaderWatchWith_Click(object sender, RoutedEventArgs e)
@@ -5211,8 +5222,8 @@ namespace get_link_manga
             }
 
             var menu = new ContextMenu();
-            menu.Items.Add(CreateReaderWatchWithMenuItem(ReaderWatchExternalApp.Bandiview));
             menu.Items.Add(CreateReaderWatchWithMenuItem(ReaderWatchExternalApp.FastStone));
+            menu.Items.Add(CreateReaderWatchWithMenuItem(ReaderWatchExternalApp.Bandiview));
             _readerWatchWithButton.ContextMenu = menu;
             menu.PlacementTarget = _readerWatchWithButton;
             menu.IsOpen = true;
@@ -5246,13 +5257,93 @@ namespace get_link_manga
                 return;
             }
 
-            if (_currentReaderPage != null || _currentReaderChapter != null || _currentReaderManga != null)
+            _readerWatchAppSelected = true;
+
+            UpdateReaderStatus((_isVietnameseUi ? "Đã chọn app watch: " : "Selected watch app: ") + GetReaderWatchCurrentAppDisplayName());
+        }
+
+        private void PromptReaderWatchAppSelectionIfNeeded()
+        {
+            if (_readerWatchAppSelected || _readerWatchWithButton == null)
             {
-                LaunchCurrentReaderTargetInFastStone(preferChapterFolder: false);
                 return;
             }
 
-            UpdateReaderStatus((_isVietnameseUi ? "Đã chọn app watch: " : "Selected watch app: ") + GetReaderWatchCurrentAppDisplayName());
+            Dispatcher.BeginInvoke(new Action(() => ReaderWatchWith_Click(_readerWatchWithButton, new RoutedEventArgs())), DispatcherPriority.Loaded);
+        }
+
+        private void XnConvert_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is Button button))
+            {
+                return;
+            }
+
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateXnConvertInstallMenuItem("tự cài đặt vào ổ C", silentInstall: true));
+            menu.Items.Add(CreateXnConvertInstallMenuItem("cài vào ổ khác", silentInstall: false));
+            button.ContextMenu = menu;
+            menu.PlacementTarget = button;
+            menu.IsOpen = true;
+        }
+
+        private MenuItem CreateXnConvertInstallMenuItem(string label, bool silentInstall)
+        {
+            var item = new MenuItem
+            {
+                Header = label
+            };
+            item.Click += async (sender, args) => await InstallXnConvertAsync(silentInstall);
+            return item;
+        }
+
+        private async Task InstallXnConvertAsync(bool silentInstall)
+        {
+            try
+            {
+                UpdateReaderStatus(silentInstall ? "Đang tải XnConvert để cài vào ổ C..." : "Đang tải XnConvert...");
+                await EnsureXnConvertInstallerReadyAsync();
+                StartXnConvertInstaller(silentInstall);
+                UpdateReaderStatus(silentInstall
+                    ? "Đã chạy XnConvert silent install vào ổ C."
+                    : "Đã chạy XnConvert installer.");
+            }
+            catch (Exception ex)
+            {
+                UpdateReaderStatus("XnConvert lỗi: " + ex.Message);
+            }
+        }
+
+        private async Task EnsureXnConvertInstallerReadyAsync()
+        {
+            if (File.Exists(PortablePaths.XnConvertInstallerPath))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(PortablePaths.PortableDataRoot);
+            using (var response = await _httpClient.GetAsync("https://github.com/ghostminhtoan/getlink210-GMTPC/releases/download/accessories/XnConvert.Portable.exe", HttpCompletionOption.ResponseHeadersRead))
+            {
+                response.EnsureSuccessStatusCode();
+                using (var input = await response.Content.ReadAsStreamAsync())
+                using (var output = File.Open(PortablePaths.XnConvertInstallerPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await input.CopyToAsync(output);
+                }
+            }
+        }
+
+        private void StartXnConvertInstaller(bool silentInstall)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = PortablePaths.XnConvertInstallerPath,
+                Arguments = silentInstall ? "/s" : string.Empty,
+                WorkingDirectory = PortablePaths.PortableDataRoot,
+                UseShellExecute = true
+            };
+
+            Process.Start(psi);
         }
 
         public void ToggleReaderFullscreen()
