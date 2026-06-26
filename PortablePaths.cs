@@ -43,6 +43,8 @@ namespace get_link_manga
 
         internal static string XnConvertInstallerPath => Path.Combine(PortableDataRoot, "XnConvert.Portable.exe");
 
+        internal static string KnightComicInstallerPath => Path.Combine(PortableDataRoot, "KnightComic.exe");
+
         internal static string PortableArchivePath => Path.Combine(AppRoot, "Comic-GMTPC.zip");
 
         internal static string LegacyPortableArchivePath => Path.Combine(AppRoot, "Comic-GMTPC.7z");

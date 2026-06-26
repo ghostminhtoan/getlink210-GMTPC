@@ -18,8 +18,6 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using ImageMagick;
-
 namespace get_link_manga
 {
     public partial class MainWindow : Window
@@ -214,8 +212,6 @@ namespace get_link_manga
         private Button _readerNovelBookSortNameButton;
         private string _readerNovelLibraryRootOverride;
         private TextBox _readerNovelPreviewTextBox;
-        private static bool _magickNativeReady;
-
         private sealed class ReaderChapterAnalysis
         {
             public int IntegerCount { get; set; }
@@ -331,14 +327,14 @@ namespace get_link_manga
             xnConvertButton.Margin = new Thickness(0, 0, 6, 4);
             watchToolbar.Children.Add(xnConvertButton);
 
-            var convertToPdfButton = CreateReaderMiniButton("Convert to PDF", ConvertToPdf_Click, 128);
-            convertToPdfButton.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0x2D, 0x55));
-            convertToPdfButton.BorderBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0x9A, 0xB5));
-            convertToPdfButton.Foreground = Brushes.White;
-            Grid.SetColumn(convertToPdfButton, 5);
-            convertToPdfButton.HorizontalAlignment = HorizontalAlignment.Left;
-            convertToPdfButton.Margin = new Thickness(0, 0, 6, 4);
-            watchToolbar.Children.Add(convertToPdfButton);
+            var knightComicButton = CreateReaderMiniButton("knightcomic", KnightComic_Click, 112);
+            knightComicButton.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0x46, 0x1A));
+            knightComicButton.BorderBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xD1, 0x66));
+            knightComicButton.Foreground = Brushes.Black;
+            Grid.SetColumn(knightComicButton, 5);
+            knightComicButton.HorizontalAlignment = HorizontalAlignment.Left;
+            knightComicButton.Margin = new Thickness(0, 0, 6, 4);
+            watchToolbar.Children.Add(knightComicButton);
 
             _readerSummaryText = CreateWatchSummaryText();
             _readerDomainList = CreateWatchListBox();
@@ -484,6 +480,7 @@ namespace get_link_manga
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
             var refreshLibraryButton = CreateReaderMiniButton("Refresh library", (sender, args) => refreshAction(), 118);
@@ -5358,7 +5355,7 @@ namespace get_link_manga
             Process.Start(psi);
         }
 
-        private void ConvertToPdf_Click(object sender, RoutedEventArgs e)
+        private void KnightComic_Click(object sender, RoutedEventArgs e)
         {
             if (!(sender is Button button))
             {
@@ -5366,196 +5363,70 @@ namespace get_link_manga
             }
 
             var menu = new ContextMenu();
-            menu.Items.Add(CreateConvertToPdfMenuItem("Type 0", 0));
-            menu.Items.Add(CreateConvertToPdfMenuItem("Type 1", 1));
-            menu.Items.Add(CreateConvertToPdfMenuItem("Type 2", 2));
-            menu.Items.Add(CreateConvertToPdfMenuItem("Type 3", 3));
+            menu.Items.Add(CreateKnightComicInstallMenuItem("tự cài đặt vào ổ C", silentInstall: true));
+            menu.Items.Add(CreateKnightComicInstallMenuItem("cài vào ổ khác", silentInstall: false));
             button.ContextMenu = menu;
             menu.PlacementTarget = button;
             menu.IsOpen = true;
         }
 
-        private MenuItem CreateConvertToPdfMenuItem(string label, int type)
+        private MenuItem CreateKnightComicInstallMenuItem(string label, bool silentInstall)
         {
             var item = new MenuItem
             {
                 Header = label
             };
-            item.Click += async (sender, args) => await ConvertReaderFolderToPdfAsync(type);
+            item.Click += async (sender, args) => await InstallKnightComicAsync(silentInstall);
             return item;
         }
 
-        private async Task ConvertReaderFolderToPdfAsync(int type)
+        private async Task InstallKnightComicAsync(bool silentInstall)
         {
-            string sourceFolder = ResolveReaderPdfSourceFolder(type);
-            if (string.IsNullOrWhiteSpace(sourceFolder) || !Directory.Exists(sourceFolder))
-            {
-                UpdateReaderStatus(_isVietnameseUi ? "Không có folder hợp lệ để convert PDF." : "No valid folder to convert to PDF.");
-                return;
-            }
-
             try
             {
-                string outputPdfPath = BuildReaderPdfOutputPath(sourceFolder, type);
-                List<string> imageFiles = await Task.Run(() => CollectReaderPdfImageFiles(sourceFolder));
-                if (imageFiles.Count == 0)
-                {
-                    UpdateReaderStatus(_isVietnameseUi ? "Folder này không có ảnh để convert PDF." : "This folder has no images to convert.");
-                    return;
-                }
-
-                UpdateReaderStatus((_isVietnameseUi ? "Đang convert PDF type " : "Converting PDF type ") + type + "...");
-                await Task.Run(() => WriteReaderPdf(outputPdfPath, imageFiles));
-                UpdateReaderStatus((_isVietnameseUi ? "Đã xuất PDF: " : "PDF exported: ") + outputPdfPath);
+                UpdateReaderStatus(silentInstall ? "Đang tải KnightComic để cài vào ổ C..." : "Đang tải KnightComic...");
+                await EnsureKnightComicInstallerReadyAsync();
+                StartKnightComicInstaller(silentInstall);
+                UpdateReaderStatus(silentInstall
+                    ? "Đã chạy KnightComic silent install vào ổ C."
+                    : "Đã chạy KnightComic installer.");
             }
             catch (Exception ex)
             {
-                UpdateReaderStatus("Convert PDF lỗi: " + ex.Message);
+                UpdateReaderStatus("KnightComic lỗi: " + ex.Message);
             }
         }
 
-        private string ResolveReaderPdfSourceFolder(int type)
+        private async Task EnsureKnightComicInstallerReadyAsync()
         {
-            string currentChapterFolder = _currentReaderChapter != null ? _currentReaderChapter.FolderPath : null;
-            string currentMangaFolder = _currentReaderManga != null ? _currentReaderManga.FolderPath : null;
-            string currentDomainFolder = _currentReaderDomain != null ? _currentReaderDomain.FolderPath : null;
-            string currentSeriesFolder = ResolveCurrentReaderSeriesFolderPath();
-
-            switch (type)
+            if (File.Exists(PortablePaths.KnightComicInstallerPath))
             {
-                case 0:
-                    return FirstExistingPath(currentDomainFolder, currentSeriesFolder, currentMangaFolder, currentChapterFolder, GetCurrentReaderLibraryRoot());
-                case 1:
-                    return FirstExistingPath(currentSeriesFolder, currentMangaFolder, currentChapterFolder, currentDomainFolder, GetCurrentReaderLibraryRoot());
-                case 2:
-                    return FirstExistingPath(GetReaderParentFolder(currentChapterFolder), currentChapterFolder, currentMangaFolder, currentSeriesFolder, GetCurrentReaderLibraryRoot());
-                case 3:
-                    return FirstExistingPath(currentChapterFolder, GetReaderParentFolder(currentChapterFolder), currentMangaFolder, currentSeriesFolder, GetCurrentReaderLibraryRoot());
-                default:
-                    return FirstExistingPath(currentChapterFolder, currentMangaFolder, currentSeriesFolder, currentDomainFolder, GetCurrentReaderLibraryRoot());
-            }
-        }
-
-        private static string FirstExistingPath(params string[] paths)
-        {
-            if (paths == null)
-            {
-                return null;
+                return;
             }
 
-            foreach (string path in paths)
+            Directory.CreateDirectory(PortablePaths.PortableDataRoot);
+            using (var response = await _httpClient.GetAsync("https://github.com/ghostminhtoan/getlink210-GMTPC/releases/download/accessories/KnightComic.exe", HttpCompletionOption.ResponseHeadersRead))
             {
-                if (!string.IsNullOrWhiteSpace(path) && (Directory.Exists(path) || File.Exists(path)))
+                response.EnsureSuccessStatusCode();
+                using (var input = await response.Content.ReadAsStreamAsync())
+                using (var output = File.Open(PortablePaths.KnightComicInstallerPath, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
-                    return path;
+                    await input.CopyToAsync(output);
                 }
             }
-
-            return null;
         }
 
-        private static string GetReaderParentFolder(string folderPath)
+        private void StartKnightComicInstaller(bool silentInstall)
         {
-            if (string.IsNullOrWhiteSpace(folderPath))
+            var psi = new ProcessStartInfo
             {
-                return null;
-            }
+                FileName = PortablePaths.KnightComicInstallerPath,
+                Arguments = silentInstall ? "/s" : string.Empty,
+                WorkingDirectory = PortablePaths.PortableDataRoot,
+                UseShellExecute = true
+            };
 
-            DirectoryInfo parent = Directory.GetParent(folderPath);
-            return parent != null ? parent.FullName : null;
-        }
-
-        private string BuildReaderPdfOutputPath(string sourceFolder, int type)
-        {
-            string folderName = Path.GetFileName(sourceFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-            if (string.IsNullOrWhiteSpace(folderName))
-            {
-                folderName = "output";
-            }
-
-            string safeName = new string(folderName.Select(ch => Path.GetInvalidFileNameChars().Contains(ch) ? '_' : ch).ToArray());
-            string suffix = " Type " + type;
-            return Path.Combine(sourceFolder, safeName + suffix + ".pdf");
-        }
-
-        private List<string> CollectReaderPdfImageFiles(string folderPath)
-        {
-            var files = new List<string>();
-            CollectReaderPdfImageFilesRecursive(folderPath, files);
-            return files;
-        }
-
-        private void CollectReaderPdfImageFilesRecursive(string folderPath, ICollection<string> files)
-        {
-            if (files == null || string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
-            {
-                return;
-            }
-
-            foreach (string filePath in Directory.GetFiles(folderPath)
-                .Where(IsSupportedReaderImageFile)
-                .OrderBy(path => Path.GetFileNameWithoutExtension(path), _readerSortComparer)
-                .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
-            {
-                files.Add(filePath);
-            }
-
-            foreach (string childFolder in SafeGetDirectories(folderPath))
-            {
-                CollectReaderPdfImageFilesRecursive(childFolder, files);
-            }
-        }
-
-        private static void WriteReaderPdf(string outputPdfPath, IReadOnlyList<string> imageFiles)
-        {
-            EnsureMagickNativeLibrariesReady();
-
-            if (string.IsNullOrWhiteSpace(outputPdfPath))
-            {
-                return;
-            }
-
-            string directory = Path.GetDirectoryName(outputPdfPath);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            if (File.Exists(outputPdfPath))
-            {
-                File.Delete(outputPdfPath);
-            }
-
-            using (var collection = new MagickImageCollection())
-            {
-                foreach (string imagePath in imageFiles)
-                {
-                    using (var image = new MagickImage(imagePath))
-                    {
-                        image.Alpha(AlphaOption.Remove);
-                        image.BackgroundColor = MagickColors.White;
-                        collection.Add(image);
-                    }
-                }
-
-                collection.Write(outputPdfPath, MagickFormat.Pdf);
-            }
-        }
-
-        private static void EnsureMagickNativeLibrariesReady()
-        {
-            if (_magickNativeReady)
-            {
-                return;
-            }
-
-            string nativeDir = Path.Combine(PortablePaths.AppRoot, "third_party", "Magick.NET");
-            if (Directory.Exists(nativeDir))
-            {
-                MagickNET.SetNativeLibraryDirectory(nativeDir);
-            }
-
-            _magickNativeReady = true;
+            Process.Start(psi);
         }
 
         public void ToggleReaderFullscreen()
