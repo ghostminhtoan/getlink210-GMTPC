@@ -17,6 +17,7 @@ namespace get_link_manga
     {
         private const string DilibSiteFolder = "dilib.vn";
         private const string DilibBaseUrl = "https://dilib.vn";
+        private const string DilibDefaultCategoryUrl = "https://dilib.vn/truyen-tranh/shounen/";
 
         private void DilibLog(string message)
         {
@@ -172,6 +173,14 @@ namespace get_link_manga
             return cleaned;
         }
 
+        internal void InitializeDilibDefaults()
+        {
+            if (txtDilibTagUrl != null && string.IsNullOrWhiteSpace(txtDilibTagUrl.Text))
+            {
+                txtDilibTagUrl.Text = DilibDefaultCategoryUrl;
+            }
+        }
+
         private void TxtDilibTagUrl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
@@ -243,7 +252,7 @@ namespace get_link_manga
                 customTitle: "PASTE DILIB LINKS",
                 customDescription: "Paste dilib.vn category, book, or chapter links below. The system will crawl the right level automatically.",
                 customExample:
-                    "Example:\nhttps://dilib.vn/truyen-tranh/school-life/\nhttps://dilib.vn/hoang-tu-tennis-prince-of-tennis-15443.html\nhttps://dilib.vn/truyen-tranh/hoang-tu-tennis-prince-of-tennis-15443-chap-1.html")
+                    "Example:\nhttps://dilib.vn/truyen-tranh/shounen/\nhttps://dilib.vn/hoang-tu-tennis-prince-of-tennis-15443.html\nhttps://dilib.vn/truyen-tranh/hoang-tu-tennis-prince-of-tennis-15443-chap-1.html")
             {
                 Owner = this
             };
@@ -497,6 +506,7 @@ namespace get_link_manga
                 return 1;
             }
 
+            string scope = ExtractDilibProductsSection(html);
             int maxPage = 1;
             var matches = Regex.Matches(html, @"/page/(?<page>\d+)", RegexOptions.IgnoreCase);
             foreach (Match match in matches)
@@ -507,7 +517,7 @@ namespace get_link_manga
                 }
             }
 
-            var textMatch = Regex.Match(html, @"Trang\s+\d+\s*/\s*(?<page>\d+)", RegexOptions.IgnoreCase);
+            var textMatch = Regex.Match(scope, @"Trang\s+\d+\s*/\s*(?<page>\d+)", RegexOptions.IgnoreCase);
             if (textMatch.Success && int.TryParse(textMatch.Groups["page"].Value, out int textPage) && textPage > maxPage)
             {
                 maxPage = textPage;
@@ -524,6 +534,7 @@ namespace get_link_manga
                 return results;
             }
 
+            string scope = ExtractDilibProductsSection(html);
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var patterns = new[]
             {
@@ -533,7 +544,7 @@ namespace get_link_manga
 
             foreach (string pattern in patterns)
             {
-                foreach (Match match in Regex.Matches(html, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline))
+                foreach (Match match in Regex.Matches(scope, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline))
                 {
                     string link = match.Groups["link"].Value.Trim();
                     if (string.IsNullOrWhiteSpace(link) || link.IndexOf("/truyen-tranh/", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -573,6 +584,52 @@ namespace get_link_manga
             }
 
             return results;
+        }
+
+        private string ExtractDilibProductsSection(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return string.Empty;
+            }
+
+            Match startMatch = Regex.Match(
+                html,
+                @"<div[^>]*class=""[^""]*\bproducts\b[^""]*\brow\b[^""]*""[^>]*>",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            if (!startMatch.Success)
+            {
+                return html;
+            }
+
+            int startIndex = startMatch.Index + startMatch.Length;
+            int endIndex = html.Length;
+            string[] endMarkers = new[]
+            {
+                @"<nav",
+                @"class=""pagination""",
+                @"id=""pagination""",
+                @"<section",
+                @"</main>",
+                @"</div>\s*</div>\s*</div>"
+            };
+
+            foreach (string marker in endMarkers)
+            {
+                int markerIndex = html.IndexOf(marker, startIndex, StringComparison.OrdinalIgnoreCase);
+                if (markerIndex >= 0 && markerIndex < endIndex)
+                {
+                    endIndex = markerIndex;
+                }
+            }
+
+            if (endIndex <= startIndex)
+            {
+                return html.Substring(startIndex);
+            }
+
+            return html.Substring(startIndex, endIndex - startIndex);
         }
 
         private List<GalleryItem> ExtractDilibChapterLinksFromBookHtml(string html, string bookUrl)

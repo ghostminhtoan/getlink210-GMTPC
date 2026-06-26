@@ -73,6 +73,7 @@ namespace get_link_manga
             ApplyBuildInfoText();
             WirePauseButtonToggle();
             InitializeLogPanels();
+            InitializeDilibDefaults();
             InitializeGlobalAutoPasteClipboard();
             dgResults.ItemsSource = _scrapedItems;
             UpdateStats();
