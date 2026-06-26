@@ -19,7 +19,7 @@ namespace get_link_manga
 
             string lower = url.ToLowerInvariant();
             return lower.Contains("truyenqq") || lower.Contains("qquyen") || lower.Contains("nettruyen") ||
-                   lower.Contains("daomeoden") || lower.Contains("vi-hentai") || lower.Contains("vihentai") ||
+                   lower.Contains("daomeoden") || lower.Contains("dilib.vn") || lower.Contains("vi-hentai") || lower.Contains("vihentai") ||
                    lower.Contains("sayhentai") || lower.Contains("truyengg") || lower.Contains("hentaiforce") ||
                    lower.Contains("nhentai") || lower.Contains("hentai2read") || lower.Contains("hentaiera") ||
                    lower.Contains("hako");
@@ -121,6 +121,14 @@ namespace get_link_manga
                 if (txtDaomeodenTagUrl != null) txtDaomeodenTagUrl.Text = url;
                 BtnDaomeodenFetchInfo_Click(this, new RoutedEventArgs());
                 await WaitAndScrapeAsync(btnDaomeodenFetchInfo, BtnDaomeodenScrape_Click);
+            }
+            else if (lowerUrl.Contains("dilib.vn"))
+            {
+                if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 0;
+                if (tabManga != null) tabManga.SelectedIndex = 2;
+                if (txtDilibTagUrl != null) txtDilibTagUrl.Text = url;
+                BtnDilibFetchInfo_Click(this, new RoutedEventArgs());
+                await WaitAndScrapeAsync(btnDilibFetchInfo, BtnDilibScrape_Click);
             }
             else if (lowerUrl.Contains("vi-hentai") || lowerUrl.Contains("vihentai"))
             {
@@ -261,6 +269,14 @@ namespace get_link_manga
                 if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 1;
                 SelectHentaiTabByHeader("daomeoden");
                 await ImportDaomeodenDirectLinksAsync(new List<string> { url });
+                return true;
+            }
+
+            if (lowerUrl.Contains("dilib.vn"))
+            {
+                if (tabMangaSourceSubPanel != null) tabMangaSourceSubPanel.SelectedIndex = 0;
+                if (tabManga != null) tabManga.SelectedIndex = 2;
+                await ImportDilibDirectLinksAsync(new List<string> { url }, clearExisting: false, showMessageBox: showMessageBox);
                 return true;
             }
 

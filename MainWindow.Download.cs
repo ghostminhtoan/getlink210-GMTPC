@@ -108,6 +108,11 @@ namespace get_link_manga
                     return "daomeoden.net";
                 }
 
+                if (host.Contains("dilib.vn"))
+                {
+                    return "dilib.vn";
+                }
+
                 if (host.Contains("ln.hako.vn") || host.Contains("docln.net") || host.Contains("hako.re"))
                 {
                     return "ln.hako.vn";
@@ -259,6 +264,10 @@ namespace get_link_manga
             else if (lowerKey.Contains("daomeoden"))
             {
                 siteKey = "daomeoden.net";
+            }
+            else if (lowerKey.Contains("dilib.vn"))
+            {
+                siteKey = "dilib.vn";
             }
             else if (lowerKey.Contains("hako.vn") || lowerKey.Contains("docln.net") || lowerKey.Contains("hako.re"))
             {
@@ -1625,6 +1634,12 @@ namespace get_link_manga
             if (IsDaomeodenUrl(item.Link) || IsDaomeodenImageRedirectUrl(item.Link))
             {
                 await DownloadDaomeodenGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
+                return;
+            }
+
+            if (IsDilibUrl(item.Link))
+            {
+                await DownloadDilibGalleryAsync(item, rootFolder, token, queueItem, chapterFilter);
                 return;
             }
 
@@ -3036,6 +3051,23 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                         return "daomeoden.net|" + bookSlug;
                     }
                 }
+
+                if (host.Contains("dilib.vn"))
+                {
+                    var segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (segments.Length >= 2 && segments[0].Equals("truyen-tranh", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string bookSlug = Regex.Replace(segments[1].ToLowerInvariant(), @"-chap-\d+$", string.Empty);
+                        bookSlug = Regex.Replace(bookSlug, @"-\d+$", string.Empty);
+                        return "dilib.vn|" + bookSlug;
+                    }
+
+                    if (segments.Length >= 1 && segments[0].EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string bookSlug = Regex.Replace(Path.GetFileNameWithoutExtension(segments[0]).ToLowerInvariant(), @"-\d+$", string.Empty);
+                        return "dilib.vn|" + bookSlug;
+                    }
+                }
             }
             catch {}
             return url;
@@ -3480,6 +3512,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
                 if (host.Contains("vi-hentai") || host.Contains("hentaivn")) return "hentaivn";
                 if (host.Contains("hentai2read")) return "hentai2read";
                 if (host.Contains("daomeoden")) return "daomeoden";
+                if (host.Contains("dilib.vn")) return "dilib.vn";
 
                 var parts = host.Split('.');
                 if (parts.Length >= 2)

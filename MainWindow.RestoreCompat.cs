@@ -376,6 +376,9 @@ namespace get_link_manga
                 case "daomeoden":
                     url = "https://daomeoden.net/";
                     break;
+                case "dilib.vn":
+                    url = "https://dilib.vn/";
+                    break;
                 case "hako":
                     url = "https://ln.hako.vn/";
                     break;

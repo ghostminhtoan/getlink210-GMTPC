@@ -1,0 +1,944 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+
+namespace get_link_manga
+{
+    public partial class MainWindow : Window
+    {
+        private const string DilibSiteFolder = "dilib.vn";
+        private const string DilibBaseUrl = "https://dilib.vn";
+
+        private void DilibLog(string message)
+        {
+            Log("[dilib.vn] " + message);
+        }
+
+        private bool IsDilibUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                var uri = new Uri(url);
+                return uri.Host.IndexOf("dilib.vn", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+            catch
+            {
+                return url.IndexOf("dilib.vn", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+        }
+
+        private bool IsDilibCategoryUrl(string url)
+        {
+            if (!IsDilibUrl(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                var uri = new Uri(NormalizeDilibUrl(url));
+                string path = uri.AbsolutePath.ToLowerInvariant();
+                return path.Contains("/truyen-tranh/");
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsDilibBookUrl(string url)
+        {
+            if (!IsDilibUrl(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                var uri = new Uri(NormalizeDilibUrl(url));
+                string path = uri.AbsolutePath.TrimEnd('/').ToLowerInvariant();
+                return path.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
+                       !path.Contains("/truyen-tranh/");
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsDilibChapterUrl(string url)
+        {
+            if (!IsDilibUrl(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                var uri = new Uri(NormalizeDilibUrl(url));
+                string path = uri.AbsolutePath.ToLowerInvariant();
+                return path.Contains("/truyen-tranh/") && path.Contains("-chap-") && path.EndsWith(".html", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private string NormalizeDilibUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return string.Empty;
+            }
+
+            string normalized = url.Trim();
+            if (!normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = DilibBaseUrl + (normalized.StartsWith("/") ? string.Empty : "/") + normalized;
+            }
+
+            if (!Uri.TryCreate(normalized, UriKind.Absolute, out Uri uri))
+            {
+                throw new ArgumentException("URL dilib.vn không hợp lệ.");
+            }
+
+            if (uri.Host.IndexOf("dilib.vn", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                throw new ArgumentException("URL phải thuộc domain dilib.vn.");
+            }
+
+            return uri.AbsoluteUri.TrimEnd('/');
+        }
+
+        private string GetDilibCategoryPageUrl(string baseUrl, int page)
+        {
+            string normalized = NormalizeDilibUrl(baseUrl);
+            var uri = new Uri(normalized);
+            string path = Regex.Replace(uri.AbsolutePath.TrimEnd('/'), @"/page/\d+$", string.Empty, RegexOptions.IgnoreCase).TrimEnd('/');
+            if (page > 1)
+            {
+                path = path + "/page/" + page;
+            }
+
+            return new UriBuilder(uri)
+            {
+                Path = path
+            }.Uri.AbsoluteUri.TrimEnd('/');
+        }
+
+        private string HumanizeDilibSlug(string value)
+        {
+            string cleaned = (value ?? string.Empty).Trim().Trim('/');
+            cleaned = Regex.Replace(cleaned, @"-chap-\d+$", string.Empty, RegexOptions.IgnoreCase);
+            cleaned = Regex.Replace(cleaned, @"-\d+$", string.Empty);
+            cleaned = cleaned.Replace('-', ' ');
+            cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
+            if (string.IsNullOrWhiteSpace(cleaned))
+            {
+                return "Dilib";
+            }
+
+            return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(cleaned.ToLowerInvariant());
+        }
+
+        private void TxtDilibTagUrl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (chkDilibAutoPasteLink?.IsChecked == true && Clipboard.ContainsText())
+                {
+                    string text = Clipboard.GetText()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(text))
+                    {
+                        txtDilibTagUrl.Text = text;
+                        txtDilibTagUrl.CaretIndex = txtDilibTagUrl.Text.Length;
+                        e.Handled = true;
+                    }
+                }
+                return;
+            }
+
+            if (e.Key == Key.Enter)
+            {
+                BtnDilibFetchInfo_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
+
+        private async void BtnDilibFetchInfo_Click(object sender, RoutedEventArgs e)
+        {
+            await AnalyzeDilibUrlAsync(txtDilibTagUrl?.Text);
+        }
+
+        private void TxtDilibTotalPages_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (txtDilibPageTo != null && txtDilibTotalPages != null)
+            {
+                txtDilibPageTo.Text = txtDilibTotalPages.Text;
+            }
+        }
+
+        private async void BtnDilibScrape_Click(object sender, RoutedEventArgs e)
+        {
+            if (_cts != null)
+            {
+                _cts.Cancel();
+                btnDilibScrape.Content = "CANCELLING...";
+                btnDilibScrape.IsEnabled = false;
+                btnDilibCrawlMore.IsEnabled = false;
+                return;
+            }
+
+            await ScrapeDilibAsync(clearExisting: true);
+        }
+
+        private async void BtnDilibCrawlMore_Click(object sender, RoutedEventArgs e)
+        {
+            if (_cts != null)
+            {
+                _cts.Cancel();
+                btnDilibCrawlMore.Content = "CANCELLING...";
+                btnDilibCrawlMore.IsEnabled = false;
+                btnDilibScrape.IsEnabled = false;
+                return;
+            }
+
+            await ScrapeDilibAsync(clearExisting: false);
+        }
+
+        private void BtnDilibPasteDirect_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new DirectDownloadWindow(
+                customTitle: "PASTE DILIB LINKS",
+                customDescription: "Paste dilib.vn category, book, or chapter links below. The system will crawl the right level automatically.",
+                customExample:
+                    "Example:\nhttps://dilib.vn/truyen-tranh/school-life/\nhttps://dilib.vn/hoang-tu-tennis-prince-of-tennis-15443.html\nhttps://dilib.vn/truyen-tranh/hoang-tu-tennis-prince-of-tennis-15443-chap-1.html")
+            {
+                Owner = this
+            };
+
+            window.OnImport = async links => await ImportDilibDirectLinksAsync(links, clearExisting: false);
+            window.ShowDialog();
+        }
+
+        private async Task AnalyzeDilibUrlAsync(string rawUrl)
+        {
+            if (string.IsNullOrWhiteSpace(rawUrl))
+            {
+                MessageBox.Show("Vui lòng nhập URL hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                string normalized = NormalizeDilibUrl(rawUrl);
+                txtDilibTagUrl.Text = normalized;
+
+                if (IsDilibCategoryUrl(normalized))
+                {
+                    string html = await FetchStringAsync(GetDilibCategoryPageUrl(normalized, 1), _downloadCts?.Token ?? CancellationToken.None);
+                    int totalPages = GetDilibCategoryMaxPage(html);
+                    txtDilibTotalPages.Text = Math.Max(1, totalPages).ToString();
+                    txtDilibPageFrom.Text = "1";
+                    txtDilibPageTo.Text = Math.Max(1, totalPages).ToString();
+                    lblStatus.Text = $"Dilib category: {totalPages} pages.";
+                }
+                else if (IsDilibBookUrl(normalized))
+                {
+                    string html = await FetchStringAsync(normalized, _downloadCts?.Token ?? CancellationToken.None);
+                    int totalChapters = ExtractDilibChapterLinksFromBookHtml(html, normalized).Count;
+                    txtDilibTotalPages.Text = Math.Max(1, totalChapters).ToString();
+                    txtDilibPageFrom.Text = "1";
+                    txtDilibPageTo.Text = Math.Max(1, totalChapters).ToString();
+                    lblStatus.Text = $"Dilib book: {totalChapters} chapters.";
+                }
+                else if (IsDilibChapterUrl(normalized))
+                {
+                    txtDilibTotalPages.Text = "1";
+                    txtDilibPageFrom.Text = "1";
+                    txtDilibPageTo.Text = "1";
+                    lblStatus.Text = "Dilib chapter ready.";
+                }
+                else
+                {
+                    MessageBox.Show("URL dilib không hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                DilibLog("Lỗi phân tích: " + ex.Message);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                txtDilibTotalPages.Text = "1";
+                txtDilibPageFrom.Text = "1";
+                txtDilibPageTo.Text = "1";
+            }
+        }
+
+        private async Task ScrapeDilibAsync(bool clearExisting)
+        {
+            string rawUrl = txtDilibTagUrl?.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(rawUrl))
+            {
+                MessageBox.Show("Vui lòng nhập URL hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            _cts = new CancellationTokenSource();
+            CancellationToken token = _cts.Token;
+
+            btnDilibScrape.Content = "STOP CRAWLER";
+            btnDilibCrawlMore.Content = "STOP CRAWLER";
+            btnDilibFetchInfo.IsEnabled = false;
+            progressBar.Value = 0;
+            progressBar.IsIndeterminate = false;
+
+            if (clearExisting)
+            {
+                _scrapedItems.Clear();
+                lblLinkCount.Text = "0";
+            }
+
+            try
+            {
+                await ImportDilibDirectLinksAsync(new List<string> { rawUrl }, clearExisting: false, showMessageBox: true, token: token);
+            }
+            catch (OperationCanceledException)
+            {
+                lblStatus.Text = "Crawling cancelled.";
+            }
+            catch (Exception ex)
+            {
+                DilibLog("Lỗi khi crawl: " + ex.Message);
+                lblStatus.Text = "Crawling failed.";
+            }
+            finally
+            {
+                _cts.Dispose();
+                _cts = null;
+                btnDilibScrape.Content = "GET LINK";
+                btnDilibCrawlMore.Content = "GET MORE";
+                btnDilibScrape.IsEnabled = true;
+                btnDilibCrawlMore.IsEnabled = true;
+                btnDilibFetchInfo.IsEnabled = true;
+            }
+        }
+
+        private async Task ImportDilibDirectLinksAsync(IReadOnlyList<string> links, bool clearExisting, bool showMessageBox = true, CancellationToken? token = null)
+        {
+            if (links == null || links.Count == 0)
+            {
+                return;
+            }
+
+            CancellationToken effectiveToken = token ?? _downloadCts?.Token ?? CancellationToken.None;
+
+            if (clearExisting)
+            {
+                _scrapedItems.Clear();
+                lblLinkCount.Text = "0";
+            }
+
+            btnDilibFetchInfo.IsEnabled = false;
+            progressBar.Value = 0;
+            progressBar.IsIndeterminate = false;
+
+            int added = 0;
+            int total = links.Count;
+
+            try
+            {
+                foreach (string rawLink in links)
+                {
+                    effectiveToken.ThrowIfCancellationRequested();
+                    string link = NormalizeDilibUrl(rawLink);
+                    txtDilibTagUrl.Text = link;
+
+                    var items = await CreateDilibItemsFromUrlAsync(link, effectiveToken);
+                    foreach (var item in items)
+                    {
+                        if (_scrapedItems.Any(existing => existing.Link.Equals(item.Link, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            continue;
+                        }
+
+                        item.OriginalIndex = _scrapedItems.Count;
+                        _scrapedItems.Add(item);
+                        added++;
+                    }
+
+                    progressBar.Value = (double)added / Math.Max(1, total) * 100d;
+                }
+
+                RecalculateDuplicates();
+                lblLinkCount.Text = _scrapedItems.Count.ToString();
+                lblStatus.Text = $"Imported {_scrapedItems.Count} items.";
+
+                if (showMessageBox)
+                {
+                    MessageBox.Show($"Đã nhập {_scrapedItems.Count} mục dilib.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                DilibLog("Lỗi nhập link: " + ex.Message);
+                if (showMessageBox)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                btnDilibFetchInfo.IsEnabled = true;
+            }
+        }
+
+        private async Task<List<GalleryItem>> CreateDilibItemsFromUrlAsync(string url, CancellationToken token)
+        {
+            var results = new List<GalleryItem>();
+            string normalized = NormalizeDilibUrl(url);
+
+            if (IsDilibCategoryUrl(normalized))
+            {
+                string baseUrl = GetDilibCategoryPageUrl(normalized, 1);
+                string firstPageHtml = await FetchStringAsync(baseUrl, token);
+                int totalPages = Math.Max(1, GetDilibCategoryMaxPage(firstPageHtml));
+
+                for (int page = 1; page <= totalPages; page++)
+                {
+                    token.ThrowIfCancellationRequested();
+                    string pageUrl = GetDilibCategoryPageUrl(baseUrl, page);
+                    string html = page == 1 ? firstPageHtml : await FetchStringAsync(pageUrl, token);
+                    var items = ExtractDilibCategoryItemsFromHtml(html, pageUrl);
+                    foreach (var item in items)
+                    {
+                        if (!results.Any(existing => existing.Link.Equals(item.Link, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            results.Add(item);
+                        }
+                    }
+                }
+
+                return results;
+            }
+
+            if (IsDilibBookUrl(normalized))
+            {
+                string html = await FetchStringAsync(normalized, token);
+                string bookTitle = GetDilibBookTitleFromHtml(html, normalized);
+                var chapters = ExtractDilibChapterLinksFromBookHtml(html, normalized);
+
+                if (chapters.Count == 0)
+                {
+                    results.Add(new GalleryItem
+                    {
+                        Link = normalized,
+                        Name = FormatGalleryTitle(bookTitle),
+                        SourceDomain = DilibSiteFolder,
+                        OriginalIndex = 0,
+                        IsChecked = false
+                    });
+                    return results;
+                }
+
+                foreach (var chapter in chapters)
+                {
+                    chapter.SourceDomain = DilibSiteFolder;
+                    chapter.Name = FormatGalleryTitle($"{bookTitle} - {chapter.Name}");
+                    results.Add(chapter);
+                }
+
+                return results;
+            }
+
+            if (IsDilibChapterUrl(normalized))
+            {
+                string html = await FetchStringAsync(normalized, token);
+                string chapterTitle = GetDilibChapterTitleFromHtml(html, normalized);
+                string bookTitle = GetDilibBookTitleFromHtml(html, normalized);
+                results.Add(new GalleryItem
+                {
+                    Link = normalized,
+                    Name = FormatGalleryTitle($"{bookTitle} - {chapterTitle}"),
+                    SourceDomain = DilibSiteFolder,
+                    OriginalIndex = 0,
+                    IsChecked = false
+                });
+                return results;
+            }
+
+            throw new Exception("URL dilib không hỗ trợ.");
+        }
+
+        private int GetDilibCategoryMaxPage(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return 1;
+            }
+
+            int maxPage = 1;
+            var matches = Regex.Matches(html, @"/page/(?<page>\d+)", RegexOptions.IgnoreCase);
+            foreach (Match match in matches)
+            {
+                if (int.TryParse(match.Groups["page"].Value, out int page) && page > maxPage)
+                {
+                    maxPage = page;
+                }
+            }
+
+            var textMatch = Regex.Match(html, @"Trang\s+\d+\s*/\s*(?<page>\d+)", RegexOptions.IgnoreCase);
+            if (textMatch.Success && int.TryParse(textMatch.Groups["page"].Value, out int textPage) && textPage > maxPage)
+            {
+                maxPage = textPage;
+            }
+
+            return maxPage;
+        }
+
+        private List<GalleryItem> ExtractDilibCategoryItemsFromHtml(string html, string pageUrl)
+        {
+            var results = new List<GalleryItem>();
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return results;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var patterns = new[]
+            {
+                @"(?is)(?<count>\d+)\s*chap.*?<a[^>]+href=""(?<link>/[^""?#]+?-\d+\.html)""[^>]*>(?<title>.*?)</a>",
+                @"(?is)<a[^>]+href=""(?<link>/[^""?#]+?-\d+\.html)""[^>]*>(?<title>.*?)</a>.*?(?<count>\d+)\s*chap"
+            };
+
+            foreach (string pattern in patterns)
+            {
+                foreach (Match match in Regex.Matches(html, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline))
+                {
+                    string link = match.Groups["link"].Value.Trim();
+                    if (string.IsNullOrWhiteSpace(link) || link.IndexOf("/truyen-tranh/", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        continue;
+                    }
+
+                    string normalizedLink = NormalizeDilibUrl(link);
+                    if (!seen.Add(normalizedLink))
+                    {
+                        continue;
+                    }
+
+                    string title = WebUtility.HtmlDecode(Regex.Replace(match.Groups["title"].Value, @"<[^>]+>", string.Empty)).Trim();
+                    if (string.IsNullOrWhiteSpace(title))
+                    {
+                        title = HumanizeDilibSlug(Path.GetFileNameWithoutExtension(new Uri(normalizedLink).AbsolutePath));
+                    }
+
+                    string count = match.Groups["count"].Success ? match.Groups["count"].Value.Trim() + " chapters" : string.Empty;
+                    results.Add(new GalleryItem
+                    {
+                        Link = normalizedLink,
+                        Name = FormatGalleryTitle(title),
+                        LinkCount = count,
+                        SourceDomain = DilibSiteFolder,
+                        OriginalIndex = results.Count,
+                        IsChecked = false
+                    });
+                }
+
+                if (results.Count > 0)
+                {
+                    return results;
+                }
+            }
+
+            return results;
+        }
+
+        private List<GalleryItem> ExtractDilibChapterLinksFromBookHtml(string html, string bookUrl)
+        {
+            var results = new List<GalleryItem>();
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return results;
+            }
+
+            string bookTitle = GetDilibBookTitleFromHtml(html, bookUrl);
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var matches = Regex.Matches(
+                html,
+                @"<a[^>]+href=""(?<link>/truyen-tranh/[^""?#]+?-chap-(?<chapter>\d+)\.html)""[^>]*>(?<title>.*?)</a>",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            foreach (Match match in matches)
+            {
+                string link = NormalizeDilibUrl(match.Groups["link"].Value);
+                if (!seen.Add(link))
+                {
+                    continue;
+                }
+
+                string chapterTitle = WebUtility.HtmlDecode(Regex.Replace(match.Groups["title"].Value, @"<[^>]+>", string.Empty)).Trim();
+                if (string.IsNullOrWhiteSpace(chapterTitle))
+                {
+                    chapterTitle = "Chapter " + match.Groups["chapter"].Value;
+                }
+
+                results.Add(new GalleryItem
+                {
+                    Link = link,
+                    Name = FormatGalleryTitle($"{bookTitle} - {chapterTitle}"),
+                    LinkCount = "chapter " + match.Groups["chapter"].Value,
+                    SourceDomain = DilibSiteFolder,
+                    OriginalIndex = results.Count,
+                    IsChecked = false
+                });
+            }
+
+            if (results.Count == 0)
+            {
+                results.Add(new GalleryItem
+                {
+                    Link = NormalizeDilibUrl(bookUrl),
+                    Name = FormatGalleryTitle(bookTitle),
+                    SourceDomain = DilibSiteFolder,
+                    OriginalIndex = 0,
+                    IsChecked = false
+                });
+            }
+
+            return results;
+        }
+
+        private string GetDilibBookTitleFromHtml(string html, string link)
+        {
+            string title = ExtractDilibTitleFromHtml(html);
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                return title;
+            }
+
+            try
+            {
+                var uri = new Uri(NormalizeDilibUrl(link));
+                string slug = Path.GetFileNameWithoutExtension(uri.AbsolutePath);
+                slug = Regex.Replace(slug, @"-\d+$", string.Empty);
+                return HumanizeDilibSlug(slug);
+            }
+            catch
+            {
+                return HumanizeDilibSlug(link);
+            }
+        }
+
+        private string GetDilibChapterTitleFromHtml(string html, string link)
+        {
+            string title = ExtractDilibTitleFromHtml(html);
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                return title;
+            }
+
+            try
+            {
+                var uri = new Uri(NormalizeDilibUrl(link));
+                string path = uri.AbsolutePath;
+                var match = Regex.Match(path, @"-chap-(?<chapter>\d+)", RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    return "Chapter " + match.Groups["chapter"].Value;
+                }
+            }
+            catch
+            {
+            }
+
+            return "Chapter";
+        }
+
+        private string ExtractDilibTitleFromHtml(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return string.Empty;
+            }
+
+            var patterns = new[]
+            {
+                @"<meta[^>]+property=""og:title""[^>]+content=""(?<title>[^""]+)""",
+                @"<meta[^>]+name=""title""[^>]+content=""(?<title>[^""]+)""",
+                @"<title>(?<title>.*?)</title>",
+                @"<h1[^>]*>(?<title>.*?)</h1>"
+            };
+
+            foreach (string pattern in patterns)
+            {
+                var match = Regex.Match(html, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                if (!match.Success)
+                {
+                    continue;
+                }
+
+                string title = WebUtility.HtmlDecode(Regex.Replace(match.Groups["title"].Value, @"<[^>]+>", string.Empty)).Trim();
+                title = Regex.Replace(title, @"\s*[-|]\s*dilib\.vn.*$", string.Empty, RegexOptions.IgnoreCase).Trim();
+                if (!string.IsNullOrWhiteSpace(title))
+                {
+                    return title;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private List<string> ExtractDilibImageUrlsFromHtml(string html)
+        {
+            var results = new List<string>();
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return results;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var matches = Regex.Matches(
+                html,
+                @"(?:src|data-src)\s*=\s*[""'](?<url>https?://(?:www\.)?dilib\.vn/[^""'?#>]+/img[^""'?#>]+\.(?:webp|gif|jpg|jpeg|png|bmp)(?:\?[^""'<>]*)?)[""']",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            foreach (Match match in matches)
+            {
+                string imageUrl = match.Groups["url"].Value.Trim();
+                if (string.IsNullOrWhiteSpace(imageUrl))
+                {
+                    continue;
+                }
+
+                string fileName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
+                if (!fileName.StartsWith("img", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (seen.Add(imageUrl))
+                {
+                    results.Add(imageUrl);
+                }
+            }
+
+            if (results.Count == 0)
+            {
+                var fallbackMatches = Regex.Matches(
+                    html,
+                    @"https?://(?:www\.)?dilib\.vn/[^""'?#>]+/img[^""'?#>]+\.(?:webp|gif|jpg|jpeg|png|bmp)(?:\?[^""'<>]*)?",
+                    RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+                foreach (Match match in fallbackMatches)
+                {
+                    string imageUrl = match.Value.Trim();
+                    string fileName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
+                    if (!fileName.StartsWith("img", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (seen.Add(imageUrl))
+                    {
+                        results.Add(imageUrl);
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        private async Task DownloadDilibGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
+        {
+            string normalized = NormalizeDilibUrl(item.Link);
+            if (IsDilibChapterUrl(normalized))
+            {
+                await DownloadDilibChapterAsync(item, rootFolder, token, queueItem);
+                return;
+            }
+
+            if (IsDilibBookUrl(normalized))
+            {
+                await DownloadDilibBookAsync(item, rootFolder, token, queueItem, chapterFilter);
+                return;
+            }
+
+            throw new Exception("Dilib chỉ hỗ trợ book hoặc chapter link.");
+        }
+
+        private async Task DownloadDilibBookAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, ChapterFilter chapterFilter)
+        {
+            string normalized = NormalizeDilibUrl(item.Link);
+            string html = await FetchStringAsync(normalized, token);
+            string bookTitle = GetDilibBookTitleFromHtml(html, normalized);
+            item.Name = FormatGalleryTitle(bookTitle);
+
+            var chapters = ExtractDilibChapterLinksFromBookHtml(html, normalized);
+            if (chapterFilter != null)
+            {
+                chapters = chapters.Where(chapter => chapterFilter.IsMatch(ParseChapterNumber(chapter.Link))).ToList();
+            }
+
+            if (queueItem != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    queueItem.TotalChapters = Math.Max(1, chapters.Count);
+                    queueItem.CompletedChapters = 0;
+                });
+            }
+
+            for (int i = 0; i < chapters.Count; i++)
+            {
+                token.ThrowIfCancellationRequested();
+                var chapterItem = new GalleryItem
+                {
+                    Link = chapters[i].Link,
+                    Name = chapters[i].Name,
+                    SourceDomain = DilibSiteFolder
+                };
+
+                bool completed = await DownloadDilibChapterAsync(chapterItem, rootFolder, token, queueItem, isParentQueue: true);
+                if (queueItem != null)
+                {
+                    int completedCount = i + 1;
+                    Dispatcher.Invoke(() => queueItem.CompletedChapters = completedCount);
+                }
+
+                if (!completed)
+                {
+                    break;
+                }
+            }
+        }
+
+        private async Task<bool> DownloadDilibChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
+        {
+            string normalized = NormalizeDilibUrl(item.Link);
+            string html = await FetchStringAsync(normalized, token);
+            string bookTitle = GetDilibBookTitleFromHtml(html, normalized);
+            string chapterTitle = GetDilibChapterTitleFromHtml(html, normalized);
+            item.Name = FormatGalleryTitle($"{bookTitle} - {chapterTitle}");
+
+            var imageUrls = ExtractDilibImageUrlsFromHtml(html);
+            if (imageUrls.Count == 0)
+            {
+                throw new Exception("Không tìm thấy ảnh chapter hợp lệ.");
+            }
+
+            string safeBook = GetSafePathName(bookTitle);
+            string safeChapter = GetSafeChapterPathName(bookTitle, chapterTitle);
+            string siteRoot = GetSiteDownloadRoot(rootFolder, DilibSiteFolder);
+            string targetFolder = Path.Combine(siteRoot, safeBook, safeChapter);
+            string tempFolder = BuildStableTempFolderPath(siteRoot, DilibSiteFolder, safeBook, safeChapter, normalized);
+            Directory.CreateDirectory(tempFolder);
+            RegisterTempFolder(tempFolder);
+
+            try
+            {
+                if (queueItem != null)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        queueItem.DownloadingChapter = chapterTitle;
+                        queueItem.CurrentProcess = $"Downloading {chapterTitle}";
+                        queueItem.TotalChapters = Math.Max(queueItem.TotalChapters, imageUrls.Count);
+                        queueItem.CompletedChapters = 0;
+                    });
+                }
+
+                int maxThreads = GetCurrentConnectionLimit();
+                using (var semaphore = new DynamicSemaphore(maxThreads, GetCurrentConnectionLimit))
+                {
+                    var tasks = new List<Task>();
+                    int completedPages = 0;
+                    object lockObj = new object();
+
+                    for (int i = 0; i < imageUrls.Count; i++)
+                    {
+                        int pageIndex = i + 1;
+                        string imageUrl = imageUrls[i];
+                        tasks.Add(Task.Run(async () =>
+                        {
+                            while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
+                            {
+                                token.ThrowIfCancellationRequested();
+                                if (queueItem != null && queueItem.IsStopped)
+                                {
+                                    throw new OperationCanceledException();
+                                }
+
+                                await Task.Delay(200, token);
+                            }
+
+                            token.ThrowIfCancellationRequested();
+                            await semaphore.WaitAsync(token);
+                            try
+                            {
+                                while (_isDownloadPaused || (queueItem != null && queueItem.IsPaused))
+                                {
+                                    token.ThrowIfCancellationRequested();
+                                    if (queueItem != null && queueItem.IsStopped)
+                                    {
+                                        throw new OperationCanceledException();
+                                    }
+
+                                    await Task.Delay(200, token);
+                                }
+
+                                string fileName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
+                                if (string.IsNullOrWhiteSpace(fileName))
+                                {
+                                    fileName = $"{pageIndex:D5}.jpg";
+                                }
+
+                                string localPath = Path.Combine(tempFolder, fileName);
+                                var watch = System.Diagnostics.Stopwatch.StartNew();
+                                await DownloadUrlToFileWithRefererAsync(imageUrl, normalized, localPath, token);
+
+                                lock (lockObj)
+                                {
+                                    completedPages++;
+                                    watch.Stop();
+                                    long bytes = File.Exists(localPath) ? new FileInfo(localPath).Length : 0;
+                                    UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, $"{completedPages}/{imageUrls.Count} pages", bytes, watch.ElapsedMilliseconds, isParentQueue);
+                                    WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, $"{completedPages}/{imageUrls.Count} pages", $"Page {pageIndex} completed");
+                                }
+                            }
+                            finally
+                            {
+                                semaphore.Release();
+                            }
+                        }, token));
+                    }
+
+                    await Task.WhenAll(tasks);
+                }
+
+                MoveTempFolderToTarget(tempFolder, targetFolder, "dilib");
+                ValidateDownloadedFiles(targetFolder, imageUrls.Count, queueItem ?? item, chapterTitle, null, chapterUrl: normalized);
+                return true;
+            }
+            finally
+            {
+                UnregisterTempFolder(tempFolder);
+            }
+        }
+    }
+}

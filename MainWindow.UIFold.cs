@@ -106,7 +106,7 @@ namespace get_link_manga
 
             if (e.Key == Key.Enter)
             {
-                if (_currentSection == AppSection.Download)
+                if (_currentSection == AppSection.Download || _currentSection == AppSection.ChooseSource)
                 {
                     var focusedElement = FocusManager.GetFocusedElement(this);
                     if (focusedElement is System.Windows.Controls.TextBox)
@@ -140,7 +140,7 @@ namespace get_link_manga
 
             if (e.Key == Key.V)
             {
-                if (_currentSection == AppSection.Download)
+                if (_currentSection == AppSection.Download || _currentSection == AppSection.ChooseSource)
                 {
                     try
                     {

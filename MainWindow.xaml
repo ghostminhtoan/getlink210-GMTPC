@@ -718,6 +718,9 @@
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="*"/>
                                         </Grid.RowDefinitions>
 
@@ -738,15 +741,59 @@
                                                      BorderBrush="{StaticResource CyberpunkBorderBrush}"
                                                      Foreground="{StaticResource CyberpunkTextBrush}"
                                                      CaretBrush="{StaticResource CyberpunkCyanBrush}"
-                                                     Height="32"/>
+                                                     Height="32"
+                                                     PreviewKeyDown="TxtDilibTagUrl_PreviewKeyDown"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                                            <TextBlock Text="Dilib tab restored. Use HOME button or paste tag URL." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
+                                            <ToggleButton Name="chkDilibAutoPasteLink" Content="AUTO PASTE" IsChecked="True" Style="{StaticResource CyberpunkToggleButtonCyan}" MinWidth="120" Height="30" Padding="10,0" FontWeight="Bold"/>
+                                            <TextBlock Text="Ctrl+V paste direct. Enter analyze. Drag &amp; drop ok." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0" TextWrapping="Wrap"/>
                                         </StackPanel>
 
-                                        <Border Grid.Row="3" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="12">
-                                            <TextBlock Text="If you need full dilib scrape controls again, I can wire them next." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                        <Grid Grid.Row="3" Margin="0,0,0,15">
+                                            <Button Name="btnDilibFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnDilibFetchInfo_Click" Style="{StaticResource TabFetchPrimaryButton}"/>
+                                        </Grid>
+
+                                        <Grid Grid.Row="4" Margin="0,0,0,15">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="TOTAL PAGES" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                <TextBox Name="txtDilibTotalPages" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkYellowBrush}" FontSize="13" FontWeight="Bold" Height="32" HorizontalContentAlignment="Center" TextChanged="TxtDilibTotalPages_TextChanged"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="FROM PAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                <TextBox Name="txtDilibPageFrom" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkTextBrush}" CaretBrush="{StaticResource CyberpunkCyanBrush}" Height="32" HorizontalContentAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="4">
+                                                <TextBlock Text="TO PAGE" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                <TextBox Name="txtDilibPageTo" Text="1" Background="#0e121a" BorderBrush="{StaticResource CyberpunkBorderBrush}" Foreground="{StaticResource CyberpunkTextBrush}" CaretBrush="{StaticResource CyberpunkCyanBrush}" Height="32" HorizontalContentAlignment="Center"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Grid Grid.Row="5" Margin="0,15,0,15">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Name="btnDilibScrape" Content="GET LINK" Click="BtnDilibScrape_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="2" Name="btnDilibCrawlMore" Content="GET MORE" Click="BtnDilibCrawlMore_Click" Style="{StaticResource WideActionButton}"/>
+                                            <Button Grid.Column="4" Name="btnDilibPasteDirect" Content="PASTE DIRECT LINK" Click="BtnDilibPasteDirect_Click" Style="{StaticResource WideActionButton}"/>
+                                        </Grid>
+
+                                        <Border Grid.Row="6" Background="#06090e" BorderBrush="{StaticResource CyberpunkBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="12">
+                                            <TextBlock Text="Hỗ trợ tag/category, book, chapter. Không cần bypass captcha. Ảnh chapter chỉ lấy file bắt đầu img*." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" TextWrapping="Wrap"/>
                                         </Border>
                                     </Grid>
                                 </Border>
