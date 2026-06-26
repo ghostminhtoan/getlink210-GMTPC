@@ -5394,9 +5394,10 @@ namespace get_link_manga
 
             try
             {
+                int targetHeight = ResolveReaderPdfTargetHeight(sourceFolder);
                 UpdateReaderStatus((_isVietnameseUi ? "Đang tải KCC c2p type " : "Downloading KCC c2p type ") + type + "...");
                 await EnsureKccC2pReadyAsync();
-                StartKccC2p(sourceFolder);
+                StartKccC2p(sourceFolder, targetHeight);
                 UpdateReaderStatus((_isVietnameseUi ? "Đã chạy convert PDF type " : "Started PDF convert type ") + type + ": " + sourceFolder);
             }
             catch (Exception ex)
@@ -5456,6 +5457,43 @@ namespace get_link_manga
             return parent != null ? parent.FullName : null;
         }
 
+        private static int ResolveReaderPdfTargetHeight(string sourceFolder)
+        {
+            if (string.IsNullOrWhiteSpace(sourceFolder) || !Directory.Exists(sourceFolder))
+            {
+                return 1600;
+            }
+
+            string firstImagePath = Directory.GetFiles(sourceFolder, "*.*", SearchOption.AllDirectories)
+                .FirstOrDefault(path =>
+                {
+                    string ext = Path.GetExtension(path);
+                    return string.Equals(ext, ".jpg", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(ext, ".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(ext, ".png", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(ext, ".webp", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(ext, ".bmp", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(ext, ".gif", StringComparison.OrdinalIgnoreCase);
+                });
+
+            if (string.IsNullOrWhiteSpace(firstImagePath))
+            {
+                return 1600;
+            }
+
+            try
+            {
+                using (var image = System.Drawing.Image.FromFile(firstImagePath))
+                {
+                    return Math.Max(1, image.Height);
+                }
+            }
+            catch
+            {
+                return 1600;
+            }
+        }
+
         private async Task EnsureKccC2pReadyAsync()
         {
             if (File.Exists(PortablePaths.KccC2pExePath))
@@ -5475,12 +5513,12 @@ namespace get_link_manga
             }
         }
 
-        private void StartKccC2p(string sourceFolder)
+        private void StartKccC2p(string sourceFolder, int targetHeight)
         {
             var psi = new ProcessStartInfo
             {
                 FileName = PortablePaths.KccC2pExePath,
-                Arguments = "\"" + sourceFolder + "\"",
+                Arguments = "-y " + targetHeight.ToString(CultureInfo.InvariantCulture) + " \"" + sourceFolder + "\"",
                 WorkingDirectory = PortablePaths.PortableDataRoot,
                 UseShellExecute = true
             };
