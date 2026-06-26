@@ -157,6 +157,21 @@ namespace get_link_manga
             return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(cleaned.ToLowerInvariant());
         }
 
+        private string CleanDilibDisplayTitle(string title)
+        {
+            string cleaned = WebUtility.HtmlDecode(title ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(cleaned))
+            {
+                return string.Empty;
+            }
+
+            cleaned = Regex.Replace(cleaned, @"^\s*truyện\s+tranh\s+", string.Empty, RegexOptions.IgnoreCase);
+            cleaned = Regex.Replace(cleaned, @"\s*[,|-]\s*thư\s+viện\s+số\s*$", string.Empty, RegexOptions.IgnoreCase);
+            cleaned = Regex.Replace(cleaned, @"\s*-\s*truyện\s+tranh\s*$", string.Empty, RegexOptions.IgnoreCase);
+            cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
+            return cleaned;
+        }
+
         private void TxtDilibTagUrl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
@@ -537,6 +552,7 @@ namespace get_link_manga
                     {
                         title = HumanizeDilibSlug(Path.GetFileNameWithoutExtension(new Uri(normalizedLink).AbsolutePath));
                     }
+                    title = CleanDilibDisplayTitle(title);
 
                     string count = match.Groups["count"].Success ? match.Groups["count"].Value.Trim() + " chapters" : string.Empty;
                     results.Add(new GalleryItem
@@ -587,6 +603,7 @@ namespace get_link_manga
                 {
                     chapterTitle = "Chapter " + match.Groups["chapter"].Value;
                 }
+                chapterTitle = CleanDilibDisplayTitle(chapterTitle);
 
                 results.Add(new GalleryItem
                 {
@@ -619,7 +636,7 @@ namespace get_link_manga
             string title = ExtractDilibTitleFromHtml(html);
             if (!string.IsNullOrWhiteSpace(title))
             {
-                return title;
+                return CleanDilibDisplayTitle(title);
             }
 
             try
@@ -627,11 +644,11 @@ namespace get_link_manga
                 var uri = new Uri(NormalizeDilibUrl(link));
                 string slug = Path.GetFileNameWithoutExtension(uri.AbsolutePath);
                 slug = Regex.Replace(slug, @"-\d+$", string.Empty);
-                return HumanizeDilibSlug(slug);
+                return CleanDilibDisplayTitle(HumanizeDilibSlug(slug));
             }
             catch
             {
-                return HumanizeDilibSlug(link);
+                return CleanDilibDisplayTitle(HumanizeDilibSlug(link));
             }
         }
 
@@ -640,7 +657,7 @@ namespace get_link_manga
             string title = ExtractDilibTitleFromHtml(html);
             if (!string.IsNullOrWhiteSpace(title))
             {
-                return title;
+                return CleanDilibDisplayTitle(title);
             }
 
             try
@@ -650,7 +667,7 @@ namespace get_link_manga
                 var match = Regex.Match(path, @"-chap-(?<chapter>\d+)", RegexOptions.IgnoreCase);
                 if (match.Success)
                 {
-                    return "Chapter " + match.Groups["chapter"].Value;
+                    return CleanDilibDisplayTitle("Chapter " + match.Groups["chapter"].Value);
                 }
             }
             catch
@@ -897,6 +914,7 @@ namespace get_link_manga
                     var tasks = new List<Task>();
                     int completedPages = 0;
                     object lockObj = new object();
+                    DateTime lastUiUpdateUtc = DateTime.MinValue;
 
                     for (int i = 0; i < imageUrls.Count; i++)
                     {
@@ -945,8 +963,16 @@ namespace get_link_manga
                                     completedPages++;
                                     watch.Stop();
                                     long bytes = File.Exists(localPath) ? new FileInfo(localPath).Length : 0;
-                                    UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, $"{completedPages}/{imageUrls.Count} pages", bytes, watch.ElapsedMilliseconds, isParentQueue);
                                     WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, $"{completedPages}/{imageUrls.Count} pages", $"Page {pageIndex} completed");
+                                    bool shouldFlushUi = completedPages == imageUrls.Count ||
+                                                        completedPages == 1 ||
+                                                        (DateTime.UtcNow - lastUiUpdateUtc).TotalMilliseconds >= 500 ||
+                                                        completedPages % 5 == 0;
+                                    if (shouldFlushUi)
+                                    {
+                                        lastUiUpdateUtc = DateTime.UtcNow;
+                                        UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, $"{completedPages}/{imageUrls.Count} pages", bytes, watch.ElapsedMilliseconds, isParentQueue);
+                                    }
                                 }
                             }
                             finally
