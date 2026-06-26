@@ -747,6 +747,23 @@ namespace get_link_manga
             return links.OrderBy(ParseChapterNumber).ToList();
         }
 
+        private string GetChapterProcessLabel(string chapterLink)
+        {
+            double chapterNumber = ParseChapterNumber(chapterLink);
+            if (chapterNumber > 0)
+            {
+                string chapterText = chapterNumber.ToString("0.####", CultureInfo.InvariantCulture);
+                string[] parts = chapterText.Split('.');
+                if (parts.Length > 0 && int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out int wholeNumber))
+                {
+                    parts[0] = wholeNumber.ToString("D4", CultureInfo.InvariantCulture);
+                    return "chap " + string.Join(".", parts);
+                }
+            }
+
+            return "chap 0001";
+        }
+
         private void InitializeChapterProcess(string rootFolder, string siteFolder, GalleryItem item, IList<string> chapterLinks, bool preserveExistingDone = true)
         {
             string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
@@ -796,7 +813,7 @@ namespace get_link_manga
             {
                 string link = chapterLinks[i];
                 string status = doneLinks.Contains(link) ? "Done" : "Pending";
-                sb.AppendLine($"| {i + 1} | {status} | {EscapeMarkdownTableValue(GuessChapterNameFromLink(link))} | {EscapeMarkdownTableValue(link)} |  |");
+                sb.AppendLine($"| {i + 1} | {status} | {EscapeMarkdownTableValue(GetChapterProcessLabel(link))} | {EscapeMarkdownTableValue(link)} |  |");
             }
 
             File.WriteAllText(processPath, sb.ToString(), new UTF8Encoding(true));
@@ -893,17 +910,7 @@ namespace get_link_manga
 
         private string GuessChapterNameFromLink(string link)
         {
-            try
-            {
-                var uri = new Uri(link);
-                string slug = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? link;
-                slug = WebUtility.UrlDecode(slug).Replace("-", " ");
-                return NormalizeChapterLabel(slug.Trim());
-            }
-            catch
-            {
-                return NormalizeChapterLabel(link ?? string.Empty);
-            }
+            return GetChapterProcessLabel(link);
         }
 
         private async void BtnStartDownloadToggle_Click(object sender, RoutedEventArgs e)
@@ -1044,9 +1051,6 @@ namespace get_link_manga
                 return;
             }
 
-            // If the previous run was stopped, clear any leftover temp folders before starting over.
-            CleanupActiveTempFolders();
-
             string downloadRoot = txtDownloadPath.Text.Trim();
             if (string.IsNullOrEmpty(downloadRoot))
             {
@@ -1180,11 +1184,6 @@ namespace get_link_manga
                 cmbConnections.IsEnabled = true;
 
                 UpdateQueueErrorLabel();
-                if (wasCancelled)
-                {
-                    CleanupActiveTempFolders();
-                }
-
                 UpdateLightNovelFloatingControlState();
             }
         }
