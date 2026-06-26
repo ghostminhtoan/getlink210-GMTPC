@@ -329,6 +329,15 @@ namespace get_link_manga
             xnConvertButton.Margin = new Thickness(0, 0, 6, 4);
             watchToolbar.Children.Add(xnConvertButton);
 
+            var convertToPdfButton = CreateReaderMiniButton("Convert to PDF", ConvertToPdf_Click, 128);
+            convertToPdfButton.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0x2D, 0x55));
+            convertToPdfButton.BorderBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0x9A, 0xB5));
+            convertToPdfButton.Foreground = Brushes.White;
+            Grid.SetColumn(convertToPdfButton, 5);
+            convertToPdfButton.HorizontalAlignment = HorizontalAlignment.Left;
+            convertToPdfButton.Margin = new Thickness(0, 0, 6, 4);
+            watchToolbar.Children.Add(convertToPdfButton);
+
             _readerSummaryText = CreateWatchSummaryText();
             _readerDomainList = CreateWatchListBox();
             _readerMangaList = CreateWatchListBox();
@@ -472,6 +481,7 @@ namespace get_link_manga
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             watchToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
             var refreshLibraryButton = CreateReaderMiniButton("Refresh library", (sender, args) => refreshAction(), 118);
@@ -500,7 +510,7 @@ namespace get_link_manga
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(12, 0, 0, 4)
             };
-            Grid.SetColumn(titleText, 5);
+            Grid.SetColumn(titleText, 6);
             watchToolbar.Children.Add(titleText);
             return watchToolbar;
         }
@@ -5339,6 +5349,138 @@ namespace get_link_manga
             {
                 FileName = PortablePaths.XnConvertInstallerPath,
                 Arguments = silentInstall ? "/s" : string.Empty,
+                WorkingDirectory = PortablePaths.PortableDataRoot,
+                UseShellExecute = true
+            };
+
+            Process.Start(psi);
+        }
+
+        private void ConvertToPdf_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is Button button))
+            {
+                return;
+            }
+
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateConvertToPdfMenuItem("Type 0", 0));
+            menu.Items.Add(CreateConvertToPdfMenuItem("Type 1", 1));
+            menu.Items.Add(CreateConvertToPdfMenuItem("Type 2", 2));
+            menu.Items.Add(CreateConvertToPdfMenuItem("Type 3", 3));
+            button.ContextMenu = menu;
+            menu.PlacementTarget = button;
+            menu.IsOpen = true;
+        }
+
+        private MenuItem CreateConvertToPdfMenuItem(string label, int type)
+        {
+            var item = new MenuItem
+            {
+                Header = label
+            };
+            item.Click += async (sender, args) => await ConvertReaderFolderToPdfAsync(type);
+            return item;
+        }
+
+        private async Task ConvertReaderFolderToPdfAsync(int type)
+        {
+            string sourceFolder = ResolveReaderPdfSourceFolder(type);
+            if (string.IsNullOrWhiteSpace(sourceFolder) || !Directory.Exists(sourceFolder))
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Không có folder hợp lệ để convert PDF." : "No valid folder to convert to PDF.");
+                return;
+            }
+
+            try
+            {
+                UpdateReaderStatus((_isVietnameseUi ? "Đang tải KCC c2p type " : "Downloading KCC c2p type ") + type + "...");
+                await EnsureKccC2pReadyAsync();
+                StartKccC2p(sourceFolder);
+                UpdateReaderStatus((_isVietnameseUi ? "Đã chạy convert PDF type " : "Started PDF convert type ") + type + ": " + sourceFolder);
+            }
+            catch (Exception ex)
+            {
+                UpdateReaderStatus("Convert PDF lỗi: " + ex.Message);
+            }
+        }
+
+        private string ResolveReaderPdfSourceFolder(int type)
+        {
+            string currentChapterFolder = _currentReaderChapter != null ? _currentReaderChapter.FolderPath : null;
+            string currentMangaFolder = _currentReaderManga != null ? _currentReaderManga.FolderPath : null;
+            string currentDomainFolder = _currentReaderDomain != null ? _currentReaderDomain.FolderPath : null;
+            string currentSeriesFolder = ResolveCurrentReaderSeriesFolderPath();
+
+            switch (type)
+            {
+                case 0:
+                    return FirstExistingPath(currentDomainFolder, currentSeriesFolder, currentMangaFolder, currentChapterFolder, GetCurrentReaderLibraryRoot());
+                case 1:
+                    return FirstExistingPath(currentSeriesFolder, currentMangaFolder, currentChapterFolder, currentDomainFolder, GetCurrentReaderLibraryRoot());
+                case 2:
+                    return FirstExistingPath(GetReaderParentFolder(currentChapterFolder), currentChapterFolder, currentMangaFolder, currentSeriesFolder, GetCurrentReaderLibraryRoot());
+                case 3:
+                    return FirstExistingPath(currentChapterFolder, GetReaderParentFolder(currentChapterFolder), currentMangaFolder, currentSeriesFolder, GetCurrentReaderLibraryRoot());
+                default:
+                    return FirstExistingPath(currentChapterFolder, currentMangaFolder, currentSeriesFolder, currentDomainFolder, GetCurrentReaderLibraryRoot());
+            }
+        }
+
+        private static string FirstExistingPath(params string[] paths)
+        {
+            if (paths == null)
+            {
+                return null;
+            }
+
+            foreach (string path in paths)
+            {
+                if (!string.IsNullOrWhiteSpace(path) && (Directory.Exists(path) || File.Exists(path)))
+                {
+                    return path;
+                }
+            }
+
+            return null;
+        }
+
+        private static string GetReaderParentFolder(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath))
+            {
+                return null;
+            }
+
+            DirectoryInfo parent = Directory.GetParent(folderPath);
+            return parent != null ? parent.FullName : null;
+        }
+
+        private async Task EnsureKccC2pReadyAsync()
+        {
+            if (File.Exists(PortablePaths.KccC2pExePath))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(PortablePaths.PortableDataRoot);
+            using (var response = await _httpClient.GetAsync("https://github.com/ciromattia/kcc/releases/download/v10.2.0/KCC_c2p_10.2.0.exe", HttpCompletionOption.ResponseHeadersRead))
+            {
+                response.EnsureSuccessStatusCode();
+                using (var input = await response.Content.ReadAsStreamAsync())
+                using (var output = File.Open(PortablePaths.KccC2pExePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await input.CopyToAsync(output);
+                }
+            }
+        }
+
+        private void StartKccC2p(string sourceFolder)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = PortablePaths.KccC2pExePath,
+                Arguments = "\"" + sourceFolder + "\"",
                 WorkingDirectory = PortablePaths.PortableDataRoot,
                 UseShellExecute = true
             };
