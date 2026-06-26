@@ -616,6 +616,14 @@ namespace get_link_manga
                 });
             }
 
+            if (results.Count > 1)
+            {
+                results = results
+                    .OrderBy(item => ParseChapterNumber(item.Link))
+                    .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+
             if (results.Count == 0)
             {
                 results.Add(new GalleryItem
@@ -876,10 +884,10 @@ namespace get_link_manga
         private async Task<bool> DownloadDilibChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
         {
             string normalized = NormalizeDilibUrl(item.Link);
-            string html = await FetchStringAsync(normalized, token);
-            string bookTitle = GetDilibBookTitleFromHtml(html, normalized);
-            string chapterTitle = GetDilibChapterTitleFromHtml(html, normalized);
-            item.Name = FormatGalleryTitle($"{bookTitle} - {chapterTitle}");
+                string html = await FetchStringAsync(normalized, token);
+                string bookTitle = GetDilibBookTitleFromHtml(html, normalized);
+                string chapterTitle = GetDilibChapterTitleFromHtml(html, normalized);
+                item.Name = FormatGalleryTitle($"{bookTitle} - {chapterTitle}");
 
             var imageUrls = ExtractDilibImageUrlsFromHtml(html, normalized);
             if (imageUrls.Count == 0)
@@ -888,9 +896,11 @@ namespace get_link_manga
             }
 
             string safeBook = GetSafePathName(bookTitle);
-            string safeChapter = GetSafeChapterPathName(bookTitle, chapterTitle);
+            string safeChapter = GetSafeChapterPathName(chapterTitle);
             string siteRoot = GetSiteDownloadRoot(rootFolder, DilibSiteFolder);
-            string targetFolder = Path.Combine(siteRoot, safeBook, safeChapter);
+            string targetFolder = _isSingleComicFolderType
+                ? Path.Combine(siteRoot, safeBook, safeChapter)
+                : Path.Combine(siteRoot, $"{safeBook}-{safeChapter}");
             string tempFolder = BuildStableTempFolderPath(siteRoot, DilibSiteFolder, safeBook, safeChapter, normalized);
             Directory.CreateDirectory(tempFolder);
             RegisterTempFolder(tempFolder);

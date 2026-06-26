@@ -18,6 +18,7 @@ namespace get_link_manga
         private readonly Action _startDownloadPictureAction;
         private readonly Action _stopDownloadPictureAction;
         private readonly Action<bool> _setRetryAction;
+        private readonly Action _toggleAutoPasteAction;
         private readonly Action _openShutdownOptionsAction;
         private readonly Action _toggleAutoFocusAction;
         private readonly Action _openFolderAction;
@@ -29,6 +30,7 @@ namespace get_link_manga
         private readonly TextBlock _statusText;
         private readonly TextBlock _buildInfoText;
         private readonly Button _pinToggleButton;
+        private readonly Button _autoPasteToggleButton;
         private readonly Button _focusToggleButton;
         private readonly Button _downloadToggleButton;
         private readonly Button _retryToggleButton;
@@ -73,6 +75,7 @@ namespace get_link_manga
             Action startDownloadPictureAction,
             Action stopDownloadPictureAction,
             Action<bool> setRetryAction,
+            Action toggleAutoPasteAction,
             Action openShutdownOptionsAction,
             Action toggleAutoFocusAction,
             Action openFolderAction,
@@ -86,6 +89,7 @@ namespace get_link_manga
             _startDownloadPictureAction = startDownloadPictureAction;
             _stopDownloadPictureAction = stopDownloadPictureAction;
             _setRetryAction = setRetryAction;
+            _toggleAutoPasteAction = toggleAutoPasteAction;
             _openShutdownOptionsAction = openShutdownOptionsAction;
             _toggleAutoFocusAction = toggleAutoFocusAction;
             _openFolderAction = openFolderAction;
@@ -223,9 +227,25 @@ namespace get_link_manga
             Grid.SetRow(topBar, 0);
             root.Children.Add(topBar);
 
-            var topToggleRow = CreateDoubleToggleRow(
-                "Pin", out _pinToggleButton, (sender, args) => TogglePin(),
-                "Focus", out _focusToggleButton, (sender, args) => _toggleAutoFocusAction?.Invoke());
+            var topToggleRow = new Grid { Margin = new Thickness(0, 0, 0, 4) };
+            topToggleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            topToggleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            topToggleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            topToggleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            topToggleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var pinGroup = CreateToggleGroup("Pin", out _pinToggleButton, (sender, args) => TogglePin());
+            Grid.SetColumn(pinGroup, 0);
+            topToggleRow.Children.Add(pinGroup);
+
+            var autoPasteGroup = CreateToggleGroup("Auto Paste", out _autoPasteToggleButton, (sender, args) => ToggleAutoPaste());
+            Grid.SetColumn(autoPasteGroup, 2);
+            topToggleRow.Children.Add(autoPasteGroup);
+
+            var focusGroup = CreateToggleGroup("Focus", out _focusToggleButton, (sender, args) => _toggleAutoFocusAction?.Invoke());
+            Grid.SetColumn(focusGroup, 4);
+            topToggleRow.Children.Add(focusGroup);
+
             Grid.SetRow(topToggleRow, 1);
             root.Children.Add(topToggleRow);
 
@@ -393,7 +413,7 @@ namespace get_link_manga
 
             UpdateOpacityVisual();
             UpdateSizeVisual();
-            UpdateState(false, true, false, false, false, BuildInfo.DisplayText, isVietnamese);
+            UpdateState(false, true, false, false, false, false, BuildInfo.DisplayText, isVietnamese);
         }
 
         [DllImport("user32.dll")]
@@ -418,7 +438,7 @@ namespace get_link_manga
             SetWindowLong(handle, GwlExStyle, exStyle | WsExNoActivate | WsExToolWindow);
         }
 
-        internal void UpdateState(bool isCopyRunning, bool autoFocusEnabled, bool isDownloadRunning, bool isRetryEnabled, bool isShutdownEnabled, string buildText, bool isVietnamese)
+        internal void UpdateState(bool isCopyRunning, bool autoFocusEnabled, bool isDownloadRunning, bool isRetryEnabled, bool isShutdownEnabled, bool isAutoPasteEnabled, string buildText, bool isVietnamese)
         {
             bool isRunning = isCopyRunning || isDownloadRunning;
             _statusText.Text = isRunning ? "RUNNING" : "STOPPED";
@@ -432,6 +452,7 @@ namespace get_link_manga
             SetToggleVisual(_retryToggleButton, isRetryEnabled);
             SetToggleVisual(_shutdownToggleButton, isShutdownEnabled);
             SetToggleVisual(_copyToggleButton, isCopyRunning);
+            SetToggleVisual(_autoPasteToggleButton, isAutoPasteEnabled);
             _buildInfoText.Text = string.IsNullOrWhiteSpace(buildText) ? "-" : buildText;
 
             _shellBorder.BorderBrush = new SolidColorBrush(isRunning
@@ -748,6 +769,11 @@ namespace get_link_manga
             {
                 _startCopyAction?.Invoke();
             }
+        }
+
+        private void ToggleAutoPaste()
+        {
+            _toggleAutoPasteAction?.Invoke();
         }
 
         private void ToggleDownload()

@@ -1416,10 +1416,11 @@ namespace get_link_manga
                 enabled => Dispatcher.BeginInvoke(new Action(() => SetPictureAutoRetryFromFloating(enabled))),
                 () => Dispatcher.BeginInvoke(new Action(OpenShutdownOptionsPopup)),
                 () => Dispatcher.BeginInvoke(new Action(ToggleLightNovelAutoFocus)),
+                () => Dispatcher.BeginInvoke(new Action(ToggleGlobalAutoPasteClipboard)),
                 () => Dispatcher.BeginInvoke(new Action(() => BtnOpenLightNovelFolder_Click(this, new RoutedEventArgs()))),
                 () => Dispatcher.BeginInvoke(new Action(async () => await ResetActiveCaptchaFromFloatingAsync())),
                 () => Dispatcher.BeginInvoke(new Action(() => BtnClearTemp_Click(this, new RoutedEventArgs()))),
-                url => Dispatcher.BeginInvoke(new Action(() => AppendSupportedInputLinks(url))),
+                url => Dispatcher.BeginInvoke(new Action(async () => await AppendSupportedInputLinks(url))),
                 index => Dispatcher.BeginInvoke(new Action(() => {
                     _suppressDownloadFolderTypeEvents = true;
                     try
@@ -1448,6 +1449,7 @@ namespace get_link_manga
                 _downloadCts != null,
                 btnAutoRetryErrors?.IsChecked == true,
                 _shutdownAfterCompleted,
+                _globalAutoPasteEnabled,
                 BuildInfo.DisplayText,
                 _isVietnameseUi);
         }

@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace get_link_manga
 {
@@ -25,6 +26,10 @@ namespace get_link_manga
         private bool _displaySettingsHooked;
         internal string _truyenqqPreferredBaseUrl;
         private CancellationTokenSource _cts;
+        private DispatcherTimer _globalAutoPasteTimer;
+        private bool _globalAutoPasteEnabled;
+        private bool _globalAutoPasteBusy;
+        private string _globalAutoPasteLastClipboardText;
         private int _detectedMaxPage = 1;
         private bool _usePagePathSegment;
         internal ObservableCollection<GalleryItem> _scrapedItems = new ObservableCollection<GalleryItem>();
@@ -68,6 +73,7 @@ namespace get_link_manga
             ApplyBuildInfoText();
             WirePauseButtonToggle();
             InitializeLogPanels();
+            InitializeGlobalAutoPasteClipboard();
             dgResults.ItemsSource = _scrapedItems;
             UpdateStats();
 
@@ -120,6 +126,7 @@ namespace get_link_manga
                 UnhookDisplaySettingsChanged();
                 DisposeLightNovelFocusTrayIcon();
                 _lightNovelFloatingControlWindow?.Close();
+                StopGlobalAutoPasteClipboard();
                 SaveActiveGalleryListSnapshot();
 
                 if (_hwndSource != null)
@@ -200,6 +207,113 @@ namespace get_link_manga
         private void WindowOpen_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             BtnLoadCustom_Click(sender, new RoutedEventArgs());
+        }
+
+        private void InitializeGlobalAutoPasteClipboard()
+        {
+            if (_globalAutoPasteTimer != null)
+            {
+                return;
+            }
+
+            _globalAutoPasteTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(350)
+            };
+            _globalAutoPasteTimer.Tick += async (s, e) => await GlobalAutoPasteClipboardTickAsync();
+        }
+
+        private async System.Threading.Tasks.Task GlobalAutoPasteClipboardTickAsync()
+        {
+            if (!_globalAutoPasteEnabled || _globalAutoPasteBusy)
+            {
+                return;
+            }
+
+            string text;
+            try
+            {
+                if (!Clipboard.ContainsText())
+                {
+                    return;
+                }
+
+                text = Clipboard.GetText();
+            }
+            catch
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(text) || string.Equals(text, _globalAutoPasteLastClipboardText, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var supportedLines = new System.Collections.Generic.List<string>();
+            var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string rawLine in text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string line = rawLine.Trim();
+                if (string.IsNullOrWhiteSpace(line) || !IsSupportedDomain(line) || !seen.Add(line))
+                {
+                    continue;
+                }
+
+                supportedLines.Add(line);
+            }
+
+            _globalAutoPasteLastClipboardText = text;
+            if (supportedLines.Count == 0)
+            {
+                return;
+            }
+
+            _globalAutoPasteBusy = true;
+            try
+            {
+                await AppendSupportedInputLinks(string.Join(Environment.NewLine, supportedLines));
+            }
+            finally
+            {
+                _globalAutoPasteBusy = false;
+            }
+        }
+
+        private void ToggleGlobalAutoPasteClipboard()
+        {
+            SetGlobalAutoPasteClipboardEnabled(!_globalAutoPasteEnabled);
+        }
+
+        private void SetGlobalAutoPasteClipboardEnabled(bool enabled)
+        {
+            _globalAutoPasteEnabled = enabled;
+            if (_globalAutoPasteTimer == null)
+            {
+                InitializeGlobalAutoPasteClipboard();
+            }
+
+            if (enabled)
+            {
+                _globalAutoPasteLastClipboardText = null;
+                _globalAutoPasteTimer.Start();
+                lblStatus.Text = _isVietnameseUi ? "Auto paste clipboard bật." : "Clipboard auto paste on.";
+            }
+            else
+            {
+                StopGlobalAutoPasteClipboard();
+            }
+
+            UpdateLightNovelFloatingControlState();
+        }
+
+        private void StopGlobalAutoPasteClipboard()
+        {
+            _globalAutoPasteEnabled = false;
+            _globalAutoPasteBusy = false;
+            _globalAutoPasteLastClipboardText = null;
+            _globalAutoPasteTimer?.Stop();
+            UpdateLightNovelFloatingControlState();
         }
     }
 }

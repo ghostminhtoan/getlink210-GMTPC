@@ -180,7 +180,7 @@ namespace get_link_manga
             }
         }
 
-        public async void AppendSupportedInputLinks(string text)
+        public async Task AppendSupportedInputLinks(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -205,10 +205,7 @@ namespace get_link_manga
                 if (handled)
                 {
                     ClearAppendCompletedStatus();
-                    continue;
                 }
-
-                RouteAndProcessInputLink(link);
             }
         }
 
