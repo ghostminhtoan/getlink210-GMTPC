@@ -2963,6 +2963,12 @@ namespace get_link_manga
             try
             {
                 return Directory.GetDirectories(folderPath)
+                    .Where(path =>
+                    {
+                        string folderName = Path.GetFileName(path);
+                        return !string.IsNullOrWhiteSpace(folderName) &&
+                               !folderName.StartsWith(".", StringComparison.Ordinal);
+                    })
                     .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
                     .ToArray();
             }

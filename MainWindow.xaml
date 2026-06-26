@@ -745,11 +745,6 @@
                                                      PreviewKeyDown="TxtDilibTagUrl_PreviewKeyDown"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
-                                            <ToggleButton Name="chkDilibAutoPasteLink" Content="AUTO PASTE" IsChecked="True" Style="{StaticResource CyberpunkToggleButtonCyan}" MinWidth="120" Height="30" Padding="10,0" FontWeight="Bold"/>
-                                            <TextBlock Text="Ctrl+V paste direct. Enter analyze. Drag &amp; drop ok." Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0" TextWrapping="Wrap"/>
-                                        </StackPanel>
-
                                         <Grid Grid.Row="3" Margin="0,0,0,15">
                                             <Button Name="btnDilibFetchInfo" Content="ANALYZE TARGET PAGE" Click="BtnDilibFetchInfo_Click" Style="{StaticResource TabFetchPrimaryButton}"/>
                                         </Grid>

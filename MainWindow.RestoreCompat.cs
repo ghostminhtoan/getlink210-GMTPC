@@ -515,11 +515,18 @@ namespace get_link_manga
                 return;
             }
 
+            var existingLinks = new HashSet<string>(
+                _scrapedItems
+                    .Select(item => item?.Link)
+                    .Where(link => !string.IsNullOrWhiteSpace(link)),
+                StringComparer.OrdinalIgnoreCase);
+
             foreach (string link in links)
             {
                 bool handled = await TryAppendSupportedDirectLinkAsync(link, showMessageBox: false);
                 if (handled)
                 {
+                    MarkNewlyImportedItemsChecked(existingLinks);
                     ClearAppendCompletedStatus();
                     continue;
                 }

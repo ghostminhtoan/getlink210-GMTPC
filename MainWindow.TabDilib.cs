@@ -189,7 +189,7 @@ namespace get_link_manga
         {
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
-                if (chkDilibAutoPasteLink?.IsChecked == true && Clipboard.ContainsText())
+                if (Clipboard.ContainsText())
                 {
                     string text = Clipboard.GetText()?.Trim();
                     if (!string.IsNullOrWhiteSpace(text))
@@ -478,7 +478,7 @@ namespace get_link_manga
                     LinkCount = chapters.Count > 0 ? chapters.Count + " chapters" : string.Empty,
                     SourceDomain = DilibSiteFolder,
                     OriginalIndex = 0,
-                    IsChecked = false
+                    IsChecked = true
                 });
 
                 return results;
@@ -495,7 +495,7 @@ namespace get_link_manga
                     Name = FormatGalleryTitle($"{bookTitle} - {chapterTitle}"),
                     SourceDomain = DilibSiteFolder,
                     OriginalIndex = 0,
-                    IsChecked = false
+                    IsChecked = true
                 });
                 return results;
             }
@@ -577,7 +577,7 @@ namespace get_link_manga
                         LinkCount = count,
                         SourceDomain = DilibSiteFolder,
                         OriginalIndex = results.Count,
-                        IsChecked = false
+                        IsChecked = true
                     });
                 }
 
@@ -673,7 +673,7 @@ namespace get_link_manga
                     LinkCount = "chapter " + match.Groups["chapter"].Value,
                     SourceDomain = DilibSiteFolder,
                     OriginalIndex = results.Count,
-                    IsChecked = false
+                    IsChecked = true
                 });
             }
 
@@ -693,7 +693,7 @@ namespace get_link_manga
                     Name = FormatGalleryTitle(bookTitle),
                     SourceDomain = DilibSiteFolder,
                     OriginalIndex = 0,
-                    IsChecked = false
+                    IsChecked = true
                 });
             }
 
@@ -889,6 +889,30 @@ namespace get_link_manga
 
             if (IsDilibBookUrl(normalized))
             {
+                if (chapterFilter == null)
+                {
+                    var pendingFromProcess = LoadPendingChapterLinksFromProcess(rootFolder, DilibSiteFolder, item);
+                    if (pendingFromProcess != null)
+                    {
+                        if (pendingFromProcess.Count == 0)
+                        {
+                            if (queueItem != null)
+                            {
+                                Dispatcher.Invoke(() =>
+                                {
+                                    queueItem.Status = "Completed";
+                                    queueItem.CurrentProcess = "Đã hoàn tất theo process";
+                                });
+                            }
+
+                            return;
+                        }
+
+                        await DownloadDilibPendingChaptersAsync(item, rootFolder, token, queueItem, pendingFromProcess);
+                        return;
+                    }
+                }
+
                 await DownloadDilibBookAsync(item, rootFolder, token, queueItem, chapterFilter);
                 return;
             }
@@ -908,6 +932,12 @@ namespace get_link_manga
             {
                 chapters = chapters.Where(chapter => chapterFilter.IsMatch(ParseChapterNumber(chapter.Link))).ToList();
             }
+            else
+            {
+                chapters = FilterPendingChapterLinksFromProcess(rootFolder, DilibSiteFolder, item, chapters.Select(chapter => chapter.Link).ToList())
+                    .Select(link => chapters.First(chapter => string.Equals(chapter.Link, link, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+            }
 
             if (queueItem != null)
             {
@@ -916,6 +946,20 @@ namespace get_link_manga
                     queueItem.TotalChapters = Math.Max(1, chapters.Count);
                     queueItem.CompletedChapters = 0;
                 });
+            }
+
+            if (chapters.Count == 0)
+            {
+                if (queueItem != null)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        queueItem.Status = "Completed";
+                        queueItem.CurrentProcess = "Đã hoàn tất theo process";
+                    });
+                }
+
+                return;
             }
 
             for (int i = 0; i < chapters.Count; i++)
@@ -929,6 +973,10 @@ namespace get_link_manga
                 };
 
                 bool completed = await DownloadDilibChapterAsync(chapterItem, rootFolder, token, queueItem, isParentQueue: true, bookTitleOverride: bookTitle);
+                if (completed)
+                {
+                    MarkChapterProcessDone(rootFolder, DilibSiteFolder, item, chapters[i].Link);
+                }
                 if (queueItem != null)
                 {
                     int completedCount = i + 1;
@@ -938,6 +986,45 @@ namespace get_link_manga
                 if (!completed)
                 {
                     break;
+                }
+            }
+        }
+
+        private async Task DownloadDilibPendingChaptersAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem, IList<string> chapterLinks)
+        {
+            string html = await FetchStringAsync(NormalizeDilibUrl(item.Link), token);
+            string bookTitle = GetDilibBookTitleFromHtml(html, item.Link);
+            if (queueItem != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    queueItem.TotalChapters = Math.Max(1, chapterLinks.Count);
+                    queueItem.CompletedChapters = 0;
+                });
+            }
+
+            int completedCount = 0;
+            foreach (string chapterLink in chapterLinks)
+            {
+                token.ThrowIfCancellationRequested();
+                var chapterItem = new GalleryItem
+                {
+                    Link = chapterLink,
+                    Name = item.Name,
+                    SourceDomain = DilibSiteFolder
+                };
+
+                bool completed = await DownloadDilibChapterAsync(chapterItem, rootFolder, token, queueItem, isParentQueue: true, bookTitleOverride: bookTitle);
+                if (!completed)
+                {
+                    break;
+                }
+
+                MarkChapterProcessDone(rootFolder, DilibSiteFolder, item, chapterLink);
+                completedCount++;
+                if (queueItem != null)
+                {
+                    Dispatcher.Invoke(() => queueItem.CompletedChapters = completedCount);
                 }
             }
         }
@@ -972,12 +1059,11 @@ namespace get_link_manga
             {
                 if (queueItem != null)
                 {
+                    string processChapterLabel = GetChapterProcessLabel(normalized);
                     Dispatcher.Invoke(() =>
                     {
-                        queueItem.DownloadingChapter = chapterTitle;
-                        queueItem.CurrentProcess = $"Downloading {chapterTitle}";
-                        queueItem.TotalChapters = Math.Max(queueItem.TotalChapters, imageUrls.Count);
-                        queueItem.CompletedChapters = 0;
+                        queueItem.DownloadingChapter = processChapterLabel;
+                        queueItem.CurrentProcess = $"Downloading {processChapterLabel}";
                     });
                 }
 

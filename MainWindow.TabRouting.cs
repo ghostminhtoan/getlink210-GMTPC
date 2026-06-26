@@ -199,13 +199,39 @@ namespace get_link_manga
                 return;
             }
 
+            var existingLinks = new HashSet<string>(
+                _scrapedItems
+                    .Select(item => item?.Link)
+                    .Where(link => !string.IsNullOrWhiteSpace(link)),
+                StringComparer.OrdinalIgnoreCase);
+
             foreach (string link in links)
             {
                 bool handled = await TryAppendSupportedDirectLinkAsync(link, showMessageBox: false);
                 if (handled)
                 {
+                    MarkNewlyImportedItemsChecked(existingLinks);
                     ClearAppendCompletedStatus();
                 }
+            }
+        }
+
+        private void MarkNewlyImportedItemsChecked(ISet<string> existingLinks)
+        {
+            if (existingLinks == null)
+            {
+                return;
+            }
+
+            foreach (GalleryItem item in _scrapedItems)
+            {
+                if (item == null || string.IsNullOrWhiteSpace(item.Link) || existingLinks.Contains(item.Link))
+                {
+                    continue;
+                }
+
+                item.IsChecked = true;
+                existingLinks.Add(item.Link);
             }
         }
 
