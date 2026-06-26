@@ -330,22 +330,16 @@ namespace get_link_manga
                 return chapterTitle;
             }
 
-            string normalized = Regex.Replace(
+            Match match = Regex.Match(
                 chapterTitle.Trim(),
-                @"(?<prefix>\b(?:chap(?:ter)?|chương|chuong)\s*)(?<num>\d+(?:\.\d+)?)",
-                match => match.Groups["prefix"].Value + ZeroPadChapterNumberToken(match.Groups["num"].Value),
-                RegexOptions.IgnoreCase);
+                @"(?i)(?:chap(?:ter)?|chương|chuong)?\s*(?<num>\d+(?:\.\d+)?)");
 
-            if (string.Equals(normalized, chapterTitle.Trim(), StringComparison.Ordinal))
+            if (match.Success)
             {
-                normalized = Regex.Replace(
-                    normalized,
-                    @"^(?<num>\d+(?:\.\d+)?)$",
-                    match => ZeroPadChapterNumberToken(match.Groups["num"].Value),
-                    RegexOptions.IgnoreCase);
+                return "chap " + ZeroPadChapterNumberToken(match.Groups["num"].Value);
             }
 
-            return normalized;
+            return CompactSingleLine(chapterTitle.Trim());
         }
 
         private string GetSafeChapterPathName(string chapterTitle, int maxLength = 100)
@@ -386,12 +380,12 @@ namespace get_link_manga
                 return numberToken;
             }
 
-            if (wholeNumber >= 10 || parts[0].Length >= 2)
+            if (wholeNumber >= 1000 || parts[0].Length >= 4)
             {
                 return numberToken;
             }
 
-            parts[0] = wholeNumber.ToString("D2", CultureInfo.InvariantCulture);
+            parts[0] = wholeNumber.ToString("D4", CultureInfo.InvariantCulture);
             return string.Join(".", parts);
         }
 
