@@ -736,7 +736,7 @@
                                         <StackPanel Grid.Row="1" Margin="0,0,0,12">
                                             <TextBlock Text="TARGET URL" Foreground="{StaticResource CyberpunkMutedTextBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                                             <TextBox Name="txtDilibTagUrl"
-                                                     Text="https://dilib.vn/"
+                                                     Text="https://dilib.vn/truyen-tranh/shounen/"
                                                      Background="#0e121a"
                                                      BorderBrush="{StaticResource CyberpunkBorderBrush}"
                                                      Foreground="{StaticResource CyberpunkTextBrush}"
