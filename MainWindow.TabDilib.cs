@@ -867,7 +867,7 @@ namespace get_link_manga
                     SourceDomain = DilibSiteFolder
                 };
 
-                bool completed = await DownloadDilibChapterAsync(chapterItem, rootFolder, token, queueItem, isParentQueue: true);
+                bool completed = await DownloadDilibChapterAsync(chapterItem, rootFolder, token, queueItem, isParentQueue: true, bookTitleOverride: bookTitle);
                 if (queueItem != null)
                 {
                     int completedCount = i + 1;
@@ -881,11 +881,13 @@ namespace get_link_manga
             }
         }
 
-        private async Task<bool> DownloadDilibChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false)
+        private async Task<bool> DownloadDilibChapterAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, bool isParentQueue = false, string bookTitleOverride = null)
         {
             string normalized = NormalizeDilibUrl(item.Link);
                 string html = await FetchStringAsync(normalized, token);
-                string bookTitle = GetDilibBookTitleFromHtml(html, normalized);
+                string bookTitle = string.IsNullOrWhiteSpace(bookTitleOverride)
+                    ? GetDilibBookTitleFromHtml(html, normalized)
+                    : CleanDilibDisplayTitle(bookTitleOverride);
                 string chapterTitle = GetDilibChapterTitleFromHtml(html, normalized);
                 item.Name = FormatGalleryTitle($"{bookTitle} - {chapterTitle}");
 
