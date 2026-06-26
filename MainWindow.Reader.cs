@@ -214,6 +214,7 @@ namespace get_link_manga
         private Button _readerNovelBookSortNameButton;
         private string _readerNovelLibraryRootOverride;
         private TextBox _readerNovelPreviewTextBox;
+        private static bool _magickNativeReady;
 
         private sealed class ReaderChapterAnalysis
         {
@@ -5507,6 +5508,8 @@ namespace get_link_manga
 
         private static void WriteReaderPdf(string outputPdfPath, IReadOnlyList<string> imageFiles)
         {
+            EnsureMagickNativeLibrariesReady();
+
             if (string.IsNullOrWhiteSpace(outputPdfPath))
             {
                 return;
@@ -5537,6 +5540,22 @@ namespace get_link_manga
 
                 collection.Write(outputPdfPath, MagickFormat.Pdf);
             }
+        }
+
+        private static void EnsureMagickNativeLibrariesReady()
+        {
+            if (_magickNativeReady)
+            {
+                return;
+            }
+
+            string nativeDir = Path.Combine(PortablePaths.AppRoot, "third_party", "Magick.NET");
+            if (Directory.Exists(nativeDir))
+            {
+                MagickNET.SetNativeLibraryDirectory(nativeDir);
+            }
+
+            _magickNativeReady = true;
         }
 
         public void ToggleReaderFullscreen()
