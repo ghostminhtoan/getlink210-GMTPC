@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -2524,35 +2524,62 @@ namespace get_link_manga
 
         private ReaderChapterItem BuildReaderChapterItem(string folderPath, string chapterName, int depth)
         {
-            string[] pageFiles = Directory.GetFiles(folderPath)
-                .Where(IsSupportedReaderImageFile)
-                .OrderBy(path => Path.GetFileNameWithoutExtension(path), _readerSortComparer)
-                .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+            bool hasImages;
+            try
+            {
+                hasImages = Directory.EnumerateFiles(folderPath).Any(IsSupportedReaderImageFile);
+            }
+            catch
+            {
+                hasImages = false;
+            }
 
-            if (pageFiles.Length == 0)
+            if (!hasImages)
             {
                 return null;
             }
-
-            var pages = pageFiles
-                .Select((path, index) => new ReaderPageItem
-                {
-                    Index = index,
-                    Name = Path.GetFileName(path),
-                    FilePath = path,
-                    LastModifiedUtc = SafeGetLastWriteTimeUtc(path)
-                })
-                .ToList();
 
             return new ReaderChapterItem
             {
                 Name = chapterName,
                 FolderPath = folderPath,
                 FolderDepth = depth,
-                LastModifiedUtc = pages.Max(item => item.LastModifiedUtc),
-                Pages = pages
+                LastModifiedUtc = SafeGetLastWriteTimeUtc(folderPath),
+                Pages = new List<ReaderPageItem>()
             };
+        }
+
+        private void EnsureChapterPagesLoaded(ReaderChapterItem chapter)
+        {
+            if (chapter == null || (chapter.Pages != null && chapter.Pages.Count > 0))
+            {
+                return;
+            }
+
+            try
+            {
+                string[] pageFiles = Directory.GetFiles(chapter.FolderPath)
+                    .Where(IsSupportedReaderImageFile)
+                    .OrderBy(path => Path.GetFileNameWithoutExtension(path), _readerSortComparer)
+                    .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                var pages = pageFiles
+                    .Select((path, index) => new ReaderPageItem
+                    {
+                        Index = index,
+                        Name = Path.GetFileName(path),
+                        FilePath = path,
+                        LastModifiedUtc = SafeGetLastWriteTimeUtc(path)
+                    })
+                    .ToList();
+
+                chapter.Pages = pages;
+            }
+            catch
+            {
+                chapter.Pages = new List<ReaderPageItem>();
+            }
         }
 
         private List<ReaderNovelDomainItem> BuildReaderNovelDomainItems(IReadOnlyList<ReaderNovelBookItem> books)
@@ -2890,34 +2917,61 @@ namespace get_link_manga
 
         private ReaderNovelChapterItem BuildReaderNovelChapterItem(string folderPath, string chapterName, int depth)
         {
-            string[] markdownFiles = Directory.GetFiles(folderPath, "*.md", SearchOption.TopDirectoryOnly)
-                .OrderBy(path => Path.GetFileNameWithoutExtension(path), _readerSortComparer)
-                .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+            bool hasMarkdown;
+            try
+            {
+                hasMarkdown = Directory.EnumerateFiles(folderPath, "*.md", SearchOption.TopDirectoryOnly).Any();
+            }
+            catch
+            {
+                hasMarkdown = false;
+            }
 
-            if (markdownFiles.Length == 0)
+            if (!hasMarkdown)
             {
                 return null;
             }
-
-            var files = markdownFiles
-                .Select((path, index) => new ReaderMarkdownItem
-                {
-                    Index = index,
-                    Name = Path.GetFileName(path),
-                    FilePath = path,
-                    LastModifiedUtc = SafeGetLastWriteTimeUtc(path)
-                })
-                .ToList();
 
             return new ReaderNovelChapterItem
             {
                 Name = chapterName,
                 FolderPath = folderPath,
                 FolderDepth = depth,
-                LastModifiedUtc = files.Max(item => item.LastModifiedUtc),
-                Files = files
+                LastModifiedUtc = SafeGetLastWriteTimeUtc(folderPath),
+                Files = new List<ReaderMarkdownItem>()
             };
+        }
+
+        private void EnsureNovelChapterFilesLoaded(ReaderNovelChapterItem chapter)
+        {
+            if (chapter == null || (chapter.Files != null && chapter.Files.Count > 0))
+            {
+                return;
+            }
+
+            try
+            {
+                string[] markdownFiles = Directory.GetFiles(chapter.FolderPath, "*.md", SearchOption.TopDirectoryOnly)
+                    .OrderBy(path => Path.GetFileNameWithoutExtension(path), _readerSortComparer)
+                    .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                var files = markdownFiles
+                    .Select((path, index) => new ReaderMarkdownItem
+                    {
+                        Index = index,
+                        Name = Path.GetFileName(path),
+                        FilePath = path,
+                        LastModifiedUtc = SafeGetLastWriteTimeUtc(path)
+                    })
+                    .ToList();
+
+                chapter.Files = files;
+            }
+            catch
+            {
+                chapter.Files = new List<ReaderMarkdownItem>();
+            }
         }
 
         private static bool DirectoryContainsMarkdown(string folderPath)
@@ -3553,6 +3607,14 @@ namespace get_link_manga
                 return;
             }
 
+            if (manga.Chapters != null)
+            {
+                foreach (var chapter in manga.Chapters)
+                {
+                    EnsureChapterPagesLoaded(chapter);
+                }
+            }
+
             _currentReaderManga = manga;
             _currentReaderDomain = _readerDomains.FirstOrDefault(item =>
                 item.Books.Any(book => string.Equals(book.FolderPath, manga.FolderPath, StringComparison.OrdinalIgnoreCase)));
@@ -3669,6 +3731,14 @@ namespace get_link_manga
                 _readerNovelLibraryRootOverride = book.NavigationTargetFolderPath;
                 RefreshReaderNovelLibraryIfNeeded(forceRefresh: true);
                 return;
+            }
+
+            if (book.Chapters != null)
+            {
+                foreach (var chapter in book.Chapters)
+                {
+                    EnsureNovelChapterFilesLoaded(chapter);
+                }
             }
 
             _currentReaderNovelBook = book;
