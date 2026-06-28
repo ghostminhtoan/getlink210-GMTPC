@@ -82,8 +82,8 @@
 		<Compile Remove="MainWindow.Reader.cs" />
 		<Compile Remove="MainWindow.SystemFloatingControlWindow.cs" />
 		<Compile Remove="MainWindow.RestoreCompat.cs" />
-		<Compile Remove="MainWindow.TabRouting.cs" />
-		<Compile Remove="MainWindow.TabWatch.cs" />
+		<Compile Remove="MainWindow.LightNovelDesk.cs" />
+		<Compile Remove="MainWindow.Tab*.cs" />
 		<Compile Remove="GreaterThanZeroConverter.cs" />
 		<Compile Remove="MergeScript.cs" />
 		
