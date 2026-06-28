@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const string GalleryStateBeginMarker = "<!-- COMIC_GMTPC_STATE_BEGIN -->";
         private const string GalleryStateEndMarker = "<!-- COMIC_GMTPC_STATE_END -->";
@@ -119,6 +119,9 @@ namespace get_link_manga
 
             [DataMember(Order = 4)]
             public int DownloadFolderType { get; set; }
+
+            [DataMember(Order = 5)]
+            public string DownloadPath { get; set; }
         }
 
         [DataContract]
@@ -611,7 +614,8 @@ namespace get_link_manga
                     .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
                 ConnectionCount = GetComboBoxSelectedInt(cmbConnections, 4),
                 MultiDownloadCount = GetComboBoxSelectedInt(cmbMultiDownload, 2),
-                DownloadFolderType = cmbDownloadFolderType != null ? cmbDownloadFolderType.SelectedIndex : 0
+                DownloadFolderType = cmbDownloadFolderType != null ? cmbDownloadFolderType.SelectedIndex : 0,
+                DownloadPath = txtDownloadPath != null ? txtDownloadPath.Text : string.Empty
             };
 
             var serializer = new DataContractJsonSerializer(typeof(GalleryMarkdownSettingsState));
@@ -905,53 +909,59 @@ namespace get_link_manga
                 using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     var settings = serializer.ReadObject(ms) as GalleryMarkdownSettingsState;
-                    if (settings?.CreateSubfolderByDomain == null || settings.CreateSubfolderByDomain.Count == 0)
+                    if (settings != null)
                     {
-                        return;
-                    }
-
-                    _createSubfolderByDomain.Clear();
-                    foreach (var pair in settings.CreateSubfolderByDomain)
-                    {
-                        if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+                        if (settings.CreateSubfolderByDomain != null && settings.CreateSubfolderByDomain.Count > 0)
                         {
-                            continue;
-                        }
-
-                        _createSubfolderByDomain[pair.Key.Trim()] = pair.Value.Trim();
-                    }
-
-                    SaveCreateSubfolderSettings();
-                    if (_createSubfolderUiReady)
-                    {
-                        UpdateCreateSubfolderFieldsFromSelection();
-                    }
-
-                    if (settings.ConnectionCount > 0)
-                    {
-                        Dispatcher.Invoke(() => SetComboBoxSelectedInt(cmbConnections, Math.Min(32, Math.Max(1, settings.ConnectionCount))));
-                    }
-                    if (settings.MultiDownloadCount > 0)
-                    {
-                        Dispatcher.Invoke(() => SetComboBoxSelectedInt(cmbMultiDownload, Math.Min(10, Math.Max(1, settings.MultiDownloadCount))));
-                    }
-                    Dispatcher.Invoke(() => {
-                        if (cmbDownloadFolderType != null)
-                        {
-                            _suppressDownloadFolderTypeEvents = true;
-                            try
+                            _createSubfolderByDomain.Clear();
+                            foreach (var pair in settings.CreateSubfolderByDomain)
                             {
-                                int selType = settings.DownloadFolderType;
-                                cmbDownloadFolderType.SelectedIndex = selType;
-                                _isSingleComicFolderType = (selType == 0);
-                                _lightNovelFloatingControlWindow?.UpdateFolderType(selType);
+                                if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+                                {
+                                    continue;
+                                }
+
+                                _createSubfolderByDomain[pair.Key.Trim()] = pair.Value.Trim();
                             }
-                            finally
+
+                            SaveCreateSubfolderSettings();
+                            if (_createSubfolderUiReady)
                             {
-                                _suppressDownloadFolderTypeEvents = false;
+                                UpdateCreateSubfolderFieldsFromSelection();
                             }
                         }
-                    });
+
+                        if (!string.IsNullOrWhiteSpace(settings.DownloadPath))
+                        {
+                            Dispatcher.Invoke(() => txtDownloadPath.Text = settings.DownloadPath);
+                        }
+
+                        if (settings.ConnectionCount > 0)
+                        {
+                            Dispatcher.Invoke(() => SetComboBoxSelectedInt(cmbConnections, Math.Min(32, Math.Max(1, settings.ConnectionCount))));
+                        }
+                        if (settings.MultiDownloadCount > 0)
+                        {
+                            Dispatcher.Invoke(() => SetComboBoxSelectedInt(cmbMultiDownload, Math.Min(10, Math.Max(1, settings.MultiDownloadCount))));
+                        }
+                        Dispatcher.Invoke(() => {
+                            if (cmbDownloadFolderType != null)
+                            {
+                                _suppressDownloadFolderTypeEvents = true;
+                                try
+                                {
+                                    int selType = settings.DownloadFolderType;
+                                    cmbDownloadFolderType.SelectedIndex = selType;
+                                    _isSingleComicFolderType = (selType == 0);
+                                    _lightNovelFloatingControlWindow?.UpdateFolderType(selType);
+                                }
+                                finally
+                                {
+                                    _suppressDownloadFolderTypeEvents = false;
+                                }
+                            }
+                        });
+                    }
                 }
             }
             catch (Exception ex)
@@ -1077,3 +1087,4 @@ namespace get_link_manga
         }
     }
 }
+

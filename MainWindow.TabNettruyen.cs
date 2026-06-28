@@ -13,7 +13,7 @@ using System.Windows.Controls;
 #pragma warning disable 4014
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private string _lastCaptchaResolvedHtml = null;
 
@@ -1267,80 +1267,77 @@ namespace get_link_manga
             }
 
             // Extract all image URLs from isolated reading area
-            var imageUrls = new List<string>();
+            var pageCandidateUrls = new List<List<string>>();
             var imgTags = Regex.Matches(contentArea, @"<img\s+[^>]*>", RegexOptions.IgnoreCase);
             
             foreach (Match imgTag in imgTags)
             {
                 string tag = imgTag.Value;
-                string imgUrl = null;
+                var candidates = new List<string>();
 
-                var dataOriginalMatch = Regex.Match(tag, @"data-original=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
-                if (dataOriginalMatch.Success)
+                Action<string> addAttr = (attrName) =>
                 {
-                    imgUrl = dataOriginalMatch.Groups["url"].Value;
-                }
-                else
-                {
-                    var dataSrcMatch = Regex.Match(tag, @"data-src=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
-                    if (dataSrcMatch.Success)
+                    var match = Regex.Match(tag, attrName + @"=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
+                    if (match.Success)
                     {
-                        imgUrl = dataSrcMatch.Groups["url"].Value;
-                    }
-                    else
-                    {
-                        var srcMatch = Regex.Match(tag, @"src=[""'](?<url>[^""']+)[""']", RegexOptions.IgnoreCase);
-                        if (srcMatch.Success)
+                        string val = match.Groups["url"].Value.Trim();
+                        if (!string.IsNullOrEmpty(val))
                         {
-                            imgUrl = srcMatch.Groups["url"].Value;
+                            if (val.StartsWith("//"))
+                            {
+                                val = "https:" + val;
+                            }
+                            else if (!val.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
+                                     !val.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                            {
+                                string activeDomain = ExtractNettruyenBaseUrl(item.Link);
+                                val = activeDomain + (val.StartsWith("/") ? "" : "/") + val;
+                            }
+
+                            if (val.Contains("/assets/") ||
+                                val.EndsWith("logo.png", StringComparison.OrdinalIgnoreCase) ||
+                                val.EndsWith("avatar.jpg", StringComparison.OrdinalIgnoreCase) ||
+                                val.Contains("avatar") ||
+                                val.Contains("loading") ||
+                                val.Contains("spacer.gif") ||
+                                val.Contains("transparent.gif") ||
+                                val.Contains("/images/logo") ||
+                                val.Contains("/images/favicon") ||
+                                val.Contains("facebook.com") ||
+                                val.Contains("banner") ||
+                                val.Contains("advertisement") ||
+                                val.Contains("nettruyenviet.webp") ||
+                                Regex.IsMatch(val, @"/0{1,3}\.(jpg|jpeg|png|webp|gif|bmp)$", RegexOptions.IgnoreCase))
+                            {
+                                return;
+                            }
+
+                            if (!candidates.Contains(val))
+                            {
+                                candidates.Add(val);
+                            }
                         }
                     }
-                }
+                };
 
-                if (!string.IsNullOrWhiteSpace(imgUrl))
+                addAttr("data-original");
+                addAttr("data-src");
+                addAttr("data-sv1");
+                addAttr("data-sv2");
+                addAttr("src");
+
+                if (candidates.Count > 0)
                 {
-                    imgUrl = imgUrl.Trim();
-                    
-                    // Filter out UI and advertisement images
-                    if (imgUrl.EndsWith("logo.png", StringComparison.OrdinalIgnoreCase) ||
-                        imgUrl.EndsWith("avatar.jpg", StringComparison.OrdinalIgnoreCase) ||
-                        imgUrl.Contains("avatar") ||
-                        imgUrl.Contains("loading") ||
-                        imgUrl.Contains("spacer.gif") ||
-                        imgUrl.Contains("transparent.gif") ||
-                        imgUrl.Contains("/images/logo") ||
-                        imgUrl.Contains("/images/favicon") ||
-                        imgUrl.Contains("facebook.com") ||
-                        imgUrl.Contains("banner") ||
-                        imgUrl.Contains("advertisement") ||
-                        imgUrl.Contains("nettruyenviet.webp") ||
-                        Regex.IsMatch(imgUrl, @"/0{1,3}\.(jpg|jpeg|png|webp|gif|bmp)$", RegexOptions.IgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    if (imgUrl.StartsWith("//"))
-                    {
-                        imgUrl = "https:" + imgUrl;
-                    }
-                    else if (!imgUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
-                             !imgUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string activeDomain = ExtractNettruyenBaseUrl(item.Link);
-                        imgUrl = activeDomain + (imgUrl.StartsWith("/") ? "" : "/") + imgUrl;
-                    }
-
-                    if (!imageUrls.Contains(imgUrl))
-                    {
-                        imageUrls.Add(imgUrl);
-                    }
+                    pageCandidateUrls.Add(candidates);
                 }
             }
 
-            if (imageUrls.Count == 0)
+            if (pageCandidateUrls.Count == 0)
             {
                 throw new Exception($"Không thể tìm thấy hình ảnh nào của chương truyện '{chapterTitle}' để tải xuống.");
             }
+
+            var imageUrls = pageCandidateUrls.Select(list => list[0]).ToList();
 
             WriteTempProgressLog(tempFolder, item, "Downloading", 0, imageUrls.Count, "0/0 pages", $"Bắt đầu tải {cleanChapter}");
 
@@ -1415,23 +1412,35 @@ namespace get_link_manga
                             }
 
                             string downloadedPath = null;
-                            try
+                            Exception lastEx = null;
+                            foreach (var candidateUrl in pageCandidateUrls[index])
                             {
-                                // Pass item.Link (which is the chapter page URL) as the Referer to bypass hotlinking protection
-                                await DownloadUrlToFileWithRefererAsync(imgUrl, item.Link, localFilePath, token, isTruyenqq: true);
-                                downloadedPath = localFilePath;
+                                try
+                                {
+                                    // Pass item.Link (which is the chapter page URL) as the Referer to bypass hotlinking protection
+                                    await DownloadUrlToFileWithRefererAsync(candidateUrl, item.Link, localFilePath, token, isTruyenqq: true);
+                                    downloadedPath = localFilePath;
+                                    lastEx = null;
+                                    break; // Success!
+                                }
+                                catch (Exception ex)
+                                {
+                                    lastEx = ex;
+                                    Log($"[nettruyen] Lỗi tải trang {index + 1} từ server '{candidateUrl}': {ex.Message}. Thử server khác...");
+                                }
                             }
-                            catch (Exception ex)
+
+                            if (downloadedPath == null && lastEx != null)
                             {
                                 lock (lockObj)
                                 {
                                     if (queueItem != null)
                                     {
                                         string pageName = Path.GetFileNameWithoutExtension(pageFilenames[index]);
-                                        queueItem.AddError(cleanChapter, index + 1, ex.Message, imgUrl, item.Link, pageName);
-                                        RecordCheckError("nettruyen", queueItem.Name ?? cleanManga, cleanChapter, index + 1, ex.Message, imgUrl, pageName);
+                                        queueItem.AddError(cleanChapter, index + 1, lastEx.Message, imgUrl, item.Link, pageName);
+                                        RecordCheckError("nettruyen", queueItem.Name ?? cleanManga, cleanChapter, index + 1, lastEx.Message, imgUrl, pageName);
                                     }
-                                    Log($"[nettruyen] Lỗi tải trang {index + 1} của chapter '{cleanChapter}': {ex.Message}");
+                                    Log($"[nettruyen] Lỗi tải trang {index + 1} của chapter '{cleanChapter}' ở tất cả server: {lastEx.Message}");
                                 }
                             }
 
@@ -1467,3 +1476,4 @@ namespace get_link_manga
     }
 }
 #pragma warning restore 4014
+

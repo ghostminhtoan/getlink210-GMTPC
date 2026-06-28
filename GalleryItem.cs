@@ -15,6 +15,7 @@ namespace get_link_manga
         public string ErrorMessage { get; set; }
         public string ImageUrl { get; set; }
         public string ChapterUrl { get; set; }
+        public int AttemptCount { get; set; } = 0;
 
         public override string ToString()
         {
@@ -873,7 +874,7 @@ namespace get_link_manga
                    !string.Equals(CurrentProcess, "Done with errors", StringComparison.OrdinalIgnoreCase);
         }
 
-        public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null, string chapterUrl = null, string pageName = null)
+        public void AddError(string chapterName, int pageNumber, string errorMessage, string imageUrl = null, string chapterUrl = null, string pageName = null, int attemptCount = 0)
         {
             string domainVal = SourceDomain ?? "";
             if (string.IsNullOrEmpty(domainVal) && !string.IsNullOrEmpty(Link))
@@ -907,6 +908,7 @@ namespace get_link_manga
                 existing.ErrorMessage = errorMessage;
                 existing.ImageUrl = imageUrl;
                 existing.ChapterUrl = chapterUrl;
+                existing.AttemptCount = attemptCount;
                 if (!string.IsNullOrEmpty(pageName))
                 {
                     existing.PageName = pageName;
@@ -921,7 +923,8 @@ namespace get_link_manga
                     PageName = pageName,
                     ErrorMessage = errorMessage,
                     ImageUrl = imageUrl,
-                    ChapterUrl = chapterUrl
+                    ChapterUrl = chapterUrl,
+                    AttemptCount = attemptCount
                 });
             }
 

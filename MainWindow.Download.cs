@@ -19,7 +19,7 @@ using MessageBox = System.Windows.MessageBox;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private CancellationTokenSource _downloadCts;
         private volatile bool _isDownloadPaused = false;
@@ -531,58 +531,13 @@ namespace get_link_manga
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(tempFolder))
+                if (!string.IsNullOrWhiteSpace(tempFolder) && Directory.Exists(tempFolder))
                 {
-                    return;
+                    CleanupTempProgressLogs(tempFolder);
                 }
-
-                Directory.CreateDirectory(tempFolder);
-
-                bool forceWrite =
-                    string.Equals(status, "Done", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(status, "Error", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(status, "Cancelled", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(status, "Paused", StringComparison.OrdinalIgnoreCase);
-
-                DateTime nowUtc = DateTime.UtcNow;
-                if (!forceWrite &&
-                    _tempLogWriteTimes.TryGetValue(tempFolder, out DateTime lastWriteUtc) &&
-                    (nowUtc - lastWriteUtc).TotalMilliseconds < 2000)
-                {
-                    return;
-                }
-
-                _tempLogWriteTimes[tempFolder] = nowUtc;
-
-                var sb = new StringBuilder();
-                sb.AppendLine("# Download Trace");
-                sb.AppendLine();
-                sb.AppendLine("| Field | Value |");
-                sb.AppendLine("| :--- | :--- |");
-                sb.AppendLine($"| UpdatedAt | {EscapeMarkdownTableValue(DateTime.Now.ToString("O"))} |");
-                sb.AppendLine($"| Name | {EscapeMarkdownTableValue(item?.Name ?? string.Empty)} |");
-                sb.AppendLine($"| Link | {EscapeMarkdownTableValue(item?.Link ?? string.Empty)} |");
-                sb.AppendLine($"| Chapter | {EscapeMarkdownTableValue(item?.DownloadingChapter ?? string.Empty)} |");
-                sb.AppendLine($"| Page | {EscapeMarkdownTableValue(item?.DownloadingPageProgress ?? string.Empty)} |");
-                sb.AppendLine($"| Status | {EscapeMarkdownTableValue(status ?? string.Empty)} |");
-                sb.AppendLine($"| CurrentProcess | {EscapeMarkdownTableValue(currentProcess ?? string.Empty)} |");
-                sb.AppendLine($"| CompletedPages | {completedPages} |");
-                sb.AppendLine($"| TotalPages | {totalPages} |");
-                if (!string.IsNullOrWhiteSpace(note))
-                {
-                    sb.AppendLine($"| Note | {EscapeMarkdownTableValue(note)} |");
-                }
-                if (!string.IsNullOrWhiteSpace(imageUrl))
-                {
-                    sb.AppendLine($"| ImageUrl | {EscapeMarkdownTableValue(imageUrl)} |");
-                }
-
-                CleanupTempProgressLogs(tempFolder);
-                File.WriteAllText(GetTempProgressLogPath(tempFolder, completedPages, totalPages), sb.ToString(), new UTF8Encoding(true));
             }
             catch
             {
-                // Temp log is best-effort only.
             }
         }
 
@@ -860,37 +815,209 @@ namespace get_link_manga
             return GetSafePathName(item?.SourceDomain ?? "site");
         }
 
-        private List<string> LoadPendingChapterLinksFromProcess(string rootFolder, string siteFolder, GalleryItem item)
+        private static readonly object _dbLock = new object();
+
+        private string GetProcessDbPath(string rootFolder)
         {
-            string processPath = GetExistingDownloadProcessFilePath(rootFolder, siteFolder, item);
-            if (!File.Exists(processPath))
+            return Path.Combine(PortablePaths.PortableTempRoot, ".process", "process.db");
+        }
+
+        private System.Data.SQLite.SQLiteConnection OpenProcessConnection(string dbPath)
+        {
+            string dir = Path.GetDirectoryName(dbPath);
+            if (!string.IsNullOrEmpty(dir))
             {
-                return null;
+                Directory.CreateDirectory(dir);
             }
 
-            var links = new List<string>();
-            foreach (string line in File.ReadAllLines(processPath, Encoding.UTF8))
+            var conn = new System.Data.SQLite.SQLiteConnection($"Data Source={dbPath};Version=3;Journal Mode=WAL;");
+            conn.Open();
+
+            string sql = @"
+                CREATE TABLE IF NOT EXISTS download_process (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    site TEXT,
+                    book_key TEXT,
+                    chapter_link TEXT,
+                    chapter_label TEXT,
+                    status TEXT,
+                    order_index INTEGER,
+                    updated_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_download_process_site_book ON download_process(site, book_key);
+                CREATE INDEX IF NOT EXISTS idx_download_process_lookup ON download_process(site, book_key, chapter_link);
+            ";
+            using (var cmd = new System.Data.SQLite.SQLiteCommand(sql, conn))
             {
-                if (!line.StartsWith("|", StringComparison.Ordinal) ||
-                    line.StartsWith("| No.", StringComparison.OrdinalIgnoreCase) ||
-                    line.StartsWith("| :---", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
+                cmd.ExecuteNonQuery();
+            }
 
-                string[] cells = line.Split('|');
-                if (cells.Length < 5)
-                {
-                    continue;
-                }
+            return conn;
+        }
 
-                string status = cells[2].Trim();
-                string link = cells[4].Trim();
-                if (!string.Equals(status, "Done", StringComparison.OrdinalIgnoreCase) &&
-                    !string.IsNullOrWhiteSpace(link) &&
-                    link.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        private void MigrateMdProcessToSqliteIfNeeded(string dbPath, string rootFolder, string siteFolder, GalleryItem item, string bookKey)
+        {
+            string mdPath = GetExistingDownloadProcessFilePath(rootFolder, siteFolder, item);
+            if (!File.Exists(mdPath))
+            {
+                return;
+            }
+
+            lock (_dbLock)
+            {
+                try
                 {
-                    links.Add(link);
+                    using (var conn = OpenProcessConnection(dbPath))
+                    {
+                        // Check if already in SQLite
+                        string checkSql = "SELECT COUNT(*) FROM download_process WHERE site = @site AND book_key = @book_key";
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(checkSql, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@site", siteFolder);
+                            cmd.Parameters.AddWithValue("@book_key", bookKey);
+                            long count = (long)cmd.ExecuteScalar();
+                            if (count > 0)
+                            {
+                                try { File.Delete(mdPath); } catch {}
+                                return;
+                            }
+                        }
+
+                        // Read MD file lines and migrate
+                        var doneLinks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var allLinks = new List<string>();
+                        var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                        foreach (string line in File.ReadAllLines(mdPath, Encoding.UTF8))
+                        {
+                            if (!line.StartsWith("|", StringComparison.Ordinal) ||
+                                line.StartsWith("| No.", StringComparison.OrdinalIgnoreCase) ||
+                                line.StartsWith("| :---", StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            string[] cells = line.Split('|');
+                            if (cells.Length < 5)
+                            {
+                                continue;
+                            }
+
+                            string status = cells[2].Trim();
+                            string label = cells[3].Trim();
+                            string link = cells[4].Trim();
+
+                            if (!string.IsNullOrWhiteSpace(link) && link.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            {
+                                allLinks.Add(link);
+                                labels[link] = label;
+                                if (string.Equals(status, "Done", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    doneLinks.Add(link);
+                                }
+                            }
+                        }
+
+                        if (allLinks.Count > 0)
+                        {
+                            using (var transaction = conn.BeginTransaction())
+                            {
+                                string insertSql = @"
+                                    INSERT INTO download_process (site, book_key, chapter_link, chapter_label, status, order_index, updated_at)
+                                    VALUES (@site, @book_key, @chapter_link, @chapter_label, @status, @order_index, @updated_at)
+                                ";
+
+                                using (var cmd = new System.Data.SQLite.SQLiteCommand(insertSql, conn, transaction))
+                                {
+                                    cmd.Parameters.Add("@site", System.Data.DbType.String);
+                                    cmd.Parameters.Add("@book_key", System.Data.DbType.String);
+                                    cmd.Parameters.Add("@chapter_link", System.Data.DbType.String);
+                                    cmd.Parameters.Add("@chapter_label", System.Data.DbType.String);
+                                    cmd.Parameters.Add("@status", System.Data.DbType.String);
+                                    cmd.Parameters.Add("@order_index", System.Data.DbType.Int32);
+                                    cmd.Parameters.Add("@updated_at", System.Data.DbType.String);
+
+                                    for (int i = 0; i < allLinks.Count; i++)
+                                    {
+                                        string link = allLinks[i];
+                                        string status = doneLinks.Contains(link) ? "Done" : "Pending";
+                                        string label = labels.ContainsKey(link) ? labels[link] : GetChapterProcessLabel(link);
+
+                                        cmd.Parameters["@site"].Value = siteFolder;
+                                        cmd.Parameters["@book_key"].Value = bookKey;
+                                        cmd.Parameters["@chapter_link"].Value = link;
+                                        cmd.Parameters["@chapter_label"].Value = label;
+                                        cmd.Parameters["@status"].Value = status;
+                                        cmd.Parameters["@order_index"].Value = i + 1;
+                                        cmd.Parameters["@updated_at"].Value = DateTime.UtcNow.ToString("o");
+
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                                transaction.Commit();
+                            }
+                        }
+
+                        try { File.Delete(mdPath); } catch {}
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[sqlite] Migration error for '{item?.Name}': {ex.Message}");
+                }
+            }
+        }
+
+        private List<string> LoadPendingChapterLinksFromProcess(string rootFolder, string siteFolder, GalleryItem item)
+        {
+            string dbPath = GetProcessDbPath(rootFolder);
+            string bookKey = GetBookIdentifier(item?.Link) ?? item?.Name ?? "item";
+            string safeBookKey = GetSafePathName(bookKey.Replace("|", "-"));
+            if (safeBookKey.Length > 120)
+            {
+                safeBookKey = safeBookKey.Substring(0, 120).Trim();
+            }
+
+            MigrateMdProcessToSqliteIfNeeded(dbPath, rootFolder, siteFolder, item, safeBookKey);
+
+            var links = new List<string>();
+            lock (_dbLock)
+            {
+                try
+                {
+                    using (var conn = OpenProcessConnection(dbPath))
+                    {
+                        string sql = "SELECT chapter_link FROM download_process WHERE site = @site AND book_key = @book_key AND status != 'Done' ORDER BY order_index ASC";
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(sql, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@site", siteFolder);
+                            cmd.Parameters.AddWithValue("@book_key", safeBookKey);
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    links.Add(reader.GetString(0));
+                                }
+                            }
+                        }
+
+                        string countSql = "SELECT COUNT(*) FROM download_process WHERE site = @site AND book_key = @book_key";
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(countSql, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@site", siteFolder);
+                            cmd.Parameters.AddWithValue("@book_key", safeBookKey);
+                            long count = (long)cmd.ExecuteScalar();
+                            if (count == 0)
+                            {
+                                return null;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[sqlite] LoadPending error: {ex.Message}");
+                    return null;
                 }
             }
 
@@ -916,106 +1043,288 @@ namespace get_link_manga
 
         private void InitializeChapterProcess(string rootFolder, string siteFolder, GalleryItem item, IList<string> chapterLinks, bool preserveExistingDone = true)
         {
-            string processPath = GetDownloadProcessFilePath(rootFolder, siteFolder, item);
-            Directory.CreateDirectory(Path.GetDirectoryName(processPath));
-
-            DateTime nowUtc = DateTime.UtcNow;
-            if (_processWriteTimes.TryGetValue(processPath, out DateTime lastWriteUtc) &&
-                (nowUtc - lastWriteUtc).TotalMilliseconds < 2000)
+            string dbPath = GetProcessDbPath(rootFolder);
+            string bookKey = GetBookIdentifier(item?.Link) ?? item?.Name ?? "item";
+            string safeBookKey = GetSafePathName(bookKey.Replace("|", "-"));
+            if (safeBookKey.Length > 120)
             {
-                return;
+                safeBookKey = safeBookKey.Substring(0, 120).Trim();
             }
-            _processWriteTimes[processPath] = nowUtc;
+
+            MigrateMdProcessToSqliteIfNeeded(dbPath, rootFolder, siteFolder, item, safeBookKey);
 
             var doneLinks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var statePaths = new[]
-                {
-                    processPath,
-                    GetConfiguredScopedDownloadProcessFilePath(rootFolder, siteFolder, item),
-                    GetLegacyDownloadProcessFilePath(rootFolder, siteFolder, item)
-                }
-                .Where(path => preserveExistingDone && File.Exists(path))
-                .Distinct(StringComparer.OrdinalIgnoreCase);
 
-            foreach (string statePath in statePaths)
+            lock (_dbLock)
             {
-                foreach (string line in File.ReadAllLines(statePath, Encoding.UTF8))
+                try
                 {
-                    string[] cells = line.Split('|');
-                    if (cells.Length >= 5 && string.Equals(cells[2].Trim(), "Done", StringComparison.OrdinalIgnoreCase))
+                    using (var conn = OpenProcessConnection(dbPath))
                     {
-                        doneLinks.Add(cells[4].Trim());
+                        if (preserveExistingDone)
+                        {
+                            string selectDone = "SELECT chapter_link FROM download_process WHERE site = @site AND book_key = @book_key AND status = 'Done'";
+                            using (var cmd = new System.Data.SQLite.SQLiteCommand(selectDone, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@site", siteFolder);
+                                cmd.Parameters.AddWithValue("@book_key", safeBookKey);
+                                using (var reader = cmd.ExecuteReader())
+                                {
+                                    while (reader.Read())
+                                    {
+                                        doneLinks.Add(reader.GetString(0));
+                                    }
+                                }
+                            }
+                        }
+
+                        using (var transaction = conn.BeginTransaction())
+                        {
+                            string deleteSql = "DELETE FROM download_process WHERE site = @site AND book_key = @book_key";
+                            using (var cmd = new System.Data.SQLite.SQLiteCommand(deleteSql, conn, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@site", siteFolder);
+                                cmd.Parameters.AddWithValue("@book_key", safeBookKey);
+                                cmd.ExecuteNonQuery();
+                            }
+
+                            string insertSql = @"
+                                INSERT INTO download_process (site, book_key, chapter_link, chapter_label, status, order_index, updated_at)
+                                VALUES (@site, @book_key, @chapter_link, @chapter_label, @status, @order_index, @updated_at)
+                            ";
+                            using (var cmd = new System.Data.SQLite.SQLiteCommand(insertSql, conn, transaction))
+                            {
+                                cmd.Parameters.Add("@site", System.Data.DbType.String);
+                                cmd.Parameters.Add("@book_key", System.Data.DbType.String);
+                                cmd.Parameters.Add("@chapter_link", System.Data.DbType.String);
+                                cmd.Parameters.Add("@chapter_label", System.Data.DbType.String);
+                                cmd.Parameters.Add("@status", System.Data.DbType.String);
+                                cmd.Parameters.Add("@order_index", System.Data.DbType.Int32);
+                                cmd.Parameters.Add("@updated_at", System.Data.DbType.String);
+
+                                for (int i = 0; i < chapterLinks.Count; i++)
+                                {
+                                    string link = chapterLinks[i];
+                                    string status = doneLinks.Contains(link) ? "Done" : "Pending";
+                                    string label = GetChapterProcessLabel(link);
+
+                                    cmd.Parameters["@site"].Value = siteFolder;
+                                    cmd.Parameters["@book_key"].Value = safeBookKey;
+                                    cmd.Parameters["@chapter_link"].Value = link;
+                                    cmd.Parameters["@chapter_label"].Value = label;
+                                    cmd.Parameters["@status"].Value = status;
+                                    cmd.Parameters["@order_index"].Value = i + 1;
+                                    cmd.Parameters["@updated_at"].Value = DateTime.UtcNow.ToString("o");
+
+                                    cmd.ExecuteNonQuery();
+                                }
+                            }
+                            transaction.Commit();
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    Log($"[sqlite] Initialize error: {ex.Message}");
+                }
             }
-
-            var sb = new StringBuilder();
-            sb.AppendLine("# Download Process");
-            sb.AppendLine();
-            sb.AppendLine($"Book: {item?.Name ?? string.Empty}");
-            sb.AppendLine($"Source: {item?.Link ?? string.Empty}");
-            sb.AppendLine($"Updated: {DateTime.Now:O}");
-            sb.AppendLine();
-            sb.AppendLine("| No. | Status | Chapter | Link | Page |");
-            sb.AppendLine("| :--- | :--- | :--- | :--- | :--- |");
-
-            for (int i = 0; i < chapterLinks.Count; i++)
-            {
-                string link = chapterLinks[i];
-                string status = doneLinks.Contains(link) ? "Done" : "Pending";
-                sb.AppendLine($"| {i + 1} | {status} | {EscapeMarkdownTableValue(GetChapterProcessLabel(link))} | {EscapeMarkdownTableValue(link)} |  |");
-            }
-
-            File.WriteAllText(processPath, sb.ToString(), new UTF8Encoding(true));
         }
 
         private void MarkChapterProcessDone(string rootFolder, string siteFolder, GalleryItem item, string chapterLink)
         {
-            string processPath = GetExistingDownloadProcessFilePath(rootFolder, siteFolder, item);
-            if (!File.Exists(processPath) || string.IsNullOrWhiteSpace(chapterLink))
+            if (string.IsNullOrWhiteSpace(chapterLink))
             {
                 return;
             }
 
-            DateTime nowUtc = DateTime.UtcNow;
-            if (_processWriteTimes.TryGetValue(processPath, out DateTime lastWriteUtc) &&
-                (nowUtc - lastWriteUtc).TotalMilliseconds < 1500)
+            string dbPath = GetProcessDbPath(rootFolder);
+            string bookKey = GetBookIdentifier(item?.Link) ?? item?.Name ?? "item";
+            string safeBookKey = GetSafePathName(bookKey.Replace("|", "-"));
+            if (safeBookKey.Length > 120)
             {
-                return;
+                safeBookKey = safeBookKey.Substring(0, 120).Trim();
             }
-            _processWriteTimes[processPath] = nowUtc;
 
-            string[] lines = File.ReadAllLines(processPath, Encoding.UTF8);
-            for (int i = 0; i < lines.Length; i++)
+            MigrateMdProcessToSqliteIfNeeded(dbPath, rootFolder, siteFolder, item, safeBookKey);
+
+            lock (_dbLock)
             {
-                string line = lines[i];
-                if (!line.Contains(chapterLink))
+                try
                 {
-                    continue;
+                    using (var conn = OpenProcessConnection(dbPath))
+                    {
+                        string sql = @"
+                            UPDATE download_process 
+                            SET status = 'Done', updated_at = @updated_at 
+                            WHERE site = @site AND book_key = @book_key AND (chapter_link = @chapter_link OR chapter_link = @chapter_link_alt)
+                        ";
+                        using (var cmd = new System.Data.SQLite.SQLiteCommand(sql, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@updated_at", DateTime.UtcNow.ToString("o"));
+                            cmd.Parameters.AddWithValue("@site", siteFolder);
+                            cmd.Parameters.AddWithValue("@book_key", safeBookKey);
+                            cmd.Parameters.AddWithValue("@chapter_link", chapterLink);
+                            cmd.Parameters.AddWithValue("@chapter_link_alt", NormalizeProcessLink(chapterLink));
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
                 }
-
-                string[] cells = line.Split('|');
-                if (cells.Length >= 5)
+                catch (Exception ex)
                 {
-                    string rowLink = NormalizeProcessLink(cells.Length > 4 ? cells[4] : string.Empty);
-                    if (!string.Equals(rowLink, NormalizeProcessLink(chapterLink), StringComparison.OrdinalIgnoreCase))
+                    Log($"[sqlite] MarkDone error: {ex.Message}");
+                }
+            }
+        }
+
+        private string GetDownloadBookFolderPath(string rootFolder, string siteFolder, GalleryItem item)
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            string resolvedRoot = GetSiteDownloadRoot(rootFolder, siteFolder);
+            if (string.IsNullOrWhiteSpace(resolvedRoot))
+            {
+                return null;
+            }
+
+            string safeTitle = GetSafePathName(item.Name);
+            if (string.IsNullOrWhiteSpace(safeTitle))
+            {
+                return null;
+            }
+
+            return Path.Combine(resolvedRoot, safeTitle);
+        }
+
+        private bool ShouldPreserveExistingProcessState(string rootFolder, string siteFolder, GalleryItem item)
+        {
+            string bookFolder = GetDownloadBookFolderPath(rootFolder, siteFolder, item);
+            if (string.IsNullOrWhiteSpace(bookFolder) || !Directory.Exists(bookFolder))
+            {
+                return false;
+            }
+
+            try
+            {
+                return Directory.EnumerateFileSystemEntries(bookFolder).Any();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsChapterFolderAlreadyDownloaded(string rootFolder, string siteFolder, GalleryItem item, string chapterLink)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(chapterLink))
+            {
+                return false;
+            }
+
+            string bookFolder = GetDownloadBookFolderPath(rootFolder, siteFolder, item);
+            if (string.IsNullOrWhiteSpace(bookFolder) || !Directory.Exists(bookFolder))
+            {
+                return false;
+            }
+
+            double chapterNumber = ParseChapterNumber(chapterLink);
+            if (chapterNumber <= 0)
+            {
+                return false;
+            }
+
+            string chapterLabel = "chap " + chapterNumber.ToString("0.####", CultureInfo.InvariantCulture);
+            string safeChapter = GetDownloadChapterFolderName(item.Name, chapterLabel);
+            string safeBook = GetSafePathName(item.Name);
+
+            string[] candidates = new[]
+            {
+                Path.Combine(bookFolder, safeChapter),
+                Path.Combine(bookFolder, $"{safeBook}-{safeChapter}"),
+                Path.Combine(Path.GetDirectoryName(bookFolder) ?? string.Empty, $"{safeBook}-{safeChapter}"),
+                Path.Combine(Path.GetDirectoryName(bookFolder) ?? string.Empty, safeBook, safeChapter)
+            };
+
+            foreach (string candidate in candidates.Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    if (Directory.Exists(candidate) && Directory.EnumerateFileSystemEntries(candidate).Any())
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return false;
+        }
+
+        private int GetHighestDownloadedChapterNumberFromDisk(string rootFolder, string siteFolder, GalleryItem item)
+        {
+            string bookFolder = GetDownloadBookFolderPath(rootFolder, siteFolder, item);
+            if (string.IsNullOrWhiteSpace(bookFolder) || !Directory.Exists(bookFolder))
+            {
+                return 0;
+            }
+
+            int highest = 0;
+            try
+            {
+                foreach (string chapterFolder in Directory.GetDirectories(bookFolder))
+                {
+                    if (!Directory.EnumerateFileSystemEntries(chapterFolder).Any())
                     {
                         continue;
                     }
 
-                    cells[2] = " Done ";
-                    lines[i] = string.Join("|", cells);
+                    double chapterNumber = ParseChapterNumber(Path.GetFileName(chapterFolder));
+                    if (chapterNumber <= 0)
+                    {
+                        continue;
+                    }
+
+                    int wholeNumber = Math.Max(1, (int)Math.Floor(chapterNumber));
+                    if (wholeNumber > highest)
+                    {
+                        highest = wholeNumber;
+                    }
                 }
             }
+            catch
+            {
+            }
 
-            File.WriteAllLines(processPath, lines, new UTF8Encoding(true));
+            return highest;
         }
 
         private List<string> FilterPendingChapterLinksFromProcess(string rootFolder, string siteFolder, GalleryItem item, IList<string> chapterLinks)
         {
-            InitializeChapterProcess(rootFolder, siteFolder, item, chapterLinks);
-            var pending = LoadPendingChapterLinksFromProcess(rootFolder, siteFolder, item);
-            return pending ?? chapterLinks.ToList();
+            bool preserveExistingDone = ShouldPreserveExistingProcessState(rootFolder, siteFolder, item);
+            InitializeChapterProcess(rootFolder, siteFolder, item, chapterLinks, preserveExistingDone);
+            var pending = (LoadPendingChapterLinksFromProcess(rootFolder, siteFolder, item) ?? chapterLinks.ToList())
+                .Where(link => !IsChapterFolderAlreadyDownloaded(rootFolder, siteFolder, item, link))
+                .ToList();
+
+            int highestDownloadedChapter = GetHighestDownloadedChapterNumberFromDisk(rootFolder, siteFolder, item);
+            if (highestDownloadedChapter > 0)
+            {
+                var afterHighest = pending
+                    .Where(link => ParseChapterNumber(link) > highestDownloadedChapter)
+                    .ToList();
+
+                if (afterHighest.Count > 0)
+                {
+                    // ponytail: cutoff theo chap lớn nhất chỉ heuristic; validate pages vẫn chạy sau download.
+                    return afterHighest;
+                }
+            }
+
+            return pending;
         }
 
         internal void DeleteProcessMarkdownForItem(GalleryItem item)
@@ -1037,6 +1346,40 @@ namespace get_link_manga
             }
 
             string siteFolder = GetProcessSiteFolder(item);
+
+            // Delete from SQLite database
+            string dbPath = GetProcessDbPath(rootFolder);
+            string bookKey = GetBookIdentifier(item?.Link) ?? item?.Name ?? "item";
+            string safeBookKey = GetSafePathName(bookKey.Replace("|", "-"));
+            if (safeBookKey.Length > 120)
+            {
+                safeBookKey = safeBookKey.Substring(0, 120).Trim();
+            }
+
+            lock (_dbLock)
+            {
+                if (File.Exists(dbPath))
+                {
+                    try
+                    {
+                        using (var conn = OpenProcessConnection(dbPath))
+                        {
+                            string sql = "DELETE FROM download_process WHERE site = @site AND book_key = @book_key";
+                            using (var cmd = new System.Data.SQLite.SQLiteCommand(sql, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@site", siteFolder);
+                                cmd.Parameters.AddWithValue("@book_key", safeBookKey);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"[sqlite] Lỗi xóa process của '{item.Name}': {ex.Message}");
+                    }
+                }
+            }
+
             foreach (string path in new[]
             {
                 GetDownloadProcessFilePath(rootFolder, siteFolder, item),
@@ -3227,74 +3570,84 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             int delayMs = isViHentai ? 800 : (isTruyenqq ? 600 : 500);
             int maxAttempts = 3;
 
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            try
             {
-                token.ThrowIfCancellationRequested();
-                try
+                for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
-                    using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+                    token.ThrowIfCancellationRequested();
+                    try
                     {
-                        if (!string.IsNullOrEmpty(referer))
+                        using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                         {
-                            request.Headers.Referrer = new Uri(referer);
-                        }
-
-                        using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token))
-                        {
-                            if (isViHentai && (int)response.StatusCode == 429 && attempt < maxAttempts)
+                            if (!string.IsNullOrEmpty(referer))
                             {
-                                int retryDelay = GetRetryDelayMilliseconds(response, attempt, delayMs);
-                                Log($"[vi-hentai.pro] 429 khi tải ảnh. Chờ {retryDelay}ms rồi thử lại ({attempt}/{maxAttempts}): {url}");
-                                await Task.Delay(retryDelay, token);
-                                delayMs = Math.Min(delayMs * 2, 8000);
-                                continue;
+                                request.Headers.Referrer = new Uri(referer);
                             }
 
-                            if ((response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Forbidden) && !string.IsNullOrEmpty(referer))
+                            using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token))
                             {
-                                // Hotlink protection fallback: Try downloading without referer
-                                using (var fallbackRequest = new HttpRequestMessage(HttpMethod.Get, url))
+                                if (isViHentai && (int)response.StatusCode == 429 && attempt < maxAttempts)
                                 {
-                                    using (var fallbackResponse = await _httpClient.SendAsync(fallbackRequest, HttpCompletionOption.ResponseHeadersRead, token))
+                                    int retryDelay = GetRetryDelayMilliseconds(response, attempt, delayMs);
+                                    Log($"[vi-hentai.pro] 429 khi tải ảnh. Chờ {retryDelay}ms rồi thử lại ({attempt}/{maxAttempts}): {url}");
+                                    await Task.Delay(retryDelay, token);
+                                    delayMs = Math.Min(delayMs * 2, 8000);
+                                    continue;
+                                }
+
+                                if ((response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Forbidden) && !string.IsNullOrEmpty(referer))
+                                {
+                                    // Hotlink protection fallback: Try downloading without referer
+                                    using (var fallbackRequest = new HttpRequestMessage(HttpMethod.Get, url))
                                     {
-                                        if (fallbackResponse.IsSuccessStatusCode)
+                                        using (var fallbackResponse = await _httpClient.SendAsync(fallbackRequest, HttpCompletionOption.ResponseHeadersRead, token))
                                         {
-                                            using (var contentStream = await fallbackResponse.Content.ReadAsStreamAsync())
-                                            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                                            if (fallbackResponse.IsSuccessStatusCode)
                                             {
-                                                await contentStream.CopyToAsync(fileStream, 81920, token);
+                                                using (var contentStream = await fallbackResponse.Content.ReadAsStreamAsync())
+                                                using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                                                {
+                                                    await contentStream.CopyToAsync(fileStream, 81920, token);
+                                                }
+                                                return;
                                             }
-                                            return;
                                         }
                                     }
                                 }
-                            }
 
-                            response.EnsureSuccessStatusCode();
+                                response.EnsureSuccessStatusCode();
 
-                            using (var contentStream = await response.Content.ReadAsStreamAsync())
-                            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
-                            {
-                                await contentStream.CopyToAsync(fileStream, 81920, token);
+                                using (var contentStream = await response.Content.ReadAsStreamAsync())
+                                using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                                {
+                                    await contentStream.CopyToAsync(fileStream, 81920, token);
+                                }
+                                return; // Success!
                             }
-                            return; // Success!
                         }
                     }
+                    catch (HttpRequestException ex) when (attempt < maxAttempts)
+                    {
+                        try { if (File.Exists(filePath)) File.Delete(filePath); } catch {}
+                        string label = isViHentai ? "[vi-hentai.pro]" : (isTruyenqq ? "[truyenqq]" : "[network]");
+                        Log($"{label} Thử tải lại ảnh do lỗi mạng: {ex.Message}. Chờ {delayMs}ms ({attempt}/{maxAttempts}).");
+                        await Task.Delay(delayMs, token);
+                        delayMs = Math.Min(delayMs * 2, 8000);
+                    }
+                    catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < maxAttempts)
+                    {
+                        try { if (File.Exists(filePath)) File.Delete(filePath); } catch {}
+                        string label = isViHentai ? "[vi-hentai.pro]" : (isTruyenqq ? "[truyenqq]" : "[network]");
+                        Log($"{label} Thử tải lại ảnh do timeout. Chờ {delayMs}ms ({attempt}/{maxAttempts}).");
+                        await Task.Delay(delayMs, token);
+                        delayMs = Math.Min(delayMs * 2, 8000);
+                    }
                 }
-                catch (HttpRequestException ex) when (attempt < maxAttempts)
-                {
-                    string label = isViHentai ? "[vi-hentai.pro]" : (isTruyenqq ? "[truyenqq]" : "[network]");
-                    Log($"{label} Thử tải lại ảnh do lỗi mạng: {ex.Message}. Chờ {delayMs}ms ({attempt}/{maxAttempts}).");
-                    await Task.Delay(delayMs, token);
-                    delayMs = Math.Min(delayMs * 2, 8000);
-                }
-                catch (TaskCanceledException) when (!token.IsCancellationRequested && attempt < maxAttempts)
-                {
-                    string label = isViHentai ? "[vi-hentai.pro]" : (isTruyenqq ? "[truyenqq]" : "[network]");
-                    Log($"{label} Thử tải lại ảnh do timeout. Chờ {delayMs}ms ({attempt}/{maxAttempts}).");
-                    await Task.Delay(delayMs, token);
-                    delayMs = Math.Min(delayMs * 2, 8000);
-                }
+            }
+            catch
+            {
+                try { if (File.Exists(filePath)) File.Delete(filePath); } catch {}
+                throw;
             }
 
             throw new Exception($"Không thể tải ảnh sau {maxAttempts} lần thử: {url}");
@@ -3425,15 +3778,35 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
             }
             
             int rawNum = -1;
-            if (filenameWithoutExt.Contains("_"))
-            {
-                string firstPart = filenameWithoutExt.Split('_')[0];
-                int.TryParse(firstPart, out rawNum);
-            }
-            else if (filenameWithoutExt.Contains("-"))
+            if (filenameWithoutExt.Contains("-"))
             {
                 string firstPart = filenameWithoutExt.Split('-')[0];
-                int.TryParse(firstPart, out rawNum);
+                if (int.TryParse(firstPart, out rawNum))
+                {
+                    // Success
+                }
+                else
+                {
+                    rawNum = -1;
+                }
+            }
+            
+            if (rawNum < 0 && filenameWithoutExt.Contains("_"))
+            {
+                string firstPart = filenameWithoutExt.Split('_')[0];
+                if (int.TryParse(firstPart, out rawNum))
+                {
+                    // Success
+                }
+                else
+                {
+                    rawNum = -1;
+                }
+            }
+
+            if (rawNum >= 0)
+            {
+                return isZeroBased ? rawNum + 1 : rawNum;
             }
             else
             {
@@ -3889,7 +4262,7 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
         }
     }
 
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private async Task DownloadHentaieraGalleryAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
         {
@@ -4214,3 +4587,4 @@ throw new Exception($"Không thể trích xuất địa chỉ ảnh từ trang �
         }
     }
 }
+

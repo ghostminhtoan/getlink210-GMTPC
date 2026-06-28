@@ -5,7 +5,7 @@ using System.Windows.Interop;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const double AutoCollapseWidthThreshold = 1280;
 
@@ -220,3 +220,4 @@ namespace get_link_manga
         }
     }
 }
+

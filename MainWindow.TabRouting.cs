@@ -8,7 +8,7 @@ using System.Windows.Input;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         public bool IsSupportedDomain(string url)
         {
@@ -373,3 +373,4 @@ namespace get_link_manga
         }
     }
 }
+

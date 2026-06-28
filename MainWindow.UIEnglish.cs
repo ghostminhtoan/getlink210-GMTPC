@@ -5,7 +5,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private static readonly Dictionary<string, string> UiTranslations = new Dictionary<string, string>(StringComparer.Ordinal)
         {
@@ -141,9 +141,190 @@ namespace get_link_manga
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            CheckFirstTimeRunMigration();
             ApplyCurrentUiLanguage();
             UpdateTruyenqqSpecificActions();
             PromptExtractPortableArchiveOnStartup();
+        }
+
+        private void CheckFirstTimeRunMigration()
+        {
+            string currentExePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            string currentExeDir = System.IO.Path.GetDirectoryName(currentExePath) ?? string.Empty;
+
+            // Avoid prompting if the current directory is already named "Comic-GMTPC"
+            if (currentExeDir.TrimEnd('\\', '/').EndsWith("Comic-GMTPC", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            string targetDir = System.IO.Path.Combine(currentExeDir, "Comic-GMTPC");
+
+            string pathRuntimes = System.IO.Path.Combine(currentExeDir, "runtimes");
+            string pathPortable = System.IO.Path.Combine(currentExeDir, ".portable");
+            string pathRoot = System.IO.Path.Combine(currentExeDir, "root");
+            string pathAutosave = System.IO.Path.Combine(currentExeDir, "gallery-list-autosave.md");
+            string pathAutosaveTypo = System.IO.Path.Combine(currentExeDir, "gallery-list-aut1osave.md");
+
+            bool hasRuntimes = System.IO.Directory.Exists(pathRuntimes);
+            bool hasPortable = System.IO.Directory.Exists(pathPortable);
+            bool hasRoot = System.IO.Directory.Exists(pathRoot);
+            bool hasAutosave = System.IO.File.Exists(pathAutosave) || System.IO.File.Exists(pathAutosaveTypo);
+
+            if (!hasRuntimes || !hasPortable || !hasRoot || !hasAutosave)
+            {
+                string message = 
+                    "Is this your first time running the tool?\n" +
+                    "Đây có phải lần đầu bạn chạy tool?\n\n" +
+                    "If Yes, the tool will create the target folder, copy the project, and relaunch from there.\n" +
+                    "Nếu Yes, tool sẽ tự tạo thư mục, copy project và khởi động lại từ đó.";
+                string title = "First Run / Chạy lần đầu";
+
+                var result = MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        System.IO.Directory.CreateDirectory(targetDir);
+                        
+                        string sourceDir = AppDomain.CurrentDomain.BaseDirectory;
+                        MoveOrCopyDirectoryContents(sourceDir, targetDir, currentExePath);
+
+                        string exeName = System.IO.Path.GetFileName(currentExePath);
+                        string newExePath = System.IO.Path.Combine(targetDir, exeName);
+
+                        if (System.IO.File.Exists(newExePath))
+                        {
+                            // Create shortcut on the Desktop pointing to newExePath
+                            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                            string shortcutPath = System.IO.Path.Combine(desktopPath, "Comic-GMTPC.lnk");
+                            CreateShortcut(shortcutPath, newExePath);
+
+                            // Open the new directory in Windows Explorer
+                            System.Diagnostics.Process.Start("explorer.exe", $"\"{targetDir}\"");
+
+                            // Relaunch the new exe
+                            System.Diagnostics.Process.Start(newExePath);
+
+                            // Self-delete the old exe
+                            string batchCmd = $"/c timeout /t 1 /nobreak && del \"{currentExePath}\"";
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "cmd.exe",
+                                Arguments = batchCmd,
+                                CreateNoWindow = true,
+                                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                            });
+
+                            System.Windows.Application.Current.Shutdown();
+                            System.Environment.Exit(0);
+                        }
+                        else
+                        {
+                            MessageBox.Show(
+                                "Could not find relaunch executable.\nKhông tìm thấy file khởi chạy mới.",
+                                "Error / Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(
+                            $"Migration failed / Lỗi di chuyển: {ex.Message}",
+                            "Error / Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        private static void MoveOrCopyDirectoryContents(string sourceDir, string destinationDir, string currentExePath)
+        {
+            System.IO.Directory.CreateDirectory(destinationDir);
+
+            foreach (string file in System.IO.Directory.GetFiles(sourceDir))
+            {
+                string destFile = System.IO.Path.Combine(destinationDir, System.IO.Path.GetFileName(file));
+                if (string.Equals(file, currentExePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    System.IO.File.Copy(file, destFile, true);
+                }
+                else
+                {
+                    try
+                    {
+                        if (System.IO.File.Exists(destFile))
+                        {
+                            System.IO.File.Delete(destFile);
+                        }
+                        System.IO.File.Move(file, destFile);
+                    }
+                    catch
+                    {
+                        try { System.IO.File.Copy(file, destFile, true); System.IO.File.Delete(file); } catch {}
+                    }
+                }
+            }
+
+            foreach (string subDir in System.IO.Directory.GetDirectories(sourceDir))
+            {
+                if (string.Equals(subDir.TrimEnd('\\', '/'), destinationDir.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                string destSubDir = System.IO.Path.Combine(destinationDir, System.IO.Path.GetFileName(subDir));
+                try
+                {
+                    if (System.IO.Directory.Exists(destSubDir))
+                    {
+                        System.IO.Directory.Delete(destSubDir, true);
+                    }
+                    System.IO.Directory.Move(subDir, destSubDir);
+                }
+                catch
+                {
+                    CopyDirectoryRecursively(subDir, destSubDir);
+                    try { System.IO.Directory.Delete(subDir, true); } catch {}
+                }
+            }
+        }
+
+        private static void CopyDirectoryRecursively(string sourceDir, string destinationDir)
+        {
+            System.IO.Directory.CreateDirectory(destinationDir);
+
+            foreach (string file in System.IO.Directory.GetFiles(sourceDir))
+            {
+                string destFile = System.IO.Path.Combine(destinationDir, System.IO.Path.GetFileName(file));
+                System.IO.File.Copy(file, destFile, true);
+            }
+
+            foreach (string subDir in System.IO.Directory.GetDirectories(sourceDir))
+            {
+                if (string.Equals(subDir.TrimEnd('\\'), destinationDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                string destSubDir = System.IO.Path.Combine(destinationDir, System.IO.Path.GetFileName(subDir));
+                CopyDirectoryRecursively(subDir, destSubDir);
+            }
+        }
+
+        private static void CreateShortcut(string shortcutPath, string targetExePath)
+        {
+            try
+            {
+                string powershellCmd = $"-NoProfile -Command \"$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{shortcutPath}'); $s.TargetPath = '{targetExePath}'; $s.Save()\"";
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = powershellCmd,
+                    CreateNoWindow = true,
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                })?.WaitForExit();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed to create shortcut: " + ex.Message);
+            }
         }
 
         private void PromptExtractPortableArchiveOnStartup()
@@ -577,3 +758,4 @@ namespace get_link_manga
         }
     }
 }
+

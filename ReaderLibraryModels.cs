@@ -92,8 +92,7 @@ namespace get_link_manga
         {
             get
             {
-                string suffix = IsCompleted ? " - completed" : string.Empty;
-                return $"{Name} ({Pages.Count} page{(Pages.Count == 1 ? string.Empty : "s")}){suffix}";
+                return $"{Name} ({Pages.Count} page{(Pages.Count == 1 ? string.Empty : "s")})";
             }
         }
 
@@ -141,12 +140,7 @@ namespace get_link_manga
                 }
 
                 string prefix = string.IsNullOrWhiteSpace(SourceGroup) ? string.Empty : SourceGroup + " - ";
-                string suffix = IsCompleted ? " - completed" : string.Empty;
-                if (!string.IsNullOrWhiteSpace(DownloadStateText))
-                {
-                    suffix = " - " + DownloadStateText.Trim().ToLowerInvariant();
-                }
-                return $"{prefix}{Name} ({Chapters.Count} chap{(Chapters.Count == 1 ? string.Empty : "ters")}){suffix}";
+                return $"{prefix}{Name} ({Chapters.Count} chap{(Chapters.Count == 1 ? string.Empty : "ters")})";
             }
         }
 
@@ -174,10 +168,7 @@ namespace get_link_manga
         {
             get
             {
-                string suffix = string.IsNullOrWhiteSpace(DownloadStateText)
-                    ? string.Empty
-                    : " - " + DownloadStateText.Trim().ToLowerInvariant();
-                return $"{Name} ({Books.Count} book{(Books.Count == 1 ? string.Empty : "s")}){suffix}";
+                return $"{Name} ({Books.Count} book{(Books.Count == 1 ? string.Empty : "s")})";
             }
         }
 

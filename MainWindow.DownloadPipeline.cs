@@ -15,7 +15,7 @@ using System.Windows;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private static readonly TimeSpan BrowserSessionTtl = TimeSpan.FromMinutes(20);
         private readonly ConcurrentDictionary<string, BrowserSessionSnapshot> _browserSessionSnapshots = new ConcurrentDictionary<string, BrowserSessionSnapshot>(StringComparer.OrdinalIgnoreCase);
@@ -912,3 +912,4 @@ namespace get_link_manga
         }
     }
 }
+

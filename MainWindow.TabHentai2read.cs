@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const string Hentai2readBaseUrl = "https://hentai2read.com";
         private const string Hentai2readSiteFolder = "hentai2read.com";
@@ -1127,3 +1127,4 @@ namespace get_link_manga
         }
     }
 }
+

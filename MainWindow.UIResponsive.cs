@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private static readonly int[] UiZoomPresets = { 90, 100, 110, 120, 130, 140, 150, 160, 175 };
         private const double DefaultUiZoomPercent = 100.0;
@@ -261,3 +261,4 @@ namespace get_link_manga
         }
     }
 }
+

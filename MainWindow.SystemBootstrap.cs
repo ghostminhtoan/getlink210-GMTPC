@@ -10,7 +10,7 @@ using System.Windows.Threading;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private static readonly RoutedUICommand StartLightNovelAutoCopyCommand =
             new RoutedUICommand("Start light novel auto copy", "StartLightNovelAutoCopy", typeof(MainWindow));
@@ -141,6 +141,8 @@ namespace get_link_manga
             };
         }
 
+        // OnSourceInitialized is WPF Window specific. Disabled for MAUI.
+        /*
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -159,6 +161,7 @@ namespace get_link_manga
             }
             return IntPtr.Zero;
         }
+        */
 
         private static void InitializeHttpClientState()
         {
@@ -319,3 +322,4 @@ namespace get_link_manga
         }
     }
 }
+

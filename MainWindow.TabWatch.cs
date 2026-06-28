@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private Border CreateReaderWatchPanel(string title, UIElement content, params Button[] sortButtons)
         {
@@ -40,8 +40,8 @@ namespace get_link_manga
                             Margin = new Thickness(0, 0, 0, 8),
                             ColumnDefinitions =
                             {
-                                new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
-                                new ColumnDefinition { Width = GridLength.Auto }
+                                new ColumnDefinition { Width = GridLength.Auto },
+                                new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
                             },
                             Children =
                             {
@@ -51,7 +51,8 @@ namespace get_link_manga
                                     Foreground = (Brush)TryFindResource("CyberpunkYellowBrush") ?? Brushes.Yellow,
                                     FontSize = 13,
                                     FontWeight = FontWeights.ExtraBold,
-                                    VerticalAlignment = VerticalAlignment.Center
+                                    VerticalAlignment = VerticalAlignment.Center,
+                                    Margin = new Thickness(0, 0, 8, 0)
                                 }
                             }
                         },
@@ -66,7 +67,7 @@ namespace get_link_manga
                 var header = headerGrid != null && headerGrid.Children.Count > 0 ? headerGrid.Children[0] as Grid : null;
                 if (header != null)
                 {
-                    var sortHost = new StackPanel
+                    var sortHost = new WrapPanel
                     {
                         Orientation = Orientation.Horizontal,
                         HorizontalAlignment = HorizontalAlignment.Right
@@ -477,3 +478,4 @@ namespace get_link_manga
         }
     }
 }
+

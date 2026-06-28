@@ -10,7 +10,7 @@ using System.Windows.Media;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private enum AppSection
         {
@@ -1361,4 +1361,5 @@ namespace get_link_manga
         }
     }
 }
+
 

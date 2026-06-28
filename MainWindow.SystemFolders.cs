@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -7,10 +9,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private readonly SemaphoreSlim _folderStructureSemaphore = new SemaphoreSlim(1, 1);
         private CancellationTokenSource _archiveCts;
@@ -276,6 +279,157 @@ namespace get_link_manga
                 Log($"[Split Error] Lỗi nghiêm trọng khi tách thư mục: {ex.Message}");
                 lblStatus.Text = _isVietnameseUi ? "Tách thư mục thất bại." : "Split failed.";
                 MessageBox.Show($"Lỗi khi tách thư mục: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BtnSplitSingleComicFolders_Click(object sender, RoutedEventArgs e)
+        {
+            string downloadRoot = GetSplitSingleComicRootPath();
+            if (string.IsNullOrWhiteSpace(downloadRoot))
+            {
+                MessageBox.Show("Vui lòng chọn thư mục lưu trước (Please select a download folder first).", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!Directory.Exists(downloadRoot))
+            {
+                MessageBox.Show("Thư mục lưu không tồn tại (Download folder does not exist).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!TryGetSplitSingleComicGroupSize(out int groupSize))
+            {
+                return;
+            }
+
+            string targetFolder = downloadRoot;
+
+            Log($"[Split] Bắt đầu chia single comic tại: {targetFolder} | group={groupSize}");
+            lblStatus.Text = _isVietnameseUi ? $"Đang chia folder theo {groupSize} chap..." : $"Splitting folders by {groupSize} chapters...";
+
+            try
+            {
+                int splitCount = await SplitSingleComicFoldersInTargetFolderAsync(targetFolder, groupSize, CancellationToken.None);
+
+                Log("[Split] Đang tạm ngừng 3 giây để hệ thống ổn định và nhận biết thư mục...");
+                await Task.Delay(3000);
+
+                if (splitCount == 0)
+                {
+                    Log("[Split] Không tìm thấy chapter folder hợp lệ để chia.");
+                    lblStatus.Text = _isVietnameseUi ? "Không tìm thấy chapter folder hợp lệ." : "No valid chapter folders found.";
+                    MessageBox.Show("Không tìm thấy chapter folder hợp lệ để chia.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                Log($"[Split] Hoàn tất chia {splitCount} chapter folder.");
+                lblStatus.Text = _isVietnameseUi
+                    ? $"Đã chia {splitCount} chapter folder."
+                    : $"Split completed. Split {splitCount} chapter folders.";
+                MessageBox.Show($"Đã chia thành công {splitCount} chapter folder!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Log($"[Split Error] Lỗi nghiêm trọng khi chia folder: {ex.Message}");
+                lblStatus.Text = _isVietnameseUi ? "Chia folder thất bại." : "Split failed.";
+                MessageBox.Show($"Lỗi khi chia folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BtnBrowseSplitSingleComicRoot_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new VistaFolderBrowser
+            {
+                Title = _isVietnameseUi ? "Chọn folder gốc cần split" : "Select folder to split",
+                SelectedPath = GetSplitSingleComicRootPath()
+            };
+
+            if (!dialog.ShowDialog(new System.Windows.Interop.WindowInteropHelper(this).Handle))
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(dialog.SelectedPath) || !Directory.Exists(dialog.SelectedPath))
+            {
+                MessageBox.Show("Thư mục đã chọn không hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (txtSplitSingleComicRoot != null)
+            {
+                txtSplitSingleComicRoot.Text = dialog.SelectedPath;
+            }
+        }
+
+        private void BtnBrowseMergeSingleComicRoot_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new VistaFolderBrowser
+            {
+                Title = _isVietnameseUi ? "Chọn folder gốc cần gộp" : "Select folder to merge",
+                SelectedPath = GetMergeSingleComicRootPath()
+            };
+
+            if (!dialog.ShowDialog(new System.Windows.Interop.WindowInteropHelper(this).Handle))
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(dialog.SelectedPath) || !Directory.Exists(dialog.SelectedPath))
+            {
+                MessageBox.Show("Thư mục đã chọn không hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (txtMergeSingleComicRoot != null)
+            {
+                txtMergeSingleComicRoot.Text = dialog.SelectedPath;
+            }
+        }
+
+        private async void BtnMergeSingleComicFolders_Click(object sender, RoutedEventArgs e)
+        {
+            string targetFolder = GetMergeSingleComicRootPath();
+            if (string.IsNullOrWhiteSpace(targetFolder))
+            {
+                MessageBox.Show("Vui lòng chọn folder cần gộp trước.", "Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!Directory.Exists(targetFolder))
+            {
+                MessageBox.Show("Thư mục đã chọn không tồn tại.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Log($"[Merge] Bắt đầu gộp chapter tại: {targetFolder}");
+            lblStatus.Text = _isVietnameseUi ? "Đang gộp folder..." : "Merging folders...";
+
+            try
+            {
+                int mergedCount = await MergeSingleComicFoldersInTargetFolderAsync(targetFolder, CancellationToken.None);
+
+                Log("[Merge] Đang tạm ngừng 3 giây để hệ thống ổn định và nhận biết thư mục...");
+                await Task.Delay(3000);
+
+                if (mergedCount == 0)
+                {
+                    Log("[Merge] Không tìm thấy chapter folder hợp lệ để gộp.");
+                    lblStatus.Text = _isVietnameseUi ? "Không tìm thấy chapter folder hợp lệ." : "No valid chapter folders found.";
+                    MessageBox.Show("Không tìm thấy chapter folder hợp lệ để gộp.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                Log($"[Merge] Hoàn tất gộp {mergedCount} chapter folder.");
+                lblStatus.Text = _isVietnameseUi
+                    ? $"Đã gộp {mergedCount} chapter folder."
+                    : $"Merge completed. Merged {mergedCount} chapter folders.";
+                MessageBox.Show($"Đã gộp thành công {mergedCount} chapter folder!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Log($"[Merge Error] Lỗi nghiêm trọng khi gộp folder: {ex.Message}");
+                lblStatus.Text = _isVietnameseUi ? "Gộp folder thất bại." : "Merge failed.";
+                MessageBox.Show($"Lỗi khi gộp folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -585,6 +739,10 @@ namespace get_link_manga
                 Directory.CreateDirectory(destParent);
                 if (Directory.Exists(dest))
                 {
+                    if (string.Equals(source, dest, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return;
+                    }
                     MergeDirectoryContents(source, dest);
                 }
                 else
@@ -639,6 +797,11 @@ namespace get_link_manga
 
                         try
                         {
+                            if (string.Equals(item.Path, destDir, StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
                             if (!Directory.Exists(destDir))
                             {
                                 Directory.Move(item.Path, destDir);
@@ -745,6 +908,297 @@ namespace get_link_manga
             }
         }
 
+        private bool TryGetSplitSingleComicGroupSize(out int groupSize)
+        {
+            groupSize = 200;
+            if (cmbSplitChapterGroupSize == null)
+            {
+                return true;
+            }
+
+            string raw = null;
+            if (cmbSplitChapterGroupSize.SelectedItem is ComboBoxItem item)
+            {
+                raw = item.Content?.ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                raw = "200";
+            }
+
+            if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out groupSize) || groupSize <= 0)
+            {
+                MessageBox.Show("Group size không hợp lệ.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            return true;
+        }
+
+        private string GetSplitSingleComicRootPath()
+        {
+            string path = txtSplitSingleComicRoot?.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            return txtDownloadPath?.Text?.Trim();
+        }
+
+        private string GetMergeSingleComicRootPath()
+        {
+            string path = txtMergeSingleComicRoot?.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            return txtDownloadPath?.Text?.Trim();
+        }
+
+        private async Task<int> SplitSingleComicFoldersInTargetFolderAsync(string targetFolder, int groupSize, CancellationToken token)
+        {
+            if (string.IsNullOrWhiteSpace(targetFolder) || !Directory.Exists(targetFolder) || groupSize <= 0)
+            {
+                return 0;
+            }
+
+            await _folderStructureSemaphore.WaitAsync(token);
+            try
+            {
+                var bookFolders = CollectSingleComicChapterFolders(targetFolder)
+                    .GroupBy(item => item.BookFolderPath, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                int splitCount = 0;
+
+                foreach (var bookGroup in bookFolders)
+                {
+                    string bookFolder = bookGroup.Key;
+                    var chapterFolders = bookGroup
+                        .OrderBy(item => item.ChapterNumber)
+                        .ThenBy(item => item.FolderName, StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(item => item.SourcePath, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    if (chapterFolders.Count < 2)
+                    {
+                        continue;
+                    }
+
+                    foreach (var bucketGroup in chapterFolders.GroupBy(item => (Math.Max(1, item.ChapterNumber) - 1) / groupSize))
+                    {
+                        List<SplitSingleComicChapterItem> bucketItems = bucketGroup
+                            .OrderBy(item => item.ChapterNumber)
+                            .ThenBy(item => item.FolderName, StringComparer.OrdinalIgnoreCase)
+                            .ThenBy(item => item.SourcePath, StringComparer.OrdinalIgnoreCase)
+                            .ToList();
+
+                        if (bucketItems.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        int start = bucketItems.Min(item => Math.Max(1, item.ChapterNumber));
+                        int end = bucketItems.Max(item => Math.Max(1, item.ChapterNumber));
+                        string groupFolderName = $"chap {start:0000}-{end:0000}";
+                        string groupFolderPath = Path.Combine(bookFolder, groupFolderName);
+
+                        foreach (SplitSingleComicChapterItem chapter in bucketItems)
+                        {
+                            string destinationPath = Path.Combine(groupFolderPath, chapter.FolderName);
+
+                        try
+                        {
+                            if (string.Equals(chapter.SourcePath, destinationPath, StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            Directory.CreateDirectory(groupFolderPath);
+                            if (!Directory.Exists(destinationPath))
+                            {
+                                Directory.Move(chapter.SourcePath, destinationPath);
+                            }
+                                else
+                                {
+                                    MergeDirectoryContents(chapter.SourcePath, destinationPath);
+                                }
+
+                                splitCount++;
+                                Log($"[Split] Đã chia '{Path.GetFileName(bookFolder)}\\{chapter.FolderName}' -> '{groupFolderName}\\{chapter.FolderName}'");
+                            }
+                            catch (Exception ex)
+                            {
+                                Log($"[Split Error] Không thể chia '{chapter.SourcePath}': {ex.Message}");
+                            }
+                        }
+                    }
+                }
+
+                return splitCount;
+            }
+            finally
+            {
+                _folderStructureSemaphore.Release();
+            }
+        }
+
+        private async Task<int> MergeSingleComicFoldersInTargetFolderAsync(string targetFolder, CancellationToken token)
+        {
+            if (string.IsNullOrWhiteSpace(targetFolder) || !Directory.Exists(targetFolder))
+            {
+                return 0;
+            }
+
+            await _folderStructureSemaphore.WaitAsync(token);
+            try
+            {
+                List<SplitSingleComicChapterItem> items = CollectSingleComicChapterFolders(targetFolder)
+                    .Where(item => !string.Equals(item.SourcePath, targetFolder, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(item => item.Depth)
+                    .ThenBy(item => item.ChapterNumber)
+                    .ThenBy(item => item.SourcePath, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                int mergedCount = 0;
+                foreach (SplitSingleComicChapterItem chapter in items)
+                {
+                    if (string.IsNullOrWhiteSpace(chapter.SourcePath) ||
+                        string.IsNullOrWhiteSpace(chapter.FolderName) ||
+                        string.Equals(chapter.SourcePath, targetFolder, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    string destinationPath = Path.Combine(targetFolder, chapter.FolderName);
+                    try
+                    {
+                        if (string.Equals(chapter.SourcePath, destinationPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        if (!Directory.Exists(destinationPath))
+                        {
+                            Directory.Move(chapter.SourcePath, destinationPath);
+                        }
+                        else
+                        {
+                            MergeDirectoryContents(chapter.SourcePath, destinationPath);
+                        }
+
+                        mergedCount++;
+                        Log($"[Merge] Đã gộp '{chapter.SourcePath}' -> '{destinationPath}'");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"[Merge Error] Không thể gộp '{chapter.SourcePath}': {ex.Message}");
+                    }
+                }
+
+                DeleteEmptyDirectoriesBottomUp(targetFolder);
+                return mergedCount;
+            }
+            finally
+            {
+                _folderStructureSemaphore.Release();
+            }
+        }
+
+        private List<SplitSingleComicChapterItem> CollectSingleComicChapterFolders(string rootFolder)
+        {
+            var items = new List<SplitSingleComicChapterItem>();
+            if (string.IsNullOrWhiteSpace(rootFolder) || !Directory.Exists(rootFolder))
+            {
+                return items;
+            }
+
+            foreach (string folder in EnumerateSingleComicCandidateFolders(rootFolder))
+            {
+                string folderName = Path.GetFileName(folder);
+                if (ShouldIgnoreFolderStructureAction(folderName))
+                {
+                    continue;
+                }
+
+                if (!DirectoryContainsImages(folder))
+                {
+                    continue;
+                }
+
+                if (!TryParseReaderChapterNumber(folderName, out double chapterNumber, out _))
+                {
+                    continue;
+                }
+
+                string parent = Path.GetDirectoryName(folder);
+                if (string.IsNullOrWhiteSpace(parent))
+                {
+                    continue;
+                }
+
+                items.Add(new SplitSingleComicChapterItem
+                {
+                    SourcePath = folder,
+                    FolderName = folderName,
+                    BookFolderPath = parent,
+                    ChapterNumber = Math.Max(1, (int)Math.Floor(chapterNumber)),
+                    Depth = folder.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries).Length
+                });
+            }
+
+            return items;
+        }
+
+        private IEnumerable<string> EnumerateSingleComicCandidateFolders(string rootFolder)
+        {
+            var stack = new Stack<string>();
+            stack.Push(rootFolder);
+
+            while (stack.Count > 0)
+            {
+                string current = stack.Pop();
+                foreach (string child in SafeGetDirectories(current))
+                {
+                    string childName = Path.GetFileName(child);
+                    if (ShouldIgnoreFolderStructureAction(childName))
+                    {
+                        continue;
+                    }
+
+                    yield return child;
+                    stack.Push(child);
+                }
+            }
+        }
+
+        private void DeleteEmptyDirectoriesBottomUp(string rootFolder)
+        {
+            foreach (string directory in Directory.GetDirectories(rootFolder, "*", SearchOption.AllDirectories)
+                         .OrderByDescending(path => path.Length))
+            {
+                if (string.Equals(directory, rootFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if (!Directory.EnumerateFileSystemEntries(directory).Any())
+                    {
+                        Directory.Delete(directory, false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Merge Warning] Không thể xóa folder rỗng '{directory}': {ex.Message}");
+                }
+            }
+        }
+
         private bool ShouldIgnoreFolderStructureAction(string folderName)
         {
             return string.IsNullOrWhiteSpace(folderName) ||
@@ -754,6 +1208,13 @@ namespace get_link_manga
 
         private void MergeDirectoryContents(string source, string dest)
         {
+            if (string.IsNullOrWhiteSpace(source) ||
+                string.IsNullOrWhiteSpace(dest) ||
+                string.Equals(source, dest, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             Directory.CreateDirectory(dest);
             foreach (var file in Directory.GetFiles(source))
             {
@@ -774,7 +1235,30 @@ namespace get_link_manga
                 MergeDirectoryContents(dir, destDir);
             }
 
-            Directory.Delete(source, true);
+            try
+            {
+                if (!Directory.EnumerateFileSystemEntries(source).Any())
+                {
+                    Directory.Delete(source, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[Merge Warning] Không thể xóa source sau khi gộp '{source}': {ex.Message}");
+            }
+        }
+
+        private sealed class SplitSingleComicChapterItem
+        {
+            public string SourcePath { get; set; }
+
+            public string FolderName { get; set; }
+
+            public string BookFolderPath { get; set; }
+
+            public int ChapterNumber { get; set; }
+
+            public int Depth { get; set; }
         }
 
         private string GetActiveTargetFolder_LegacyDoNotUse(string downloadRoot)
@@ -784,3 +1268,4 @@ namespace get_link_manga
         }
     }
 }
+

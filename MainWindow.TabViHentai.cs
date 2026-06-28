@@ -13,7 +13,7 @@ using System.Windows.Controls;
 #pragma warning disable 4014
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private readonly SemaphoreSlim _viHentaiHtmlGate = new SemaphoreSlim(1, 1);
 
@@ -1173,3 +1173,4 @@ namespace get_link_manga
     }
 }
 #pragma warning restore 4014
+

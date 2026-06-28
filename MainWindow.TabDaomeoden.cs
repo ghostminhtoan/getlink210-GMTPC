@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const string DaomeodenSiteFolder = "daomeoden.net";
         private const string DaomeodenBaseUrl = "https://daomeoden.net";
@@ -1219,3 +1219,4 @@ namespace get_link_manga
         }
     }
 }
+

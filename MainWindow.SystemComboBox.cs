@@ -5,7 +5,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private void CmbConnections_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -123,3 +123,4 @@ namespace get_link_manga
         }
     }
 }
+

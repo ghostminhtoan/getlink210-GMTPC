@@ -15,7 +15,7 @@ namespace get_link_manga
     /// Partial class for new UI features: Bookmarks, History, Download Queue,
     /// Open Link/Download buttons, and Chapter Selection.
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         // ===== BOOKMARK & HISTORY =====
 
@@ -270,17 +270,20 @@ namespace get_link_manga
                 return;
 
             var errorsToRetry = queueItem.GetUniqueErrors()
-                .Where(e => e.PageNumber > 0 && !string.IsNullOrEmpty(e.ImageUrl))
+                .Where(e => e.PageNumber > 0 && !string.IsNullOrEmpty(e.ImageUrl) && e.AttemptCount < 3)
                 .ToList();
             if (errorsToRetry.Count == 0)
                 return;
 
             string originalStatus = queueItem.Status;
-            // Clear current errors before retrying so we can track new ones
+            // Remove only the errors we are retrying so we can track them
             Dispatcher.Invoke(() => {
                 queueItem.Name = FormatGalleryTitle(queueItem.Name);
-                queueItem.Errors.Clear();
-                queueItem.ErrorCount = 0;
+                foreach (var err in errorsToRetry)
+                {
+                    queueItem.Errors.Remove(err);
+                }
+                queueItem.ErrorCount = queueItem.GetUniqueErrorCount();
                 queueItem.Status = "Downloading";
                 queueItem.CurrentProcess = BuildRetryProcessText(0, errorsToRetry.Count, 0, 0, false);
             });
@@ -294,6 +297,7 @@ namespace get_link_manga
 
             foreach (var err in errorsToRetry)
             {
+                err.AttemptCount++;
                 try
                 {
                     string targetFolder;
@@ -400,7 +404,7 @@ namespace get_link_manga
                     Log($"[Retry] Thất bại khi tải {err.ChapterName}, Trang {err.PageNumber}: {ex.Message}");
                     Dispatcher.Invoke(() =>
                     {
-                        queueItem.AddError(err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl, chapterUrl: err.ChapterUrl, pageName: err.PageName);
+                        queueItem.AddError(err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl, chapterUrl: err.ChapterUrl, pageName: err.PageName, attemptCount: err.AttemptCount);
                     });
                     RecordCheckError(queueItem.SourceDomain ?? "retry", queueItem.Name, err.ChapterName, err.PageNumber, ex.Message, err.ImageUrl, pageName: err.PageName);
                 }
@@ -619,3 +623,4 @@ namespace get_link_manga
     }
 }
 #pragma warning restore 4014
+

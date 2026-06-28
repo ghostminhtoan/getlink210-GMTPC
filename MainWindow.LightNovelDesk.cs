@@ -14,7 +14,7 @@ using System.Windows.Input;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private readonly Dictionary<string, ObservableCollection<LightNovelChapterRecord>> _lightNovelChapterMap =
             new Dictionary<string, ObservableCollection<LightNovelChapterRecord>>(StringComparer.OrdinalIgnoreCase);
@@ -1962,3 +1962,4 @@ namespace get_link_manga
         }
     }
 }
+

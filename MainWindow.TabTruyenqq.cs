@@ -14,7 +14,7 @@ using System.Windows.Controls;
 #pragma warning disable 4014
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private void TruyenqqLog(string message)
         {
@@ -1629,4 +1629,5 @@ namespace get_link_manga
     }
 }
 #pragma warning restore 4014
+
 

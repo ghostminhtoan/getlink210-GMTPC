@@ -10,7 +10,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private void HentaieraLog(string message)
         {
@@ -592,3 +592,4 @@ namespace get_link_manga
         }
     }
 }
+

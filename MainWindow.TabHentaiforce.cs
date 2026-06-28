@@ -9,7 +9,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private string GetPageUrl(string baseUrl, int page)
         {
@@ -675,3 +675,4 @@ namespace get_link_manga
         }
     }
 }
+

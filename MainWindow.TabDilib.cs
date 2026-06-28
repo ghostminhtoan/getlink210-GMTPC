@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -13,7 +14,7 @@ using System.Windows.Input;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const string DilibSiteFolder = "dilib.vn";
         private const string DilibBaseUrl = "https://dilib.vn";
@@ -938,6 +939,11 @@ namespace get_link_manga
                     .Select(link => chapters.First(chapter => string.Equals(chapter.Link, link, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
             }
+            // ponytail: sort theo chapter number sau filter để tránh DOM order lộn xộn.
+            chapters = chapters
+                .OrderBy(chapter => GetDilibChapterSortNumber(chapter))
+                .ThenBy(chapter => chapter.Link, StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             if (queueItem != null)
             {
@@ -994,6 +1000,10 @@ namespace get_link_manga
         {
             string html = await FetchStringAsync(NormalizeDilibUrl(item.Link), token);
             string bookTitle = GetDilibBookTitleFromHtml(html, item.Link);
+            chapterLinks = (chapterLinks ?? Array.Empty<string>())
+                .OrderBy(GetDilibChapterSortNumber)
+                .ThenBy(link => link, StringComparer.OrdinalIgnoreCase)
+                .ToList();
             if (queueItem != null)
             {
                 Dispatcher.Invoke(() =>
@@ -1033,7 +1043,7 @@ namespace get_link_manga
         {
             string normalized = NormalizeDilibUrl(item.Link);
                 string html = await FetchStringAsync(normalized, token);
-                string bookTitle = string.IsNullOrWhiteSpace(bookTitleOverride)
+            string bookTitle = string.IsNullOrWhiteSpace(bookTitleOverride)
                     ? GetDilibBookTitleFromHtml(html, normalized)
                     : CleanDilibDisplayTitle(bookTitleOverride);
                 string chapterTitle = GetDilibChapterTitleFromHtml(html, normalized);
@@ -1046,7 +1056,8 @@ namespace get_link_manga
             }
 
             string safeBook = GetSafePathName(bookTitle);
-            string safeChapter = GetSafeChapterPathName(chapterTitle);
+            // ponytail: Dilib title on chapter page can be generic; folder key must come from link.
+            string safeChapter = GetSafeChapterPathName(GetChapterProcessLabel(normalized));
             string siteRoot = GetSiteDownloadRoot(rootFolder, DilibSiteFolder);
             string targetFolder = _isSingleComicFolderType
                 ? Path.Combine(siteRoot, safeBook, safeChapter)
@@ -1107,21 +1118,60 @@ namespace get_link_manga
                                     await Task.Delay(200, token);
                                 }
 
-                                string fileName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
-                                if (string.IsNullOrWhiteSpace(fileName))
+                                string originalName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
+                                if (string.IsNullOrWhiteSpace(originalName))
                                 {
-                                    fileName = $"{pageIndex:D5}.jpg";
+                                    originalName = "img.jpg";
                                 }
+                                string fileName = $"{pageIndex:D4}-{originalName}";
 
                                 string localPath = Path.Combine(tempFolder, fileName);
+                                string targetPath = Path.Combine(targetFolder, fileName);
+                                if ((File.Exists(localPath) && new FileInfo(localPath).Length > 1024) ||
+                                    (File.Exists(targetPath) && new FileInfo(targetPath).Length > 1024))
+                                {
+                                    lock (lockObj)
+                                    {
+                                        completedPages++;
+                                        bool shouldFlushUi = completedPages == imageUrls.Count ||
+                                                             completedPages == 1 ||
+                                                             (DateTime.UtcNow - lastUiUpdateUtc).TotalMilliseconds >= 500 ||
+                                                             completedPages % 5 == 0;
+                                        if (shouldFlushUi)
+                                        {
+                                            lastUiUpdateUtc = DateTime.UtcNow;
+                                            UpdateDownloadRowMetrics(queueItem, completedPages, imageUrls.Count, $"{completedPages}/{imageUrls.Count} pages", 0, 0, isParentQueue);
+                                        }
+                                    }
+                                    return;
+                                }
+
                                 var watch = System.Diagnostics.Stopwatch.StartNew();
-                                await DownloadUrlToFileWithRefererAsync(imageUrl, normalized, localPath, token);
+                                string downloadedPath = null;
+                                try
+                                {
+                                    await DownloadUrlToFileWithRefererAsync(imageUrl, normalized, localPath, token);
+                                    downloadedPath = localPath;
+                                }
+                                catch (Exception ex)
+                                {
+                                    lock (lockObj)
+                                    {
+                                        if (queueItem != null)
+                                        {
+                                            string pageName = Path.GetFileNameWithoutExtension(fileName);
+                                            queueItem.AddError(chapterTitle, pageIndex, ex.Message, imageUrl, normalized, pageName);
+                                            RecordCheckError("dilib", queueItem.Name ?? bookTitle, chapterTitle, pageIndex, ex.Message, imageUrl, pageName);
+                                        }
+                                        Log($"[dilib] Lỗi tải trang {pageIndex} của chapter '{chapterTitle}': {ex.Message}");
+                                    }
+                                }
 
                                 lock (lockObj)
                                 {
                                     completedPages++;
                                     watch.Stop();
-                                    long bytes = File.Exists(localPath) ? new FileInfo(localPath).Length : 0;
+                                    long bytes = !string.IsNullOrWhiteSpace(downloadedPath) && File.Exists(downloadedPath) ? new FileInfo(downloadedPath).Length : 0;
                                     WriteTempProgressLog(tempFolder, item, "Downloading", completedPages, imageUrls.Count, $"{completedPages}/{imageUrls.Count} pages", $"Page {pageIndex} completed");
                                     bool shouldFlushUi = completedPages == imageUrls.Count ||
                                                         completedPages == 1 ||
@@ -1153,5 +1203,56 @@ namespace get_link_manga
                 UnregisterTempFolder(tempFolder);
             }
         }
+
+        private double GetDilibChapterSortNumber(GalleryItem chapter)
+        {
+            if (chapter == null)
+            {
+                return 0d;
+            }
+
+            double number = ParseChapterNumber(chapter.Link);
+            if (number > 0d)
+            {
+                return number;
+            }
+
+            var match = Regex.Match(chapter.LinkCount ?? string.Empty, @"(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
+            if (match.Success && double.TryParse(match.Groups["num"].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out number))
+            {
+                return number;
+            }
+
+            match = Regex.Match(chapter.Link ?? string.Empty, @"(?<num>\d+(?:\.\d+)?)(?:\.html)?\s*$", RegexOptions.IgnoreCase);
+            if (match.Success && double.TryParse(match.Groups["num"].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out number))
+            {
+                return number;
+            }
+
+            return double.MaxValue;
+        }
+
+        private double GetDilibChapterSortNumber(string link)
+        {
+            if (string.IsNullOrWhiteSpace(link))
+            {
+                return double.MaxValue;
+            }
+
+            double number = ParseChapterNumber(link);
+            if (number > 0d)
+            {
+                return number;
+            }
+
+            Match match = Regex.Match(link, @"(?<num>\d+(?:\.\d+)?)(?:\.html)?\s*$", RegexOptions.IgnoreCase);
+            if (match.Success && double.TryParse(match.Groups["num"].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out number))
+            {
+                return number;
+            }
+
+            return double.MaxValue;
+        }
     }
 }
+

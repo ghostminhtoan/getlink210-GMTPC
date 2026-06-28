@@ -9,7 +9,7 @@ using System.Windows.Documents;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private enum LogFilterMode
         {
@@ -347,3 +347,4 @@ namespace get_link_manga
         }
     }
 }
+

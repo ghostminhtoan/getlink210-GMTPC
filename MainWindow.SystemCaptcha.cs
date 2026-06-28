@@ -7,7 +7,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private async void BtnCaptcha_Click(object sender, RoutedEventArgs e)
         {
@@ -196,3 +196,4 @@ namespace get_link_manga
         }
     }
 }
+

@@ -14,7 +14,7 @@ using Microsoft.Win32;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private bool? _lastLatestChapterSortDescending;
         private string _lastNhentaiResolvedHtml;
@@ -690,9 +690,9 @@ namespace get_link_manga
                     {
                         try
                         {
-                            var erroredItems = _scrapedItems
-                                .Where(item => item.GetUniqueErrorCount() > 0)
-                                .ToList();
+                             var erroredItems = _scrapedItems
+                                 .Where(item => item.GetUniqueErrors().Any(e => e.PageNumber > 0 && !string.IsNullOrEmpty(e.ImageUrl) && e.AttemptCount < 3))
+                                 .ToList();
 
                             foreach (var item in erroredItems)
                             {
@@ -985,3 +985,4 @@ namespace get_link_manga
         }
     }
 }
+

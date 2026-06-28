@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -14,7 +14,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const string HakoSiteFolder = "ln.hako.vn";
         private const string HakoBaseUrl = "https://docln.net";
@@ -80,7 +80,7 @@ namespace get_link_manga
             if (!Uri.TryCreate(normalized, UriKind.Absolute, out Uri uri) ||
                 uri.Host.IndexOf("docln.net", StringComparison.OrdinalIgnoreCase) < 0)
             {
-                throw new ArgumentException("URL phải thuộc domain docln.net.");
+                throw new ArgumentException("URL ph?i thu?c domain docln.net.");
             }
 
             return uri.AbsoluteUri;
@@ -277,7 +277,7 @@ namespace get_link_manga
                 if (!headlessAutomation)
                 {
                     _isDownloadPaused = true;
-                    HakoLog("Hako chặn request thường. Mở CaptchaWindow để lấy HTML thật.");
+                    HakoLog("Hako ch?n request thu?ng. M? CaptchaWindow d? l?y HTML th?t.");
                 }
 
                 try
@@ -358,7 +358,7 @@ namespace get_link_manga
 
                 _isCaptchaWindowActive = true;
                 _isDownloadPaused = true;
-                HakoLog("Phát hiện Cloudflare/Captcha. Mở CaptchaWindow để đồng bộ cookie phiên.");
+                HakoLog("Ph�t hi?n Cloudflare/Captcha. M? CaptchaWindow d? d?ng b? cookie phi�n.");
 
                 bool solved = false;
                 try
@@ -405,11 +405,11 @@ namespace get_link_manga
                 {
                     _isDownloadPaused = false;
                     _hakoCaptchaSessionReady = true;
-                    HakoLog("Captcha/cookie đồng bộ xong. Tiếp tục.");
+                    HakoLog("Captcha/cookie d?ng b? xong. Ti?p t?c.");
                     return true;
                 }
 
-                HakoLog("HttpClient không lấy được HTML Hako. Chuyển sang browser session.");
+                HakoLog("HttpClient kh�ng l?y du?c HTML Hako. Chuy?n sang browser session.");
                 return false;
             }
             finally
@@ -430,7 +430,7 @@ namespace get_link_manga
                    html.IndexOf("cloudflare", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    html.IndexOf("Just a moment", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    html.IndexOf("captcha", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   html.IndexOf("xác minh", StringComparison.OrdinalIgnoreCase) >= 0;
+                   html.IndexOf("x�c minh", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private async Task<string> TryFetchHakoHtmlByHttpClientAsync(string normalizedUrl, CancellationToken token)
@@ -482,10 +482,10 @@ namespace get_link_manga
                 _hakoCaptchaSessionReady = false;
                 if (lastError != null)
                 {
-                    throw new Exception("Không thể lấy HTML thật từ Hako sau khi thử lại bằng browser session. " + lastError.Message);
+                    throw new Exception("Kh�ng th? l?y HTML th?t t? Hako sau khi th? l?i b?ng browser session. " + lastError.Message);
                 }
 
-                throw new Exception("Không thể lấy HTML thật từ Hako sau khi vượt captcha.");
+                throw new Exception("Kh�ng th? l?y HTML th?t t? Hako sau khi vu?t captcha.");
             }
 
             _hakoCaptchaSessionReady = true;
@@ -503,9 +503,9 @@ namespace get_link_manga
             text = Regex.Replace(text, @"\s+", " ").Trim();
 
             return text.IndexOf("403", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                   (text.IndexOf("không phù hợp", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   (text.IndexOf("kh�ng ph� h?p", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     text.IndexOf("khong phu hop", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    text.IndexOf("hãy chờ đợi người làm sửa lại", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("h�y ch? d?i ngu?i l�m s?a l?i", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     text.IndexOf("hay cho doi nguoi lam sua lai", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     text.IndexOf("forbidden", StringComparison.OrdinalIgnoreCase) >= 0);
         }
@@ -522,7 +522,7 @@ namespace get_link_manga
 
             return text.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0 &&
                    (text.IndexOf("too many requests", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    text.IndexOf("quá nhiều yêu cầu", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    text.IndexOf("qu� nhi?u y�u c?u", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     text.IndexOf("qua nhieu yeu cau", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
@@ -536,7 +536,7 @@ namespace get_link_manga
             string message = ex.Message ?? string.Empty;
             return message.IndexOf("403", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    message.IndexOf("forbidden", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   message.IndexOf("không phù hợp", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("kh�ng ph� h?p", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    message.IndexOf("khong phu hop", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    message.IndexOf("khong trich xuat duoc noi dung text", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    message.IndexOf("non-text chapter", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -552,7 +552,7 @@ namespace get_link_manga
             string message = ex.Message ?? string.Empty;
             return message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    message.IndexOf("too many requests", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   message.IndexOf("quá nhiều yêu cầu", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("qu� nhi?u y�u c?u", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    message.IndexOf("qua nhieu yeu cau", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
@@ -631,9 +631,9 @@ namespace get_link_manga
             {
                 ShowLocalizedMessageBox(
                     "Please enter a Hako tag URL.",
-                    "Vui lòng nhập URL tag của Hako.",
+                    "Vui l�ng nh?p URL tag c?a Hako.",
                     "Information",
-                    "Thông báo",
+                    "Th�ng b�o",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -641,7 +641,7 @@ namespace get_link_manga
 
             btnHakoFetchInfo.IsEnabled = false;
             progressBar.IsIndeterminate = true;
-            lblStatus.Text = _isVietnameseUi ? "Đang phân tích trang Hako..." : "Analyzing Hako page...";
+            lblStatus.Text = _isVietnameseUi ? "�ang ph�n t�ch trang Hako..." : "Analyzing Hako page...";
 
             try
             {
@@ -653,15 +653,15 @@ namespace get_link_manga
                 txtHakoTotalPages.Text = totalPages.ToString(CultureInfo.InvariantCulture);
                 txtHakoPageTo.Text = totalPages.ToString(CultureInfo.InvariantCulture);
                 lblStatus.Text = _isVietnameseUi
-                    ? $"Phân tích xong. Phát hiện {totalPages} trang. Bấm GET LINK để nạp truyện vào danh sách."
+                    ? $"Ph�n t�ch xong. Ph�t hi?n {totalPages} trang. B?m GET LINK d? n?p truy?n v�o danh s�ch."
                     : $"Analysis done. Found {totalPages} pages. Click GET LINK to load books into the list.";
             }
             catch (Exception ex)
             {
-                HakoLog("Lỗi khi phân tích: " + ex.Message);
+                HakoLog("L?i khi ph�n t�ch: " + ex.Message);
                 txtHakoTotalPages.Text = "1";
                 txtHakoPageTo.Text = "1";
-                lblStatus.Text = _isVietnameseUi ? "Phân tích thất bại." : "Analysis failed.";
+                lblStatus.Text = _isVietnameseUi ? "Ph�n t�ch th?t b?i." : "Analysis failed.";
             }
             finally
             {
@@ -683,7 +683,7 @@ namespace get_link_manga
             if (_cts != null)
             {
                 _cts.Cancel();
-                btnHakoScrape.Content = _isVietnameseUi ? "ĐANG HỦY..." : "CANCELLING...";
+                btnHakoScrape.Content = _isVietnameseUi ? "�ANG H?Y..." : "CANCELLING...";
                 btnHakoScrape.IsEnabled = false;
                 if (btnHakoCrawlMore != null)
                 {
@@ -700,7 +700,7 @@ namespace get_link_manga
             if (_cts != null)
             {
                 _cts.Cancel();
-                btnHakoCrawlMore.Content = _isVietnameseUi ? "ĐANG HỦY..." : "CANCELLING...";
+                btnHakoCrawlMore.Content = _isVietnameseUi ? "�ANG H?Y..." : "CANCELLING...";
                 btnHakoCrawlMore.IsEnabled = false;
                 btnHakoScrape.IsEnabled = false;
                 return;
@@ -716,9 +716,9 @@ namespace get_link_manga
             {
                 ShowLocalizedMessageBox(
                     "Start page is invalid.",
-                    "Trang bắt đầu không hợp lệ.",
+                    "Trang b?t d?u kh�ng h?p l?.",
                     "Information",
-                    "Thông báo",
+                    "Th�ng b�o",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -728,9 +728,9 @@ namespace get_link_manga
             {
                 ShowLocalizedMessageBox(
                     "End page is invalid.",
-                    "Trang kết thúc không hợp lệ.",
+                    "Trang k?t th�c kh�ng h?p l?.",
                     "Information",
-                    "Thông báo",
+                    "Th�ng b�o",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -739,11 +739,11 @@ namespace get_link_manga
             _cts = new CancellationTokenSource();
             CancellationToken token = _cts.Token;
 
-            btnHakoScrape.Content = _isVietnameseUi ? "DỪNG CÀO" : "STOP CRAWLER";
-            btnHakoCrawlMore.Content = _isVietnameseUi ? "DỪNG CÀO" : "STOP CRAWLER";
+            btnHakoScrape.Content = _isVietnameseUi ? "D?NG C�O" : "STOP CRAWLER";
+            btnHakoCrawlMore.Content = _isVietnameseUi ? "D?NG C�O" : "STOP CRAWLER";
             btnHakoFetchInfo.IsEnabled = false;
             progressBar.Value = 0;
-            lblStatus.Text = _isVietnameseUi ? "Đang cào Hako..." : "Crawling Hako...";
+            lblStatus.Text = _isVietnameseUi ? "�ang c�o Hako..." : "Crawling Hako...";
 
             if (clearExisting)
             {
@@ -775,29 +775,29 @@ namespace get_link_manga
                     double progress = ((double)(page - pageFrom + 1) / totalPages) * 100;
                     progressBar.Value = progress;
                     lblStatus.Text = _isVietnameseUi
-                        ? $"Đang quét trang {page}/{pageTo} ({progress:0}%)"
+                        ? $"�ang qu�t trang {page}/{pageTo} ({progress:0}%)"
                         : $"Scanning page {page}/{pageTo} ({progress:0}%)";
                     RefreshLightNovelSummary();
                 }
 
                 RefreshLightNovelSummary();
-                lblStatus.Text = _isVietnameseUi ? "Cào Hako hoàn tất." : "Hako crawl completed.";
+                lblStatus.Text = _isVietnameseUi ? "C�o Hako ho�n t?t." : "Hako crawl completed.";
             }
             catch (OperationCanceledException)
             {
-                lblStatus.Text = _isVietnameseUi ? "Đã hủy cào Hako." : "Hako crawl cancelled.";
+                lblStatus.Text = _isVietnameseUi ? "�� h?y c�o Hako." : "Hako crawl cancelled.";
             }
             catch (Exception ex)
             {
-                HakoLog("Lỗi khi cào: " + ex.Message);
-                lblStatus.Text = _isVietnameseUi ? "Cào Hako thất bại." : "Hako crawl failed.";
+                HakoLog("L?i khi c�o: " + ex.Message);
+                lblStatus.Text = _isVietnameseUi ? "C�o Hako th?t b?i." : "Hako crawl failed.";
             }
             finally
             {
                 _cts.Dispose();
                 _cts = null;
-                btnHakoScrape.Content = _isVietnameseUi ? "LẤY LINK" : "GET LINK";
-                btnHakoCrawlMore.Content = _isVietnameseUi ? "LẤY THÊM" : "GET MORE";
+                btnHakoScrape.Content = _isVietnameseUi ? "L?Y LINK" : "GET LINK";
+                btnHakoCrawlMore.Content = _isVietnameseUi ? "L?Y TH�M" : "GET MORE";
                 btnHakoScrape.IsEnabled = true;
                 btnHakoCrawlMore.IsEnabled = true;
                 btnHakoFetchInfo.IsEnabled = true;
@@ -952,7 +952,7 @@ namespace get_link_manga
                         GalleryItem item = await BuildHakoDirectGalleryItemAsync(rawLink);
                         if (_lightNovelItems.Any(existing => string.Equals(existing.Link, item.Link, StringComparison.OrdinalIgnoreCase)))
                         {
-                            HakoLog($"[Import] Bỏ qua link trùng: {item.Link}");
+                            HakoLog($"[Import] B? qua link tr�ng: {item.Link}");
                             success++;
                             continue;
                         }
@@ -964,7 +964,7 @@ namespace get_link_manga
                     catch (Exception ex)
                     {
                         failed++;
-                        HakoLog($"[Import] Lỗi với '{rawLink}': {ex.Message}");
+                        HakoLog($"[Import] L?i v?i '{rawLink}': {ex.Message}");
                     }
 
                     progressBar.Value = ((double)(i + 1) / Math.Max(1, total)) * 100;
@@ -1011,7 +1011,7 @@ namespace get_link_manga
                 });
             }
 
-            throw new Exception("Link Hako phải là link book hoặc link chapter hợp lệ.");
+            throw new Exception("Link Hako ph?i l� link book ho?c link chapter h?p l?.");
         }
 
         private async Task DownloadHakoNovelAsync(GalleryItem item, string rootFolder, CancellationToken token, GalleryItem queueItem = null, ChapterFilter chapterFilter = null)
@@ -1056,7 +1056,7 @@ namespace get_link_manga
                         });
                     }
 
-                    WriteTempProgressLog(tempFolder, item, "Done", 0, 0, "0/0 chapters", "Không tìm thấy chapter nào.");
+                    WriteTempProgressLog(tempFolder, item, "Done", 0, 0, "0/0 chapters", "Kh�ng t�m th?y chapter n�o.");
                     MoveTempFolderToTarget(tempFolder, targetFolder, "Hako");
                     return;
                 }
@@ -1082,7 +1082,7 @@ namespace get_link_manga
                     });
                 }
 
-                WriteTempProgressLog(tempFolder, item, "Downloading", 0, totalChapters, $"0/{totalChapters} chapters", "Bắt đầu copy text Hako");
+                WriteTempProgressLog(tempFolder, item, "Downloading", 0, totalChapters, $"0/{totalChapters} chapters", "B?t d?u copy text Hako");
 
                 int completed = 0;
                 foreach (HakoChapterInfo chapter in filteredChapters)
@@ -1170,7 +1170,7 @@ namespace get_link_manga
                     }
                     catch (Exception ex)
                     {
-                        HakoLog($"Không thể xóa temp Hako '{tempFolder}': {ex.Message}");
+                        HakoLog($"Kh�ng th? x�a temp Hako '{tempFolder}': {ex.Message}");
                     }
                 }
 
@@ -1268,7 +1268,7 @@ namespace get_link_manga
                     }
                     catch (Exception ex)
                     {
-                        HakoLog($"Không thể xóa temp Hako '{tempFolder}': {ex.Message}");
+                        HakoLog($"Kh�ng th? x�a temp Hako '{tempFolder}': {ex.Message}");
                     }
                 }
 
@@ -1304,7 +1304,7 @@ namespace get_link_manga
             }
 
             raw = StripHtmlToPlainText(raw);
-            raw = Regex.Replace(raw, @"\s*-\s*(Cổng Light Novel|Đọc Light Novel).*$", string.Empty, RegexOptions.IgnoreCase).Trim();
+            raw = Regex.Replace(raw, @"\s*-\s*(C?ng Light Novel|�?c Light Novel).*$", string.Empty, RegexOptions.IgnoreCase).Trim();
             return raw;
         }
 
@@ -1358,7 +1358,7 @@ namespace get_link_manga
 
             return Regex.IsMatch(
                 normalized,
-                @"^Ảnh tạm thời bị tắt\.?$|^Anh tam thoi bi tat\.?$|^Temporary image disabled\.?$",
+                @"^?nh t?m th?i b? t?t\.?$|^Anh tam thoi bi tat\.?$|^Temporary image disabled\.?$",
                 RegexOptions.IgnoreCase);
         }
 
@@ -1489,7 +1489,7 @@ namespace get_link_manga
             string contentMarkdown = ConvertHakoContentHtmlToMarkdown(contentHtml);
             if (string.IsNullOrWhiteSpace(contentMarkdown))
             {
-                throw new Exception("Không trích xuất được nội dung text trong chapter-content.");
+                throw new Exception("Kh�ng tr�ch xu?t du?c n?i dung text trong chapter-content.");
             }
 
             string bookTitle = item?.Name;
@@ -1603,7 +1603,7 @@ namespace get_link_manga
                 .Where(line =>
                     !string.IsNullOrWhiteSpace(line) &&
                     !Regex.IsMatch(line, @"^(https?://|/(?:truyen|sang-tac)/\d+)", RegexOptions.IgnoreCase) &&
-                    !Regex.IsMatch(line, @"^Ảnh tạm thời bị tắt\.?$", RegexOptions.IgnoreCase))
+                    !Regex.IsMatch(line, @"^?nh t?m th?i b? t?t\.?$", RegexOptions.IgnoreCase))
                 .ToList();
 
             var dedupedLines = new List<string>();
@@ -1769,7 +1769,7 @@ namespace get_link_manga
         private static double? TryExtractHakoChapterNumber(string title, string link)
         {
             string raw = title ?? string.Empty;
-            Match titleMatch = Regex.Match(raw, @"(?:chap(?:ter)?|chương|chuong)\s*(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
+            Match titleMatch = Regex.Match(raw, @"(?:chap(?:ter)?|chuong|chuong)\s*(?<num>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
             if (titleMatch.Success &&
                 double.TryParse(titleMatch.Groups["num"].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out double titleValue))
             {
@@ -1787,3 +1787,4 @@ namespace get_link_manga
         }
     }
 }
+

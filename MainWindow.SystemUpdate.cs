@@ -10,7 +10,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const string LatestUpdateUrl = "https://github.com/ghostminhtoan/getlink210-GMTPC/releases/download/latest/Comic-GMTPC.latest.exe";
         private bool _isUpdateCheckInProgress;
@@ -243,3 +243,4 @@ namespace get_link_manga
         }
     }
 }
+

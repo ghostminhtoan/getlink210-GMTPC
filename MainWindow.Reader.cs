@@ -20,7 +20,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         internal enum ReaderFitMode
         {
@@ -359,12 +359,14 @@ namespace get_link_manga
             RefreshReaderSortButtonLabel(_readerMangaBookSortDateButton, _readerMangaBookSortState, ReaderWatchSortField.DateModified, "DATE");
             RefreshReaderSortButtonLabel(_readerMangaBookSortNameButton, _readerMangaBookSortState, ReaderWatchSortField.Name, "NAME");
             var readerChapterMissingButton = CreateReaderMiniButton("Missing chapters", ReaderChapterMissing_Click, 140);
-            var readerCopyMissingButton = CreateReaderMiniButton("Copy missing", CopyReaderMissingChapters_Click, 120);
+            var readerCopyMissingButton = CreateReaderMiniButton("Copy missing chapter", CopyReaderMissingChapters_Click, 150);
+            var readerCopyAllMissingButton = CreateReaderMiniButton("Copy all book's missing chapter", CopyAllBooksMissingChapters_Click, 230);
+            var readerGoogleAllMissingButton = CreateReaderMiniButton("google all book'S missing chapter", GoogleAllBooksMissingChapters_Click, 240);
 
             var panelBoard = CreateWatchPanelBoard(
                 CreateReaderWatchPanel("Root / Domain", _readerDomainList, _readerMangaDomainSortDateButton, _readerMangaDomainSortNameButton),
                 CreateReaderWatchPanel("Domain / Book", _readerMangaList, _readerMangaBookSortDateButton, _readerMangaBookSortNameButton),
-                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), readerChapterMissingButton, readerCopyMissingButton),
+                CreateReaderWatchPanel("Book / Chapter", CreateReaderChapterPanelContent(), readerChapterMissingButton, readerCopyMissingButton, readerCopyAllMissingButton, readerGoogleAllMissingButton),
                 CreateReaderWatchPanel("Chapter / Image", _readerFileList));
 
             _readerFullscreenButton = CreateReaderMiniButton("Open viewer", ReaderFullscreen_Click, 92);
@@ -1293,8 +1295,90 @@ namespace get_link_manga
                 return;
             }
 
-            Clipboard.SetText(missingText);
-            UpdateReaderStatus(_isVietnameseUi ? $"Đã copy chap thiếu: {missingText}" : $"Copied missing chapters: {missingText}");
+            string formattedText = $"{_currentReaderManga.Name}: {missingText}";
+            Clipboard.SetText(formattedText);
+            UpdateReaderStatus(_isVietnameseUi ? $"Đã copy chap thiếu: {formattedText}" : $"Copied missing chapters: {formattedText}");
+        }
+
+        private void CopyAllBooksMissingChapters_Click(object sender, RoutedEventArgs e)
+        {
+            if (_readerLibrary == null || _readerLibrary.Count == 0)
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Thư viện chưa có truyện để quét." : "No books in library to scan.");
+                return;
+            }
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var book in _readerLibrary)
+            {
+                if (book.Chapters == null || book.Chapters.Count == 0)
+                {
+                    continue;
+                }
+
+                var analysis = AnalyzeReaderChapterNumbers(book.Chapters);
+                if (analysis.MissingRanges.Count > 0)
+                {
+                    string missingText = string.Join("; ", analysis.MissingRanges);
+                    sb.AppendLine($"{book.Name}: {missingText}");
+                }
+            }
+
+            string result = sb.ToString().Trim();
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Không có truyện nào bị thiếu chap." : "No books have missing chapters.");
+                return;
+            }
+
+            Clipboard.SetText(result);
+            UpdateReaderStatus(_isVietnameseUi ? "Đã copy toàn bộ chap thiếu của mọi truyện." : "Copied all missing chapters from all books.");
+        }
+
+        private void GoogleAllBooksMissingChapters_Click(object sender, RoutedEventArgs e)
+        {
+            if (_readerLibrary == null || _readerLibrary.Count == 0)
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Thư viện chưa có truyện để quét." : "No books in library to scan.");
+                return;
+            }
+
+            int count = 0;
+            foreach (var book in _readerLibrary)
+            {
+                if (book.Chapters == null || book.Chapters.Count == 0)
+                {
+                    continue;
+                }
+
+                var analysis = AnalyzeReaderChapterNumbers(book.Chapters);
+                if (analysis.MissingRanges.Count > 0)
+                {
+                    try
+                    {
+                        string query = $"{book.Name} chap 1";
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "https://www.google.com/search?q=" + Uri.EscapeDataString(query),
+                            UseShellExecute = true
+                        });
+                        count++;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Failed to open browser: " + ex.Message);
+                    }
+                }
+            }
+
+            if (count == 0)
+            {
+                UpdateReaderStatus(_isVietnameseUi ? "Không có truyện nào bị thiếu chap để tìm kiếm." : "No books have missing chapters to search.");
+            }
+            else
+            {
+                UpdateReaderStatus(_isVietnameseUi ? $"Đã mở {count} trang tìm kiếm Google." : $"Opened {count} Google search pages.");
+            }
         }
 
         private void ReaderChapterIssueChapter_Click(object sender, RoutedEventArgs e)
@@ -2510,16 +2594,46 @@ namespace get_link_manga
                 }
             }
 
-            if (_readerChapterStatsText != null)
-            {
-                string missingText = analysis.MissingRanges.Count == 0
-                    ? (_isVietnameseUi ? "không thiếu chap nguyên" : "no missing integers")
-                    : string.Join(", ", analysis.MissingRanges);
+            UpdateReaderChapterStatsText(analysis);
+        }
 
-                _readerChapterStatsText.Text = _isVietnameseUi
-                    ? $"Chap nguyên: {analysis.IntegerCount} | chap thập phân: {analysis.DecimalCount} | chap khác: {analysis.UnknownCount} | thiếu: {missingText}"
-                    : $"Integer chapters: {analysis.IntegerCount} | decimal chapters: {analysis.DecimalCount} | other: {analysis.UnknownCount} | missing: {missingText}";
+        private void UpdateReaderChapterStatsText(ReaderChapterAnalysis analysis)
+        {
+            if (_readerChapterStatsText == null) return;
+
+            _readerChapterStatsText.Inlines.Clear();
+            _readerChapterStatsText.FontSize = 11.5; // larger text size
+
+            string prefix = _isVietnameseUi
+                ? $"Chap nguyên: {analysis.IntegerCount} | chap thập phân: {analysis.DecimalCount} | chap khác: {analysis.UnknownCount} | "
+                : $"Integer chapters: {analysis.IntegerCount} | decimal chapters: {analysis.DecimalCount} | other: {analysis.UnknownCount} | ";
+
+            _readerChapterStatsText.Inlines.Add(new System.Windows.Documents.Run(prefix)
+            {
+                Foreground = (Brush)TryFindResource("CyberpunkMutedTextBrush") ?? System.Windows.Media.Brushes.Gray
+            });
+
+            string missingLabel = _isVietnameseUi ? "thiếu: " : "missing: ";
+            string missingText = analysis.MissingRanges.Count == 0
+                ? (_isVietnameseUi ? "không thiếu chap nguyên" : "no missing integers")
+                : string.Join(", ", analysis.MissingRanges);
+
+            var missingRun = new System.Windows.Documents.Run(missingLabel + missingText)
+            {
+                FontWeight = System.Windows.FontWeights.ExtraBold,
+                FontSize = 13.5 // make missing part stand out even more
+            };
+
+            if (analysis.MissingRanges.Count > 0)
+            {
+                missingRun.Foreground = System.Windows.Media.Brushes.Tomato; // bright warning color
             }
+            else
+            {
+                missingRun.Foreground = System.Windows.Media.Brushes.LightGreen; // positive status
+            }
+
+            _readerChapterStatsText.Inlines.Add(missingRun);
         }
 
         private ReaderChapterItem BuildReaderChapterItem(string folderPath, string chapterName, int depth)
@@ -6827,4 +6941,5 @@ private bool HandleReaderHotkeys(KeyEventArgs e)
         }
     }
 }
+
 

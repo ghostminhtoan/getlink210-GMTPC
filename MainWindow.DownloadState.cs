@@ -5,7 +5,7 @@ using System.Windows;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private readonly ConcurrentDictionary<string, byte> _activeTempFolders = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
 
@@ -49,3 +49,4 @@ namespace get_link_manga
         }
     }
 }
+

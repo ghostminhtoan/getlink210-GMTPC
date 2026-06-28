@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
@@ -11,7 +11,7 @@ using System.Windows.Media;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private void WirePauseButtonToggle()
         {
@@ -140,14 +140,14 @@ namespace get_link_manga
                 return;
             }
 
-            // Giới hạn phần move ở header trên (Y < 85 trên rootLayout)
+            // Gi?i h?n ph?n move ? header tr�n (Y < 85 tr�n rootLayout)
             var pos = e.GetPosition(rootLayout);
             if (pos.Y > 85)
             {
                 return;
             }
 
-            // Click đúp để maximize / restore
+            // Click d�p d? maximize / restore
             if (e.ClickCount == 2)
             {
                 WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
@@ -334,12 +334,12 @@ namespace get_link_manga
                     view.SortDescriptions.Add(new SortDescription("OriginalIndex", newDirection));
                 }
 
-                Log($"Đảo ngược chiều sắp xếp cho {propertyName} ({newDirection}).");
+                Log($"�?o ngu?c chi?u s?p x?p cho {propertyName} ({newDirection}).");
                 return;
             }
 
             view.SortDescriptions.Add(new SortDescription("OriginalIndex", ListSortDirection.Descending));
-            Log("Đảo ngược chiều sắp xếp cho OriginalIndex (Descending).");
+            Log("�?o ngu?c chi?u s?p x?p cho OriginalIndex (Descending).");
         }
 
         private void BtnClearComplete_Click(object sender, RoutedEventArgs e)
@@ -350,7 +350,7 @@ namespace get_link_manga
 
             if (toRemove.Count == 0)
             {
-                ShowInfo("Không có truyện nào hoàn thành để xóa.", "Thông báo");
+                ShowInfo("Kh�ng c� truy?n n�o ho�n th�nh d? x�a.", "Th�ng b�o");
                 return;
             }
 
@@ -362,8 +362,9 @@ namespace get_link_manga
             }
             dgResults.ItemsSource = _scrapedItems;
 
-            Log($"Đã xóa {toRemove.Count} truyện hoàn thành khỏi danh sách.");
+            Log($"�� x�a {toRemove.Count} truy?n ho�n th�nh kh?i danh s�ch.");
             lblLinkCount.Text = _scrapedItems.Count.ToString();
         }
     }
 }
+

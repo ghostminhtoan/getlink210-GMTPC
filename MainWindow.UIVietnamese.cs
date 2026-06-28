@@ -2,7 +2,7 @@ using System.Windows;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private void ApplyVietnameseUiText()
         {
@@ -53,3 +53,4 @@ namespace get_link_manga
         }
     }
 }
+

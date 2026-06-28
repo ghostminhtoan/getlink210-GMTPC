@@ -6,7 +6,7 @@ using System.Windows;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private static readonly HashSet<string> HardcodedSpecialDomains = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -53,3 +53,4 @@ namespace get_link_manga
         }
     }
 }
+

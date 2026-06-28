@@ -12,7 +12,7 @@ using System.Windows.Media;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private ICollectionView ResultsView => CollectionViewSource.GetDefaultView(_scrapedItems);
         private bool _isNameSortAscending = true;
@@ -843,3 +843,4 @@ namespace get_link_manga
         }
     }
 }
+

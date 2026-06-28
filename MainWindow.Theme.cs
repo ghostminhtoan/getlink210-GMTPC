@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -6,7 +6,7 @@ using System.Windows.Media;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private bool _isDayTheme = false;
 
@@ -170,9 +170,9 @@ namespace get_link_manga
                 bool isPinned = Topmost;
                 var accentBrush = Application.Current.TryFindResource(isPinned ? "CyberpunkYellowBrush" : "CyberpunkCyanBrush") as Brush;
 
-                pinButton.Content = isPinned ? "📌" : "📍";
+                pinButton.Content = isPinned ? "??" : "??";
                 pinButton.ToolTip = _isVietnameseUi
-                    ? (isPinned ? "Bỏ ghim cửa sổ" : "Ghim cửa sổ")
+                    ? (isPinned ? "B? ghim c?a s?" : "Ghim c?a s?")
                     : (isPinned ? "Unpin window" : "Pin window");
                 pinButton.Foreground = accentBrush;
                 pinButton.BorderBrush = accentBrush;
@@ -180,3 +180,4 @@ namespace get_link_manga
         }
     }
 }
+

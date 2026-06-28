@@ -28,6 +28,7 @@ namespace get_link_manga
                 }
 
                 SetDllDirectory(nativeFolder);
+                MigrateLegacyTempRoot();
             }
             catch
             {
@@ -39,6 +40,41 @@ namespace get_link_manga
         internal static void ResetPortableRuntimeStorage()
         {
             TryDeleteDirectory(PortablePaths.RuntimeRoot);
+        }
+
+        private static void MigrateLegacyTempRoot()
+        {
+            string legacyTempRoot = Path.Combine(PortablePaths.AppRoot, "root", ".tmp");
+            string portableTempRoot = PortablePaths.PortableTempRoot;
+
+            if (!Directory.Exists(legacyTempRoot) || string.Equals(legacyTempRoot, portableTempRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(portableTempRoot);
+                foreach (string file in Directory.GetFiles(legacyTempRoot, "*", SearchOption.AllDirectories))
+                {
+                    string relative = file.Substring(legacyTempRoot.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    string target = Path.Combine(portableTempRoot, relative);
+                    string targetDir = Path.GetDirectoryName(target);
+                    if (!string.IsNullOrWhiteSpace(targetDir))
+                    {
+                        Directory.CreateDirectory(targetDir);
+                    }
+                    if (!File.Exists(target))
+                    {
+                        File.Copy(file, target, false);
+                    }
+                }
+
+                TryDeleteDirectory(legacyTempRoot);
+            }
+            catch
+            {
+            }
         }
 
         private static string GetRuntimeResourceName()
@@ -107,7 +143,7 @@ namespace get_link_manga
                 {
                     try
                     {
-                        string tempDir = Path.Combine(PortablePaths.AppRoot, "root", ".tmp");
+                        string tempDir = PortablePaths.PortableTempRoot;
                         Directory.CreateDirectory(tempDir);
                         string tempPath = Path.Combine(tempDir, Guid.NewGuid().ToString() + ".bak");
                         File.Move(file, tempPath);
@@ -136,7 +172,7 @@ namespace get_link_manga
             {
                 try
                 {
-                    string tempDir = Path.Combine(PortablePaths.AppRoot, "root", ".tmp");
+                    string tempDir = PortablePaths.PortableTempRoot;
                     Directory.CreateDirectory(tempDir);
                     Directory.Move(path, Path.Combine(tempDir, Guid.NewGuid().ToString() + "_dir.bak"));
                 }

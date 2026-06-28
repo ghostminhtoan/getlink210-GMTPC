@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         public MessageBoxResult ShowMessageBox(string message, string title, MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None)
         {
@@ -52,3 +52,4 @@ namespace get_link_manga
         }
     }
 }
+

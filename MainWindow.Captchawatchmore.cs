@@ -4,7 +4,7 @@ using System.Windows;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         public CaptchaWindow CreateWatchMoreCaptcha(string url, bool autoDeleteCookiesOnLoad = true, bool headlessAutomation = false)
         {
@@ -19,3 +19,4 @@ namespace get_link_manga
         }
     }
 }
+

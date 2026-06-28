@@ -13,7 +13,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const string TruyenggvnBaseUrl = "https://sayhentai.cx";
         private const string TruyenggvnSiteFolder = "sayhentai";
@@ -1727,3 +1727,4 @@ namespace get_link_manga
     }
 }
 #pragma warning restore 4014
+

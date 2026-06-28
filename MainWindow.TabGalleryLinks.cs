@@ -10,7 +10,7 @@ using System.Windows;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private async void BtnCopyChaptersLink_Click(object sender, RoutedEventArgs e)
         {
@@ -243,3 +243,4 @@ namespace get_link_manga
         }
     }
 }
+

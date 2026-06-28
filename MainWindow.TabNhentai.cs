@@ -9,7 +9,7 @@ using System.Windows.Controls;
 
 namespace get_link_manga
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private bool _isUpdatingNhentaiUrl = false;
 
@@ -610,3 +610,4 @@ namespace get_link_manga
         }
     }
 }
+
